@@ -9,7 +9,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"login" | "reg">("login");
   const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [message, setMessage] = useState({ text: "", type: "neutral" });
+  const [message, setMessage] = useState({ text: "", type: "neutral" as const });
   const [loading, setLoading] = useState(false);
 
   // DARK MODE
@@ -48,6 +48,11 @@ export default function LoginPage() {
     const email = (formData.get("loginEmail") as string).trim();
     const senha = (formData.get("loginPassword") as string).trim();
 
+    if (!email || !senha) {
+      showMessage("Preencha todos os campos", "error");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/auth/login", {
@@ -77,25 +82,34 @@ export default function LoginPage() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
+    const nome = (formData.get("regName") as string).trim();
+    const email = (formData.get("regEmail") as string).trim();
+    const telefone = (formData.get("regPhone") as string).trim();
     const pass = (formData.get("regPass") as string).trim();
     const confirm = (formData.get("regConfirmPass") as string).trim();
-    const isShop = (formData.get("isShop") as unknown) === "on";
+    const isMarca = (formData.get("isMarca") as unknown) === "on";
+
+    if (!nome || !email || !telefone || !pass || !confirm) {
+      showMessage("Preencha todos os campos", "error");
+      return;
+    }
 
     if (pass !== confirm) {
       showMessage("As senhas não coincidem!", "error");
       return;
     }
+
     if (pass.length < 8) {
       showMessage("A senha deve ter pelo menos 8 caracteres.", "error");
       return;
     }
 
     const userData = {
-      nome: (formData.get("regName") as string).trim(),
-      email: (formData.get("regEmail") as string).trim(),
-      telefone: (formData.get("regPhone") as string).trim(),
+      nome,
+      email,
+      telefone,
       senha: pass,
-      tipo: isShop ? "LOJA" : "CLIENTE",
+      tipo: isMarca ? "MARCA" : "CLIENTE",
     };
 
     setLoading(true);
@@ -107,7 +121,7 @@ export default function LoginPage() {
       });
       const data = await res.json();
 
-      if (res.ok) {
+      if (res.ok && data.usuario) {
         saveSession(data.usuario);
         showMessage("Conta criada! Redirecionando...", "success");
         setTimeout(() => {
@@ -124,7 +138,7 @@ export default function LoginPage() {
     }
   };
 
-  const saveSession = (user: any) => {
+  const saveSession = (user: { id: number; email: string; nome: string; tipo: string }) => {
     const role = (user.tipo || "CLIENTE").toUpperCase();
     const sessionUser = {
       id: user.id,
@@ -140,11 +154,11 @@ export default function LoginPage() {
   const redirectUser = (tipo: string) => {
     const role = (tipo || "CLIENTE").toUpperCase();
     if (role === "ADMIN") {
-      router.push("/admin");
-    } else if (role === "LOJA") {
+      router.push("/admin/painel");
+    } else if (role === "MARCA") {
       router.push("/store");
     } else {
-      router.push("/dashboard");
+      router.push("/");
     }
   };
 
@@ -327,8 +341,8 @@ export default function LoginPage() {
 
               <div className="form-group checkbox-group">
                 <label className="checkbox-label">
-                  <input type="checkbox" name="isShop" />
-                  <span className="checkbox-text">Sou uma Loja / Parceiro</span>
+                  <input type="checkbox" name="isMarca" />
+                  <span className="checkbox-text">Sou uma Marca / Parceiro</span>
                 </label>
                 <p className="checkbox-help">
                   Marque se você deseja gerenciar e vender produtos.
