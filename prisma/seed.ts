@@ -2,8 +2,14 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 
 import { PrismaClient, TipoUsuario } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL!;
+const pool = new pg.Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log("Iniciando o povoamento (seed) do banco de dados...\n");
@@ -225,7 +231,7 @@ async function main() {
       certs: ["Orgânico Brasil"],
     },
     {
-      row: "Café Torrado Especial",
+      nome: "Café Torrado Especial",
       descricao: "Grãos selecionados de agricultura familiar.",
       preco: 28.5,
       categoria: "Alimentos Orgânicos",
@@ -260,7 +266,7 @@ async function main() {
   ];
 
   for (const prod of produtosInput) {
-    const nomeCorrigido = prod.nome || prod.row;
+    const nomeCorrigido = prod.nome || (prod as any).row;
 
     await prisma.produto.create({
       data: {

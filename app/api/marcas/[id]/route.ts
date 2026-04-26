@@ -23,12 +23,18 @@ export async function GET(
     });
 
     if (!marca) {
-      return NextResponse.json({ error: "Marca não encontrada" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Marca não encontrada" },
+        { status: 404 },
+      );
     }
 
     return NextResponse.json({ marca });
   } catch {
-    return NextResponse.json({ error: "Erro ao buscar marca" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao buscar marca" },
+      { status: 500 },
+    );
   }
 }
 
@@ -60,7 +66,10 @@ export async function PUT(
 
     return NextResponse.json({ marca });
   } catch {
-    return NextResponse.json({ error: "Erro ao atualizar marca" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao atualizar marca" },
+      { status: 500 },
+    );
   }
 }
 
@@ -78,6 +87,9 @@ export async function DELETE(
     await prisma.marca.delete({ where: { id: Number(id) } });
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ error: "Marca não encontrada" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Marca não encontrada" },
+      { status: 404 },
+    );
   }
 }

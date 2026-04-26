@@ -11,10 +11,15 @@ const certificadoSchema = z.object({
 
 export async function GET() {
   try {
-    const certificados = await prisma.certificado.findMany({ orderBy: { nome: "asc" } });
+    const certificados = await prisma.certificado.findMany({
+      orderBy: { nome: "asc" },
+    });
     return NextResponse.json({ certificados });
   } catch {
-    return NextResponse.json({ error: "Erro ao listar certificados" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao listar certificados" },
+      { status: 500 },
+    );
   }
 }
 
@@ -38,6 +43,9 @@ export async function POST(req: NextRequest) {
     const certificado = await prisma.certificado.create({ data: parsed.data });
     return NextResponse.json({ certificado }, { status: 201 });
   } catch {
-    return NextResponse.json({ error: "Erro ao criar certificado" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao criar certificado" },
+      { status: 500 },
+    );
   }
 }

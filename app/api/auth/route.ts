@@ -23,7 +23,10 @@ export async function POST(req: NextRequest) {
     const usuario = await prisma.usuario.findUnique({ where: { email } });
 
     if (!usuario || !bcrypt.compareSync(senha, usuario.senha)) {
-      return NextResponse.json({ error: "Email ou senha incorretos" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Email ou senha incorretos" },
+        { status: 401 },
+      );
     }
 
     const token = await signToken({
@@ -46,7 +49,10 @@ export async function POST(req: NextRequest) {
 
     return res;
   } catch {
-    return NextResponse.json({ error: "Erro interno no servidor" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro interno no servidor" },
+      { status: 500 },
+    );
   }
 }
 

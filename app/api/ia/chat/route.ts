@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=";
+const GEMINI_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=";
 
 const chatSchema = z.object({
   mensagem: z.string().min(1).max(2000),
@@ -10,7 +11,7 @@ const chatSchema = z.object({
       z.object({
         role: z.enum(["user", "model"]),
         parts: z.array(z.object({ text: z.string() })),
-      })
+      }),
     )
     .optional()
     .default([]),
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Dados inválidos", detalhes: parsed.error.flatten() },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -41,14 +42,21 @@ export async function POST(req: NextRequest) {
     if (!apiKey || apiKey === "sua_chave") {
       return NextResponse.json(
         { error: "Serviço de IA não configurado" },
-        { status: 503 }
+        { status: 503 },
       );
     }
 
     // Monta o histórico de conversa com o system prompt no início
     const contents = [
       { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
-      { role: "model", parts: [{ text: "Entendido! Estou pronto para ajudar com dúvidas sobre sustentabilidade e reciclagem." }] },
+      {
+        role: "model",
+        parts: [
+          {
+            text: "Entendido! Estou pronto para ajudar com dúvidas sobre sustentabilidade e reciclagem.",
+          },
+        ],
+      },
       ...historico,
       { role: "user", parts: [{ text: mensagem }] },
     ];
@@ -68,18 +76,28 @@ export async function POST(req: NextRequest) {
     });
 
     if (!res.ok) {
-      return NextResponse.json({ error: "Erro ao contatar IA" }, { status: 502 });
+      return NextResponse.json(
+        { error: "Erro ao contatar IA" },
+        { status: 502 },
+      );
     }
 
     const data = await res.json();
-    const resposta: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const resposta: string =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
     if (!resposta) {
-      return NextResponse.json({ error: "Resposta vazia da IA" }, { status: 502 });
+      return NextResponse.json(
+        { error: "Resposta vazia da IA" },
+        { status: 502 },
+      );
     }
 
     return NextResponse.json({ resposta });
   } catch {
-    return NextResponse.json({ error: "Erro interno no servidor" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro interno no servidor" },
+      { status: 500 },
+    );
   }
 }

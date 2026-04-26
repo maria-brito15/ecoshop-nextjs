@@ -20,12 +20,18 @@ export async function GET(
     });
 
     if (!certificado) {
-      return NextResponse.json({ error: "Certificado não encontrado" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Certificado não encontrado" },
+        { status: 404 },
+      );
     }
 
     return NextResponse.json({ certificado });
   } catch {
-    return NextResponse.json({ error: "Erro ao buscar certificado" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao buscar certificado" },
+      { status: 500 },
+    );
   }
 }
 
@@ -57,7 +63,10 @@ export async function PUT(
 
     return NextResponse.json({ certificado });
   } catch {
-    return NextResponse.json({ error: "Erro ao atualizar certificado" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao atualizar certificado" },
+      { status: 500 },
+    );
   }
 }
 
@@ -75,6 +84,9 @@ export async function DELETE(
     await prisma.certificado.delete({ where: { id: Number(id) } });
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ error: "Certificado não encontrado" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Certificado não encontrado" },
+      { status: 404 },
+    );
   }
 }

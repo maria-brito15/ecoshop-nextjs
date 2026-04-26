@@ -16,23 +16,35 @@ export async function GET(
     const session = await getSession(req);
     const { id } = await params;
 
-    // Só o próprio usuário ou um admin pode ver
     if (!session || (session.id !== Number(id) && session.tipo !== "ADMIN")) {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }
 
     const usuario = await prisma.usuario.findUnique({
       where: { id: Number(id) },
-      select: { id: true, nome: true, email: true, telefone: true, tipo: true, criadoEm: true },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        telefone: true,
+        tipo: true,
+        criadoEm: true,
+      },
     });
 
     if (!usuario) {
-      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Usuário não encontrado" },
+        { status: 404 },
+      );
     }
 
     return NextResponse.json({ usuario });
   } catch {
-    return NextResponse.json({ error: "Erro ao buscar usuário" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao buscar usuário" },
+      { status: 500 },
+    );
   }
 }
 
@@ -66,7 +78,10 @@ export async function PUT(
 
     return NextResponse.json({ usuario });
   } catch {
-    return NextResponse.json({ error: "Erro ao atualizar usuário" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao atualizar usuário" },
+      { status: 500 },
+    );
   }
 }
 
@@ -84,6 +99,9 @@ export async function DELETE(
     await prisma.usuario.delete({ where: { id: Number(id) } });
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Usuário não encontrado" },
+      { status: 404 },
+    );
   }
 }

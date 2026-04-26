@@ -20,12 +20,18 @@ export async function GET(
     });
 
     if (!categoria) {
-      return NextResponse.json({ error: "Categoria não encontrada" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Categoria não encontrada" },
+        { status: 404 },
+      );
     }
 
     return NextResponse.json({ categoria });
   } catch {
-    return NextResponse.json({ error: "Erro ao buscar categoria" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao buscar categoria" },
+      { status: 500 },
+    );
   }
 }
 
@@ -57,7 +63,10 @@ export async function PUT(
 
     return NextResponse.json({ categoria });
   } catch {
-    return NextResponse.json({ error: "Erro ao atualizar categoria" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao atualizar categoria" },
+      { status: 500 },
+    );
   }
 }
 
@@ -75,6 +84,9 @@ export async function DELETE(
     await prisma.categoria.delete({ where: { id: Number(id) } });
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ error: "Categoria não encontrada" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Categoria não encontrada" },
+      { status: 404 },
+    );
   }
 }

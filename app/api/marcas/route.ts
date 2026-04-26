@@ -19,7 +19,10 @@ export async function GET() {
     });
     return NextResponse.json({ marcas });
   } catch {
-    return NextResponse.json({ error: "Erro ao listar marcas" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao listar marcas" },
+      { status: 500 },
+    );
   }
 }
 

@@ -10,10 +10,15 @@ const categoriaSchema = z.object({
 
 export async function GET() {
   try {
-    const categorias = await prisma.categoria.findMany({ orderBy: { nome: "asc" } });
+    const categorias = await prisma.categoria.findMany({
+      orderBy: { nome: "asc" },
+    });
     return NextResponse.json({ categorias });
   } catch {
-    return NextResponse.json({ error: "Erro ao listar categorias" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao listar categorias" },
+      { status: 500 },
+    );
   }
 }
 
@@ -37,6 +42,9 @@ export async function POST(req: NextRequest) {
     const categoria = await prisma.categoria.create({ data: parsed.data });
     return NextResponse.json({ categoria }, { status: 201 });
   } catch {
-    return NextResponse.json({ error: "Erro ao criar categoria" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao criar categoria" },
+      { status: 500 },
+    );
   }
 }

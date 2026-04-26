@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Dados inválidos", details: parsed.error.flatten() },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     if (existingUser) {
       return NextResponse.json(
         { error: "Email já cadastrado" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
           tipo: usuario.tipo,
         },
       },
-      { status: 201 }
+      { status: 201 },
     );
 
     res.cookies.set("token", token, {
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     console.error("Erro ao registrar:", error);
     return NextResponse.json(
       { error: "Erro interno no servidor" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

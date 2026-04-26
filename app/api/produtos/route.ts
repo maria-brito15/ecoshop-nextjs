@@ -37,12 +37,15 @@ export async function GET(req: NextRequest) {
         take: size,
         orderBy: { id: "asc" },
       }),
-      prisma.produto.count({ where }), // ← agora respeita os filtros
+      prisma.produto.count({ where }),
     ]);
 
     return NextResponse.json({ produtos, page, size, total });
   } catch {
-    return NextResponse.json({ error: "Erro ao listar produtos" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao listar produtos" },
+      { status: 500 },
+    );
   }
 }
 
@@ -74,6 +77,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ produto }, { status: 201 });
   } catch {
-    return NextResponse.json({ error: "Erro ao criar produto" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao criar produto" },
+      { status: 500 },
+    );
   }
 }

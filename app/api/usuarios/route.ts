@@ -20,12 +20,22 @@ export async function GET(req: NextRequest) {
     }
 
     const usuarios = await prisma.usuario.findMany({
-      select: { id: true, nome: true, email: true, telefone: true, tipo: true, criadoEm: true },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        telefone: true,
+        tipo: true,
+        criadoEm: true,
+      },
     });
 
     return NextResponse.json({ usuarios });
   } catch {
-    return NextResponse.json({ error: "Erro ao listar usuários" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao listar usuários" },
+      { status: 500 },
+    );
   }
 }
 
@@ -46,7 +56,10 @@ export async function POST(req: NextRequest) {
 
     const existente = await prisma.usuario.findUnique({ where: { email } });
     if (existente) {
-      return NextResponse.json({ error: "Email já cadastrado" }, { status: 409 });
+      return NextResponse.json(
+        { error: "Email já cadastrado" },
+        { status: 409 },
+      );
     }
 
     const senhaCriptografada = bcrypt.hashSync(senha, 12);
@@ -58,6 +71,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ usuario }, { status: 201 });
   } catch {
-    return NextResponse.json({ error: "Erro ao criar usuário" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao criar usuário" },
+      { status: 500 },
+    );
   }
 }
