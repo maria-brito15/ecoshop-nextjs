@@ -125,29 +125,39 @@ export default function HomePage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useScrollReveal();
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/produtos?size=4")
-        .then((r) => r.json() as Promise<ListaProdutosResponse>)
-        .catch(
-          (): ListaProdutosResponse => ({
-            produtos: [],
-            page: 1,
-            size: 4,
-            total: 0,
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [pRes, cRes] = await Promise.all([
+          fetch("/api/produtos?size=4").then(async (r) => {
+            if (!r.ok) throw new Error(`Erro ao buscar produtos: ${r.status}`);
+            return r.json() as Promise<ListaProdutosResponse>;
           }),
-        ),
-      fetch("/api/categorias")
-        .then((r) => r.json() as Promise<ListaCategoriasResponse>)
-        .catch((): ListaCategoriasResponse => ({ categorias: [] })),
-    ]).then(([pRes, cRes]) => {
-      setProdutos(pRes.produtos);
-      setCategorias(cRes.categorias);
-      setLoading(false);
-    });
+          fetch("/api/categorias").then(async (r) => {
+            if (!r.ok)
+              throw new Error(`Erro ao buscar categorias: ${r.status}`);
+            return r.json() as Promise<ListaCategoriasResponse>;
+          }),
+        ]);
+
+        setProdutos(pRes.produtos || []);
+        setCategorias(cRes.categorias || []);
+      } catch (err: any) {
+        console.error("Erro na Home:", err);
+        setError(err.message || "Ocorreu um erro ao carregar os dados.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   return (
@@ -238,6 +248,21 @@ export default function HomePage() {
                 />
               ))}
             </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <p className="text-[var(--color-error)] font-semibold mb-2">
+                Ops! Algo deu errado.
+              </p>
+              <p className="text-[var(--color-text-tertiary)] text-sm">
+                {error}
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-4 text-[var(--color-primary)] hover:underline font-medium"
+              >
+                Tentar novamente
+              </button>
+            </div>
           ) : produtos.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {produtos.map((p) => (
@@ -296,25 +321,18 @@ export default function HomePage() {
                 {
                   icon: "📖",
                   title: "Guias Práticos",
-                  desc: "Passo a passo fácil de seguir",
-                },
-                {
-                  icon: "♻️",
-                  title: "Descarte Correto",
-                  desc: "Saiba como reciclar cada material",
+                  desc: "Aprenda a reduzir seu lixo doméstico.",
                 },
                 {
                   icon: "🌱",
-                  title: "Vida Sustentável",
-                  desc: "Hábitos que fazem a diferença",
+                  title: "Sustentabilidade",
+                  desc: "Entenda o impacto real de cada material.",
                 },
               ].map((f) => (
-                <div key={f.title} className="flex gap-4">
-                  <span className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-xl text-xl bg-white/10">
-                    {f.icon}
-                  </span>
+                <div key={f.title} className="flex gap-4 items-start">
+                  <span className="text-2xl">{f.icon}</span>
                   <div>
-                    <h3 className="font-bold text-white">{f.title}</h3>
+                    <h4 className="font-bold text-white">{f.title}</h4>
                     <p className="text-sm text-[#a5c3b6]">{f.desc}</p>
                   </div>
                 </div>
