@@ -1,16 +1,6 @@
-// ============================================================
-// EcoShop — Tipos da API
-// ============================================================
-
-// ------------------------------------------------------------
-// Enums
-// ------------------------------------------------------------
+// types/api.ts
 
 export type TipoUsuario = "CLIENTE" | "MARCA" | "ADMIN";
-
-// ------------------------------------------------------------
-// Entidades base
-// ------------------------------------------------------------
 
 export type Usuario = {
   id: number;
@@ -18,7 +8,7 @@ export type Usuario = {
   email: string;
   telefone: string | null;
   tipo: TipoUsuario;
-  criadoEm: string; // ISO 8601
+  criadoEm: string;
 };
 
 export type UsuarioPublico = Pick<Usuario, "id" | "nome" | "email">;
@@ -57,10 +47,6 @@ export type Produto = {
   certificados: { certificado: Certificado }[];
 };
 
-// ------------------------------------------------------------
-// Auth — POST /api/auth
-// ------------------------------------------------------------
-
 export type LoginBody = {
   email: string;
   senha: string;
@@ -70,10 +56,6 @@ export type LoginResponse = {
   ok: true;
   usuario: Pick<Usuario, "id" | "email" | "tipo">;
 };
-
-// ------------------------------------------------------------
-// Users (registro com auto-login) — POST /api/users
-// ------------------------------------------------------------
 
 export type RegistroBody = {
   nome: string;
@@ -87,10 +69,6 @@ export type RegistroResponse = {
   ok: true;
   usuario: Pick<Usuario, "id" | "email" | "nome" | "tipo">;
 };
-
-// ------------------------------------------------------------
-// Usuários — /api/usuarios
-// ------------------------------------------------------------
 
 export type ListaUsuariosResponse = {
   usuarios: Usuario[];
@@ -119,10 +97,6 @@ export type AtualizarUsuarioBody = {
 export type AtualizarUsuarioResponse = {
   usuario: Pick<Usuario, "id" | "nome" | "email" | "tipo">;
 };
-
-// ------------------------------------------------------------
-// Produtos — /api/produtos
-// ------------------------------------------------------------
 
 export type ListaProdutosResponse = {
   produtos: Produto[];
@@ -159,10 +133,6 @@ export type AtualizarProdutoResponse = {
   produto: Produto;
 };
 
-// ------------------------------------------------------------
-// Categorias — /api/categorias
-// ------------------------------------------------------------
-
 export type CategoriaComProdutos = Categoria & {
   produtos: Produto[];
 };
@@ -192,10 +162,6 @@ export type AtualizarCategoriaBody = {
 export type AtualizarCategoriaResponse = {
   categoria: Categoria;
 };
-
-// ------------------------------------------------------------
-// Marcas — /api/marcas
-// ------------------------------------------------------------
 
 export type MarcaComUsuario = Marca & {
   usuario: UsuarioPublico;
@@ -232,10 +198,6 @@ export type AtualizarMarcaResponse = {
   marca: MarcaComUsuario;
 };
 
-// ------------------------------------------------------------
-// Certificados — /api/certificados
-// ------------------------------------------------------------
-
 export type ListaCertificadosResponse = {
   certificados: Certificado[];
 };
@@ -264,10 +226,6 @@ export type AtualizarCertificadoResponse = {
   certificado: Certificado;
 };
 
-// ------------------------------------------------------------
-// IA — Chat — POST /api/ia/chat
-// ------------------------------------------------------------
-
 export type HistoricoItem = {
   role: "user" | "model";
   parts: [{ text: string }];
@@ -281,10 +239,6 @@ export type ChatBody = {
 export type ChatResponse = {
   resposta: string;
 };
-
-// ------------------------------------------------------------
-// IA — Scan — POST /api/ia/scan
-// ------------------------------------------------------------
 
 export type AnaliseSustentabilidade = {
   impacto_ambiental: string;
@@ -300,7 +254,7 @@ export type ScanSucesso = {
   material: string;
   confianca: number;
   imageId: string;
-  timestamp: string; // ISO 8601
+  timestamp: string;
   analise_sustentabilidade: AnaliseSustentabilidade;
 };
 
@@ -311,19 +265,15 @@ export type ScanInsuficiente = {
   confianca_minima_requerida: number;
   material_provavel: string;
   imageId: string;
-  timestamp: string; // ISO 8601
+  timestamp: string;
   sugestao: string;
 };
 
 export type ScanResponse = ScanSucesso | ScanInsuficiente;
 
-// ------------------------------------------------------------
-// Erros genéricos da API
-// ------------------------------------------------------------
-
 export type ApiErro = {
   erro: string;
-  detalhes?: Record<string, string[]>; // resultado do Zod .flatten()
+  detalhes?: Record<string, string[]>;
 };
 
 export type OkResponse = {

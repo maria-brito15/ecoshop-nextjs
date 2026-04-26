@@ -1,3 +1,5 @@
+// app/api/users/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { signToken } from "@/lib/auth";
@@ -26,7 +28,6 @@ export async function POST(req: NextRequest) {
 
     const { nome, email, telefone, senha, tipo } = parsed.data;
 
-    // Verifica se email já existe
     const existingUser = await prisma.usuario.findUnique({
       where: { email },
     });
@@ -38,10 +39,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Hash da senha
     const senhaHash = bcrypt.hashSync(senha, 10);
 
-    // Cria usuário
     const usuario = await prisma.usuario.create({
       data: {
         nome,
@@ -52,7 +51,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Gera token
     const token = await signToken({
       id: usuario.id,
       email: usuario.email,

@@ -2,13 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type {
-  LoginBody,
-  RegistroBody,
-  LoginResponse,
-  RegistroResponse,
-  ApiErro,
-} from "@/types/api";
+import { useLogin, useRegistro } from "@/lib/hooks/useAuth";
+import type { LoginBody, RegistroBody } from "@/types/api";
 
 type Modo = "login" | "cadastro";
 
@@ -29,8 +24,13 @@ export default function AuthPage() {
     senha: "",
     telefone: "",
   });
-  const [erro, setErro] = useState<string | null>(null);
-  const [carregando, setCarregando] = useState(false);
+
+  const login = useLogin();
+  const registro = useRegistro();
+
+  const hook = modo === "login" ? login : registro;
+  const erro = hook.erro;
+  const carregando = hook.carregando;
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -38,47 +38,25 @@ export default function AuthPage() {
 
   function alternarModo() {
     setModo((prev) => (prev === "login" ? "cadastro" : "login"));
-    setErro(null);
     setForm({ nome: "", email: "", senha: "", telefone: "" });
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setErro(null);
-    setCarregando(true);
 
-    try {
-      const url = modo === "login" ? "/api/auth" : "/api/users";
-
-      const body: LoginBody | RegistroBody =
-        modo === "login"
-          ? { email: form.email, senha: form.senha }
-          : {
-              nome: form.nome,
-              email: form.email,
-              senha: form.senha,
-              ...(form.telefone ? { telefone: form.telefone } : {}),
-            };
-
-      const res = await fetch(url, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data: LoginResponse | RegistroResponse | ApiErro = await res.json();
-
-      if (!res.ok) {
-        setErro((data as ApiErro).erro ?? "Erro desconhecido");
-        return;
-      }
-
-      router.push("/");
-    } catch {
-      setErro("Falha de conexão com o servidor");
-    } finally {
-      setCarregando(false);
+    if (modo === "login") {
+      const body: LoginBody = { email: form.email, senha: form.senha };
+      const data = await login.executar("/api/auth", body);
+      if (data) router.push("/");
+    } else {
+      const body: RegistroBody = {
+        nome: form.nome,
+        email: form.email,
+        senha: form.senha,
+        ...(form.telefone ? { telefone: form.telefone } : {}),
+      };
+      const data = await registro.executar("/api/users", body);
+      if (data) router.push("/");
     }
   }
 

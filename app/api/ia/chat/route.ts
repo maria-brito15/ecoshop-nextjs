@@ -1,3 +1,5 @@
+// app/api/ia/chat/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -23,7 +25,6 @@ Foque em dicas práticas de reciclagem, sustentabilidade, consumo consciente e p
 Responda sempre em português brasileiro.
 Se a pergunta não for relacionada a sustentabilidade ou ecologia, redirecione gentilmente para o tema.`;
 
-// POST /api/ia/chat — chat conversacional sobre sustentabilidade
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -46,7 +47,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Monta o histórico de conversa com o system prompt no início
     const contents = [
       { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
       {

@@ -1,3 +1,5 @@
+// lib/ai.ts
+
 const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=";
 const GEMINI_KEY = process.env.GEMINI_KEY ?? "";
@@ -30,8 +32,6 @@ export interface ResultadoScan {
   material_provavel?: string;
 }
 
-// ---------- Azure Custom Vision ----------
-
 interface AzurePrediction {
   tagName: string;
   probability: number;
@@ -58,8 +58,6 @@ export async function classificarImagemAzure(
   if (!res.ok) return null;
   return res.json();
 }
-
-// ---------- Gemini ----------
 
 const PROMPT_SUSTENTABILIDADE = (material: string) =>
   `
@@ -108,7 +106,6 @@ export async function obterAnaliseSustentabilidade(
     const texto: string =
       data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
-    // Remove markdown fences se existirem
     const limpo = texto
       .replace(/```json\s*/g, "")
       .replace(/```\s*/g, "")
@@ -117,7 +114,6 @@ export async function obterAnaliseSustentabilidade(
 
     const parsed = JSON.parse(limpo);
 
-    // Valida campos obrigatórios
     const valido = CAMPOS_OBRIGATORIOS.every(
       (c) => typeof parsed[c] === "string" && parsed[c].trim().length > 0,
     );
@@ -138,8 +134,6 @@ function analiseBasica(material: string): AnaliseIA {
     beneficios_reciclagem: `A reciclagem reduz a necessidade de extração de recursos naturais, economiza energia, diminui emissões de gases de efeito estufa e gera empregos na cadeia de reciclagem.`,
   };
 }
-
-// ---------- Orquestrador principal ----------
 
 export async function analisarImagem(
   imageBuffer: Buffer,

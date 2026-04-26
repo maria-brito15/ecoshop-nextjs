@@ -1,3 +1,5 @@
+// app/api/marcas/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";

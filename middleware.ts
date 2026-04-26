@@ -21,14 +21,13 @@ export async function middleware(req: NextRequest) {
   const payload = token ? await verifyToken(token) : null;
 
   if (!payload) {
-    // Rota de API → retorna 401 em vez de redirecionar
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
+
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // Painel e rotas de admin → só ADMIN passa
   if (
     (pathname.startsWith("/painel") || pathname.startsWith("/api/admin")) &&
     payload.tipo !== "ADMIN"

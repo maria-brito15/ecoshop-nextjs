@@ -1,10 +1,11 @@
+// app/api/ia/scan/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import { analisarImagem } from "@/lib/ai";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
-// POST /api/ia/scan — recebe uma imagem e retorna análise de sustentabilidade
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -34,7 +35,6 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Gera um ID único para a análise (sem salvar no disco — stateless)
     const imageId = `analise_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 
     const resultado = await analisarImagem(buffer, imageId);

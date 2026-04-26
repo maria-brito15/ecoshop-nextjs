@@ -1,3 +1,5 @@
+// app/api/produtos/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
@@ -11,7 +13,6 @@ const produtoSchema = z.object({
   marcaId: z.number().int(),
 });
 
-// GET /api/produtos — público
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -49,7 +50,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/produtos — só ADMIN
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession(req);
