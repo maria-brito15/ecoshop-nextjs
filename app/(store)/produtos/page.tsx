@@ -1,3 +1,5 @@
+// app/(store)/produtos/page.tsx
+
 "use client";
 
 import { useState } from "react";
