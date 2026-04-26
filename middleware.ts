@@ -1,40 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "./lib/auth";
 
-const ROTAS_PUBLICAS = [
-  "/api/auth",
-  "/api/produtos",
-  "/api/categorias",
-  "/api/marcas",
-  "/api/certificados",
-  "/login",
-  "/",
-];
+const ROTAS_ADMIN = ["/painel", "/api/admin", "/api/produtos/fotos"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-
-  const isPublica = ROTAS_PUBLICAS.some((r) => pathname.startsWith(r));
-  if (isPublica) return NextResponse.next();
 
   const token = req.cookies.get("token")?.value;
   const payload = token ? await verifyToken(token) : null;
 
   if (!payload) {
     if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+      return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
     }
 
-    return NextResponse.redirect(new URL("/login", req.url));
+    return NextResponse.redirect(new URL("/sign-in", req.url));
   }
 
-  if (
-    (pathname.startsWith("/painel") || pathname.startsWith("/api/admin")) &&
-    payload.tipo !== "ADMIN"
-  ) {
+  const isRotaAdmin = ROTAS_ADMIN.some((r) => pathname.startsWith(r));
+  if (isRotaAdmin && payload.tipo !== "ADMIN") {
     if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+      return NextResponse.json({ erro: "Acesso negado" }, { status: 403 });
     }
+
     return NextResponse.redirect(new URL("/", req.url));
   }
 
@@ -44,8 +32,9 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     "/painel/:path*",
-    "/api/usuarios/:path*",
     "/api/admin/:path*",
+    "/api/usuarios/:path*",
+    "/api/produtos/:path*/fotos",
     "/ia-scan/:path*",
   ],
 };
