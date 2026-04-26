@@ -7,6 +7,8 @@ import type {
   BuscarProdutoResponse,
   CriarProdutoBody,
   CriarProdutoResponse,
+  AtualizarProdutoBody,
+  AtualizarProdutoResponse,
 } from "@/types/api";
 
 export function useListarProdutos(
@@ -32,5 +34,17 @@ export function useBuscarProduto(id: number | null) {
 export function useCriarProduto() {
   return useMutation<CriarProdutoResponse, CriarProdutoBody>({
     method: "POST",
+  });
+}
+
+export function useAtualizarProduto() {
+  return useMutation<AtualizarProdutoResponse, AtualizarProdutoBody>({
+    method: "PUT",
+  });
+}
+
+export function useDeletarProduto() {
+  return useMutation<{ ok: boolean }>({
+    method: "DELETE",
   });
 }
