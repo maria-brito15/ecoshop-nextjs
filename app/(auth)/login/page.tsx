@@ -5,11 +5,18 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import "./auth.css";
 
+type MessageType = "success" | "error" | "neutral";
+
+interface Message {
+  text: string;
+  type: MessageType;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"login" | "reg">("login");
   const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [message, setMessage] = useState({ text: "", type: "neutral" as const });
+  const [message, setMessage] = useState<Message>({ text: "", type: "neutral" });
   const [loading, setLoading] = useState(false);
 
   // DARK MODE
@@ -34,7 +41,7 @@ export default function LoginPage() {
     }
   };
 
-  const showMessage = (text: string, type: "success" | "error" | "neutral") => {
+  const showMessage = (text: string, type: MessageType) => {
     setMessage({ text, type });
     if (type !== "neutral") {
       setTimeout(() => setMessage({ text: "", type: "neutral" }), 5000);
