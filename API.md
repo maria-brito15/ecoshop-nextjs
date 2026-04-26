@@ -497,9 +497,7 @@ Retorna o produto com categoria, marca e todos os certificados vinculados.
 
 #### `PUT /api/produtos/[id]` — Atualizar produto
 
-> ⚠️ **Atenção:** Esta rota **não verifica autenticação** no código atual. Qualquer pessoa pode chamá-la. Recomenda-se adicionar proteção antes de ir a produção.
-
-**Autenticação:** Nenhuma (falha de segurança)
+**Autenticação:** ADMIN
 
 **Body:**
 
@@ -539,9 +537,7 @@ Retorna o produto com categoria, marca e todos os certificados vinculados.
 
 #### `DELETE /api/produtos/[id]` — Remover produto
 
-> ⚠️ **Atenção:** Esta rota **não verifica autenticação** no código atual.
-
-**Autenticação:** Nenhuma (falha de segurança)
+**Autenticação:** ADMIN
 
 **Resposta `200`:**
 
