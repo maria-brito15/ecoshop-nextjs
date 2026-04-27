@@ -1,4 +1,5 @@
 // app/page.tsx
+
 "use client";
 
 import Link from "next/link";
@@ -22,23 +23,36 @@ function categoryIcon(nome: string) {
 
 function useScrollReveal() {
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("visible");
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.1 },
-    );
+    const timer = setTimeout(() => {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible");
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.1 },
+      );
 
-    document
-      .querySelectorAll(".animate-on-scroll")
-      .forEach((el) => observer.observe(el));
+      const elements = document.querySelectorAll(".animate-on-scroll");
+      console.log(`🎬 Observando ${elements.length} elementos para animação`);
 
-    return () => observer.disconnect();
+      elements.forEach((el) => {
+        observer.observe(el);
+        if (el.getBoundingClientRect().top < window.innerHeight) {
+          el.classList.add("visible");
+          console.log(
+            `✨ Elemento já visível, adicionando classe: ${el.className}`,
+          );
+        }
+      });
+
+      return () => observer.disconnect();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 }
 
@@ -49,7 +63,7 @@ function ProductCard({ produto }: { produto: Produto }) {
   });
 
   return (
-    <article className="product-card animate-on-scroll cursor-pointer">
+    <article className="product-card animate-on-scroll cursor-pointer visible">
       <div className="h-48 flex items-center justify-center bg-[var(--color-bg-body)] relative overflow-hidden">
         {produto.fotoUrl ? (
           <img
@@ -91,7 +105,7 @@ function CategoryCard({ categoria }: { categoria: Categoria }) {
     <Link
       href={`/produtos?categoriaId=${categoria.id}`}
       className="
-        animate-on-scroll group w-full
+        animate-on-scroll group w-full visible
         flex flex-col items-center gap-3
         p-6 rounded-[var(--radius-card)] text-center
         bg-[var(--color-bg-surface)]
@@ -135,30 +149,68 @@ export default function HomePage() {
         setLoading(true);
         setError(null);
 
-        const [pRes, cRes] = await Promise.all([
-          fetch("/api/produtos?size=4").then(async (r) => {
-            if (!r.ok) throw new Error(`Erro ao buscar produtos: ${r.status}`);
-            return r.json() as Promise<ListaProdutosResponse>;
-          }),
-          fetch("/api/categorias").then(async (r) => {
-            if (!r.ok)
-              throw new Error(`Erro ao buscar categorias: ${r.status}`);
-            return r.json() as Promise<ListaCategoriasResponse>;
-          }),
-        ]);
+        console.log("🔄 Iniciando carregamento de dados...");
 
-        setProdutos(pRes.produtos || []);
-        setCategorias(cRes.categorias || []);
+        console.log("📦 Buscando produtos...");
+        const prodRes = await fetch("/api/produtos?size=4");
+        console.log("📦 Status produtos:", prodRes.status);
+
+        if (!prodRes.ok) {
+          throw new Error(`Erro ao buscar produtos: ${prodRes.status}`);
+        }
+
+        const prodData = (await prodRes.json()) as ListaProdutosResponse;
+        console.log("📦 Dados de produtos recebidos:", prodData);
+
+        console.log("📂 Buscando categorias...");
+        const catRes = await fetch("/api/categorias");
+        console.log("📂 Status categorias:", catRes.status);
+
+        if (!catRes.ok) {
+          throw new Error(`Erro ao buscar categorias: ${catRes.status}`);
+        }
+
+        const catData = (await catRes.json()) as ListaCategoriasResponse;
+        console.log("📂 Dados de categorias recebidos:", catData);
+
+        // Definir estado
+        console.log(
+          "✅ Definindo produtos:",
+          prodData.produtos?.length || 0,
+          "itens",
+        );
+        setProdutos(prodData.produtos || []);
+
+        console.log(
+          "✅ Definindo categorias:",
+          catData.categorias?.length || 0,
+          "itens",
+        );
+        setCategorias(catData.categorias || []);
+
+        console.log("✨ Dados carregados com sucesso!");
       } catch (err: any) {
-        console.error("Erro na Home:", err);
+        console.error("❌ Erro na Home:", err);
         setError(err.message || "Ocorreu um erro ao carregar os dados.");
       } finally {
         setLoading(false);
+        console.log("🏁 Carregamento concluído");
       }
     };
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    console.log(
+      "🎯 Estado atual: loading=",
+      loading,
+      "produtos=",
+      produtos.length,
+      "categorias=",
+      categorias.length,
+    );
+  }, [loading, produtos, categorias]);
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
@@ -210,14 +262,14 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="hidden lg:flex items-center justify-center h-96 rounded-3xl overflow-hidden relative bg-[var(--color-primary-light)] border border-[var(--color-border)] text-[10rem] shadow-[var(--shadow-xl)]">
+            <div className="hidden lg:flex items-center justify-center h-96 rounded-3xl overflow-hidden relative bg-[var(--color-primary-light)] border border-[var(--color-border)] text-[10rem]">
               <span
                 className="select-none"
                 style={{ animation: "float 4s ease-in-out infinite" }}
               >
                 🌍
               </span>
-              <div className="absolute bottom-6 left-6 flex items-center gap-3 px-4 py-3 bg-[var(--color-bg-surface)]/90 backdrop-blur-md rounded-2xl border border-[var(--color-border)] shadow-[var(--shadow-card)] font-semibold text-sm text-[var(--color-text-primary)]">
+              <div className="absolute bottom-6 left-6 flex items-center gap-3 px-4 py-3 bg-[var(--color-bg-surface)]/90 backdrop-blur-md rounded-2xl border border-[var(--color-border)]">
                 ✅ Certificado eco-friendly
               </div>
             </div>
@@ -263,7 +315,7 @@ export default function HomePage() {
                 Tentar novamente
               </button>
             </div>
-          ) : produtos.length > 0 ? (
+          ) : Array.isArray(produtos) && produtos.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {produtos.map((p) => (
                 <ProductCard key={p.id} produto={p} />
@@ -283,7 +335,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {categorias.length > 0 && (
+      {Array.isArray(categorias) && categorias.length > 0 && (
         <section className="py-20 bg-[var(--color-bg-body)]">
           <div className="container-eco">
             <div className="text-center max-w-xl mx-auto mb-12">
@@ -294,7 +346,7 @@ export default function HomePage() {
                 Categorias
               </h2>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5 justify-items-center">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5 justify-items-center mx-auto max-w-5xl">
               {categorias.slice(0, 6).map((cat) => (
                 <CategoryCard key={cat.id} categoria={cat} />
               ))}
@@ -306,7 +358,7 @@ export default function HomePage() {
       <section className="py-20 bg-[linear-gradient(135deg,#1a3a2e_0%,#0f2419_100%)] text-white">
         <div className="container-eco">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div className="animate-on-scroll flex flex-col gap-6">
+            <div className="animate-on-scroll flex flex-col gap-6 visible">
               <span className="text-sm font-bold uppercase tracking-widest text-[var(--color-primary)]">
                 Conhecimento
               </span>
@@ -341,7 +393,7 @@ export default function HomePage() {
                 Acessar Conteúdo Educativo
               </Link>
             </div>
-            <div className="animate-on-scroll hidden lg:flex items-center justify-center h-80 rounded-3xl text-9xl bg-white/5 border border-white/10">
+            <div className="animate-on-scroll hidden lg:flex items-center justify-center h-80 rounded-3xl text-9xl bg-white/5 border border-white/10 visible">
               📚
             </div>
           </div>
@@ -350,7 +402,7 @@ export default function HomePage() {
 
       <section className="py-20 bg-[var(--color-bg-surface)]">
         <div className="container-eco">
-          <div className="animate-on-scroll flex flex-col md:flex-row items-center justify-between gap-8 p-10 rounded-3xl bg-[var(--color-primary)] relative overflow-hidden">
+          <div className="animate-on-scroll flex flex-col md:flex-row items-center justify-between gap-8 p-10 rounded-3xl bg-[var(--color-primary)] relative overflow-hidden visible">
             <div className="absolute inset-0 opacity-10 [background-image:radial-gradient(circle_at_80%_50%,white_0%,transparent_60%)] pointer-events-none" />
             <div className="relative z-10 flex flex-col gap-3 text-white">
               <span className="text-sm font-bold uppercase tracking-widest opacity-80">
@@ -391,7 +443,7 @@ export default function HomePage() {
                     key={r}
                     href="#"
                     aria-label={r}
-                    className="w-9 h-9 flex items-center justify-center rounded-full text-sm bg-[var(--color-bg-body)] text-[var(--color-text-secondary)] hover:bg-[var(--color-primary)] hover:text-white hover:-translate-y-0.5 transition-all"
+                    className="w-9 h-9 flex items-center justify-center rounded-full text-sm bg-[var(--color-bg-body)] text-[var(--color-text-secondary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors"
                   >
                     {r[0]}
                   </a>
