@@ -8,9 +8,6 @@ import { useListarProdutos } from "@/lib/hooks/useProdutos";
 import { useListarCategorias } from "@/lib/hooks/useCategorias";
 import type { Produto } from "@/types/api";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SKELETON CARD (loading state)
-// ─────────────────────────────────────────────────────────────────────────────
 function SkeletonCard() {
   return (
     <div className="rounded-[var(--radius-card)] overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-surface)] animate-pulse">
@@ -28,9 +25,6 @@ function SkeletonCard() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PRODUCT CARD
-// ─────────────────────────────────────────────────────────────────────────────
 function ProductCard({ produto, index }: { produto: Produto; index: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -79,7 +73,6 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
           h-full flex flex-col
         `}
       >
-        {/* Image */}
         <div className="relative h-56 bg-[var(--color-bg-body)] flex items-center justify-center overflow-hidden">
           {produto.fotoUrl ? (
             <img
@@ -96,7 +89,6 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
             </span>
           )}
 
-          {/* Category badge */}
           <span
             className={`
               absolute top-3 left-3
@@ -110,7 +102,6 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
             {produto.categoria.nome}
           </span>
 
-          {/* Hover overlay with "Ver detalhes" */}
           <div
             className={`
               absolute inset-0 flex items-center justify-center
@@ -133,7 +124,6 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
           </div>
         </div>
 
-        {/* Content */}
         <div className="p-5 flex flex-col gap-2 flex-1">
           <span className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-tertiary)]">
             {produto.marca.nome}
@@ -156,7 +146,6 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
             </p>
           )}
 
-          {/* Certificados */}
           {produto.certificados.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1">
               {produto.certificados.slice(0, 2).map(({ certificado }) => (
@@ -175,7 +164,6 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
             </div>
           )}
 
-          {/* Footer */}
           <div
             className={`
               mt-auto pt-4
@@ -207,9 +195,6 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN PAGE
-// ─────────────────────────────────────────────────────────────────────────────
 export default function ProdutosPage() {
   const [page, setPage] = useState(1);
   const [nome, setNome] = useState("");
@@ -233,7 +218,6 @@ export default function ProdutosPage() {
   const totalPaginas = Math.ceil(total / 12);
   const categorias = catData?.categorias ?? [];
 
-  // Sort produtos
   const produtosSorted = [...produtos].sort((a, b) => {
     if (sortBy === "preco_asc")
       return parseFloat(a.preco) - parseFloat(b.preco);
@@ -244,7 +228,6 @@ export default function ProdutosPage() {
     return 0;
   });
 
-  // Price filter client-side
   const produtosFiltrados = produtosSorted.filter(
     (p) => parseFloat(p.preco) <= maxPreco,
   );
@@ -275,7 +258,6 @@ export default function ProdutosPage() {
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
-      {/* ── PAGE HEADER ─────────────────────────────────────────────── */}
       <div
         className={`
           border-b border-[var(--color-border)]
@@ -284,7 +266,6 @@ export default function ProdutosPage() {
         `}
       >
         <div className="container-eco">
-          {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] mb-5">
             <Link
               href="/"
@@ -320,7 +301,6 @@ export default function ProdutosPage() {
               )}
             </div>
 
-            {/* Search bar */}
             <form
               onSubmit={handleBuscar}
               className="flex gap-2 w-full sm:w-auto sm:min-w-[320px]"
@@ -359,10 +339,8 @@ export default function ProdutosPage() {
         </div>
       </div>
 
-      {/* ── LAYOUT: SIDEBAR + GRID ───────────────────────────────────── */}
       <div className="container-eco py-8">
         <div className="flex gap-8 items-start">
-          {/* ── SIDEBAR ────────────────────────────────────────────────── */}
           <aside
             className={`
               hidden lg:flex flex-col gap-0
@@ -380,7 +358,6 @@ export default function ProdutosPage() {
               scrollbarColor: "var(--color-border) transparent",
             }}
           >
-            {/* Sidebar header */}
             <div
               className={`
                 flex items-center justify-between
@@ -405,7 +382,6 @@ export default function ProdutosPage() {
               </button>
             </div>
 
-            {/* Categorias */}
             <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3 flex items-center gap-2">
                 <span>🏷</span> Categorias
@@ -460,7 +436,6 @@ export default function ProdutosPage() {
               </ul>
             </div>
 
-            {/* Preço */}
             <div className="px-4 py-5 border-b border-[var(--color-border)]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-4 flex items-center gap-2">
                 <span>💰</span> Faixa de Preço
@@ -499,7 +474,6 @@ export default function ProdutosPage() {
               </div>
             </div>
 
-            {/* Limpar botão */}
             <div className="px-4 py-4">
               <button
                 onClick={limparFiltros}
@@ -517,9 +491,7 @@ export default function ProdutosPage() {
             </div>
           </aside>
 
-          {/* ── MAIN CONTENT ───────────────────────────────────────────── */}
           <div className="flex-1 min-w-0">
-            {/* Toolbar */}
             <div
               className={`
                 flex flex-col sm:flex-row sm:items-center justify-between gap-3
@@ -530,7 +502,6 @@ export default function ProdutosPage() {
               `}
             >
               <div className="flex items-center gap-3">
-                {/* Mobile filter button */}
                 <button
                   onClick={() => setSidebarOpen(true)}
                   className={`
@@ -563,7 +534,6 @@ export default function ProdutosPage() {
                 </p>
               </div>
 
-              {/* Sort */}
               <div className="flex items-center gap-3">
                 <label className="text-sm font-semibold text-[var(--color-text-secondary)] whitespace-nowrap hidden sm:block">
                   Ordenar por:
@@ -597,7 +567,6 @@ export default function ProdutosPage() {
               </div>
             </div>
 
-            {/* Error */}
             {erro && (
               <div
                 className={`
@@ -624,7 +593,6 @@ export default function ProdutosPage() {
               </div>
             )}
 
-            {/* Loading skeletons */}
             {carregando && !erro && (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -633,7 +601,6 @@ export default function ProdutosPage() {
               </div>
             )}
 
-            {/* Empty state */}
             {!carregando && !erro && produtosFiltrados.length === 0 && (
               <div
                 className={`
@@ -658,7 +625,6 @@ export default function ProdutosPage() {
               </div>
             )}
 
-            {/* Product Grid */}
             {!carregando && !erro && produtosFiltrados.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                 {produtosFiltrados.map((produto, i) => (
@@ -667,7 +633,6 @@ export default function ProdutosPage() {
               </div>
             )}
 
-            {/* Pagination */}
             {totalPaginas > 1 && !carregando && (
               <div className="flex items-center justify-center gap-3 mt-10">
                 <button
@@ -732,7 +697,6 @@ export default function ProdutosPage() {
         </div>
       </div>
 
-      {/* ── MOBILE SIDEBAR OVERLAY ──────────────────────────────────── */}
       {sidebarOpen && (
         <>
           <div

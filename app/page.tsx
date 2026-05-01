@@ -14,10 +14,12 @@ import type {
 
 function categoryIcon(nome: string) {
   const n = nome.toLowerCase();
+
   if (n.includes("casa") || n.includes("home")) return "🏠";
   if (n.includes("beleza") || n.includes("corpo")) return "🌿";
   if (n.includes("moda") || n.includes("roupa")) return "👕";
   if (n.includes("pet")) return "🐾";
+
   return "🍃";
 }
 
@@ -262,15 +264,14 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="hidden lg:flex items-center justify-center h-96 rounded-3xl overflow-hidden relative bg-[var(--color-primary-light)] border border-[var(--color-border)] text-[10rem]">
-              <span
-                className="select-none"
-                style={{ animation: "float 4s ease-in-out infinite" }}
-              >
-                🌍
-              </span>
+            <div className="hidden lg:flex items-center justify-center h-96 rounded-3xl overflow-hidden relative bg-[var(--color-primary-light)] border border-[var(--color-border)]">
+              <img
+                src="/public/banner.png"
+                alt="Banner"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
               <div className="absolute bottom-6 left-6 flex items-center gap-3 px-4 py-3 bg-[var(--color-bg-surface)]/90 backdrop-blur-md rounded-2xl border border-[var(--color-border)]">
-                ✅ Certificado eco-friendly
+                ✅ Certificado Eco-Friendly
               </div>
             </div>
           </div>
@@ -462,7 +463,7 @@ export default function HomePage() {
               {
                 title: "Empresa",
                 links: [
-                  { label: "Sobre nós", href: "#" },
+                  { label: "Sobre nós", href: "/about" },
                   { label: "Educação", href: "/educacao" },
                   { label: "EcoScan IA", href: "/ia-scan" },
                 ],

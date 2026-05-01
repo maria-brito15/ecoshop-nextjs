@@ -1,14 +1,11 @@
 // app/(ia-scan)/ia-scan/page.tsx
+
 "use client";
 
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useScan } from "@/lib/hooks/useIA";
 import type { ScanSucesso, ScanInsuficiente } from "@/types/api";
-
-// ─────────────────────────────────────────────
-// TIPOS E CONSTANTES
-// ─────────────────────────────────────────────
 
 const VALID_TYPES = [
   "image/jpeg",
@@ -17,7 +14,7 @@ const VALID_TYPES = [
   "image/gif",
   "image/webp",
 ];
-const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_SIZE = 10 * 1024 * 1024;
 
 interface ArquivoSelecionado {
   file: File;
@@ -39,10 +36,6 @@ function getConfidenceColors(conf: number) {
   if (conf >= 70) return { bg: "#fef3c7", color: "#92400e", border: "#f59e0b" };
   return { bg: "#fee2e2", color: "#991b1b", border: "#ef4444" };
 }
-
-// ─────────────────────────────────────────────
-// CARD DE RESULTADO
-// ─────────────────────────────────────────────
 
 interface CardProps {
   icon: string;
@@ -84,16 +77,11 @@ function InfoCard({ icon, title, colorClass, children, fullWidth }: CardProps) {
   );
 }
 
-// ─────────────────────────────────────────────
-// TEXTO SUSTENTABILIDADE
-// ─────────────────────────────────────────────
-
 function TextoSust({ value }: { value: unknown }) {
   if (!value)
     return <p className="italic opacity-60">Informação não disponível.</p>;
   const text =
     typeof value === "string" ? value : JSON.stringify(value, null, 2);
-  // Quebra linhas em parágrafos simples
   const paras = text.split(/\n\n+/).filter(Boolean);
   return (
     <>
@@ -110,10 +98,6 @@ function TextoSust({ value }: { value: unknown }) {
     </>
   );
 }
-
-// ─────────────────────────────────────────────
-// SEÇÃO DE RESULTADO - SUCESSO
-// ─────────────────────────────────────────────
 
 function ResultadoSucesso({
   data,
@@ -137,7 +121,6 @@ function ResultadoSucesso({
       className="mt-10 animate-[fadeSlideUp_0.6s_ease_forwards]"
       aria-live="polite"
     >
-      {/* Header do resultado */}
       <div className="text-center mb-12">
         <span
           className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold mb-4 border"
@@ -158,7 +141,6 @@ function ResultadoSucesso({
         </p>
       </div>
 
-      {/* Grid de cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <InfoCard
           icon="🌍"
@@ -211,7 +193,6 @@ function ResultadoSucesso({
         </InfoCard>
       </div>
 
-      {/* Ações */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
         <button
           onClick={onReset}
@@ -250,10 +231,6 @@ function ResultadoSucesso({
     </div>
   );
 }
-
-// ─────────────────────────────────────────────
-// SEÇÃO DE RESULTADO - BAIXA CONFIANÇA
-// ─────────────────────────────────────────────
 
 function ResultadoInsuficiente({
   data,
@@ -306,18 +283,12 @@ function ResultadoInsuficiente({
   );
 }
 
-// ─────────────────────────────────────────────
-// PÁGINA PRINCIPAL
-// ─────────────────────────────────────────────
-
 export default function IaScanPage() {
   const [arquivo, setArquivo] = useState<ArquivoSelecionado | null>(null);
   const [dragover, setDragover] = useState(false);
   const [erroLocal, setErroLocal] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const { data, carregando, erro: erroHook, executar } = useScan();
-
-  // ── validação e seleção de arquivo ──
 
   function validarArquivo(file: File): string | null {
     if (!VALID_TYPES.includes(file.type))
@@ -358,8 +329,6 @@ export default function IaScanPage() {
     executar("/api/ia/scan", form);
   }
 
-  // ── drag & drop ──
-
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragover(true);
@@ -372,14 +341,12 @@ export default function IaScanPage() {
     if (file) selecionarArquivo(file);
   }, []);
 
-  // ── estado do resultado ──
   const mostrarResultado = !carregando && data;
   const sucesso = mostrarResultado && data.sucesso;
   const insuficiente = mostrarResultado && !data.sucesso;
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
-      {/* ══ HERO ══ */}
       <section
         className="
           text-center py-16 md:py-24
@@ -405,9 +372,7 @@ export default function IaScanPage() {
         </div>
       </section>
 
-      {/* ══ CONTEÚDO ══ */}
       <div className="container-eco pb-24">
-        {/* Erro local ou do hook */}
         {(erroLocal || erroHook) && (
           <div
             className="
@@ -427,7 +392,6 @@ export default function IaScanPage() {
           </div>
         )}
 
-        {/* ── ZONA DE UPLOAD (sem arquivo selecionado) ── */}
         {!arquivo && !mostrarResultado && (
           <div
             className="
@@ -472,7 +436,6 @@ export default function IaScanPage() {
                 }}
               />
 
-              {/* Ícone animado */}
               <div
                 className={`
                   w-20 h-20 rounded-full flex items-center justify-center
@@ -508,7 +471,6 @@ export default function IaScanPage() {
           </div>
         )}
 
-        {/* ── PAINEL DE CONTROLE (arquivo selecionado, aguardando análise) ── */}
         {arquivo && !carregando && !mostrarResultado && (
           <div
             className="
@@ -521,7 +483,6 @@ export default function IaScanPage() {
               animate-[fadeSlideUp_0.4s_ease]
             "
           >
-            {/* Preview */}
             <div className="flex items-center gap-5">
               <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-[var(--color-border)] flex-shrink-0 bg-[var(--color-bg-body)]">
                 <img
@@ -540,7 +501,6 @@ export default function IaScanPage() {
               </div>
             </div>
 
-            {/* Botões */}
             <div className="flex gap-3 w-full sm:w-auto">
               <button
                 onClick={resetar}
@@ -578,7 +538,6 @@ export default function IaScanPage() {
           </div>
         )}
 
-        {/* ── LOADING ── */}
         {carregando && (
           <div
             className="
@@ -607,7 +566,6 @@ export default function IaScanPage() {
           </div>
         )}
 
-        {/* ── RESULTADO ── */}
         {sucesso && (
           <ResultadoSucesso data={data as ScanSucesso} onReset={resetar} />
         )}

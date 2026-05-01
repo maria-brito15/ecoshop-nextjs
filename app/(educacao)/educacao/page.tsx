@@ -4,10 +4,6 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
-// ─────────────────────────────────────────────
-// TIPOS
-// ─────────────────────────────────────────────
-
 type Aba = "artigos" | "dicas" | "quiz";
 
 type Artigo = {
@@ -34,10 +30,6 @@ type Questao = {
   ans: number;
   exp: string;
 };
-
-// ─────────────────────────────────────────────
-// DADOS
-// ─────────────────────────────────────────────
 
 const ARTIGOS: Artigo[] = [
   {
@@ -202,11 +194,7 @@ const QUESTOES: Questao[] = [
   },
 ];
 
-// ─────────────────────────────────────────────
-// HOOK: scroll reveal
-// ─────────────────────────────────────────────
-
-function useScrollReveal() {
+function useScrollReveal(deps: unknown[] = []) {
   useEffect(() => {
     const timer = setTimeout(() => {
       const observer = new IntersectionObserver(
@@ -220,20 +208,23 @@ function useScrollReveal() {
         },
         { threshold: 0.1 },
       );
-      document.querySelectorAll(".animate-on-scroll").forEach((el) => {
-        if (el.getBoundingClientRect().top < window.innerHeight)
-          el.classList.add("visible");
-        else observer.observe(el);
-      });
-      return () => observer.disconnect();
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
-}
 
-// ─────────────────────────────────────────────
-// ABAS
-// ─────────────────────────────────────────────
+      document.querySelectorAll(".animate-on-scroll").forEach((el) => {
+        el.classList.remove("visible");
+
+        if (el.getBoundingClientRect().top < window.innerHeight) {
+          el.classList.add("visible");
+        } else {
+          observer.observe(el);
+        }
+      });
+
+      return () => observer.disconnect();
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, deps);
+}
 
 const ABAS: { id: Aba; label: string; icon: string }[] = [
   { id: "artigos", label: "Artigos", icon: "📖" },
@@ -241,18 +232,28 @@ const ABAS: { id: Aba; label: string; icon: string }[] = [
   { id: "quiz", label: "Quiz", icon: "🧠" },
 ];
 
-// ─────────────────────────────────────────────
-// SEÇÃO: ARTIGOS
-// ─────────────────────────────────────────────
-
-function SecaoArtigos() {
+function SecaoArtigos({
+  onArtigoChange,
+}: {
+  onArtigoChange?: (aberto: boolean) => void;
+}) {
   const [aberto, setAberto] = useState<Artigo | null>(null);
+
+  function abrirArtigo(artigo: Artigo) {
+    setAberto(artigo);
+    onArtigoChange?.(true);
+  }
+
+  function fecharArtigo() {
+    setAberto(null);
+    onArtigoChange?.(false);
+  }
 
   if (aberto) {
     return (
       <div className="animate-[fadeSlideUp_0.4s_ease]">
         <button
-          onClick={() => setAberto(null)}
+          onClick={fecharArtigo}
           className="
             inline-flex items-center gap-2 mb-8
             text-sm font-semibold text-[var(--color-text-secondary)]
@@ -294,15 +295,14 @@ function SecaoArtigos() {
         <article
           key={i}
           className="
-            animate-on-scroll card-eco
+            card-eco
             flex flex-col
             p-7 cursor-pointer
             relative overflow-hidden
             group
           "
-          onClick={() => setAberto(artigo)}
+          onClick={() => abrirArtigo(artigo)}
         >
-          {/* Barra lateral colorida */}
           <div className="absolute top-0 left-0 w-1 h-full bg-[var(--color-primary)] opacity-0 group-hover:opacity-100 transition-opacity" />
 
           <div className="flex items-center gap-3 mb-4">
@@ -331,16 +331,11 @@ function SecaoArtigos() {
   );
 }
 
-// ─────────────────────────────────────────────
-// SEÇÃO: DICAS
-// ─────────────────────────────────────────────
-
 function SecaoDicas() {
   const [selecionada, setSelecionada] = useState<Dica>(DICAS[0]);
 
   return (
-    <div className="animate-on-scroll">
-      {/* Botões de material */}
+    <div>
       <div className="flex flex-wrap gap-3 mb-8">
         {DICAS.map((d, i) => (
           <button
@@ -362,7 +357,6 @@ function SecaoDicas() {
         ))}
       </div>
 
-      {/* Card de dicas */}
       <div
         key={selecionada.title}
         className="
@@ -414,10 +408,6 @@ function SecaoDicas() {
     </div>
   );
 }
-
-// ─────────────────────────────────────────────
-// SEÇÃO: QUIZ
-// ─────────────────────────────────────────────
 
 function SecaoQuiz() {
   const [indice, setIndice] = useState(0);
@@ -475,8 +465,7 @@ function SecaoQuiz() {
           </h3>
           <p className="text-[var(--color-text-secondary)] mb-6">{msg}</p>
 
-          {/* Círculo de pontuação */}
-          <div className="relative w-28 h-28 mx-auto mb-6">
+          <div className="relative w-40 h-40 mx-auto mb-6">
             <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
               <circle
                 cx="50"
@@ -484,7 +473,7 @@ function SecaoQuiz() {
                 r="40"
                 fill="none"
                 stroke="var(--color-border)"
-                strokeWidth="10"
+                strokeWidth="8"
               />
               <circle
                 cx="50"
@@ -492,7 +481,7 @@ function SecaoQuiz() {
                 r="40"
                 fill="none"
                 stroke="var(--color-primary)"
-                strokeWidth="10"
+                strokeWidth="8"
                 strokeDasharray={`${2 * Math.PI * 40}`}
                 strokeDashoffset={`${2 * Math.PI * 40 * (1 - pct / 100)}`}
                 strokeLinecap="round"
@@ -500,10 +489,10 @@ function SecaoQuiz() {
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="font-display text-2xl font-extrabold text-[var(--color-text-primary)]">
+              <span className="font-display text-3xl font-extrabold text-[var(--color-text-primary)] leading-none">
                 {pct}%
               </span>
-              <span className="text-xs text-[var(--color-text-tertiary)]">
+              <span className="text-sm text-[var(--color-text-tertiary)] mt-1">
                 {score}/{QUESTOES.length}
               </span>
             </div>
@@ -530,7 +519,6 @@ function SecaoQuiz() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Header do quiz */}
       <div
         className="
           rounded-2xl overflow-hidden
@@ -545,11 +533,10 @@ function SecaoQuiz() {
           <h3 className="font-display text-2xl font-bold mb-1">
             Teste seus conhecimentos
           </h3>
-          <p className="text-white/70 text-sm">
+          <p className="text-white/90 text-sm">
             Pergunta {indice + 1} de {QUESTOES.length}
           </p>
 
-          {/* Barra de progresso */}
           <div className="mt-5 h-2 rounded-full bg-white/20 overflow-hidden">
             <div
               className="h-full bg-[var(--color-primary)] rounded-full transition-all duration-500"
@@ -559,7 +546,6 @@ function SecaoQuiz() {
         </div>
 
         <div className="bg-[var(--color-bg-surface)] p-8">
-          {/* Pontuação */}
           <div className="flex items-center justify-between mb-6 text-sm">
             <span className="text-[var(--color-text-tertiary)]">Pontuação</span>
             <span className="font-bold text-[var(--color-primary)]">
@@ -567,12 +553,10 @@ function SecaoQuiz() {
             </span>
           </div>
 
-          {/* Pergunta */}
           <p className="font-display text-lg font-bold text-[var(--color-text-primary)] mb-6 leading-snug">
             {questao.q}
           </p>
 
-          {/* Opções */}
           <div className="space-y-3 mb-6">
             {questao.opts.map((opt, i) => {
               const respondido = escolha !== null;
@@ -632,7 +616,6 @@ function SecaoQuiz() {
             })}
           </div>
 
-          {/* Explicação */}
           {escolha !== null && (
             <div
               className={`
@@ -652,7 +635,6 @@ function SecaoQuiz() {
             </div>
           )}
 
-          {/* Botão avançar */}
           {escolha !== null && (
             <button
               onClick={avancar}
@@ -676,17 +658,14 @@ function SecaoQuiz() {
   );
 }
 
-// ─────────────────────────────────────────────
-// PÁGINA PRINCIPAL
-// ─────────────────────────────────────────────
-
 export default function EducacaoPage() {
   const [aba, setAba] = useState<Aba>("artigos");
-  useScrollReveal();
+  const [artigoAberto, setArtigoAberto] = useState(false);
+
+  useScrollReveal([aba, artigoAberto]);
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
-      {/* ══ HERO ══ */}
       <section
         className="
           text-center py-20 md:py-28
@@ -704,13 +683,7 @@ export default function EducacaoPage() {
 
             <h1 className="font-display text-5xl md:text-6xl font-extrabold leading-tight mb-6">
               Conhecimento para <br className="hidden sm:block" />
-              <span
-                className="
-                  [background:linear-gradient(120deg,var(--color-primary)_0%,#3b82f6_100%)]
-                  [-webkit-background-clip:text]
-                  [-webkit-text-fill-color:transparent]
-                "
-              >
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-primary)] to-blue-500">
                 mudar o mundo
               </span>
             </h1>
@@ -723,9 +696,7 @@ export default function EducacaoPage() {
         </div>
       </section>
 
-      {/* ══ CONTEÚDO ══ */}
       <div className="container-eco pb-24">
-        {/* Fundamentos */}
         <section className="animate-on-scroll mb-20">
           <div className="flex items-center gap-5 mb-4">
             <div className="w-14 h-14 rounded-2xl bg-[var(--color-primary-light)] flex items-center justify-center text-2xl flex-shrink-0">
@@ -783,7 +754,6 @@ export default function EducacaoPage() {
             ))}
           </div>
 
-          {/* Quote box */}
           <div
             className="
               relative overflow-hidden
@@ -815,7 +785,6 @@ export default function EducacaoPage() {
           </div>
         </section>
 
-        {/* Sustentabilidade */}
         <section className="animate-on-scroll mb-20">
           <div className="flex items-center gap-5 mb-4">
             <div className="w-14 h-14 rounded-2xl bg-[var(--color-primary-light)] flex items-center justify-center text-2xl flex-shrink-0">
@@ -888,7 +857,6 @@ export default function EducacaoPage() {
             ))}
           </div>
 
-          {/* Tip box */}
           <div className="flex items-start gap-5 p-5 rounded-xl bg-amber-50/80 border border-amber-200/70 dark:bg-amber-500/10 dark:border-amber-500/20">
             <div className="w-10 h-10 rounded-xl bg-amber-400 text-white flex items-center justify-center text-lg flex-shrink-0">
               💡
@@ -905,9 +873,7 @@ export default function EducacaoPage() {
           </div>
         </section>
 
-        {/* ══ TABS ══ */}
         <section className="animate-on-scroll">
-          {/* Tab nav */}
           <div className="flex items-center gap-2 mb-8 flex-wrap">
             {ABAS.map((a) => (
               <button
@@ -929,15 +895,15 @@ export default function EducacaoPage() {
             ))}
           </div>
 
-          {/* Conteúdo das abas */}
           <div key={aba} className="animate-[fadeSlideUp_0.35s_ease]">
-            {aba === "artigos" && <SecaoArtigos />}
+            {aba === "artigos" && (
+              <SecaoArtigos onArtigoChange={setArtigoAberto} />
+            )}
             {aba === "dicas" && <SecaoDicas />}
             {aba === "quiz" && <SecaoQuiz />}
           </div>
         </section>
 
-        {/* ══ CTA ══ */}
         <section className="animate-on-scroll mt-20">
           <div
             className="

@@ -11,21 +11,15 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SKELETON (loading state)
-// ─────────────────────────────────────────────────────────────────────────────
 function SkeletonDetail() {
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
       <div className="container-eco py-6">
-        {/* breadcrumb skeleton */}
         <div className="h-5 w-36 bg-[var(--color-bg-surface)] rounded-full animate-pulse mb-8" />
 
         <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-12">
-          {/* image skeleton */}
           <div className="aspect-square bg-[var(--color-bg-surface)] rounded-[2rem] animate-pulse border border-[var(--color-border)]" />
 
-          {/* info skeleton */}
           <div className="flex flex-col gap-5 pt-4">
             <div className="h-4 w-24 bg-[var(--color-bg-surface)] rounded-full animate-pulse" />
             <div className="h-10 w-3/4 bg-[var(--color-bg-surface)] rounded-xl animate-pulse" />
@@ -40,9 +34,6 @@ function SkeletonDetail() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CERTIFICATE BADGE
-// ─────────────────────────────────────────────────────────────────────────────
 function CertBadge({ cert }: { cert: Certificado }) {
   return (
     <div className="flex flex-col gap-1 p-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-body)] transition-all hover:border-[var(--color-primary)] hover:shadow-[var(--shadow-card)]">
@@ -64,9 +55,6 @@ function CertBadge({ cert }: { cert: Certificado }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// IMPACT CARD (simulated eco data)
-// ─────────────────────────────────────────────────────────────────────────────
 function ImpactCard({ preco }: { preco: string }) {
   const val = parseFloat(preco);
   const co2 = (val * 0.012).toFixed(1) + "kg";
@@ -102,9 +90,6 @@ function ImpactCard({ preco }: { preco: string }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TABS
-// ─────────────────────────────────────────────────────────────────────────────
 type Tab = "sobre" | "specs" | "certificados";
 
 function Tabs({
@@ -144,16 +129,12 @@ function Tabs({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN PAGE
-// ─────────────────────────────────────────────────────────────────────────────
 export default function ProdutoPage({ params }: Props) {
   const { id } = use(params);
   const { data, carregando, erro } = useBuscarProduto(Number(id));
   const [activeTab, setActiveTab] = useState<Tab>("sobre");
   const [imgLoaded, setImgLoaded] = useState(false);
 
-  // Animate-on-mount ref
   const heroRef = useRef<HTMLDivElement>(null);
   const [heroVisible, setHeroVisible] = useState(false);
 
@@ -200,7 +181,6 @@ export default function ProdutoPage({ params }: Props) {
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)] pb-20">
-      {/* ── BREADCRUMB ─────────────────────────────────────────────── */}
       <div className="container-eco pt-6 pb-2">
         <Link
           href="/produtos"
@@ -216,7 +196,6 @@ export default function ProdutoPage({ params }: Props) {
         </Link>
       </div>
 
-      {/* ── HERO: IMAGE + INFO ─────────────────────────────────────── */}
       <div
         ref={heroRef}
         className="container-eco"
@@ -228,7 +207,6 @@ export default function ProdutoPage({ params }: Props) {
         }}
       >
         <section className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-10 lg:gap-16 mt-4 mb-10 lg:items-start">
-          {/* ── IMAGE COLUMN ────────────────────────────────────────── */}
           <div className="relative">
             <div className="relative bg-[var(--color-bg-surface)] rounded-[2rem] overflow-hidden border border-[var(--color-border)] shadow-[var(--shadow-card)] aspect-square flex items-center justify-center p-8 group">
               {produto.fotoUrl ? (
@@ -251,7 +229,6 @@ export default function ProdutoPage({ params }: Props) {
                 </span>
               )}
 
-              {/* Floating badges */}
               <div className="absolute top-5 left-5 flex flex-col gap-2 z-10">
                 {produto.certificados.length > 0 && (
                   <span className="badge-eco text-[11px] py-1 px-3 backdrop-blur-md bg-[rgba(209,250,229,0.92)] text-[#065f46] border border-[#a7f3d0] font-bold uppercase tracking-wide shadow-sm">
@@ -265,9 +242,7 @@ export default function ProdutoPage({ params }: Props) {
             </div>
           </div>
 
-          {/* ── INFO COLUMN ─────────────────────────────────────────── */}
           <div className="flex flex-col gap-5">
-            {/* Category + Title */}
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-2">
                 {produto.categoria.nome}
@@ -283,7 +258,6 @@ export default function ProdutoPage({ params }: Props) {
               </p>
             </div>
 
-            {/* Stars (decorative) */}
             <div className="flex items-center gap-2">
               <span className="text-[#f59e0b] text-base tracking-tight">
                 ★★★★★
@@ -293,7 +267,6 @@ export default function ProdutoPage({ params }: Props) {
               </span>
             </div>
 
-            {/* Pricing */}
             <div className="py-5 border-t border-b border-[var(--color-border)]">
               <p className="font-display text-4xl font-extrabold text-[var(--color-text-primary)] leading-none mb-1">
                 {precoFormatado}
@@ -307,7 +280,6 @@ export default function ProdutoPage({ params }: Props) {
               </p>
             </div>
 
-            {/* CTA */}
             <div className="flex flex-col gap-3">
               <button
                 className="
@@ -324,7 +296,6 @@ export default function ProdutoPage({ params }: Props) {
                 <span className="text-sm opacity-80">↗</span>
               </button>
 
-              {/* Trust badges */}
               <div className="flex items-center justify-center gap-5 text-xs text-[var(--color-text-tertiary)]">
                 <span className="flex items-center gap-1.5">
                   <span className="text-[var(--color-primary)]">✓</span> Produto
@@ -337,12 +308,10 @@ export default function ProdutoPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Impact Card */}
             <ImpactCard preco={produto.preco} />
           </div>
         </section>
 
-        {/* ── TABS SECTION ──────────────────────────────────────────── */}
         <section
           className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[1.5rem] overflow-hidden shadow-[var(--shadow-card)]"
           style={{
@@ -359,7 +328,6 @@ export default function ProdutoPage({ params }: Props) {
           />
 
           <div className="p-6 md:p-10">
-            {/* ── SOBRE ─────────────────────────────────────────────── */}
             {activeTab === "sobre" && (
               <div className="animate-[fadeSlideUp_0.4s_ease_forwards]">
                 {produto.descricao ? (
@@ -400,7 +368,6 @@ export default function ProdutoPage({ params }: Props) {
               </div>
             )}
 
-            {/* ── SPECS ─────────────────────────────────────────────── */}
             {activeTab === "specs" && (
               <div className="animate-[fadeSlideUp_0.4s_ease_forwards]">
                 <table className="w-full border-collapse">
@@ -442,7 +409,6 @@ export default function ProdutoPage({ params }: Props) {
               </div>
             )}
 
-            {/* ── CERTIFICADOS ─────────────────────────────────────── */}
             {activeTab === "certificados" && hasCerts && (
               <div className="animate-[fadeSlideUp_0.4s_ease_forwards]">
                 <div className="mb-6">
