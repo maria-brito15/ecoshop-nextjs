@@ -266,7 +266,7 @@ export default function HomePage() {
 
             <div className="hidden lg:flex items-center justify-center h-96 rounded-3xl overflow-hidden relative bg-[var(--color-primary-light)] border border-[var(--color-border)]">
               <img
-                src="/public/banner.png"
+                src="/banner.png"
                 alt="Banner"
                 className="absolute inset-0 w-full h-full object-cover"
               />
