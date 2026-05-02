@@ -34,7 +34,7 @@ export function useMutation<TResponse, TBody = unknown>(opcoes?: Opcoes) {
         credentials: opcoes?.credentials ?? "include",
         headers:
           body instanceof FormData
-            ? undefined // FormData define o Content-Type sozinho
+            ? undefined
             : { "Content-Type": "application/json" },
         body:
           body instanceof FormData
