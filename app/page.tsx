@@ -1,10 +1,9 @@
-// app/page.tsx
+// app/page.tsx — página inicial (home) do EcoShop
 
-"use client";
+"use client"; // página interativa: usa useState, useEffect e fetch no browser
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-
 import type {
   Produto,
   Categoria,
@@ -12,6 +11,8 @@ import type {
   ListaCategoriasResponse,
 } from "@/types/api";
 
+// retorna um emoji baseado no nome da categoria
+// usado nos cards de categoria para deixar a UI mais visual
 function categoryIcon(nome: string) {
   const n = nome.toLowerCase();
 
@@ -20,22 +21,26 @@ function categoryIcon(nome: string) {
   if (n.includes("moda") || n.includes("roupa")) return "👕";
   if (n.includes("pet")) return "🐾";
 
-  return "🍃";
+  return "🍃"; // emoji padrão se não bater com nenhuma categoria conhecida
 }
 
+// hook customizado que observa elementos com a classe "animate-on-scroll"
+// quando o elemento entra na viewport, adiciona a classe "visible" (definida no globals.css)
+// isso cria o efeito de fade-in + slide-up ao rolar a página
 function useScrollReveal() {
   useEffect(() => {
+    // setTimeout de 100ms garante que o DOM já está montado antes de observar
     const timer = setTimeout(() => {
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
               entry.target.classList.add("visible");
-              observer.unobserve(entry.target);
+              observer.unobserve(entry.target); // para de observar após animar (anima só uma vez)
             }
           });
         },
-        { threshold: 0.1 },
+        { threshold: 0.1 }, // dispara quando pelo menos 10% do elemento está visível
       );
 
       const elements = document.querySelectorAll(".animate-on-scroll");
@@ -43,22 +48,27 @@ function useScrollReveal() {
 
       elements.forEach((el) => {
         observer.observe(el);
+        // se o elemento já está visível no carregamento (sem precisar rolar), anima imediatamente
         if (el.getBoundingClientRect().top < window.innerHeight) {
           el.classList.add("visible");
+
           console.log(
             `✨ Elemento já visível, adicionando classe: ${el.className}`,
           );
         }
       });
 
-      return () => observer.disconnect();
+      return () => observer.disconnect(); // cleanup ao desmontar
     }, 100);
 
     return () => clearTimeout(timer);
   }, []);
 }
 
+// card individual de produto
+// recebe um produto e renderiza imagem, categoria, marca, nome e preço
 function ProductCard({ produto }: { produto: Produto }) {
+  // formata o preço para o padrão brasileiro: R$ 1.299,90
   const precoFormatado = parseFloat(produto.preco).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
@@ -66,6 +76,7 @@ function ProductCard({ produto }: { produto: Produto }) {
 
   return (
     <article className="product-card animate-on-scroll cursor-pointer visible">
+      {/* área da imagem com badge de categoria no canto */}
       <div className="h-48 flex items-center justify-center bg-[var(--color-bg-body)] relative overflow-hidden">
         {produto.fotoUrl ? (
           <img
@@ -74,23 +85,30 @@ function ProductCard({ produto }: { produto: Produto }) {
             className="card-img w-full h-full object-cover"
           />
         ) : (
+          // fallback: emoji quando o produto não tem foto cadastrada
           <span className="card-img text-6xl select-none">🌱</span>
         )}
 
+        {/* badge com o nome da categoria, posicionado no canto superior esquerdo */}
         <span className="absolute top-3 left-3 text-xs font-bold px-3 py-1 rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary-dark)]">
           {produto.categoria.nome}
         </span>
       </div>
 
+      {/* área de texto: marca, nome e preço */}
       <div className="p-5 flex flex-col gap-2 flex-1">
+        {/* nome da marca em destaque menor acima do título */}
         <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-tertiary)]">
           {produto.marca.nome}
         </span>
 
+        {/* nome do produto com clamp: trunca em 2 linhas se for muito longo */}
         <h3 className="font-bold text-[var(--color-text-primary)] leading-snug line-clamp-2">
           {produto.nome}
         </h3>
 
+        {/* preço funciona como link para a página do produto */}
+        {/* mt-auto empurra o preço para o fundo do card, alinhando todos os cards */}
         <Link
           href={`/produtos/${produto.id}`}
           className="mt-auto pt-3 text-lg font-extrabold text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"
@@ -102,6 +120,9 @@ function ProductCard({ produto }: { produto: Produto }) {
   );
 }
 
+// card de categoria que leva para a lista de produtos filtrada por c
+// ategoria
+// ao clicar, redireciona para /produtos?categoriaId=X
 function CategoryCard({ categoria }: { categoria: Categoria }) {
   return (
     <Link
@@ -118,6 +139,8 @@ function CategoryCard({ categoria }: { categoria: Categoria }) {
         transition-all duration-300
       "
     >
+      {/* ícone da categoria: fundo muda para verde sólido no hover */}
+      {/* "group" no pai permite que o filho reaja ao hover do pai com "group-hover:" */}
       <span
         className="
           text-3xl w-14 h-14
@@ -137,75 +160,52 @@ function CategoryCard({ categoria }: { categoria: Categoria }) {
   );
 }
 
+// componente principal da home
 export default function HomePage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
 
+  // ativa o observer de animações ao montar a página
   useScrollReveal();
 
+  // busca produtos e categorias ao carregar a página
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        setError(null);
+        setErro(null);
 
-        console.log("🔄 Iniciando carregamento de dados...");
-
-        console.log("📦 Buscando produtos...");
+        // busca apenas 4 produtos para a seção de destaques da home
         const prodRes = await fetch("/api/produtos?size=4");
-        console.log("📦 Status produtos:", prodRes.status);
-
-        if (!prodRes.ok) {
+        if (!prodRes.ok)
           throw new Error(`Erro ao buscar produtos: ${prodRes.status}`);
-        }
-
         const prodData = (await prodRes.json()) as ListaProdutosResponse;
-        console.log("📦 Dados de produtos recebidos:", prodData);
 
-        console.log("📂 Buscando categorias...");
+        // busca todas as categorias para a seção de navegação
         const catRes = await fetch("/api/categorias");
-        console.log("📂 Status categorias:", catRes.status);
-
-        if (!catRes.ok) {
+        if (!catRes.ok)
           throw new Error(`Erro ao buscar categorias: ${catRes.status}`);
-        }
-
         const catData = (await catRes.json()) as ListaCategoriasResponse;
-        console.log("📂 Dados de categorias recebidos:", catData);
 
-        // Definir estado
-        console.log(
-          "✅ Definindo produtos:",
-          prodData.produtos?.length || 0,
-          "itens",
-        );
+        // fallback com || [] evita erro se a API retornar undefined inesperadamente
         setProdutos(prodData.produtos || []);
-
-        console.log(
-          "✅ Definindo categorias:",
-          catData.categorias?.length || 0,
-          "itens",
-        );
         setCategorias(catData.categorias || []);
-
-        console.log("✨ Dados carregados com sucesso!");
       } catch (err: any) {
-        console.error("❌ Erro na Home:", err);
-        setError(err.message || "Ocorreu um erro ao carregar os dados.");
+        setErro(err.message || "Ocorreu um erro ao carregar os dados.");
       } finally {
-        setLoading(false);
-        console.log("🏁 Carregamento concluído");
+        setLoading(false); // sempre executa, com sucesso ou erro
       }
     };
 
     fetchData();
-  }, []);
+  }, []); // array vazio = executa só uma vez, quando a página monta
 
+  // log auxiliar para debug: exibe o estado atual sempre que ele mudar
   useEffect(() => {
     console.log(
-      "🎯 Estado atual: loading=",
+      "🎯 Estado: loading=",
       loading,
       "produtos=",
       produtos.length,
@@ -216,27 +216,29 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
+      {/* ===== SEÇÃO HERO ===== */}
+      {/* apresentação principal do site com chamada para ação */}
       <section
         className="
           py-20 md:py-32 bg-[var(--color-bg-body)]
           [background-image:radial-gradient(circle_at_10%_10%,rgba(45,149,105,0.05)_0%,transparent_25%),radial-gradient(circle_at_90%_90%,rgba(45,149,105,0.04)_0%,transparent_25%)]
         "
+        // gradientes radiais sutis nos cantos para dar profundidade ao fundo
       >
         <div className="container-eco">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            {/* coluna esquerda: texto e botões */}
             <div className="flex flex-col gap-6">
               <span className="badge-eco w-fit">🌿 Compras conscientes</span>
-
               <h1 className="font-display text-5xl md:text-6xl font-extrabold leading-[1.05]">
                 Sua escolha{" "}
+                {/* text-gradient-eco aplica o gradiente verde no texto (globals.css) */}
                 <span className="text-gradient-eco">faz a diferença</span>
               </h1>
-
               <p className="text-xl text-[var(--color-text-secondary)] max-w-lg">
                 Descubra produtos sustentáveis que cuidam de você e do planeta,
                 com entrega rápida e propósito real.
               </p>
-
               <div className="flex flex-wrap gap-4 pt-2">
                 <Link href="/produtos" className="btn-primary">
                   Explorar Produtos
@@ -246,6 +248,7 @@ export default function HomePage() {
                 </Link>
               </div>
 
+              {/* métricas de confiança renderizadas dinamicamente */}
               <div className="flex gap-8 pt-6 border-t border-[var(--color-border)]">
                 {[
                   { valor: "2k+", label: "Produtos eco" },
@@ -264,12 +267,14 @@ export default function HomePage() {
               </div>
             </div>
 
+            {/* coluna direita: banner (hidden em mobile, visível só em lg+) */}
             <div className="hidden lg:flex items-center justify-center h-96 rounded-3xl overflow-hidden relative bg-[var(--color-primary-light)] border border-[var(--color-border)]">
               <img
                 src="/banner.png"
                 alt="Banner"
                 className="absolute inset-0 w-full h-full object-cover"
               />
+              {/* selo flutuando sobre a imagem */}
               <div className="absolute bottom-6 left-6 flex items-center gap-3 px-4 py-3 bg-[var(--color-bg-surface)]/90 backdrop-blur-md rounded-2xl border border-[var(--color-border)]">
                 ✅ Certificado Eco-Friendly
               </div>
@@ -278,6 +283,8 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ===== SEÇÃO PRODUTOS ===== */}
+      {/* 3 estados possíveis: loading (skeleton) → erro → dados ou vazio */}
       <section id="produtos" className="py-20 bg-[var(--color-bg-surface)]">
         <div className="container-eco">
           <div className="text-center max-w-xl mx-auto mb-12">
@@ -293,6 +300,7 @@ export default function HomePage() {
           </div>
 
           {loading ? (
+            // skeleton: 4 retângulos pulsando enquanto os dados carregam
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div
@@ -301,13 +309,14 @@ export default function HomePage() {
                 />
               ))}
             </div>
-          ) : error ? (
+          ) : erro ? (
+            // estado de erro com botão para tentar novamente
             <div className="text-center py-12">
               <p className="text-[var(--color-error)] font-semibold mb-2">
                 Ops! Algo deu errado.
               </p>
               <p className="text-[var(--color-text-tertiary)] text-sm">
-                {error}
+                {erro}
               </p>
               <button
                 onClick={() => window.location.reload()}
@@ -317,12 +326,14 @@ export default function HomePage() {
               </button>
             </div>
           ) : Array.isArray(produtos) && produtos.length > 0 ? (
+            // sucesso: grid de cards
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {produtos.map((p) => (
                 <ProductCard key={p.id} produto={p} />
               ))}
             </div>
           ) : (
+            // lista vazia
             <p className="text-center text-[var(--color-text-tertiary)] py-12">
               Nenhum produto encontrado.
             </p>
@@ -336,6 +347,8 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ===== SEÇÃO CATEGORIAS ===== */}
+      {/* && garante que só renderiza se houver categorias */}
       {Array.isArray(categorias) && categorias.length > 0 && (
         <section className="py-20 bg-[var(--color-bg-body)]">
           <div className="container-eco">
@@ -348,6 +361,7 @@ export default function HomePage() {
               </h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5 justify-items-center mx-auto max-w-5xl">
+              {/* slice(0, 6): exibe no máximo 6 categorias na home */}
               {categorias.slice(0, 6).map((cat) => (
                 <CategoryCard key={cat.id} categoria={cat} />
               ))}
@@ -356,6 +370,8 @@ export default function HomePage() {
         </section>
       )}
 
+      {/* ===== SEÇÃO EDUCAÇÃO ===== */}
+      {/* fundo escuro verde para contraste visual com as seções anteriores */}
       <section className="py-20 bg-[linear-gradient(135deg,#1a3a2e_0%,#0f2419_100%)] text-white">
         <div className="container-eco">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -368,8 +384,10 @@ export default function HomePage() {
               </h2>
               <p className="text-[#a5c3b6] text-lg">
                 Acesse nossos guias e aprenda como suas pequenas atitudes
-                transformam o mundo. Conteúdo gratuito, sempre atualizado.
+                transformam o mundo.
               </p>
+
+              {/* features renderizadas dinamicamente */}
               {[
                 {
                   icon: "📖",
@@ -394,6 +412,7 @@ export default function HomePage() {
                 Acessar Conteúdo Educativo
               </Link>
             </div>
+            {/* decorativo: só aparece em telas grandes */}
             <div className="animate-on-scroll hidden lg:flex items-center justify-center h-80 rounded-3xl text-9xl bg-white/5 border border-white/10 visible">
               📚
             </div>
@@ -401,9 +420,12 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ===== SEÇÃO ECOSCAN ===== */}
+      {/* banner verde de CTA para a funcionalidade de IA */}
       <section className="py-20 bg-[var(--color-bg-surface)]">
         <div className="container-eco">
           <div className="animate-on-scroll flex flex-col md:flex-row items-center justify-between gap-8 p-10 rounded-3xl bg-[var(--color-primary)] relative overflow-hidden visible">
+            {/* gradiente decorativo de fundo (pointer-events-none = não intercepta cliques) */}
             <div className="absolute inset-0 opacity-10 [background-image:radial-gradient(circle_at_80%_50%,white_0%,transparent_60%)] pointer-events-none" />
             <div className="relative z-10 flex flex-col gap-3 text-white">
               <span className="text-sm font-bold uppercase tracking-widest opacity-80">
@@ -414,9 +436,10 @@ export default function HomePage() {
               </h2>
               <p className="text-white/80 max-w-md">
                 Use nossa IA para identificar resíduos e descobrir o descarte
-                correto. Foto → análise → solução em segundos.
+                correto.
               </p>
             </div>
+            {/* botão com estilo invertido: branco sobre verde */}
             <Link
               href="/ia-scan"
               className="relative z-10 flex-shrink-0 flex items-center gap-2 px-8 py-4 bg-white text-[var(--color-primary-dark)] font-bold rounded-full hover:-translate-y-1 hover:shadow-xl transition-all"
@@ -427,30 +450,34 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ===== FOOTER ===== */}
       <footer className="bg-[var(--color-bg-surface)] border-t border-[var(--color-border)] py-16">
         <div className="container-eco">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+            {/* coluna da marca: ocupa 2 colunas no grid */}
             <div className="lg:col-span-2 flex flex-col gap-4">
               <span className="font-display text-2xl font-extrabold text-[var(--color-text-primary)] flex items-center gap-2">
                 🍃 EcoShop
               </span>
               <p className="text-[var(--color-text-secondary)] max-w-sm">
                 Conectamos pessoas a produtos sustentáveis, facilitando escolhas
-                conscientes para um planeta mais saudável.
+                conscientes.
               </p>
               <div className="flex gap-3">
                 {["Instagram", "Twitter", "YouTube"].map((r) => (
                   <a
                     key={r}
                     href="#"
-                    aria-label={r}
+                    aria-label={r} // aria-label garante acessibilidade para leitores de tela
                     className="w-9 h-9 flex items-center justify-center rounded-full text-sm bg-[var(--color-bg-body)] text-[var(--color-text-secondary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors"
                   >
-                    {r[0]}
+                    {r[0]} {/* exibe só a inicial: I, T, Y */}
                   </a>
                 ))}
               </div>
             </div>
+
+            {/* colunas de links geradas dinamicamente a partir de um array */}
             {[
               {
                 title: "Loja",
@@ -476,6 +503,7 @@ export default function HomePage() {
                 <ul className="flex flex-col gap-2">
                   {col.links.map((l) => (
                     <li key={l.label}>
+                      {/* hover:pl-1 desloca o link levemente para a direita no hover */}
                       <Link
                         href={l.href}
                         className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:pl-1 transition-all"
@@ -488,7 +516,10 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+
+          {/* linha inferior: copyright + ícones */}
           <div className="border-t border-[var(--color-border)] pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-[var(--color-text-tertiary)]">
+            {/* getFullYear() garante que o ano é sempre o atual automaticamente */}
             <span>
               © {new Date().getFullYear()} EcoShop. Todos os direitos
               reservados.

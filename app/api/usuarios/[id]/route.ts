@@ -1,15 +1,17 @@
-// app/api/usuarios/[id]/route.ts
+// app/api/usuarios/[id]/route.ts — operações em UM usuário específico (por id)
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { z } from "zod";
 
+// só permite atualizar nome e telefone — email, senha e tipo têm rotas próprias
 const atualizarSchema = z.object({
   nome: z.string().min(1).optional(),
   telefone: z.string().optional(),
 });
 
+// GET /api/usuarios/[id] → busca um usuário pelo id
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -18,6 +20,7 @@ export async function GET(
     const session = await getSession(req);
     const { id } = await params;
 
+    // regra de acesso: o próprio usuário pode ver seus dados, ou um ADMIN pode ver qualquer um
     if (!session || (session.id !== Number(id) && session.tipo !== "ADMIN")) {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }
@@ -50,6 +53,7 @@ export async function GET(
   }
 }
 
+// PUT /api/usuarios/[id] → atualiza nome e/ou telefone do usuário
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -58,6 +62,7 @@ export async function PUT(
     const session = await getSession(req);
     const { id } = await params;
 
+    // mesma regra: só o próprio usuário ou um ADMIN pode editar
     if (!session || (session.id !== Number(id) && session.tipo !== "ADMIN")) {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }
@@ -87,12 +92,15 @@ export async function PUT(
   }
 }
 
+// DELETE /api/usuarios/[id] → remove um usuário (só ADMIN pode deletar)
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getSession(req);
+
+    // diferente do GET e PUT: aqui nem o próprio usuário pode se deletar, só ADMIN
     if (!session || session.tipo !== "ADMIN") {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }

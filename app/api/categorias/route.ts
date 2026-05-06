@@ -1,4 +1,4 @@
-// app/api/categorias/route.ts
+// app/api/categorias/route.ts — opera na COLEÇÃO (todos as categorias)
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
@@ -10,10 +10,11 @@ const categoriaSchema = z.object({
   descricao: z.string().optional(),
 });
 
+// GET /api/categorias → lista TODAS as categorias (público, sem autenticação)
 export async function GET() {
   try {
     const categorias = await prisma.categoria.findMany({
-      orderBy: { nome: "asc" },
+      orderBy: { nome: "asc" }, // retorna em ordem alfabética
     });
     return NextResponse.json({ categorias });
   } catch {
@@ -24,6 +25,7 @@ export async function GET() {
   }
 }
 
+// POST /api/categorias → cria UMA nova categoria (só ADMIN)
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession(req);

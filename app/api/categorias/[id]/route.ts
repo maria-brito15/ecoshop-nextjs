@@ -1,4 +1,4 @@
-// app/api/categorias/route.ts
+// app/api/categorias/[id]/route.ts — opera em UMA categoria específica
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
@@ -10,15 +10,17 @@ const atualizarSchema = z.object({
   descricao: z.string().optional(),
 });
 
+// GET /api/categorias/5 → busca a categoria de id 5, já com os produtos dela
+// _req com underline = parâmetro obrigatório pelo Next.js mas não usado nessa função
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params;
+    const { id } = await params; // extrai o id da URL (ex: "5")
     const categoria = await prisma.categoria.findUnique({
       where: { id: Number(id) },
-      include: { produtos: true },
+      include: { produtos: true }, // diferencial: já traz os produtos da categoria junto
     });
 
     if (!categoria) {
@@ -37,6 +39,7 @@ export async function GET(
   }
 }
 
+// PUT /api/categorias/5 → atualiza a categoria de id 5 (só ADMIN)
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -72,6 +75,7 @@ export async function PUT(
   }
 }
 
+// DELETE /api/categorias/5 → deleta a categoria de id 5 (só ADMIN)
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },

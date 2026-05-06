@@ -1,19 +1,20 @@
-// app/api/usuarios/route.ts
+// app/api/usuarios/route.ts — rota ADMINISTRATIVA (listagem e cadastro por admin)
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getSession } from "@/lib/auth";
+import { getSession } from "@/lib/auth"; // só getSession, sem signToken (não faz login automático)
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 
 const cadastroSchema = z.object({
   nome: z.string().min(1),
   email: z.string().email(),
-  senha: z.string().min(6),
+  senha: z.string().min(6), // mínimo 6 caracteres (menos restritivo que a rota pública)
   telefone: z.string().optional(),
+  // sem campo "tipo": admin criado por essa rota sempre será CLIENTE (padrão do banco)
 });
 
-// GET /api/usuarios — só ADMIN
+// GET /api/usuarios → lista todos os usuários (só ADMIN pode acessar)
 export async function GET(req: NextRequest) {
   try {
     const session = await getSession(req);
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/usuarios — cadastro público
+// POST /api/usuarios → admin cria um usuário manualmente (sem login automático)
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -64,13 +65,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const senhaCriptografada = bcrypt.hashSync(senha, 12);
+    const senhaCriptografada = bcrypt.hashSync(senha, 12); // cost factor 12 (mais seguro que o 10 da rota pública)
 
     const usuario = await prisma.usuario.create({
       data: { nome, email, senha: senhaCriptografada, telefone },
-      select: { id: true, nome: true, email: true, tipo: true },
+      select: { id: true, nome: true, email: true, tipo: true }, // não retorna a senha
     });
 
+    // não gera token nem seta cookie — admin só cria a conta, não faz login como esse usuário
     return NextResponse.json({ usuario }, { status: 201 });
   } catch {
     return NextResponse.json(
