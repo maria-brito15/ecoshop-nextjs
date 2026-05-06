@@ -2,7 +2,7 @@
 
 > Plataforma de e-commerce sustentável com análise de materiais por IA, desenvolvida com Next.js 15, TypeScript, PostgreSQL e integração com Azure Vision + Google Gemini.
 
-[Clique Aqui para Visualizar a Interface](./INTERFACE.md)
+🇺🇸 [English Version](./README.md) · 🖼️ [Clique Aqui para Visualizar a Interface](./INTERFACE.md)
 
 ---
 
