@@ -34,17 +34,20 @@ export function useBuscarProduto(id: number | null) {
 export function useCriarProduto() {
   return useMutation<CriarProdutoResponse, CriarProdutoBody>({
     method: "POST",
+    invalidar: ["/api/produtos"], // limpa a lista após criar
   });
 }
 
 export function useAtualizarProduto() {
   return useMutation<AtualizarProdutoResponse, AtualizarProdutoBody>({
     method: "PUT",
+    invalidar: ["/api/produtos"], // limpa lista e item após editar
   });
 }
 
 export function useDeletarProduto() {
   return useMutation<{ ok: boolean }>({
     method: "DELETE",
+    invalidar: ["/api/produtos"],
   });
 }

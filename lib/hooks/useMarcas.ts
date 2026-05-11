@@ -21,15 +21,22 @@ export function useBuscarMarca(id: number | null) {
 }
 
 export function useCriarMarca() {
-  return useMutation<CriarMarcaResponse, CriarMarcaBody>({ method: "POST" });
+  return useMutation<CriarMarcaResponse, CriarMarcaBody>({
+    method: "POST",
+    invalidar: ["/api/marcas"],
+  });
 }
 
 export function useAtualizarMarca() {
   return useMutation<AtualizarMarcaResponse, AtualizarMarcaBody>({
     method: "PUT",
+    invalidar: ["/api/marcas"],
   });
 }
 
 export function useDeletarMarca() {
-  return useMutation<OkResponse>({ method: "DELETE" });
+  return useMutation<OkResponse>({
+    method: "DELETE",
+    invalidar: ["/api/marcas"],
+  });
 }

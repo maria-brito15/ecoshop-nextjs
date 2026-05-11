@@ -25,15 +25,20 @@ export function useBuscarCertificado(id: number | null) {
 export function useCriarCertificado() {
   return useMutation<CriarCertificadoResponse, CriarCertificadoBody>({
     method: "POST",
+    invalidar: ["/api/certificados"],
   });
 }
 
 export function useAtualizarCertificado() {
   return useMutation<AtualizarCertificadoResponse, AtualizarCertificadoBody>({
     method: "PUT",
+    invalidar: ["/api/certificados"],
   });
 }
 
 export function useDeletarCertificado() {
-  return useMutation<OkResponse>({ method: "DELETE" });
+  return useMutation<OkResponse>({
+    method: "DELETE",
+    invalidar: ["/api/certificados"],
+  });
 }
