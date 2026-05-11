@@ -1,5 +1,4 @@
-// app/api/produtos/[id]/fotos/route.ts - VERSÃO MELHORADA
-// Suporta GET (listar), POST (upload), DELETE (remover)
+// app/api/produtos/[id]/fotos/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
@@ -7,6 +6,13 @@ import path from "path";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 import { prisma } from "@/lib/db";
+import {
+  comCache,
+  redisDel,
+  invalidarCache,
+  chaveFotosProduto,
+  TTL,
+} from "@/lib/cache";
 
 type JwtPayload = {
   id: number;
@@ -34,9 +40,8 @@ function isAdmin(usuario: JwtPayload | null): boolean {
   return usuario?.tipo === "ADMIN";
 }
 
-/**
- * GET: Listar todas as fotos de um produto
- */
+// GET /api/produtos/[id]/fotos → lista todas as fotos do produto
+// leitura do filesystem cacheada no redis — evita i/o de disco a cada requisição
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -47,36 +52,42 @@ export async function GET(
       return NextResponse.json({ error: "ID inválido" }, { status: 400 });
     }
 
-    const pastaFotos = path.join(process.cwd(), "public", "data_fotos", id);
-    if (!fs.existsSync(pastaFotos)) {
-      return NextResponse.json(
-        { fotos: [], total: 0, produtoId: Number(id) },
-        { status: 200 },
-      );
-    }
+    const produtoId = Number(id);
 
-    const arquivos = fs.readdirSync(pastaFotos);
-    const fotos = arquivos
-      .filter((arquivo) => {
-        const ext = path.extname(arquivo).toLowerCase();
-        return EXTENSOES_PERMITIDAS.includes(ext);
-      })
-      .sort((a, b) => {
-        const numA = parseInt(path.basename(a, path.extname(a)), 10);
-        const numB = parseInt(path.basename(b, path.extname(b)), 10);
-        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-        return a.localeCompare(b);
-      })
-      .map((arquivo) => ({
-        nome: arquivo,
-        url: `/data_fotos/${id}/${arquivo}`,
-      }));
+    const resultado = await comCache(
+      chaveFotosProduto(produtoId),
+      TTL.FOTOS,
+      async () => {
+        const pastaFotos = path.join(process.cwd(), "public", "data_fotos", id);
 
-    return NextResponse.json({
-      fotos,
-      total: fotos.length,
-      produtoId: Number(id),
-    });
+        // se a pasta não existe ainda, retorna lista vazia sem erro
+        if (!fs.existsSync(pastaFotos)) {
+          return { fotos: [], total: 0, produtoId };
+        }
+
+        const arquivos = fs.readdirSync(pastaFotos);
+        const fotos = arquivos
+          .filter((arquivo) => {
+            const ext = path.extname(arquivo).toLowerCase();
+            return EXTENSOES_PERMITIDAS.includes(ext);
+          })
+          .sort((a, b) => {
+            // ordena por número se o nome for numérico, senão ordena alfabeticamente
+            const numA = parseInt(path.basename(a, path.extname(a)), 10);
+            const numB = parseInt(path.basename(b, path.extname(b)), 10);
+            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+            return a.localeCompare(b);
+          })
+          .map((arquivo) => ({
+            nome: arquivo,
+            url: `/data_fotos/${id}/${arquivo}`,
+          }));
+
+        return { fotos, total: fotos.length, produtoId };
+      },
+    );
+
+    return NextResponse.json(resultado);
   } catch {
     return NextResponse.json(
       { error: "Erro ao buscar fotos do produto" },
@@ -85,10 +96,7 @@ export async function GET(
   }
 }
 
-/**
- * POST: Upload de nova foto
- * Suporta FormData com arquivo e nome customizado
- */
+// POST /api/produtos/[id]/fotos → upload de nova foto (só admin)
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -112,7 +120,7 @@ export async function POST(
       );
     }
 
-    // Verificar se o produto existe
+    // verifica se o produto existe antes de tentar salvar no filesystem
     const produto = await prisma.produto.findUnique({
       where: { id: produtoId },
     });
@@ -124,7 +132,6 @@ export async function POST(
       );
     }
 
-    // Ler FormData
     const formData = await req.formData();
     const arquivo = formData.get("arquivo") as File;
     const nomeCustomizado = formData.get("nome") as string | null;
@@ -136,7 +143,6 @@ export async function POST(
       );
     }
 
-    // Validar tipo de arquivo
     const nomeArquivo = arquivo.name;
     const extensao = path.extname(nomeArquivo).toLowerCase();
 
@@ -149,15 +155,13 @@ export async function POST(
       );
     }
 
-    // Validar tamanho
     if (arquivo.size > TAMANHO_MAXIMO) {
       return NextResponse.json(
-        { error: `Arquivo muito grande. Máximo: 5MB` },
+        { error: "Arquivo muito grande. Máximo: 5MB" },
         { status: 400 },
       );
     }
 
-    // Criar pasta se não existir
     const pastaFotos = path.join(
       process.cwd(),
       "public",
@@ -168,23 +172,19 @@ export async function POST(
       fs.mkdirSync(pastaFotos, { recursive: true });
     }
 
-    // Gerar nome do arquivo
-    // Se tiver nome customizado, usar; senão gerar automaticamente
+    // se tiver nome customizado, sanitiza; senão gera com timestamp + random
     let nomeArquivoFinal: string;
     if (nomeCustomizado && nomeCustomizado.trim()) {
-      // Sanitizar nome
       const nomeSanitizado = nomeCustomizado
         .replace(/[^a-zA-Z0-9._-]/g, "_")
         .substring(0, 50);
       nomeArquivoFinal = `${nomeSanitizado}${extensao}`;
     } else {
-      // Usar timestamp + número aleatório
       const timestamp = Date.now();
       const random = Math.floor(Math.random() * 1000);
       nomeArquivoFinal = `${timestamp}_${random}${extensao}`;
     }
 
-    // Verificar se arquivo já existe
     const caminhoCompleto = path.join(pastaFotos, nomeArquivoFinal);
     if (fs.existsSync(caminhoCompleto)) {
       return NextResponse.json(
@@ -193,19 +193,22 @@ export async function POST(
       );
     }
 
-    // Salvar arquivo
     const buffer = await arquivo.arrayBuffer();
     fs.writeFileSync(caminhoCompleto, Buffer.from(buffer));
 
-    // Atualizar fotoUrl do produto se for a primeira foto
+    // se for a primeira foto do produto, define como foto principal
     if (!produto.fotoUrl) {
       await prisma.produto.update({
         where: { id: produtoId },
-        data: {
-          fotoUrl: `/data_fotos/${produtoId}/${nomeArquivoFinal}`,
-        },
+        data: { fotoUrl: `/data_fotos/${produtoId}/${nomeArquivoFinal}` },
       });
+
+      // foto principal mudou — invalida o cache do produto também
+      await invalidarCache("PRODUTOS");
     }
+
+    // invalida o cache da listagem de fotos para refletir o novo arquivo
+    await redisDel(chaveFotosProduto(produtoId));
 
     return NextResponse.json(
       {
@@ -227,10 +230,7 @@ export async function POST(
   }
 }
 
-/**
- * DELETE: Remover uma foto
- * Query params: ?nome=nome_do_arquivo.jpg
- */
+// DELETE /api/produtos/[id]/fotos?nome=arquivo.jpg → remove uma foto (só admin)
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -262,7 +262,7 @@ export async function DELETE(
       );
     }
 
-    // Validar nome do arquivo (segurança: evitar path traversal)
+    // proteção contra path traversal: evita nomes como "../../../etc/passwd"
     if (nomeArquivo.includes("..") || nomeArquivo.includes("/")) {
       return NextResponse.json(
         { error: "Nome de arquivo inválido" },
@@ -273,7 +273,6 @@ export async function DELETE(
     const pastaFotos = path.join(process.cwd(), "public", "data_fotos", id);
     const caminhoCompleto = path.join(pastaFotos, nomeArquivo);
 
-    // Verificar se arquivo existe
     if (!fs.existsSync(caminhoCompleto)) {
       return NextResponse.json(
         { error: "Arquivo não encontrado" },
@@ -281,37 +280,35 @@ export async function DELETE(
       );
     }
 
-    // Deletar arquivo
     fs.unlinkSync(caminhoCompleto);
 
-    // Se era a foto principal, remover referência
     const produto = await prisma.produto.findUnique({
       where: { id: Number(id) },
     });
 
+    // se era a foto principal, substitui pela próxima disponível ou limpa o campo
     if (produto?.fotoUrl === `/data_fotos/${id}/${nomeArquivo}`) {
-      // Listar outras fotos disponíveis
       const outrosFotos = fs.readdirSync(pastaFotos).filter((arquivo) => {
         const ext = path.extname(arquivo).toLowerCase();
         return EXTENSOES_PERMITIDAS.includes(ext);
       });
 
-      if (outrosFotos.length > 0) {
-        // Usar primeira foto disponível
-        await prisma.produto.update({
-          where: { id: Number(id) },
-          data: {
-            fotoUrl: `/data_fotos/${id}/${outrosFotos[0]}`,
-          },
-        });
-      } else {
-        // Nenhuma foto restante
-        await prisma.produto.update({
-          where: { id: Number(id) },
-          data: { fotoUrl: null },
-        });
-      }
+      await prisma.produto.update({
+        where: { id: Number(id) },
+        data: {
+          fotoUrl:
+            outrosFotos.length > 0
+              ? `/data_fotos/${id}/${outrosFotos[0]}`
+              : null,
+        },
+      });
+
+      // foto principal mudou — invalida o cache do produto também
+      await invalidarCache("PRODUTOS");
     }
+
+    // invalida o cache da listagem de fotos
+    await redisDel(chaveFotosProduto(Number(id)));
 
     return NextResponse.json({
       ok: true,

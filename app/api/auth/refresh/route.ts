@@ -1,13 +1,14 @@
 // app/api/auth/refresh/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
-import { signToken } from "@/lib/auth";
+import { getSession, signToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { redisDel, chaveUsuarioMe } from "@/lib/cache";
 
 // POST /api/auth/refresh → renova o token do usuário se necessário
 // chamada útil quando o frontend precisa verificar se a sessão ainda é válida
 // ou se o tipo do usuário mudou (ex: um cliente que virou admin)
+// não usa cache — o objetivo é sempre buscar o estado mais atual do banco
 export async function POST(req: NextRequest) {
   try {
     // tenta ler e verificar o token do cookie atual
@@ -51,6 +52,9 @@ export async function POST(req: NextRequest) {
         maxAge: 60 * 60 * 24 * 7,
         path: "/",
       });
+
+      // invalida o cache do /me para refletir o novo tipo imediatamente
+      await redisDel(chaveUsuarioMe(usuario.id));
 
       return res;
     }

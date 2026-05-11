@@ -1,8 +1,9 @@
-// app/api/categorias/route.ts
+// app/api/certificados/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { comCache, invalidarCache, chaveCertificados, TTL } from "@/lib/cache";
 import { z } from "zod";
 
 const certificadoSchema = z.object({
@@ -13,9 +14,15 @@ const certificadoSchema = z.object({
 
 export async function GET() {
   try {
-    const certificados = await prisma.certificado.findMany({
-      orderBy: { nome: "asc" },
-    });
+    const certificados = await comCache(
+      chaveCertificados(),
+      TTL.LISTA_CURTA,
+      () =>
+        prisma.certificado.findMany({
+          orderBy: { nome: "asc" },
+        }),
+    );
+
     return NextResponse.json({ certificados });
   } catch {
     return NextResponse.json(
@@ -43,6 +50,9 @@ export async function POST(req: NextRequest) {
     }
 
     const certificado = await prisma.certificado.create({ data: parsed.data });
+
+    await invalidarCache("CERTIFICADOS");
+
     return NextResponse.json({ certificado }, { status: 201 });
   } catch {
     return NextResponse.json(

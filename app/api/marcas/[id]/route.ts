@@ -1,8 +1,15 @@
-// app/api/marcas/route.ts
+// app/api/marcas/[id]/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import {
+  comCache,
+  invalidarCache,
+  redisDel,
+  chaveMarca,
+  TTL,
+} from "@/lib/cache";
 import { z } from "zod";
 
 const atualizarSchema = z.object({
@@ -16,13 +23,16 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const marca = await prisma.marca.findUnique({
-      where: { id: Number(id) },
-      include: {
-        usuario: { select: { id: true, nome: true, email: true } },
-        produtos: true,
-      },
-    });
+
+    const marca = await comCache(chaveMarca(Number(id)), TTL.ITEM, () =>
+      prisma.marca.findUnique({
+        where: { id: Number(id) },
+        include: {
+          usuario: { select: { id: true, nome: true, email: true } },
+          produtos: true,
+        },
+      }),
+    );
 
     if (!marca) {
       return NextResponse.json(
@@ -66,6 +76,11 @@ export async function PUT(
       data: parsed.data,
     });
 
+    await Promise.all([
+      redisDel(chaveMarca(Number(id))),
+      invalidarCache("MARCAS"),
+    ]);
+
     return NextResponse.json({ marca });
   } catch {
     return NextResponse.json(
@@ -87,6 +102,12 @@ export async function DELETE(
 
     const { id } = await params;
     await prisma.marca.delete({ where: { id: Number(id) } });
+
+    await Promise.all([
+      redisDel(chaveMarca(Number(id))),
+      invalidarCache("MARCAS"),
+    ]);
+
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json(

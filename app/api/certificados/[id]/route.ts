@@ -1,8 +1,15 @@
-// app/api/categorias/route.ts
+// app/api/certificados/[id]/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import {
+  comCache,
+  invalidarCache,
+  redisDel,
+  chaveCertificado,
+  TTL,
+} from "@/lib/cache";
 import { z } from "zod";
 
 const atualizarSchema = z.object({
@@ -17,9 +24,15 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const certificado = await prisma.certificado.findUnique({
-      where: { id: Number(id) },
-    });
+
+    const certificado = await comCache(
+      chaveCertificado(Number(id)),
+      TTL.ITEM,
+      () =>
+        prisma.certificado.findUnique({
+          where: { id: Number(id) },
+        }),
+    );
 
     if (!certificado) {
       return NextResponse.json(
@@ -63,6 +76,11 @@ export async function PUT(
       data: parsed.data,
     });
 
+    await Promise.all([
+      redisDel(chaveCertificado(Number(id))),
+      invalidarCache("CERTIFICADOS"),
+    ]);
+
     return NextResponse.json({ certificado });
   } catch {
     return NextResponse.json(
@@ -84,6 +102,12 @@ export async function DELETE(
 
     const { id } = await params;
     await prisma.certificado.delete({ where: { id: Number(id) } });
+
+    await Promise.all([
+      redisDel(chaveCertificado(Number(id))),
+      invalidarCache("CERTIFICADOS"),
+    ]);
+
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json(

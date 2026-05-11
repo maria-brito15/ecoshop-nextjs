@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { comCache, invalidarCache, chaveProdutos, TTL } from "@/lib/cache";
 import { z } from "zod";
 
 const produtoSchema = z.object({
@@ -21,27 +22,34 @@ export async function GET(req: NextRequest) {
     const categoriaId = searchParams.get("categoriaId");
     const nome = searchParams.get("nome");
 
-    const where = {
-      ...(categoriaId && { categoriaId: Number(categoriaId) }),
-      ...(nome && { nome: { contains: nome, mode: "insensitive" as const } }),
-    };
+    // chave única por combinação de parâmetros (página, filtros, etc.)
+    const chave = chaveProdutos(searchParams);
 
-    const [produtos, total] = await Promise.all([
-      prisma.produto.findMany({
-        where,
-        include: {
-          categoria: { select: { id: true, nome: true } },
-          marca: { select: { id: true, nome: true } },
-          certificados: { include: { certificado: true } },
-        },
-        skip: (page - 1) * size,
-        take: size,
-        orderBy: { id: "asc" },
-      }),
-      prisma.produto.count({ where }),
-    ]);
+    const resultado = await comCache(chave, TTL.LISTA_PRODUTOS, async () => {
+      const where = {
+        ...(categoriaId && { categoriaId: Number(categoriaId) }),
+        ...(nome && { nome: { contains: nome, mode: "insensitive" as const } }),
+      };
 
-    return NextResponse.json({ produtos, page, size, total });
+      const [produtos, total] = await Promise.all([
+        prisma.produto.findMany({
+          where,
+          include: {
+            categoria: { select: { id: true, nome: true } },
+            marca: { select: { id: true, nome: true } },
+            certificados: { include: { certificado: true } },
+          },
+          skip: (page - 1) * size,
+          take: size,
+          orderBy: { id: "asc" },
+        }),
+        prisma.produto.count({ where }),
+      ]);
+
+      return { produtos, page, size, total };
+    });
+
+    return NextResponse.json(resultado);
   } catch {
     return NextResponse.json(
       { error: "Erro ao listar produtos" },
@@ -74,6 +82,9 @@ export async function POST(req: NextRequest) {
       data: parsed.data,
       include: { categoria: true, marca: true },
     });
+
+    // invalida todas as páginas da lista de produtos no redis
+    await invalidarCache("PRODUTOS");
 
     return NextResponse.json({ produto }, { status: 201 });
   } catch {

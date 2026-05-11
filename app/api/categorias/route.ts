@@ -1,8 +1,9 @@
-// app/api/categorias/route.ts — opera na COLEÇÃO (todos as categorias)
+// app/api/categorias/route.ts — opera na coleção (todas as categorias)
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { comCache, invalidarCache, chaveCategorias, TTL } from "@/lib/cache";
 import { z } from "zod";
 
 const categoriaSchema = z.object({
@@ -10,12 +11,16 @@ const categoriaSchema = z.object({
   descricao: z.string().optional(),
 });
 
-// GET /api/categorias → lista TODAS as categorias (público, sem autenticação)
+// GET /api/categorias → lista todas as categorias (público, sem autenticação)
 export async function GET() {
   try {
-    const categorias = await prisma.categoria.findMany({
-      orderBy: { nome: "asc" }, // retorna em ordem alfabética
-    });
+    // categorias mudam pouco — ttl de 5 minutos
+    const categorias = await comCache(chaveCategorias(), TTL.LISTA_CURTA, () =>
+      prisma.categoria.findMany({
+        orderBy: { nome: "asc" }, // retorna em ordem alfabética
+      }),
+    );
+
     return NextResponse.json({ categorias });
   } catch {
     return NextResponse.json(
@@ -25,7 +30,7 @@ export async function GET() {
   }
 }
 
-// POST /api/categorias → cria UMA nova categoria (só ADMIN)
+// POST /api/categorias → cria uma nova categoria (só admin)
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession(req);
@@ -44,6 +49,10 @@ export async function POST(req: NextRequest) {
     }
 
     const categoria = await prisma.categoria.create({ data: parsed.data });
+
+    // nova categoria aparece na lista — invalida o cache da coleção
+    await invalidarCache("CATEGORIAS");
+
     return NextResponse.json({ categoria }, { status: 201 });
   } catch {
     return NextResponse.json(

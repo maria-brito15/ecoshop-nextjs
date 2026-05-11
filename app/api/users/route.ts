@@ -1,4 +1,4 @@
-// app/api/users/route.ts — rota de REGISTRO PÚBLICO (cadastro + login automático)
+// app/api/users/route.ts — rota de registro público (cadastro + login automático)
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
@@ -15,6 +15,8 @@ const registerSchema = z.object({
 });
 
 // POST /api/users → cadastro público (qualquer pessoa pode chamar, sem autenticação)
+// não usa cache — só escrita (cria usuário e gera cookie de sessão)
+// a lista de usuários no redis é invalidada ao final para o painel admin refletir o novo cadastro
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();

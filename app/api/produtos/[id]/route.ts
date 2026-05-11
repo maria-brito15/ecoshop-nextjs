@@ -2,6 +2,13 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import {
+  comCache,
+  invalidarCache,
+  redisDel,
+  chaveProduto,
+  TTL,
+} from "@/lib/cache";
 import { z } from "zod";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
@@ -47,23 +54,26 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const produto = await prisma.produto.findUnique({
-      where: { id: Number(id) },
-      include: {
-        categoria: true,
-        marca: true,
-        certificados: { include: { certificado: true } },
-      },
-    });
+    // cacheia o produto individual pelo id
+    const resultado = await comCache(chaveProduto(Number(id)), TTL.ITEM, () =>
+      prisma.produto.findUnique({
+        where: { id: Number(id) },
+        include: {
+          categoria: true,
+          marca: true,
+          certificados: { include: { certificado: true } },
+        },
+      }),
+    );
 
-    if (!produto) {
+    if (!resultado) {
       return NextResponse.json(
         { erro: "Produto não encontrado" },
         { status: 404 },
       );
     }
 
-    return NextResponse.json({ produto });
+    return NextResponse.json({ produto: resultado });
   } catch {
     return NextResponse.json(
       { erro: "Erro ao buscar produto" },
@@ -104,6 +114,12 @@ export async function PUT(
       include: { categoria: true, marca: true },
     });
 
+    // invalida o item específico e toda a lista paginada
+    await Promise.all([
+      redisDel(chaveProduto(Number(id))),
+      invalidarCache("PRODUTOS"),
+    ]);
+
     return NextResponse.json({ produto });
   } catch {
     return NextResponse.json(
@@ -131,6 +147,12 @@ export async function DELETE(
     const { id } = await params;
 
     await prisma.produto.delete({ where: { id: Number(id) } });
+
+    // invalida o item e a lista — produto deletado não pode aparecer no cache
+    await Promise.all([
+      redisDel(chaveProduto(Number(id))),
+      invalidarCache("PRODUTOS"),
+    ]);
 
     return NextResponse.json({ ok: true });
   } catch {

@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { comCache, invalidarCache, chaveMarcas, TTL } from "@/lib/cache";
 import { z } from "zod";
 
 const marcaSchema = z.object({
@@ -13,12 +14,15 @@ const marcaSchema = z.object({
 
 export async function GET() {
   try {
-    const marcas = await prisma.marca.findMany({
-      orderBy: { nome: "asc" },
-      include: {
-        usuario: { select: { id: true, nome: true, email: true } },
-      },
-    });
+    const marcas = await comCache(chaveMarcas(), TTL.LISTA_CURTA, () =>
+      prisma.marca.findMany({
+        orderBy: { nome: "asc" },
+        include: {
+          usuario: { select: { id: true, nome: true, email: true } },
+        },
+      }),
+    );
+
     return NextResponse.json({ marcas });
   } catch {
     return NextResponse.json(
@@ -49,6 +53,8 @@ export async function POST(req: NextRequest) {
       data: parsed.data,
       include: { usuario: { select: { id: true, nome: true } } },
     });
+
+    await invalidarCache("MARCAS");
 
     return NextResponse.json({ marca }, { status: 201 });
   } catch {
