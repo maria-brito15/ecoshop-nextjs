@@ -1,0 +1,148 @@
+name: CI/CD
+
+# roda em todo push e pull request nas branches principais
+# PRs de forks também passam pelo CI, mas o job de docker não roda (sem acesso a secrets)
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  REGISTRY: ghcr.io
+  # github.repository resolve para "usuario/ecoshop" — usado como nome da imagem no registry
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # --- 1. CI
+  # valida que o código compila e passa no lint antes de qualquer coisa
+  # roda em todo PR para dar feedback rápido antes do merge
+  lint-and-build:
+    name: Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          # cache: npm aproveita o cache do actions para não baixar node_modules do zero a cada run
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --frozen-lockfile
+
+      - name: Generate Prisma Client
+        # o prisma client precisa existir para o tsc e o next build resolverem os imports
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        # --noEmit valida os tipos sem gerar arquivos — mais rápido que um build completo
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+        env:
+          # valores fictícios só para o next build não quebrar por variável de ambiente ausente
+          # o build não acessa o banco nem o redis — essas vars são lidas em runtime, não em build time
+          DATABASE_URL: postgresql://user:pass@localhost:5432/ecoshop
+          JWT_SECRET: ci-secret
+          REDIS_URL: redis://localhost:6379
+          GEMINI_KEY: ci-placeholder
+          AZURE_VISION_ENDPOINT: https://placeholder.cognitiveservices.azure.com/
+          AZURE_VISION_KEY: ci-placeholder
+
+  # --- 2. build & push da imagem docker
+  # só roda em push — PRs não publicam imagem porque podem vir de forks sem acesso a secrets
+  docker:
+    name: Docker Build & Push
+    runs-on: ubuntu-latest
+    needs: lint-and-build
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        # buildx habilita builds multi-plataforma e o cache do github actions (type=gha)
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          # GITHUB_TOKEN é gerado automaticamente pelo actions — não precisa configurar nenhum secret
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # sha-<commit> permite rastrear exatamente qual commit gerou cada imagem
+            type=sha,prefix=sha-
+            # tag latest só é atualizada em pushes na main, nunca em develop
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build & Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # cache-from/to reutiliza as camadas do build anterior armazenadas no github actions cache
+          # reduz o tempo de build significativamente quando só o código da app muda
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # --- 3. CD — deploy no vps via ssh
+  # só executa em push na main — develop não deploya para produção automaticamente
+  # depende do job docker para garantir que a imagem já foi publicada no registry
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: docker
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    # environment: production habilita proteções extras no github (ex: aprovação manual)
+    # e exibe a url do ambiente na interface do actions
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          # chave privada SSH cadastrada nos secrets do repositório
+          # a chave pública correspondente precisa estar no ~/.ssh/authorized_keys do servidor
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/ecoshop
+
+            # puxa apenas a imagem da app — postgres e redis continuam rodando sem interrupção
+            docker compose pull app
+
+            # --no-deps recria só o container da app sem reiniciar postgres e redis
+            # -d sobe em background e libera o terminal do ssh
+            docker compose up -d --no-deps app
+
+            # aplica migrations que ainda não foram executadas no banco de produção
+            # migrate deploy é seguro para produção: nunca reseta dados, só avança o schema
+            docker compose run --rm migrate
+
+            # remove imagens antigas que não são mais referenciadas por nenhum container
+            # sem isso, cada deploy deixa uma imagem "dangling" acumulando espaço em disco
+            docker image prune -f

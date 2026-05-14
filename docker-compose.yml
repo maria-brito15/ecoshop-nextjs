@@ -1,0 +1,85 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecoshop-app
+    ports:
+      - "3000:3000"
+    env_file:
+      # carrega as variáveis do .env local (chaves de api, jwt secret, etc.)
+      # as variáveis abaixo sobrescrevem o .env para apontar para os serviços internos do compose
+      - .env
+    environment:
+      # sobrescreve o DATABASE_URL do .env para usar o hostname do serviço postgres do compose
+      # fora do compose, localhost:5432 funcionaria — dentro, precisa ser o nome do serviço
+      DATABASE_URL: postgresql://ecoshop:ecoshop@postgres:5432/ecoshop
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      # espera o postgres e o redis estarem prontos para aceitar conexões antes de subir a app
+      # sem o healthcheck, o container da app pode subir antes do banco estar aceitando conexões
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: ecoshop-postgres
+    environment:
+      POSTGRES_USER: ecoshop
+      POSTGRES_PASSWORD: ecoshop
+      POSTGRES_DB: ecoshop
+    volumes:
+      # volume nomeado persiste os dados do banco entre reinicializações do container
+      # sem isso, o banco seria zerado toda vez que o compose fosse parado
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      # pg_isready retorna 0 se o postgres está aceitando conexões, 1 caso contrário
+      # o depends_on do serviço app aguarda esse healthcheck passar antes de iniciar
+      test: ["CMD-SHELL", "pg_isready -U ecoshop"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: ecoshop-redis
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecoshop-migrate
+    # executa as migrations e o seed em sequência — roda uma única vez e encerra
+    # migrate deploy aplica apenas as migrations pendentes, sem gerar novas (diferente de migrate dev)
+    command: sh -c "npx prisma migrate deploy && npx prisma db seed"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://ecoshop:ecoshop@postgres:5432/ecoshop
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # restart: "no" garante que o container não tenta rodar o seed novamente após o banco já estar populado
+    restart: "no"
+
+volumes:
+  # volumes nomeados são gerenciados pelo docker e sobrevivem a docker compose down
+  # para resetar completamente o banco, use: docker compose down -v
+  postgres_data:
+  redis_data:

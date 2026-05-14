@@ -2,6 +2,11 @@
 
 > A sustainable e-commerce platform with AI-powered material analysis, built with Next.js 15, TypeScript, PostgreSQL, Redis, and integrated with Azure Custom Vision + Google Gemini.
 
+[![CI/CD](https://github.com/seu-usuario/ecoshop/actions/workflows/ci.yml/badge.svg)](https://github.com/seu-usuario/ecoshop/actions/workflows/ci.yml)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+
 🇧🇷 [Versão em Português](./README.md) · 🖼️ [View Interface Screenshots](./INTERFACE.md)
 
 ---
@@ -17,6 +22,8 @@
 - [Redis Cache](#-redis-cache)
 - [AI Integration](#-ai-integration)
 - [API Routes](#-api-routes)
+- [Docker & Infrastructure](#-docker--infrastructure)
+- [CI/CD](#️-cicd)
 - [Running Locally](#-running-locally)
 - [Environment Variables](#-environment-variables)
 - [Folder Structure](#-folder-structure)
@@ -71,6 +78,8 @@ This project was built as a full-stack application with a strong focus on softwa
 | **Validation**                   | Zod 3                           |
 | **AI — Computer Vision**         | Azure Custom Vision             |
 | **AI — Sustainability Analysis** | Google Gemini 2.0 Flash         |
+| **Containerization**             | Docker + Docker Compose         |
+| **CI/CD**                        | GitHub Actions + ghcr.io        |
 
 ---
 
@@ -261,6 +270,75 @@ Prediction confidence ≥ 70%?
 
 ---
 
+## 🐳 Docker & Infrastructure
+
+The project is fully containerized with Docker and Docker Compose, covering all services needed to run in production.
+
+### Services
+
+| Service    | Image              | Port |
+| ---------- | ------------------ | ---- |
+| `app`      | Local build        | 3000 |
+| `postgres` | postgres:16-alpine | 5432 |
+| `redis`    | redis:7-alpine     | 6379 |
+| `migrate`  | Local build (1×)   | —    |
+
+The `migrate` service runs `prisma migrate deploy` + `prisma db seed` automatically on first startup and does not restart after that. All services have **healthchecks** configured — `app` only starts after Postgres and Redis are ready to accept connections.
+
+### Commands
+
+```bash
+# build and start all services
+docker compose up --build
+
+# in background
+docker compose up --build -d
+
+# stop everything
+docker compose down
+
+# stop and remove volumes (full database reset)
+docker compose down -v
+```
+
+### Multi-stage Dockerfile
+
+```
+deps     → installs dependencies (node_modules)
+builder  → generates Prisma Client and runs the Next.js build
+runner   → copies only what's needed, runs as a non-root user
+```
+
+---
+
+## ⚙️ CI/CD
+
+The pipeline is configured with **GitHub Actions** at `.github/workflows/ci.yml` and runs automatically on every push or PR to `main` and `develop`.
+
+```
+lint-and-build  →  docker  →  deploy
+     ↑               ↑            ↑
+  Every PR/push  Push only   main only
+```
+
+| Job              | Trigger        | What it does                                                                                              |
+| ---------------- | -------------- | --------------------------------------------------------------------------------------------------------- |
+| `lint-and-build` | Push + PR      | Installs deps, generates Prisma Client, runs lint, type-check, and build                                  |
+| `docker`         | Push           | Builds multi-stage image and publishes to GitHub Container Registry with `latest` and `sha-<commit>` tags |
+| `deploy`         | Push to `main` | SSH into the server, pulls the new image, recreates only the app container, runs pending migrations       |
+
+### Required secrets (`Settings → Secrets → Actions`)
+
+| Secret            | Description                  |
+| ----------------- | ---------------------------- |
+| `SSH_HOST`        | Server IP or domain          |
+| `SSH_USER`        | SSH username                 |
+| `SSH_PRIVATE_KEY` | SSH private key (PEM format) |
+
+> The `GITHUB_TOKEN` used to publish to ghcr.io is provided automatically by GitHub — no configuration needed.
+
+---
+
 ## 🚀 Running Locally
 
 ### Prerequisites
@@ -270,32 +348,47 @@ Prediction confidence ≥ 70%?
 - Redis running locally or via Docker
 - Google Gemini and Azure Custom Vision API keys (optional — required only for AI features)
 
-### Installation
+### With Docker Compose (recommended)
 
 ```bash
-# Clone the repository
+# clone the repository
 git clone https://github.com/your-username/ecoshop.git
 cd ecoshop
 
-# Install dependencies
-npm install
+# set up environment variables (api keys, jwt secret)
+cp .env.example .env
+# edit .env — DATABASE_URL and REDIS_URL are overridden by Compose automatically
 
-# Set up environment variables
-cp .env.example .env.local
-# Edit .env.local with your credentials
-
-# Run migrations and seed the database
-npx prisma migrate dev
-npx prisma db seed
-
-# Start Redis (if not installed locally)
-docker run -d -p 6379:6379 redis:alpine
-
-# Start the development server
-npm run dev
+# start everything (app + postgres + redis + migrations + seed)
+docker compose up --build
 ```
 
 Access [http://localhost:3000](http://localhost:3000).
+
+### Without Docker (local Node.js)
+
+```bash
+# clone the repository
+git clone https://github.com/your-username/ecoshop.git
+cd ecoshop
+
+# install dependencies
+npm install
+
+# set up environment variables
+cp .env.example .env.local
+# edit .env.local with your credentials
+
+# run migrations and seed the database
+npx prisma migrate dev
+npx prisma db seed
+
+# start Redis (if not installed locally)
+docker run -d -p 6379:6379 redis:alpine
+
+# start the development server
+npm run dev
+```
 
 ### Available Scripts
 
@@ -344,6 +437,9 @@ REDIS_URL="redis://localhost:6379"
 
 ```
 ecoshop/
+├── .github/
+│   └── workflows/
+│       └── ci.yml             # CI/CD pipeline (lint, build, docker, deploy)
 ├── app/
 │   ├── (admin)/painel/        # Admin dashboard
 │   ├── (auth)/sign-in/        # Login page
@@ -384,6 +480,7 @@ ecoshop/
 │       ├── useMarcas.ts
 │       ├── useMutation.ts     # Mutations with client cache invalidation
 │       └── useProdutos.ts
+├── prints/                    # Interface screenshots for documentation
 ├── prisma/
 │   ├── migrations/            # Migration history
 │   ├── schema.prisma          # Data model
@@ -392,11 +489,16 @@ ecoshop/
 │   └── data_fotos/            # Product photos (served statically)
 ├── types/
 │   └── api.ts                 # TypeScript types for API responses
-├── middleware.ts               # Centralized route protection
+├── .dockerignore              # Files excluded from the Docker build context
+├── .env.example               # Environment variables template
+├── .gitignore
+├── docker-compose.yml         # Local orchestration (app + postgres + redis + migrate)
+├── Dockerfile                 # Multi-stage application build
+├── middleware.ts              # Centralized route protection
 ├── next.config.ts
 ├── tailwind.config.ts
 ├── tsconfig.json
-└── .env.example
+└── tsconfig.seed.json         # Isolated TypeScript config for the Prisma seed
 ```
 
 ---

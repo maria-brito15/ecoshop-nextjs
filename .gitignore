@@ -45,3 +45,7 @@ Thumbs.db
 
 .next
 .cache
+
+/node_modules/.prisma
+
+docker-compose.override.yml
