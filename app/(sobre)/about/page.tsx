@@ -128,16 +128,21 @@ const MELHORIAS = [
     desc: "Integração direta via SDK oficial do Gemini. Prompts otimizados para análise de sustentabilidade.",
   },
   {
+    icon: "🐳",
+    titulo: "Containerização",
+    desc: "Dockerfile multi-stage com imagem mínima em produção. Docker Compose orquestra app, PostgreSQL e Redis com healthchecks.",
+  },
+  {
     icon: "🚀",
-    titulo: "Deploy Moderno",
-    desc: "Vercel com CI/CD integrado, preview deployments automáticos e CDN global sem configuração.",
+    titulo: "CI/CD Completo",
+    desc: "GitHub Actions: lint, typecheck e build em todo PR. Push na main publica imagem no ghcr.io e deploya via SSH no servidor de produção.",
   },
 ] as const;
 
 const STATS = [
   { valor: "4", label: "Sprints" },
   { valor: "4", label: "Integrantes" },
-  { valor: "13+", label: "Endpoints REST" },
+  { valor: "17", label: "Rotas de API" },
   { valor: "2", label: "Modelos de IA" },
 ] as const;
 
@@ -471,9 +476,12 @@ export default function AboutPage() {
                   "Tailwind CSS",
                   "Prisma ORM",
                   "PostgreSQL",
+                  "Redis",
                   "API Routes",
                   "Gemini AI",
-                  "Vercel",
+                  "Azure Vision",
+                  "Docker",
+                  "GitHub Actions",
                 ].map((tag) => (
                   <span
                     key={tag}
@@ -486,8 +494,8 @@ export default function AboutPage() {
               <p className="text-sm text-[var(--color-primary-dark)] leading-relaxed">
                 Reescrita completa com Next.js App Router, componentes React
                 tipados com TypeScript, ORM moderno via Prisma e design system
-                coeso. Melhorias de performance, SEO, DX e arquitetura
-                full-stack integrada.
+                coeso. CI/CD com GitHub Actions, imagem Docker publicada no
+                ghcr.io e deploy automatizado via SSH no servidor de produção.
               </p>
             </div>
           </div>
