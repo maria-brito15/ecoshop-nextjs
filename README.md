@@ -7,9 +7,7 @@
 ![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 
-🇺🇸 [English Version](./README-en.md) · 🖼️ [Clique Aqui para Visualizar a Interface](./INTERFACE.md)
-
----
+## 🇺🇸 [English Version](./README-en.md)
 
 ## 📋 Índice
 
