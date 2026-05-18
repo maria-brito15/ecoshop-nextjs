@@ -1,23 +1,29 @@
 # 🌿 EcoShop
 
-> Plataforma de e-commerce sustentável com análise de materiais por IA, desenvolvida com Next.js 15, TypeScript, PostgreSQL, Redis e integração com Azure Custom Vision + Google Gemini.
+> Plataforma de e-commerce sustentável com scanner de materiais por IA, desenvolvida como projeto full-stack de portfólio com Next.js 15, TypeScript, PostgreSQL, Redis, Docker e integração com Azure Custom Vision + Google Gemini 2.0 Flash.
 
 [![CI/CD](https://github.com/seu-usuario/ecoshop/actions/workflows/ci.yml/badge.svg)](https://github.com/seu-usuario/ecoshop/actions/workflows/ci.yml)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-7-2D3748?logo=prisma&logoColor=white)
 
 ## 🇺🇸 [English Version](./README-en.md)
+
+---
 
 ## 📋 Índice
 
 - [Sobre o Projeto](#-sobre-o-projeto)
+- [Decisões Técnicas de Destaque](#-decisões-técnicas-de-destaque)
 - [Funcionalidades](#-funcionalidades)
 - [Stack Tecnológica](#-stack-tecnológica)
 - [Arquitetura](#-arquitetura)
 - [Banco de Dados](#-banco-de-dados)
 - [Autenticação e Segurança](#-autenticação-e-segurança)
-- [Cache com Redis](#-cache-com-redis)
+- [Cache em Duas Camadas](#-cache-em-duas-camadas)
 - [Integração com IA](#-integração-com-ia)
 - [Rotas da API](#-rotas-da-api)
 - [Docker e Infraestrutura](#-docker-e-infraestrutura)
@@ -30,16 +36,80 @@
 
 ## 🌱 Sobre o Projeto
 
-O **EcoShop** é um e-commerce voltado para produtos sustentáveis que vai além da venda: oferece um scanner inteligente de materiais recicláveis via câmera, conteúdo de educação ambiental e um painel administrativo completo para gestão de produtos, marcas, categorias, certificados e usuários.
+O **EcoShop** é um e-commerce full-stack voltado para produtos sustentáveis, construído como projeto de portfólio com foco em boas práticas reais de engenharia de software.
 
-O projeto foi desenvolvido como uma aplicação full-stack com foco em boas práticas de engenharia de software, incluindo:
+A proposta vai além de um CRUD convencional: a plataforma oferece um **scanner inteligente de materiais recicláveis via câmera** (Azure Custom Vision + Gemini), um **painel administrativo completo** para gestão de produtos, marcas, categorias, certificados e usuários, além de um **chat de IA** sobre sustentabilidade.
 
-- Separação de responsabilidades com Route Groups do App Router
-- Tipagem estrita com TypeScript 5
-- Validação de entrada com Zod
-- Autenticação stateless com JWT (via `jose` + `bcryptjs`)
-- Cache em duas camadas com Redis no servidor e `Map` em memória no cliente
-- Degradação graciosa de serviços externos (Redis e IA)
+Tecnicamente, o projeto aplica padrões usados em produção:
+
+- Arquitetura em camadas com separação clara de responsabilidades (Route Groups, Services, Hooks, Schemas, Types)
+- Autenticação stateless com JWT via Edge Middleware, sem dependência de sessão no servidor
+- Cache em duas camadas (Redis no servidor + `Map` em memória no cliente com stale-while-revalidate)
+- Invalidação seletiva de cache por padrão de chave (`SCAN` + `DEL` sem bloquear o Redis)
+- Degradação graciosa de serviços externos: Redis e IA offline não derrubam a aplicação
+- Containerização completa com Docker multi-stage e orquestração via Compose
+- Pipeline de CI/CD com GitHub Actions: lint, type-check, build, push para ghcr.io e deploy por SSH
+
+---
+
+## 🔬 Decisões Técnicas de Destaque
+
+Esta seção documenta as escolhas de arquitetura mais relevantes para quem avalia o projeto.
+
+### Cache em duas camadas com stale-while-revalidate
+
+A aplicação implementa cache em dois níveis independentes:
+
+**Servidor (Redis):** cada rota GET armazena a resposta no Redis com TTL calibrado por tipo de recurso (1–5 min). Mutações invalidam imediatamente as chaves afetadas usando `scanIterator` (non-blocking) + `DEL` em lote. A função `comCache(chave, ttl, fetcher)` encapsula esse padrão, mantendo as Route Handlers limpas.
+
+**Cliente (in-memory Map):** o hook `useFetch` mantém um `Map` com TTL de 30 segundos e implementa stale-while-revalidate: retorna o cache instantaneamente (sem tela de loading), dispara um fetch em background e atualiza o estado React apenas se os dados mudaram. O hook `useMutation` sincroniza a invalidação do cache do cliente com as mutações no servidor.
+
+```
+useFetch (cliente)
+  → Map hit? → retorna imediatamente + revalida em background
+  → Map miss → fetch(url)
+      → Route Handler → comCache(chave, ttl, fetcher)
+          → Redis hit? → retorna JSON
+          → Redis miss → Prisma → redisSet() → retorna
+```
+
+### Edge Middleware para autenticação e autorização
+
+O `middleware.ts` roda no **Edge Runtime** do Next.js e é responsável por toda a camada de autenticação e controle de acesso antes que qualquer Route Handler seja executado. Isso evita que lógica de segurança fique distribuída entre páginas e APIs.
+
+As regras de proteção ficam centralizadas em `config/rotas-protegidas.ts`, desacopladas do middleware em si. Há três níveis:
+
+1. **Público** — sem restrição
+2. **Autenticado** — exige token JWT válido no cookie
+3. **Admin** — exige `tipo === "ADMIN"` no payload do token
+
+Páginas não autenticadas recebem redirect para `/sign-in?next=<rota_original>`. APIs retornam `401` ou `403` em JSON sem vazar detalhes internos.
+
+### Validação de schema com Zod nas bordas
+
+Todos os endpoints validam o corpo da requisição com schemas Zod definidos em `lib/schemas/`. A validação acontece **antes** de qualquer operação no banco. Erros de validação retornam `400` com a lista de campos inválidos. Isso elimina uma classe inteira de bugs por dados malformados e documenta implicitamente o contrato de cada endpoint.
+
+### Singleton do Prisma Client resistente a hot-reload
+
+Em desenvolvimento, o Next.js reinicia os módulos a cada alteração de arquivo. Sem cuidado, cada hot-reload abriria uma nova connection pool com o banco, esgotando as conexões. O cliente Prisma é instanciado como singleton em `globalThis`, sobrevivendo aos reloads. O mesmo padrão é aplicado ao cliente Redis.
+
+### Degradação graciosa de serviços externos
+
+Redis e IA são serviços opcionais na arquitetura:
+
+- **Redis offline**: `redisGet` retorna `null` e `redisSet` é silenciado. A aplicação busca direto no banco sem afetar o usuário.
+- **Azure Vision offline**: o scanner retorna erro amigável sem quebrar outras funcionalidades.
+- **Gemini offline ou JSON inválido**: `obterAnaliseSustentabilidade()` retorna um fallback pré-definido (`lib/ai/fallbacks/sustentabilidade.ts`) em vez de propagar a exceção.
+
+### Dockerfile multi-stage otimizado
+
+```
+deps     → instala node_modules (cache de layer Docker)
+builder  → gera Prisma Client + build do Next.js
+runner   → copia apenas os artefatos necessários, roda como usuário não-root
+```
+
+A imagem final não carrega devDependencies nem código-fonte, reduzindo o tamanho significativamente.
 
 ---
 
@@ -48,11 +118,11 @@ O projeto foi desenvolvido como uma aplicação full-stack com foco em boas prá
 ### Para Usuários
 
 - 🛒 **Catálogo de Produtos** — listagem com filtros por categoria e marca, paginação e busca
-- 🔍 **Página de Produto** — detalhes completos, fotos, certificados de sustentabilidade e marca responsável
-- 📸 **IA Scan** — scanner que identifica o material de um objeto por foto e retorna análise ambiental completa (tempo de decomposição, como e onde descartar, dicas sustentáveis e benefícios da reciclagem)
+- 🔍 **Página de Produto** — detalhes completos, galeria de fotos, certificados de sustentabilidade e marca responsável
+- 📸 **IA Scan** — scanner via câmera que identifica o material de um objeto e retorna análise ambiental completa: tempo de decomposição, onde e como descartar, dicas sustentáveis e benefícios da reciclagem
 - 🎓 **Seção Educação** — conteúdo curado sobre consumo consciente e reciclagem
 - 👤 **Perfil de Usuário** — gerenciamento de dados pessoais com controle de acesso por role
-- 💬 **Chat de Sustentabilidade** — assistente de IA para tirar dúvidas sobre práticas sustentáveis
+- 💬 **Chat de Sustentabilidade** — assistente de IA para dúvidas sobre práticas sustentáveis
 
 ### Para Administradores
 
@@ -64,89 +134,115 @@ O projeto foi desenvolvido como uma aplicação full-stack com foco em boas prá
 
 ## 🛠 Stack Tecnológica
 
-| Camada                               | Tecnologia                      |
-| ------------------------------------ | ------------------------------- |
-| **Framework**                        | Next.js 15 (App Router)         |
-| **Linguagem**                        | TypeScript 5                    |
-| **Estilização**                      | Tailwind CSS 4                  |
-| **Banco de Dados**                   | PostgreSQL                      |
-| **ORM**                              | Prisma 7 (`@prisma/adapter-pg`) |
-| **Cache**                            | Redis 4 (`redis`)               |
-| **Autenticação**                     | JWT via `jose` + `bcryptjs`     |
-| **Validação**                        | Zod 3                           |
-| **IA — Visão Computacional**         | Azure Custom Vision             |
-| **IA — Análise de Sustentabilidade** | Google Gemini 2.0 Flash         |
-| **Containerização**                  | Docker + Docker Compose         |
-| **CI/CD**                            | GitHub Actions + ghcr.io        |
+| Camada                       | Tecnologia                             |
+| ---------------------------- | -------------------------------------- |
+| **Framework**                | Next.js 15 (App Router)                |
+| **Linguagem**                | TypeScript 5                           |
+| **Estilização**              | Tailwind CSS 4                         |
+| **Banco de Dados**           | PostgreSQL 16                          |
+| **ORM**                      | Prisma 7 (`@prisma/adapter-pg`)        |
+| **Cache**                    | Redis 7 (`redis` v4)                   |
+| **Autenticação**             | JWT via `jose` + `bcryptjs`            |
+| **Validação**                | Zod 3                                  |
+| **IA — Visão Computacional** | Azure Custom Vision                    |
+| **IA — Análise Ambiental**   | Google Gemini 2.0 Flash                |
+| **Containerização**          | Docker + Docker Compose                |
+| **CI/CD**                    | GitHub Actions + ghcr.io               |
+| **Runtime**                  | Node.js 20 + Edge Runtime (Middleware) |
 
 ---
 
 ## 🏗 Arquitetura
 
-O projeto utiliza o **App Router do Next.js 15** com Route Groups para organizar as páginas por domínio, mantendo separação clara de contextos:
+O projeto utiliza o **App Router do Next.js 15** com Route Groups para isolar os contextos de cada área da aplicação:
 
 ```
 app/
-├── (admin)/painel        → Área administrativa (role: ADMIN)
-├── (auth)/sign-in        → Autenticação
-├── (educacao)/educacao   → Conteúdo educacional
-├── (ia-scan)/ia-scan     → Scanner de materiais (autenticado)
-├── (perfil)/perfil       → Perfil do usuário (autenticado)
-├── (sobre)/about         → Sobre a plataforma
-├── (store)/produtos      → Catálogo e página de produto
-├── api/                  → API Routes (REST)
-└── page.tsx              → Home com scroll reveal e categorias dinâmicas
+├── (admin)/painel/        → Área administrativa (role: ADMIN)
+├── (auth)/sign-in/        → Autenticação
+├── (educacao)/educacao/   → Conteúdo educacional
+├── (ia-scan)/ia-scan/     → Scanner de materiais (autenticado)
+├── (perfil)/perfil/       → Perfil do usuário (autenticado)
+├── (sobre)/about/         → Sobre a plataforma
+├── (store)/produtos/      → Catálogo e página de produto
+│   └── [id]/              → Rota dinâmica por produto
+├── api/                   → API Routes (REST)
+│   ├── auth/              → Login, logout, me, refresh
+│   ├── categorias/        → CRUD de categorias
+│   ├── certificados/      → CRUD de certificados
+│   ├── ia/                → scan e chat
+│   ├── marcas/            → CRUD de marcas
+│   ├── produtos/          → CRUD + fotos
+│   ├── users/             → Cadastro público
+│   └── usuarios/          → Gestão admin
+└── page.tsx               → Home com scroll reveal e categorias dinâmicas
 ```
 
-O **Middleware do Next.js** (`middleware.ts`) protege as rotas de forma centralizada, com três níveis de acesso:
+**Camadas além do app:**
 
-1. **Rotas públicas** — sem restrição
-2. **Rotas autenticadas** — `/ia-scan`, `/perfil` — exigem token JWT válido
-3. **Rotas admin** — `/painel`, `/api/admin`, `/api/usuarios` — exigem `tipo === "ADMIN"`
+```
+lib/
+├── ai/                    → Integração Azure Custom Vision + Gemini
+│   └── fallbacks/         → Respostas de fallback para IA offline
+├── hooks/                 → Hooks de dados (useFetch, useMutation, useAuth, ...)
+├── http/                  → Helpers de resposta HTTP padronizados
+├── schemas/               → Schemas Zod por entidade
+├── rate-limit.ts          → Rate limiting via Redis
+└── redis.ts               → Cliente singleton + helpers (get/set/del/delPattern)
 
-Usuários não autenticados são redirecionados para `/sign-in?next=<rota_original>`. APIs retornam `401` ou `403` sem vazar detalhes internos.
+services/                  → Regras de negócio e acesso ao banco (Prisma)
+types/                     → Tipos TypeScript do domínio e da API
+config/                    → Configuração de rotas protegidas
+```
 
 ### Fluxo de Autenticação
 
 ```
-Login → POST /api/auth → bcrypt.compare(senha, hash)
-      → signJWT({ id, tipo }) → Cookie HttpOnly (7 dias)
-      → Requisições subsequentes → Middleware → verifyToken → payload
+POST /api/auth
+  → bcrypt.compare(senha, hash)
+  → signJWT({ id, tipo }, JWT_SECRET)
+  → Cookie HttpOnly (7 dias, SameSite=Strict)
+
+Requisições subsequentes:
+  → Edge Middleware → verifyToken(cookie) → payload
+  → Rota protegida? → verifica tipo → passa ou bloqueia
 ```
 
 ---
 
 ## 🗃 Banco de Dados
 
-O schema foi modelado com Prisma 7 e reflete as entidades do domínio de e-commerce sustentável:
+Schema modelado com Prisma 7 e PostgreSQL, refletindo o domínio de e-commerce sustentável:
 
 ```prisma
-Usuario        → tipo: ADMIN | CLIENTE | MARCA
+Usuario        → tipo: ADMIN | CLIENTE | MARCA (enum no banco)
 Marca          → 1:1 com Usuario (tipo MARCA)
 Categoria      → 1:N com Produto
-Certificado    → N:N com Produto (via ProdutoCertificado)
-Produto        → pertence a Marca e Categoria, possui fotos e certificados
+Certificado    → N:N com Produto (via ProdutoCertificado — tabela de junção explícita)
+Produto        → pertence a Marca e Categoria, possui múltiplas fotos e certificados
 ```
 
 **Destaques do modelo:**
 
-- Enum `TipoUsuario` (ADMIN, CLIENTE, MARCA) para controle de roles diretamente no banco
-- Relação N:N explícita entre `Produto` e `Certificado` via tabela de junção `produto_certificado`
-- Campo `fotoUrl` no produto com suporte a múltiplas fotos via endpoint dedicado (`/api/produtos/[id]/fotos`)
-- Seed completo com dados iniciais para desenvolvimento (`prisma/seed.ts`), executado com `npx prisma db seed`
+- Enum `TipoUsuario` no PostgreSQL para controle de roles com type safety end-to-end (banco → Prisma → TypeScript)
+- Relação N:N explícita com tabela de junção `produto_certificado` — mais flexível que implicit many-to-many do Prisma para adicionar campos futuros
+- Seed completo com dados de desenvolvimento (`prisma/seed.ts`) e seed separado para o administrador inicial (`prisma/seed-admin.ts`), configurável por variáveis de ambiente
+- Migration versionada em `prisma/migrations/` com `migration_lock.toml` para consistência de banco entre ambientes
 
 ---
 
 ## 🔐 Autenticação e Segurança
 
-- **JWT stateless** com expiração de 7 dias, assinado com HS256 via biblioteca `jose`
-- **Senhas criptografadas** com `bcryptjs` (hash com salt rounds padrão)
-- **Middleware centralizado** (`middleware.ts`) com matcher configurado para rodar apenas nas rotas necessárias, evitando overhead em assets estáticos
-- Rotas de API retornam `401 Unauthorized` (não autenticado) ou `403 Forbidden` (sem permissão) sem vazar detalhes internos
-- Suporte a redirecionamento pós-login via parâmetro `?next=`
+- **JWT stateless** com expiração de 7 dias, assinado com HS256 via `jose` (compatível com Edge Runtime)
+- **Senhas criptografadas** com `bcryptjs` (hash + salt rounds padrão)
+- **Middleware centralizado** no Edge Runtime: roda antes de qualquer handler, sem overhead de Node.js
+- Regras de acesso desacopladas em `config/rotas-protegidas.ts` — adicionar uma nova rota protegida não exige tocar no middleware
+- **Rate limiting** em endpoints sensíveis (login, registro) via Redis com janela deslizante
+- APIs retornam `401 Unauthorized` (não autenticado) ou `403 Forbidden` (sem permissão) sem vazar stack traces
+- Redirect pós-login via `?next=<rota>` preserva a intenção de navegação do usuário
 
 ```ts
-// Rotas protegidas configuradas no matcher
+// Rotas cobertas pelo matcher do middleware
 matcher: [
   "/painel/:path*",
   "/perfil/:path*",
@@ -159,13 +255,11 @@ matcher: [
 
 ---
 
-## ⚡ Cache com Redis
+## ⚡ Cache em Duas Camadas
 
-O projeto implementa cache em duas camadas para reduzir latência e diminuir a carga no banco de dados.
+### Servidor — Redis
 
-### Camada do servidor — Redis (`lib/redis.ts` + `lib/cache.ts`)
-
-Todas as rotas de GET cacheiam suas respostas no Redis com TTLs calibrados por tipo de recurso:
+Todas as rotas GET passam por `comCache(chave, ttl, fetcher)`, que verifica o Redis antes de consultar o banco:
 
 | Recurso                          | TTL   |
 | -------------------------------- | ----- |
@@ -173,41 +267,27 @@ Todas as rotas de GET cacheiam suas respostas no Redis com TTLs calibrados por t
 | Produtos (listagem paginada)     | 2 min |
 | Produto, categoria, marca por id | 3 min |
 | Dados de usuário e sessão        | 1 min |
-| Listagem de fotos (filesystem)   | 2 min |
+| Fotos do produto                 | 2 min |
 
-Mutações (POST, PUT, DELETE) invalidam as entradas afetadas imediatamente após gravar no banco:
+Mutações (POST, PUT, DELETE) invalidam o cache imediatamente após gravar no banco. Para padrões de chave (ex: `produtos:*`), a invalidação usa `scanIterator` + `DEL` em lote — não bloqueia o Redis com `KEYS *`.
 
-- `invalidarCache("PRODUTOS")` — remove `produtos:*` (via `SCAN` + `DEL`, sem bloquear o Redis)
-- `redisDel("produtos:42")` — remove item específico por id
+O cliente Redis é singleton em `globalThis` para sobreviver a hot-reloads do Next.js. Falhas de conexão são silenciadas com `console.warn` — o banco assume as leituras sem impacto ao usuário.
 
-O cliente Redis é instanciado como singleton no `globalThis` para sobreviver aos hot-reloads do Next.js. Erros de conexão são logados como `console.warn` sem derrubar a aplicação — Redis é cache, não dado primário.
+### Cliente — Map em memória
 
-### Camada do cliente — memória (`lib/hooks/useFetch.ts`)
+O hook `useFetch` implementa stale-while-revalidate:
 
-O hook `useFetch` mantém um `Map` em memória com TTL de 30 segundos e implementa a estratégia **stale-while-revalidate**:
+1. Retorna o cache local instantaneamente (zero tela de loading para dados em cache)
+2. Dispara revalidação em background após TTL de 30 segundos
+3. Atualiza o estado React com `JSON.stringify` diff para evitar re-renders desnecessários
 
-- Retorna o cache instantaneamente (sem tela de loading)
-- Revalida em background após a resposta exibida
-- Atualiza o estado React apenas se os dados mudaram
-
-O hook `useMutation` invalida as entradas do cache do cliente após cada mutação bem-sucedida, em sincronia com a invalidação no Redis feita pelo servidor.
-
-### Fluxo de leitura completo
-
-```
-useFetch (cliente)
-  → Map em memória hit? → retorna imediatamente + revalida em background
-  → Map miss → fetch(url)
-      → Route Handler → comCache(chave, ttl, fetcher)
-          → Redis hit? → retorna JSON
-          → Redis miss → prisma.findMany() → redisSet(chave, dados, ttl) → retorna
-```
+O hook `useMutation` invalida as entradas do Map local após cada mutação, em sincronia com a invalidação no Redis pelo servidor.
 
 ---
 
 ## 🤖 Integração com IA
 
-### Fluxo do Scanner (`/ia-scan`)
+### Pipeline do Scanner (`/ia-scan`)
 
 ```
 Foto do usuário (base64 ou File)
@@ -215,12 +295,12 @@ Foto do usuário (base64 ou File)
 Azure Custom Vision → classificarImagemAzure()
        ↓
 Predição com confiança ≥ 70%?
-  ├── NÃO → Retorna erro com sugestão de melhoria da foto
+  ├── NÃO → Erro amigável com sugestão de melhoria da foto
   └── SIM → Material identificado
                ↓
           Google Gemini 2.0 Flash → obterAnaliseSustentabilidade(material)
                ↓
-          JSON estruturado com 6 campos ambientais:
+          JSON com 6 campos ambientais:
           • impacto_ambiental
           • tempo_decomposicao
           • onde_descartar
@@ -229,111 +309,113 @@ Predição com confiança ≥ 70%?
           • beneficios_reciclagem
 ```
 
-**Detalhes de implementação (`lib/ai.ts`):**
+**Detalhes de implementação:**
 
-- **Threshold de confiança configurável** — `CONFIANCA_MINIMA = 0.7` (70%)
-- **Fallback resiliente** — se o Gemini falhar ou retornar JSON inválido, uma análise básica pré-definida é retornada sem quebrar a UX
-- **Validação de schema** — todos os 6 campos obrigatórios são verificados antes de aceitar a resposta da IA
-- **Chat de sustentabilidade** — endpoint `/api/ia/chat` permite conversação livre com o Gemini sobre temas ambientais
+- **Threshold configurável** via `AI_CONFIDENCE_THRESHOLD` (padrão: 70%)
+- **Fallback resiliente**: se o Gemini falhar ou retornar JSON inválido, uma análise básica pré-definida é retornada em `lib/ai/fallbacks/sustentabilidade.ts` — a UX não quebra
+- **Validação de schema**: todos os 6 campos obrigatórios são verificados antes de aceitar a resposta da IA
+- **Chat de IA**: endpoint `/api/ia/chat` expõe conversação livre com Gemini sobre temas ambientais, com histórico de mensagens por sessão
 
 ---
 
 ## 📡 Rotas da API
 
-| Método          | Endpoint                   | Auth      | Cache | Descrição                                    |
-| --------------- | -------------------------- | --------- | ----- | -------------------------------------------- |
-| POST            | `/api/auth`                | —         | —     | Login (retorna cookie HttpOnly)              |
-| DELETE          | `/api/auth`                | —         | —     | Logout (limpa cookie)                        |
-| GET             | `/api/auth/me`             | ✅        | ✅    | Dados do usuário logado                      |
-| POST            | `/api/auth/refresh`        | ✅        | —     | Renovação de token JWT                       |
-| POST            | `/api/users`               | —         | —     | Cadastro público de usuário                  |
-| GET             | `/api/produtos`            | —         | ✅    | Listagem de produtos (com filtros/paginação) |
-| GET             | `/api/produtos/[id]`       | —         | ✅    | Detalhes de um produto                       |
-| PUT             | `/api/produtos/[id]`       | Admin     | —     | Atualizar produto (invalida cache)           |
-| DELETE          | `/api/produtos/[id]`       | Admin     | —     | Remover produto (invalida cache)             |
-| GET/POST/DELETE | `/api/produtos/[id]/fotos` | ✅        | ✅    | Gerenciar fotos do produto                   |
-| GET             | `/api/categorias`          | —         | ✅    | Listar categorias                            |
-| POST            | `/api/categorias`          | Admin     | —     | Criar categoria (invalida cache)             |
-| GET/PUT/DELETE  | `/api/categorias/[id]`     | — / Admin | ✅    | CRUD de categoria por id                     |
-| GET             | `/api/marcas`              | —         | ✅    | Listar marcas                                |
-| POST            | `/api/marcas`              | Admin     | —     | Criar marca (invalida cache)                 |
-| GET/PUT/DELETE  | `/api/marcas/[id]`         | — / Admin | ✅    | CRUD de marca por id                         |
-| GET             | `/api/certificados`        | —         | ✅    | Listar certificados                          |
-| POST            | `/api/certificados`        | Admin     | —     | Criar certificado (invalida cache)           |
-| GET/PUT/DELETE  | `/api/certificados/[id]`   | — / Admin | ✅    | CRUD de certificado por id                   |
-| GET/POST        | `/api/usuarios`            | Admin     | ✅    | Listar / criar usuários                      |
-| GET/PUT/DELETE  | `/api/usuarios/[id]`       | Admin     | ✅    | Gerenciar usuário por id                     |
-| POST            | `/api/ia/scan`             | ✅        | —     | Scanner de material por imagem               |
-| POST            | `/api/ia/chat`             | ✅        | —     | Chat com assistente de sustentabilidade      |
+| Método          | Endpoint                   | Auth    | Cache | Descrição                      |
+| --------------- | -------------------------- | ------- | ----- | ------------------------------ |
+| POST            | `/api/auth`                | —       | —     | Login (cookie HttpOnly)        |
+| DELETE          | `/api/auth`                | —       | —     | Logout                         |
+| GET             | `/api/auth/me`             | ✅      | ✅    | Dados do usuário logado        |
+| POST            | `/api/auth/refresh`        | ✅      | —     | Renovação de token JWT         |
+| POST            | `/api/users`               | —       | —     | Cadastro público               |
+| GET             | `/api/produtos`            | —       | ✅    | Listagem (filtros + paginação) |
+| GET             | `/api/produtos/[id]`       | —       | ✅    | Detalhes do produto            |
+| POST            | `/api/produtos`            | Admin   | —     | Criar produto                  |
+| PUT             | `/api/produtos/[id]`       | Admin   | —     | Atualizar produto              |
+| DELETE          | `/api/produtos/[id]`       | Admin   | —     | Remover produto                |
+| GET/POST/DELETE | `/api/produtos/[id]/fotos` | ✅      | ✅    | Gerenciar fotos                |
+| GET             | `/api/categorias`          | —       | ✅    | Listar categorias              |
+| POST            | `/api/categorias`          | Admin   | —     | Criar categoria                |
+| GET/PUT/DELETE  | `/api/categorias/[id]`     | —/Admin | ✅    | CRUD por id                    |
+| GET             | `/api/marcas`              | —       | ✅    | Listar marcas                  |
+| POST            | `/api/marcas`              | Admin   | —     | Criar marca                    |
+| GET/PUT/DELETE  | `/api/marcas/[id]`         | —/Admin | ✅    | CRUD por id                    |
+| GET             | `/api/certificados`        | —       | ✅    | Listar certificados            |
+| POST            | `/api/certificados`        | Admin   | —     | Criar certificado              |
+| GET/PUT/DELETE  | `/api/certificados/[id]`   | —/Admin | ✅    | CRUD por id                    |
+| GET/POST        | `/api/usuarios`            | Admin   | ✅    | Listar / criar usuários        |
+| GET/PUT/DELETE  | `/api/usuarios/[id]`       | Admin   | ✅    | Gerenciar por id               |
+| POST            | `/api/ia/scan`             | ✅      | —     | Scanner de material            |
+| POST            | `/api/ia/chat`             | ✅      | —     | Chat de sustentabilidade       |
+| GET             | `/api/health`              | —       | —     | Health check da aplicação      |
 
 ---
 
 ## 🐳 Docker e Infraestrutura
 
-O projeto é totalmente containerizado com Docker e Docker Compose, cobrindo todos os serviços necessários para rodar em produção.
+O projeto é totalmente containerizado e pronto para rodar em qualquer ambiente com Docker.
 
 ### Serviços
 
-| Serviço    | Imagem             | Porta |
-| ---------- | ------------------ | ----- |
-| `app`      | Build local        | 3000  |
-| `postgres` | postgres:16-alpine | 5432  |
-| `redis`    | redis:7-alpine     | 6379  |
-| `migrate`  | Build local (1×)   | —     |
+| Serviço    | Imagem                    | Porta | Detalhes                                |
+| ---------- | ------------------------- | ----- | --------------------------------------- |
+| `app`      | Build local (multi-stage) | 3000  | Next.js em produção                     |
+| `postgres` | postgres:16-alpine        | 5432  | Banco principal                         |
+| `redis`    | redis:7-alpine            | 6379  | Cache e rate limiting                   |
+| `migrate`  | Build local (one-shot)    | —     | Roda migrations + seed na inicialização |
 
-O serviço `migrate` executa `prisma migrate deploy` + `prisma db seed` automaticamente na primeira inicialização e não reinicia após isso. Todos os serviços têm **healthcheck** configurado — o `app` só sobe após o Postgres e o Redis estarem prontos.
+Todos os serviços têm **healthcheck** configurado. O `app` aguarda Postgres e Redis estarem prontos antes de subir (`depends_on` com `condition: service_healthy`). O serviço `migrate` executa `prisma migrate deploy` + seed uma vez e não reinicia.
+
+### Dockerfile multi-stage
+
+```dockerfile
+# Stage 1: deps — instala node_modules (camada cacheada pelo Docker)
+# Stage 2: builder — gera Prisma Client + build Next.js
+# Stage 3: runner — imagem final mínima, usuário não-root
+```
 
 ### Comandos
 
 ```bash
-# build e sobe todos os serviços
+# Sobe tudo (app + postgres + redis + migrations + seed)
 docker compose up --build
 
-# em background
+# Em background
 docker compose up --build -d
 
-# parar tudo
+# Parar
 docker compose down
 
-# parar e remover volumes (reset completo do banco)
+# Reset completo (apaga volumes/banco)
 docker compose down -v
-```
-
-### Dockerfile multi-stage
-
-```
-deps     → instala dependências (node_modules)
-builder  → gera o Prisma Client e roda o build do Next.js
-runner   → copia apenas o necessário, roda com usuário não-root
 ```
 
 ---
 
 ## ⚙️ CI/CD
 
-O pipeline está configurado com **GitHub Actions** em `.github/workflows/ci.yml` e roda automaticamente a cada push ou PR nas branches `main` e `develop`.
+Pipeline com **GitHub Actions** (`.github/workflows/ci.yml`), disparado a cada push ou PR nas branches `main` e `develop`.
 
 ```
 lint-and-build  →  docker  →  deploy
-     ↑               ↑            ↑
-  Todo PR/push   Push apenas   main apenas
+     ↑                ↑           ↑
+  Todo PR/push   Push apenas  main apenas
 ```
 
-| Job              | Trigger        | O que faz                                                                                                 |
-| ---------------- | -------------- | --------------------------------------------------------------------------------------------------------- |
-| `lint-and-build` | Push + PR      | Instala deps, gera Prisma Client, roda lint, type-check e build                                           |
-| `docker`         | Push           | Builda imagem multi-stage e publica no GitHub Container Registry com tags `latest` e `sha-<commit>`       |
-| `deploy`         | Push na `main` | SSH no servidor, puxa nova imagem, recria o container da app sem derrubar Postgres/Redis, roda migrations |
+| Job              | Trigger        | O que faz                                                                                                    |
+| ---------------- | -------------- | ------------------------------------------------------------------------------------------------------------ |
+| `lint-and-build` | Push + PR      | Instala deps, gera Prisma Client, `next lint`, `tsc --noEmit`, `next build`                                  |
+| `docker`         | Push           | Build multi-stage + push para GitHub Container Registry com tags `latest` e `sha-<commit>`                   |
+| `deploy`         | Push na `main` | SSH no servidor, pull da nova imagem, recria o container da app sem derrubar Postgres/Redis, roda migrations |
 
-### Secrets necessários (`Settings → Secrets → Actions`)
+### Secrets necessários
 
-| Secret            | Descrição                       |
-| ----------------- | ------------------------------- |
-| `SSH_HOST`        | IP ou domínio do servidor       |
-| `SSH_USER`        | Usuário SSH                     |
-| `SSH_PRIVATE_KEY` | Chave privada SSH (formato PEM) |
+| Secret            | Descrição                             |
+| ----------------- | ------------------------------------- |
+| `SSH_HOST`        | IP ou domínio do servidor de produção |
+| `SSH_USER`        | Usuário SSH                           |
+| `SSH_PRIVATE_KEY` | Chave privada SSH (formato PEM)       |
 
-> O `GITHUB_TOKEN` usado para publicar no ghcr.io é provido automaticamente pelo GitHub.
+O `GITHUB_TOKEN` para publicar no ghcr.io é provido automaticamente pelo GitHub Actions.
 
 ---
 
@@ -342,92 +424,99 @@ lint-and-build  →  docker  →  deploy
 ### Pré-requisitos
 
 - Node.js 20+
-- PostgreSQL rodando localmente ou via Docker
-- Redis rodando localmente ou via Docker
-- Chaves de API do Google Gemini e Azure Custom Vision (opcionais — apenas para funcionalidades de IA)
+- Docker e Docker Compose (recomendado)
+- Chaves de API do Google Gemini e Azure Custom Vision (opcionais — scanner retorna erro amigável sem elas)
 
 ### Com Docker Compose (recomendado)
 
 ```bash
-# clone o repositório
+# Clone o repositório
 git clone https://github.com/seu-usuario/ecoshop.git
 cd ecoshop
 
-# configure as variáveis de ambiente (chaves de api, jwt secret)
+# Configure as variáveis de ambiente
 cp .env.example .env
-# edite o .env — DATABASE_URL e REDIS_URL serão sobrescritos pelo compose automaticamente
+# Edite o .env: JWT_SECRET, GEMINI_KEY, AZURE_VISION_ENDPOINT, AZURE_VISION_KEY
+# DATABASE_URL e REDIS_URL são sobrescritos automaticamente pelo Compose
 
-# sobe tudo (app + postgres + redis + migrations + seed)
+# Sobe tudo (app + banco + cache + migrations + seed)
 docker compose up --build
 ```
 
 Acesse [http://localhost:3000](http://localhost:3000).
 
+**Credenciais padrão do seed (desenvolvimento):**
+
+| Papel   | Email               | Senha        |
+| ------- | ------------------- | ------------ |
+| Admin   | admin@ecoshop.com   | Admin@123456 |
+| Cliente | cliente@ecoshop.com | Senha@123    |
+
 ### Sem Docker (Node.js local)
 
 ```bash
-# clone o repositório
 git clone https://github.com/seu-usuario/ecoshop.git
 cd ecoshop
 
-# instale as dependências
 npm install
 
-# configure as variáveis de ambiente
 cp .env.example .env.local
-# edite o .env.local com suas credenciais
+# Edite .env.local com suas credenciais
 
-# rode as migrations e popule o banco com dados iniciais
 npx prisma migrate dev
 npx prisma db seed
 
-# inicie o Redis (caso não tenha instalado localmente)
+# Redis local (opcional via Docker)
 docker run -d -p 6379:6379 redis:alpine
 
-# inicie o servidor de desenvolvimento
 npm run dev
 ```
 
 ### Scripts disponíveis
 
-| Comando                  | Descrição                               |
-| ------------------------ | --------------------------------------- |
-| `npm run dev`            | Inicia o servidor de desenvolvimento    |
-| `npm run build`          | Gera o build de produção                |
-| `npm run start`          | Inicia o servidor em modo produção      |
-| `npm run lint`           | Executa o linter                        |
-| `npx prisma migrate dev` | Aplica migrations e sincroniza o schema |
-| `npx prisma db seed`     | Popula o banco com dados iniciais       |
-| `npx prisma studio`      | Abre o Prisma Studio (UI do banco)      |
+| Comando                  | Descrição                             |
+| ------------------------ | ------------------------------------- |
+| `npm run dev`            | Servidor de desenvolvimento           |
+| `npm run build`          | Build de produção                     |
+| `npm run start`          | Servidor em modo produção             |
+| `npm run lint`           | Linter                                |
+| `npm run typecheck`      | Type check sem emitir arquivos        |
+| `npx prisma migrate dev` | Aplica migrations + sincroniza schema |
+| `npx prisma db seed`     | Popula o banco com dados iniciais     |
+| `npx prisma studio`      | Interface visual do banco             |
 
 ---
 
 ## 🔑 Variáveis de Ambiente
 
-Copie o arquivo `.env.example` para `.env.local` e preencha as variáveis:
-
 ```env
 # Banco de Dados
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
+DATABASE_URL="postgresql://usuario:senha@localhost:5432/ecoshop"
+REDIS_URL="redis://localhost:6379"
 
-# JWT
-JWT_SECRET="your-secret-key-here"
+# Autenticação JWT (mínimo 32 caracteres)
+JWT_SECRET="sua-chave-secreta-aqui"
 
 # Google Gemini
-GEMINI_KEY="your-gemini-key-here"
+GEMINI_KEY="sua-chave-gemini"
 
 # Azure Custom Vision
-AZURE_VISION_ENDPOINT="https://your-resource.cognitiveservices.azure.com/"
-AZURE_VISION_KEY="your-azure-key-here"
+AZURE_VISION_ENDPOINT="https://seu-recurso.cognitiveservices.azure.com/"
+AZURE_VISION_KEY="sua-chave-azure"
 
-# Next.js
-NODE_ENV="development"
+# Threshold de confiança da IA (padrão: 0.7)
+AI_CONFIDENCE_THRESHOLD=0.7
 
-# Redis
-REDIS_URL="redis://localhost:6379"
+# URL pública (opcional)
+NEXT_PUBLIC_SITE_URL="http://localhost:3000"
+
+# Seed do administrador (apenas desenvolvimento)
+ADMIN_EMAIL="admin@ecoshop.com"
+ADMIN_PASSWORD="Admin@123456"
+ADMIN_NAME="Administrador EcoShop"
 ```
 
-> **Degradação graciosa:** As funcionalidades de IA continuam funcionando sem as chaves do Gemini/Azure — o scanner retorna um erro amigável. O Redis também degrada graciosamente: se offline, as requisições vão direto ao banco sem afetar o funcionamento da aplicação.
+> **Degradação graciosa:** Redis offline → aplicação busca direto no banco. Gemini/Azure offline → scanner retorna mensagem amigável. Nenhum dos dois derruba a aplicação.
 
 ---
 
@@ -437,70 +526,96 @@ REDIS_URL="redis://localhost:6379"
 ecoshop/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml            # Pipeline de CI/CD (lint, build, docker, deploy)
+│       └── ci.yml                  # Pipeline CI/CD
 ├── app/
-│   ├── (admin)/painel/       # Dashboard administrativo
-│   ├── (auth)/sign-in/       # Página de login
-│   ├── (educacao)/educacao/  # Conteúdo educacional
-│   ├── (ia-scan)/ia-scan/    # Scanner de materiais com IA
-│   ├── (perfil)/perfil/      # Perfil do usuário
-│   ├── (sobre)/about/        # Sobre a plataforma
-│   ├── (store)/produtos/     # Catálogo e página de produto
-│   │   └── [id]/             # Página dinâmica de produto
-│   ├── api/
-│   │   ├── auth/             # Login, logout, me, refresh
-│   │   ├── categorias/       # CRUD de categorias
-│   │   ├── certificados/     # CRUD de certificados
-│   │   ├── ia/               # Endpoints de IA (scan, chat)
-│   │   ├── marcas/           # CRUD de marcas
-│   │   ├── produtos/         # CRUD de produtos e fotos
-│   │   ├── users/            # Cadastro público
-│   │   └── usuarios/         # Gestão de usuários (admin)
+│   ├── (admin)/painel/             # Dashboard administrativo
+│   ├── (auth)/sign-in/             # Página de login
+│   ├── (educacao)/educacao/        # Conteúdo educacional
+│   ├── (ia-scan)/ia-scan/          # Scanner de materiais com IA
+│   ├── (perfil)/perfil/            # Perfil do usuário
+│   ├── (sobre)/about/              # Sobre a plataforma
+│   ├── (store)/produtos/           # Catálogo
+│   │   └── [id]/                   # Página dinâmica de produto
+│   ├── api/                        # Route Handlers (REST)
+│   │   ├── auth/                   # Login, logout, me, refresh
+│   │   ├── categorias/             # CRUD de categorias
+│   │   ├── certificados/           # CRUD de certificados
+│   │   ├── ia/                     # scan + chat
+│   │   ├── marcas/                 # CRUD de marcas
+│   │   ├── produtos/               # CRUD + fotos
+│   │   ├── users/                  # Cadastro público
+│   │   ├── usuarios/               # Gestão admin
+│   │   └── health/                 # Health check
+│   ├── _middleware/
+│   │   └── auth.ts                 # Helpers de autenticação para Route Handlers
 │   ├── components/
-│   │   └── Header.tsx        # Header compartilhado
+│   │   └── Header.tsx              # Header compartilhado
 │   ├── globals.css
 │   ├── layout.tsx
-│   └── page.tsx              # Home
+│   └── page.tsx                    # Home
+├── config/
+│   └── rotas-protegidas.ts         # Regras de acesso desacopladas do middleware
 ├── lib/
-│   ├── ai.ts                 # Integração Azure Custom Vision + Gemini
-│   ├── api.ts                # Helpers de fetch para o cliente
-│   ├── auth.ts               # JWT sign/verify
-│   ├── cache.ts              # Helpers de cache e invalidação (comCache, invalidarCache)
-│   ├── db.ts                 # Instância singleton do Prisma Client
-│   ├── redis.ts              # Cliente Redis singleton (redisGet, redisSet, redisDel)
-│   └── hooks/
-│       ├── useAuth.ts        # Hook de autenticação
-│       ├── useCategorias.ts  # Hook de categorias
-│       ├── useCertificados.ts
-│       ├── useFetch.ts       # Cache em memória + stale-while-revalidate
-│       ├── useFotos.ts       # Gerenciamento de fotos
-│       ├── useIA.ts          # Hook de IA (scan e chat)
-│       ├── useMarcas.ts
-│       ├── useMutation.ts    # Mutações com invalidação de cache do cliente
-│       └── useProdutos.ts
-├── prints/                   # Screenshots da interface para documentação
+│   ├── ai/
+│   │   ├── analisar-imagem.ts      # Azure Custom Vision + Gemini
+│   │   └── fallbacks/
+│   │       └── sustentabilidade.ts # Fallback para IA offline
+│   ├── hooks/
+│   │   ├── useAuth.ts
+│   │   ├── useCategorias.ts
+│   │   ├── useCertificados.ts
+│   │   ├── useFetch.ts             # Cache in-memory + stale-while-revalidate
+│   │   ├── useFotos.ts
+│   │   ├── useIA.ts                # Scan e chat
+│   │   ├── useMarcas.ts
+│   │   ├── useMutation.ts          # Mutações + invalidação de cache
+│   │   └── useProdutos.ts
+│   ├── http/
+│   │   └── responses.ts            # Helpers de resposta HTTP padronizados
+│   ├── schemas/                    # Schemas Zod por entidade
+│   │   ├── categoria.ts
+│   │   ├── certificado.ts
+│   │   ├── ia-chat.ts
+│   │   ├── marca.ts
+│   │   ├── produto.ts
+│   │   └── usuario.ts
+│   ├── rate-limit.ts               # Rate limiting via Redis
+│   └── redis.ts                    # Singleton + redisGet/redisSet/redisDel/delPattern
+├── prints/                         # Screenshots da interface
 ├── prisma/
-│   ├── migrations/           # Histórico de migrations
-│   ├── schema.prisma         # Modelo de dados
-│   └── seed.ts               # Dados iniciais para desenvolvimento
+│   ├── migrations/                 # Histórico de migrations versionadas
+│   ├── schema.prisma               # Modelo de dados
+│   ├── seed.ts                     # Dados iniciais para desenvolvimento
+│   └── seed-admin.ts               # Seed do administrador (configurável por .env)
 ├── public/
-│   └── data_fotos/           # Fotos dos produtos (servidas estaticamente)
-├── types/
-│   └── api.ts                # Tipos TypeScript das respostas da API
-├── .dockerignore             # Arquivos excluídos do contexto de build do Docker
-├── .env.example              # Template de variáveis de ambiente
+│   └── data_fotos/                 # Fotos dos produtos (servidas estaticamente)
+├── services/                       # Regras de negócio e acesso ao banco
+│   ├── categoria.service.ts
+│   ├── certificado.service.ts
+│   ├── foto.service.ts
+│   ├── marca.service.ts
+│   ├── produto.service.ts
+│   └── usuario.service.ts
+├── types/                          # Tipos TypeScript do domínio e da API
+│   ├── ai.ts
+│   ├── api.ts
+│   ├── auth.ts
+│   └── domain.ts
+├── .dockerignore
+├── .env.example                    # Template de variáveis de ambiente
 ├── .gitignore
-├── docker-compose.yml        # Orquestração local (app + postgres + redis + migrate)
-├── Dockerfile                # Build multi-stage da aplicação
-├── middleware.ts             # Proteção centralizada de rotas
+├── docker-compose.yml              # Orquestração (app + postgres + redis + migrate)
+├── Dockerfile                      # Build multi-stage
+├── middleware.ts                   # Edge Middleware — autenticação e autorização
 ├── next.config.ts
+├── package.json
 ├── tailwind.config.ts
 ├── tsconfig.json
-└── tsconfig.seed.json        # Configuração TypeScript isolada para o seed do Prisma
+└── tsconfig.seed.json              # tsconfig isolado para o seed do Prisma
 ```
 
 ---
 
 ## 📄 Licença
 
-Este projeto foi desenvolvido para fins educacionais e de portfólio.
+Projeto desenvolvido para fins de portfólio. Livre para uso como referência.
