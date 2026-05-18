@@ -1,34 +1,36 @@
+# Dependências
 /node_modules
 /.pnp
 .pnp.js
 
+# Build do Next.js
 /.next/
 /out/
-/build
-/dist
 
+# TypeScript
 next-env.d.ts
 *.tsbuildinfo
 
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.sample
+# Arquivos de ambiente
+.env*
+!.env.example
 
+# Banco de dados
 *.db
 *.db-journal
 
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 lerna-debug.log*
 
+# Testes e cobertura
 /coverage
 /.nyc_output
 
+# IDEs e editores
 .vscode/*
 !.vscode/extensions.json
 .idea/
@@ -38,14 +40,36 @@ lerna-debug.log*
 *.sln
 *.sw?
 
+# Arquivos do sistema
 .DS_Store
 Thumbs.db
 
+# Plataformas de deploy
 .vercel
 
+# Cache
 .next
 .cache
 
+# Prisma
 /node_modules/.prisma
 
+# Docker (override local)
 docker-compose.override.yml
+
+# Arquivos de build
+dist/
+build/
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.log
+
+# Arquivos de dump
+*.sql
+*.sqlite
+
+# Relatórios
+*.report
+*.xml
