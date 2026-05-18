@@ -35,6 +35,14 @@ jobs:
       - name: Install dependencies
         run: npm ci --frozen-lockfile
 
+      - name: Cache Prisma Client
+        # o prisma generate produz arquivos em node_modules/@prisma/client que não mudam
+        # enquanto o schema.prisma não muda — cacheá-los economiza ~10-20s por run
+        uses: actions/cache@v4
+        with:
+          path: node_modules/.prisma
+          key: prisma-${{ runner.os }}-${{ hashFiles('prisma/schema.prisma') }}
+
       - name: Generate Prisma Client
         # o prisma client precisa existir para o tsc e o next build resolverem os imports
         run: npx prisma generate
@@ -116,13 +124,16 @@ jobs:
 
     # environment: production habilita proteções extras no github (ex: aprovação manual)
     # e exibe a url do ambiente na interface do actions
+    # APP_URL deve ser configurado em: Settings → Environments → production → Variables
     environment:
       name: production
       url: ${{ vars.APP_URL }}
 
     steps:
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
+        # SHA fixo para segurança de supply chain — evita que uma tag flutuante (@v1)
+        # possa ser redirecionada para um commit malicioso sem aviso
+        uses: appleboy/ssh-action@1d1b21ca96111b1542fcbb83791f2dca5dfaa3d8
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
@@ -139,9 +150,10 @@ jobs:
             # -d sobe em background e libera o terminal do ssh
             docker compose up -d --no-deps app
 
-            # aplica migrations que ainda não foram executadas no banco de produção
-            # migrate deploy é seguro para produção: nunca reseta dados, só avança o schema
-            docker compose run --rm migrate
+            # aplica APENAS as migrations pendentes — nunca roda o seed em produção via CI
+            # o seed é executado uma única vez na criação do ambiente (docker compose up inicial)
+            # rodá-lo a cada deploy causaria dados duplicados ou erros de constraint
+            docker compose run --rm migrate sh -c "npx prisma migrate deploy"
 
             # remove imagens antigas que não são mais referenciadas por nenhum container
             # sem isso, cada deploy deixa uma imagem "dangling" acumulando espaço em disco
