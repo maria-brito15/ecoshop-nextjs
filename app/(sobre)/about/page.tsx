@@ -1,35 +1,35 @@
 // app/(sobre)/about/page.tsx
 
+/**
+ * ============================================================================
+ * PÁGINA SOBRE O ECOSHOP
+ * ============================================================================
+ * Rota: "/about"
+ *
+ * Página institucional que conta a história do EcoShop, o time de desenvolvimento
+ * e as tecnologias utilizadas no projeto.
+ *
+ * Conteúdo abordado:
+ * - Origem do projeto (Trabalho Interdisciplinar 2 da PUC Minas)
+ * - Reconhecimento acadêmico (finalista entre melhores trabalhos)
+ * - Problema que o EcoShop resolve
+ * - Sprints do desenvolvimento (4 sprints)
+ * - Comparação entre versão original (Java) e refatorada (Next.js)
+ * - Melhorias implementadas na refatoração
+ * - Equipe original do projeto
+ *
+ * @see app/(store)/produtos/page.tsx - Call-to-action para produtos
+ * ============================================================================
+ */
+
 "use client";
 
 import Link from "next/link";
 import { useEffect } from "react";
 
-function useScrollReveal() {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add("visible");
-              observer.unobserve(entry.target);
-            }
-          });
-        },
-        { threshold: 0.1 },
-      );
-      document.querySelectorAll(".animate-on-scroll").forEach((el) => {
-        observer.observe(el);
-        if (el.getBoundingClientRect().top < window.innerHeight) {
-          el.classList.add("visible");
-        }
-      });
-      return () => observer.disconnect();
-    }, 80);
-    return () => clearTimeout(timer);
-  }, []);
-}
+// ----------------------------------------------------------------------------
+// DADOS ESTÁTICOS
+// ----------------------------------------------------------------------------
 
 const TEAM = [
   {
@@ -120,7 +120,7 @@ const MELHORIAS = [
   {
     icon: "🔐",
     titulo: "Autenticação",
-    desc: "JWT com refresh automático, cookies httpOnly e diferenciação de roles CLIENTE / ADMIN / LOJA.",
+    desc: "JWT com refresh automático, cookies httpOnly e diferenciação de roles CLIENTE / ADMIN / MARCA.",
   },
   {
     icon: "🤖",
@@ -146,31 +146,62 @@ const STATS = [
   { valor: "2", label: "Modelos de IA" },
 ] as const;
 
+// ----------------------------------------------------------------------------
+// HOOKS
+// ----------------------------------------------------------------------------
+
+/**
+ * Hook para animação de revelação ao rolar a página.
+ * Adiciona classe "visible" a elementos com classe "animate-on-scroll".
+ */
+function useScrollReveal() {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible");
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.1 },
+      );
+      document.querySelectorAll(".animate-on-scroll").forEach((el) => {
+        observer.observe(el);
+        if (el.getBoundingClientRect().top < window.innerHeight) {
+          el.classList.add("visible");
+        }
+      });
+      return () => observer.disconnect();
+    }, 80);
+    return () => clearTimeout(timer);
+  }, []);
+}
+
+// ----------------------------------------------------------------------------
+// PÁGINA PRINCIPAL
+// ----------------------------------------------------------------------------
+
 export default function AboutPage() {
   useScrollReveal();
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
-      <section
-        className="
-          py-24 md:py-32
-          [background-image:radial-gradient(circle_at_10%_20%,rgba(45,149,105,0.07)_0%,transparent_30%),radial-gradient(circle_at_90%_80%,rgba(45,149,105,0.05)_0%,transparent_30%)]
-        "
-      >
+      {/* HERO SECTION */}
+      <section className="py-24 md:py-32 [background-image:radial-gradient(circle_at_10%_20%,rgba(45,149,105,0.07)_0%,transparent_30%),radial-gradient(circle_at_90%_80%,rgba(45,149,105,0.05)_0%,transparent_30%)]">
         <div className="container-eco">
           <div className="max-w-3xl flex flex-col gap-6">
             <span className="badge-eco w-fit">🏫 PUC Minas · TI2 · 2025/2</span>
-
             <h1 className="font-display text-5xl md:text-6xl font-extrabold leading-[1.05]">
               Sobre o <span className="text-gradient-eco">EcoShop</span>
             </h1>
-
             <p className="text-xl text-[var(--color-text-secondary)] max-w-2xl leading-relaxed">
               Projeto acadêmico finalista do Trabalho Interdisciplinar 2 da PUC
               Minas — originalmente desenvolvido em equipe com Java e Spark
               Framework, depois completamente refatorado para Next.js.
             </p>
-
             <div className="flex flex-wrap gap-x-10 gap-y-6 pt-4 border-t border-[var(--color-border)] mt-2">
               {STATS.map((s) => (
                 <div key={s.label} className="flex flex-col">
@@ -187,31 +218,19 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* RECONHECIMENTO ACADÊMICO */}
       <section className="bg-[linear-gradient(135deg,#1a3a2e_0%,#0f2419_100%)] py-16">
         <div className="container-eco">
-          <div
-            className="
-              animate-on-scroll
-              flex flex-col lg:flex-row items-center justify-between gap-10
-              p-10 rounded-3xl border border-white/10 relative overflow-hidden
-            "
-          >
+          <div className="animate-on-scroll flex flex-col lg:flex-row items-center justify-between gap-10 p-10 rounded-3xl border border-white/10 relative overflow-hidden">
             <div className="pointer-events-none absolute inset-0 opacity-10 [background-image:radial-gradient(circle_at_80%_50%,#f59e0b_0%,transparent_60%)]" />
-
             <div className="relative z-10 flex flex-col gap-6 lg:w-1/2">
               <div className="flex flex-col gap-3 text-white">
-                <span
-                  className="
-                    inline-flex items-center gap-2 w-fit
-                    px-4 py-1.5 rounded-full text-sm font-bold
-                    border border-[#c9a84c]/30 bg-[#c9a84c]/15 text-[#c9a84c]
-                  "
-                >
+                <span className="inline-flex items-center gap-2 w-fit px-4 py-1.5 rounded-full text-sm font-bold border border-[#c9a84c]/30 bg-[#c9a84c]/15 text-[#c9a84c]">
                   🏆 Reconhecimento Acadêmico
                 </span>
                 <h2 className="font-display text-3xl md:text-4xl font-extrabold text-white">
-                  Finalista entre os melhores
-                  <br className="hidden md:block" /> trabalhos de 2025/2
+                  Finalista entre os melhores <br className="hidden md:block" />{" "}
+                  trabalhos de 2025/2
                 </h2>
                 <p className="text-white/70 max-w-lg">
                   O EcoShop foi selecionado como finalista na competição de
@@ -220,16 +239,12 @@ export default function AboutPage() {
                   TI2.
                 </p>
               </div>
-
               <div className="flex flex-wrap gap-3 justify-start">
                 {["PUC Minas", "2025/2", "Grupo 10", "Sustentabilidade"].map(
                   (chip) => (
                     <span
                       key={chip}
-                      className="
-                        px-4 py-2 rounded-full text-sm font-semibold
-                        border border-[#c9a84c]/30 bg-[#c9a84c]/10 text-[#c9a84c]
-                      "
+                      className="px-4 py-2 rounded-full text-sm font-semibold border border-[#c9a84c]/30 bg-[#c9a84c]/10 text-[#c9a84c]"
                     >
                       {chip}
                     </span>
@@ -237,23 +252,18 @@ export default function AboutPage() {
                 )}
               </div>
             </div>
-
             <div className="relative z-10 lg:w-1/2 w-full">
               <img
                 src="/evento.png"
                 alt="Palco da Premiação Melhores TCCs e TIs na PUC Minas"
-                className="
-                  w-full h-auto object-cover 
-                  rounded-2xl border border-white/10 
-                  shadow-[0_0_30px_rgba(201,168,76,0.15)]
-                  transition-transform duration-500 hover:scale-[1.02]
-                "
+                className="w-full h-auto object-cover rounded-2xl border border-white/10 shadow-[0_0_30px_rgba(201,168,76,0.15)] transition-transform duration-500 hover:scale-[1.02]"
               />
             </div>
           </div>
         </div>
       </section>
 
+      {/* O PROBLEMA */}
       <section className="py-20 bg-[var(--color-bg-surface)]">
         <div className="container-eco">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
@@ -295,7 +305,6 @@ export default function AboutPage() {
                 de ecossistemas.
               </p>
             </div>
-
             <div className="animate-on-scroll grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
                 {
@@ -321,12 +330,7 @@ export default function AboutPage() {
               ].map((card) => (
                 <div
                   key={card.titulo}
-                  className="
-        flex flex-col gap-4 p-6 rounded-2xl
-        border border-[var(--color-border)] bg-[var(--color-bg-body)]
-        hover:border-[var(--color-primary)] hover:shadow-[var(--shadow-card)]
-        transition-all duration-300
-      "
+                  className="flex flex-col gap-4 p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-body)] hover:border-[var(--color-primary)] hover:shadow-[var(--shadow-card)] transition-all duration-300"
                 >
                   <span className="w-12 h-12 flex items-center justify-center rounded-xl text-2xl bg-[var(--color-primary-light)]">
                     {card.icon}
@@ -346,6 +350,7 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* SPRINTS */}
       <section className="py-20 bg-[var(--color-bg-body)]">
         <div className="container-eco">
           <div className="text-center max-w-xl mx-auto mb-14">
@@ -360,7 +365,6 @@ export default function AboutPage() {
               a maturidade técnica e funcional do projeto.
             </p>
           </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
             {SPRINTS.map((sprint, i) => (
               <div
@@ -396,6 +400,7 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* EVOLUÇÃO TÉCNICA (JAVA vs NEXT.JS) */}
       <section className="py-20 bg-[var(--color-bg-surface)]">
         <div className="container-eco">
           <div className="text-center max-w-xl mx-auto mb-14">
@@ -410,8 +415,8 @@ export default function AboutPage() {
               refatorado de forma individual para Next.js.
             </p>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-start">
+            {/* Versão Original */}
             <div className="animate-on-scroll flex flex-col gap-5 p-8 rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg-body)]">
               <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[var(--color-bg-surface-hover)] text-[var(--color-text-tertiary)] border border-[var(--color-border)] w-fit">
                 Versão Original · Equipe
@@ -443,6 +448,7 @@ export default function AboutPage() {
               </p>
             </div>
 
+            {/* Setinha */}
             <div className="hidden md:flex flex-col items-center justify-center gap-2 pt-12 text-[var(--color-primary)]">
               <div className="w-px h-8 bg-[var(--color-primary)] opacity-30" />
               <svg
@@ -461,6 +467,7 @@ export default function AboutPage() {
               <div className="w-px h-8 bg-[var(--color-primary)] opacity-30" />
             </div>
 
+            {/* Versão Refatorada */}
             <div
               className="animate-on-scroll flex flex-col gap-5 p-8 rounded-3xl border-2 border-[var(--color-primary)] bg-[var(--color-primary-light)]"
               style={{ transitionDelay: "120ms" }}
@@ -502,6 +509,7 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* MELHORIAS */}
       <section className="py-20 bg-[var(--color-bg-body)]">
         <div className="container-eco">
           <div className="text-center max-w-xl mx-auto mb-14">
@@ -534,7 +542,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ── TEAM ── */}
+      {/* EQUIPE */}
       <section className="py-20 bg-[var(--color-bg-surface)]">
         <div className="container-eco">
           <div className="text-center max-w-xl mx-auto mb-14">
@@ -545,18 +553,11 @@ export default function AboutPage() {
               Equipe original
             </h2>
           </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
             {TEAM.map((membro, i) => (
               <div
                 key={membro.nome}
-                className="
-            animate-on-scroll
-            flex flex-col items-center text-center gap-4 p-6 rounded-2xl
-            border border-[var(--color-border)] bg-[var(--color-bg-body)]
-            hover:border-[var(--color-primary)] hover:shadow-[var(--shadow-card)] hover:-translate-y-1
-            transition-all duration-300
-          "
+                className="animate-on-scroll flex flex-col items-center text-center gap-4 p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-body)] hover:border-[var(--color-primary)] hover:shadow-[var(--shadow-card)] hover:-translate-y-1 transition-all duration-300"
                 style={{ transitionDelay: `${i * 80}ms` }}
               >
                 <span className="w-12 h-12 flex items-center justify-center rounded-full text-lg font-extrabold font-display bg-[var(--color-primary-light)] text-[var(--color-primary)]">
@@ -615,7 +616,6 @@ export default function AboutPage() {
               </div>
             ))}
           </div>
-
           <p className="text-center text-sm text-[var(--color-text-tertiary)]">
             Orientadores:{" "}
             <strong className="text-[var(--color-text-secondary)]">
@@ -629,6 +629,7 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* CALL-TO-ACTION FINAL */}
       <section className="py-20 bg-[var(--color-bg-body)]">
         <div className="container-eco">
           <div className="animate-on-scroll flex flex-col md:flex-row items-center justify-between gap-8 p-10 rounded-3xl bg-[var(--color-primary)] relative overflow-hidden">
@@ -662,3 +663,4 @@ export default function AboutPage() {
     </main>
   );
 }
+

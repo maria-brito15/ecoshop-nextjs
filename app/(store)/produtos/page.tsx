@@ -1,12 +1,41 @@
 // app/(store)/produtos/page.tsx
 
+/**
+ * ============================================================================
+ * PÁGINA DE LISTAGEM DE PRODUTOS
+ * ============================================================================
+ * Rota: "/produtos"
+ *
+ * Página principal do catálogo de produtos do EcoShop.
+ * Permite que usuários naveguem, filtrem e busquem produtos sustentáveis.
+ *
+ * Funcionalidades:
+ * - Listagem paginada de produtos (12 por página)
+ * - Filtros: categoria, faixa de preço, busca textual
+ * - Ordenação: relevância, preço (crescente/decrescente), nome (A-Z/Z-A)
+ * - Layout responsivo com sidebar (desktop) e menu lateral (mobile)
+ * - Skeletons durante carregamento
+ * - Lazy loading com Intersection Observer
+ *
+ * @see lib/hooks/useProdutos.ts - Hook useListarProdutos
+ * @see lib/hooks/useCategorias.ts - Hook useListarCategorias
+ * ============================================================================
+ */
+
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useListarProdutos } from "@/lib/hooks/useProdutos";
 import { useListarCategorias } from "@/lib/hooks/useCategorias";
-import type { Produto } from "@/types/api";
+import type { Produto, ProdutoCertificado } from "@/types/api";
+
+// ----------------------------------------------------------------------------
+// COMPONENTE: SKELETON CARD
+// ----------------------------------------------------------------------------
+// Exibido durante o carregamento dos produtos. Mantém a mesma estrutura
+// do ProductCard para evitar layout shift (CLS).
 
 function SkeletonCard() {
   return (
@@ -24,6 +53,12 @@ function SkeletonCard() {
     </div>
   );
 }
+
+// ----------------------------------------------------------------------------
+// COMPONENTE: PRODUCT CARD
+// ----------------------------------------------------------------------------
+// Card individual de produto com lazy loading via Intersection Observer.
+// A animação de entrada só ocorre quando o card entra na viewport.
 
 function ProductCard({ produto, index }: { produto: Produto; index: number }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -45,12 +80,15 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
     return () => obs.disconnect();
   }, []);
 
-  const precoFormatado = parseFloat(produto.preco).toLocaleString("pt-BR", {
+  const precoFormatado = Number(produto.preco).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
 
+  // Delay escalonado para cada card (0ms, 80ms, 160ms...)
   const delay = Math.min(index % 6, 5) * 80;
+  const categoriaNome = produto.categoria?.nome ?? "Categoria";
+  const marcaNome = produto.marca?.nome ?? "Marca";
 
   return (
     <div
@@ -63,22 +101,17 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
     >
       <Link
         href={`/produtos/${produto.id}`}
-        className={`
-          group block rounded-[var(--radius-card)] overflow-hidden
-          border border-[var(--color-border)]
-          bg-[var(--color-bg-surface)]
-          transition-all duration-300 ease-out
-          hover:-translate-y-2 hover:shadow-[var(--shadow-xl)]
-          hover:border-[var(--color-primary)]
-          h-full flex flex-col
-        `}
+        className="group block rounded-[var(--radius-card)] overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-surface)] transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-[var(--shadow-xl)] hover:border-[var(--color-primary)] h-full flex flex-col"
       >
+        {/* Área da imagem */}
         <div className="relative h-56 bg-[var(--color-bg-body)] flex items-center justify-center overflow-hidden">
           {produto.fotoUrl ? (
-            <img
+            <Image
               src={produto.fotoUrl}
               alt={produto.nome}
-              className="card-img w-full h-full object-cover"
+              fill
+              className="card-img object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
           ) : (
             <span
@@ -89,6 +122,7 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
             </span>
           )}
 
+          {/* Badge da categoria */}
           <span
             className={`
               absolute top-3 left-3
@@ -99,9 +133,10 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
               border border-[var(--color-primary)]/20
             `}
           >
-            {produto.categoria.nome}
+            {categoriaNome}
           </span>
 
+          {/* Overlay com "Ver detalhes" que aparece no hover */}
           <div
             className={`
               absolute inset-0 flex items-center justify-center
@@ -124,9 +159,10 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
           </div>
         </div>
 
+        {/* Conteúdo textual do card */}
         <div className="p-5 flex flex-col gap-2 flex-1">
           <span className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-tertiary)]">
-            {produto.marca.nome}
+            {marcaNome}
           </span>
 
           <h3
@@ -140,30 +176,35 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
             {produto.nome}
           </h3>
 
+          {/* Descrição (limitada a 2 linhas) */}
           {produto.descricao && (
             <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">
               {produto.descricao}
             </p>
           )}
 
-          {produto.certificados.length > 0 && (
+          {/* Certificados do produto (máximo 2) */}
+          {produto.certificados && produto.certificados.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1">
-              {produto.certificados.slice(0, 2).map(({ certificado }) => (
-                <span
-                  key={certificado.id}
-                  className={`
-                    text-[10px] font-bold px-2 py-0.5 rounded-full
-                    bg-[var(--color-primary-light)]
-                    text-[var(--color-primary)]
-                    border border-[var(--color-primary)]/20
-                  `}
-                >
-                  ✓ {certificado.nome}
-                </span>
-              ))}
+              {produto.certificados
+                .slice(0, 2)
+                .map(({ certificado }: ProdutoCertificado) => (
+                  <span
+                    key={certificado.id}
+                    className={`
+                      text-[10px] font-bold px-2 py-0.5 rounded-full
+                      bg-[var(--color-primary-light)]
+                      text-[var(--color-primary)]
+                      border border-[var(--color-primary)]/20
+                    `}
+                  >
+                    ✓ {certificado.nome}
+                  </span>
+                ))}
             </div>
           )}
 
+          {/* Preço e selo Eco */}
           <div
             className={`
               mt-auto pt-4
@@ -195,7 +236,12 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
   );
 }
 
+// ----------------------------------------------------------------------------
+// PÁGINA PRINCIPAL
+// ----------------------------------------------------------------------------
+
 export default function ProdutosPage() {
+  // Estados de paginação e filtros
   const [page, setPage] = useState(1);
   const [nome, setNome] = useState("");
   const [busca, setBusca] = useState("");
@@ -205,6 +251,8 @@ export default function ProdutosPage() {
   const [sortBy, setSortBy] = useState("relevancia");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Hooks de dados
   const { data, carregando, erro } = useListarProdutos(
     page,
     12,
@@ -218,19 +266,24 @@ export default function ProdutosPage() {
   const totalPaginas = Math.ceil(total / 12);
   const categorias = catData?.categorias ?? [];
 
+  // Ordenação local (cliente-side)
   const produtosSorted = [...produtos].sort((a, b) => {
-    if (sortBy === "preco_asc")
-      return parseFloat(a.preco) - parseFloat(b.preco);
-    if (sortBy === "preco_desc")
-      return parseFloat(b.preco) - parseFloat(a.preco);
+    const precoA = Number(a.preco);
+    const precoB = Number(b.preco);
+    if (sortBy === "preco_asc") return precoA - precoB;
+    if (sortBy === "preco_desc") return precoB - precoA;
     if (sortBy === "nome_asc") return a.nome.localeCompare(b.nome);
     if (sortBy === "nome_desc") return b.nome.localeCompare(a.nome);
     return 0;
   });
 
   const produtosFiltrados = produtosSorted.filter(
-    (p) => parseFloat(p.preco) <= maxPreco,
+    (p) => Number(p.preco) <= maxPreco,
   );
+
+  // --------------------------------------------------------------------------
+  // HANDLERS
+  // --------------------------------------------------------------------------
 
   function handleBuscar(e: React.FormEvent) {
     e.preventDefault();
@@ -238,6 +291,7 @@ export default function ProdutosPage() {
     setBusca(nome);
   }
 
+  // Debounce no filtro de preço para evitar re-renders excessivos
   function handlePrecoChange(val: number) {
     setPrecoInput(val);
     clearTimeout(debounceRef.current);
@@ -256,8 +310,13 @@ export default function ProdutosPage() {
 
   const pricePercent = ((precoInput / 1000) * 100).toFixed(1);
 
+  // --------------------------------------------------------------------------
+  // RENDER
+  // --------------------------------------------------------------------------
+
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
+      {/* HEADER DA PÁGINA COM BREADCRUMB */}
       <div
         className={`
           border-b border-[var(--color-border)]
@@ -266,6 +325,7 @@ export default function ProdutosPage() {
         `}
       >
         <div className="container-eco">
+          {/* Breadcrumb de navegação */}
           <nav className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] mb-5">
             <Link
               href="/"
@@ -279,6 +339,7 @@ export default function ProdutosPage() {
             </span>
           </nav>
 
+          {/* Título e contador */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="font-display text-3xl md:text-4xl font-extrabold text-[var(--color-text-primary)]">
@@ -301,6 +362,7 @@ export default function ProdutosPage() {
               )}
             </div>
 
+            {/* Barra de busca */}
             <form
               onSubmit={handleBuscar}
               className="flex gap-2 w-full sm:w-auto sm:min-w-[320px]"
@@ -339,8 +401,12 @@ export default function ProdutosPage() {
         </div>
       </div>
 
+      {/* CONTEÚDO PRINCIPAL COM SIDEBAR */}
       <div className="container-eco py-8">
         <div className="flex gap-8 items-start">
+          {/* ================================================================ */}
+          {/* SIDEBAR DESKTOP */}
+          {/* ================================================================ */}
           <aside
             className={`
               hidden lg:flex flex-col gap-0
@@ -358,6 +424,7 @@ export default function ProdutosPage() {
               scrollbarColor: "var(--color-border) transparent",
             }}
           >
+            {/* Header do sidebar com botão limpar */}
             <div
               className={`
                 flex items-center justify-between
@@ -382,6 +449,7 @@ export default function ProdutosPage() {
               </button>
             </div>
 
+            {/* Filtro por categorias */}
             <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3 flex items-center gap-2">
                 <span>🏷</span> Categorias
@@ -436,6 +504,7 @@ export default function ProdutosPage() {
               </ul>
             </div>
 
+            {/* Filtro por faixa de preço (slider) */}
             <div className="px-4 py-5 border-b border-[var(--color-border)]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-4 flex items-center gap-2">
                 <span>💰</span> Faixa de Preço
@@ -474,6 +543,7 @@ export default function ProdutosPage() {
               </div>
             </div>
 
+            {/* Botão limpar (mobile) */}
             <div className="px-4 py-4">
               <button
                 onClick={limparFiltros}
@@ -491,7 +561,11 @@ export default function ProdutosPage() {
             </div>
           </aside>
 
+          {/* ================================================================ */}
+          {/* ÁREA DE LISTAGEM DOS PRODUTOS */}
+          {/* ================================================================ */}
           <div className="flex-1 min-w-0">
+            {/* Barra de ordenação e filtro mobile */}
             <div
               className={`
                 flex flex-col sm:flex-row sm:items-center justify-between gap-3
@@ -502,6 +576,7 @@ export default function ProdutosPage() {
               `}
             >
               <div className="flex items-center gap-3">
+                {/* Botão para abrir sidebar no mobile */}
                 <button
                   onClick={() => setSidebarOpen(true)}
                   className={`
@@ -519,6 +594,7 @@ export default function ProdutosPage() {
                   )}
                 </button>
 
+                {/* Contador de resultados */}
                 <p className="text-sm font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
                   <span className="text-[var(--color-primary)]">📦</span>
                   {carregando ? (
@@ -534,6 +610,7 @@ export default function ProdutosPage() {
                 </p>
               </div>
 
+              {/* Seletor de ordenação */}
               <div className="flex items-center gap-3">
                 <label className="text-sm font-semibold text-[var(--color-text-secondary)] whitespace-nowrap hidden sm:block">
                   Ordenar por:
@@ -567,6 +644,7 @@ export default function ProdutosPage() {
               </div>
             </div>
 
+            {/* Estado de erro */}
             {erro && (
               <div
                 className={`
@@ -593,6 +671,7 @@ export default function ProdutosPage() {
               </div>
             )}
 
+            {/* Skeletons (loading) */}
             {carregando && !erro && (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -601,6 +680,7 @@ export default function ProdutosPage() {
               </div>
             )}
 
+            {/* Nenhum produto encontrado */}
             {!carregando && !erro && produtosFiltrados.length === 0 && (
               <div
                 className={`
@@ -625,6 +705,7 @@ export default function ProdutosPage() {
               </div>
             )}
 
+            {/* Grid de produtos */}
             {!carregando && !erro && produtosFiltrados.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                 {produtosFiltrados.map((produto, i) => (
@@ -633,6 +714,7 @@ export default function ProdutosPage() {
               </div>
             )}
 
+            {/* Paginação */}
             {totalPaginas > 1 && !carregando && (
               <div className="flex items-center justify-center gap-3 mt-10">
                 <button
@@ -697,12 +779,17 @@ export default function ProdutosPage() {
         </div>
       </div>
 
+      {/* ================================================================ */}
+      {/* SIDEBAR MOBILE (OVERLAY) */}
+      {/* ================================================================ */}
       {sidebarOpen && (
         <>
+          {/* Backdrop escuro */}
           <div
             onClick={() => setSidebarOpen(false)}
             className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
           />
+          {/* Menu lateral */}
           <aside
             className={`
               fixed top-0 left-0 bottom-0 z-50 w-[300px]
@@ -714,6 +801,7 @@ export default function ProdutosPage() {
             `}
             style={{ animation: "slideInLeft 0.3s ease" }}
           >
+            {/* Header do mobile */}
             <div
               className={`
                 flex items-center justify-between
@@ -736,6 +824,7 @@ export default function ProdutosPage() {
               </button>
             </div>
 
+            {/* Filtros (versão mobile) */}
             <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3">
                 🏷 Categorias
@@ -770,6 +859,7 @@ export default function ProdutosPage() {
               </ul>
             </div>
 
+            {/* Slider de preço (mobile) */}
             <div className="px-4 py-5">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-4">
                 💰 Faixa de Preço
@@ -796,6 +886,7 @@ export default function ProdutosPage() {
               </div>
             </div>
 
+            {/* Botão limpar (mobile) */}
             <div className="px-4 py-4 mt-auto border-t border-[var(--color-border)]">
               <button
                 onClick={() => {
@@ -811,6 +902,7 @@ export default function ProdutosPage() {
         </>
       )}
 
+      {/* Estilos para animação do slide-in no mobile */}
       <style jsx>{`
         @keyframes slideInLeft {
           from {

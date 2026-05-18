@@ -1,9 +1,40 @@
 // app/(admin)/painel/page.tsx
 
+/**
+ * ============================================================================
+ * PAINEL ADMINISTRATIVO
+ * ============================================================================
+ * Rota: "/painel" (protegida - apenas ADMIN)
+ *
+ * Painel completo para gerenciamento da plataforma EcoShop.
+ * Requer autenticação e tipo de usuário ADMIN.
+ *
+ * Funcionalidades por aba:
+ * - Produtos: CRUD completo (criar, editar, deletar, gerenciar fotos)
+ * - Categorias: CRUD de categorias
+ * - Marcas: CRUD de marcas (associadas a usuários)
+ * - Certificados: CRUD de certificados de sustentabilidade
+ *
+ * Segurança:
+ * - Apenas usuários com tipo "ADMIN" têm acesso
+ * - Middleware requireAdmin protege a rota
+ * - Todas as operações de API validam permissões novamente
+ *
+ * @see app/_middleware/auth.ts - requireAdmin
+ * @see lib/hooks/* - Hooks para operações CRUD
+ * ============================================================================
+ */
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useFotos, type Foto } from "@/lib/hooks/useFotos";
+import {
+  useListarFotos,
+  useUploadFoto,
+  useDeletarFoto,
+} from "@/lib/hooks/useFotos";
+
+import type { Foto } from "@/types/api";
 
 import {
   useListarProdutos,
@@ -53,11 +84,16 @@ const ABA_CONFIG: Record<Aba, { label: string; icon: string; desc: string }> = {
   },
 };
 
-export default function PainelPage() {
+// ============================================================================
+// PÁGINA PRINCIPAL DO PAINEL
+// ============================================================================
+
+function PainelPage() {
   const [aba, setAba] = useState<Aba>("produtos");
 
   return (
     <div className="flex min-h-[calc(100vh-var(--spacing-header))]">
+      {/* SIDEBAR - Desktop */}
       <aside
         className="
           hidden lg:flex flex-col
@@ -140,9 +176,12 @@ export default function PainelPage() {
         </div>
       </aside>
 
+      {/* CONTEÚDO PRINCIPAL */}
       <main className="flex-1 min-w-0 bg-[var(--color-bg-body)]">
+        {/* Header fixo com título da aba atual */}
         <div className="sticky top-[var(--spacing-header)] z-10 bg-[var(--color-bg-surface)] border-b border-[var(--color-border)] px-6 py-4">
           <div className="flex items-center justify-between gap-4">
+            {/* Tabs mobile (scroll horizontal) */}
             <div className="flex gap-2 lg:hidden overflow-x-auto pb-0.5 scrollbar-hide">
               {(
                 Object.entries(ABA_CONFIG) as [Aba, (typeof ABA_CONFIG)[Aba]][]
@@ -151,15 +190,15 @@ export default function PainelPage() {
                   key={key}
                   onClick={() => setAba(key)}
                   className={`
-                      shrink-0 flex items-center gap-1.5
-                      px-3 py-1.5 rounded-full text-xs font-medium
-                      transition-all duration-200 border
-                      ${
-                        aba === key
-                          ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)]"
-                          : "bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-primary)]"
-                      }
-                    `}
+                    shrink-0 flex items-center gap-1.5
+                    px-3 py-1.5 rounded-full text-xs font-medium
+                    transition-all duration-200 border
+                    ${
+                      aba === key
+                        ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)]"
+                        : "bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-primary)]"
+                    }
+                  `}
                 >
                   <span>{cfg.icon}</span>
                   {cfg.label}
@@ -167,6 +206,7 @@ export default function PainelPage() {
               ))}
             </div>
 
+            {/* Título desktop */}
             <div className="hidden lg:block">
               <h1
                 className="text-xl font-bold text-[var(--color-text-primary)]"
@@ -181,6 +221,7 @@ export default function PainelPage() {
           </div>
         </div>
 
+        {/* Conteúdo da aba selecionada */}
         <div className="p-6">
           {aba === "produtos" && <SecaoProdutos />}
           {aba === "categorias" && <SecaoCategorias />}
@@ -191,6 +232,10 @@ export default function PainelPage() {
     </div>
   );
 }
+
+// ============================================================================
+// COMPONENTES REUTILIZÁVEIS
+// ============================================================================
 
 const inputCls = `
   w-full px-3.5 py-2.5
@@ -206,6 +251,10 @@ const inputCls = `
   font-[var(--font-body)]
 `;
 
+/**
+ * Modal para gerenciar fotos de um produto específico.
+ * Permite upload, visualização e deleção de imagens.
+ */
 interface ModalFotosProps {
   produto: Produto;
   isOpen: boolean;
@@ -219,48 +268,55 @@ function ModalFotos({
   onClose,
   onFotoAdicionada,
 }: ModalFotosProps) {
-  const { fotos, carregando, erro, carregar, upload, deletar } = useFotos(
-    produto.id,
-  );
-  const [enviando, setEnviando] = useState(false);
+  const {
+    data: fotosData,
+    carregando,
+    erro,
+  } = useListarFotos(isOpen ? produto.id : (null as unknown as number));
+  const uploadMutation = useUploadFoto(produto.id);
+  const deletarMutation = useDeletarFoto(produto.id);
+
+  const fotos = fotosData?.fotos ?? [];
+
   const [erroUpload, setErroUpload] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Limpa erro de upload ao abrir modal
   useEffect(() => {
-    if (isOpen) {
-      carregar();
-    }
-  }, [isOpen, carregar]);
+    if (isOpen) setErroUpload(null);
+  }, [isOpen]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const arquivo = e.target.files?.[0];
     if (!arquivo) return;
 
-    setEnviando(true);
     setErroUpload(null);
+    const formData = new FormData();
+    formData.append("arquivo", arquivo);
 
-    try {
-      await upload(arquivo);
+    const resultado = await uploadMutation.executar(
+      `/api/produtos/${produto.id}/fotos`,
+      formData,
+    );
+
+    if (resultado) {
       onFotoAdicionada();
-      await carregar();
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    } catch (err: any) {
-      setErroUpload(err.message || "Erro ao fazer upload");
-    } finally {
-      setEnviando(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } else {
+      setErroUpload(uploadMutation.erro ?? "Erro ao fazer upload");
     }
   };
 
   const handleDeleteFoto = async (nomeArquivo: string) => {
     if (!confirm("Tem certeza que deseja deletar esta foto?")) return;
 
-    try {
-      await deletar(nomeArquivo);
-      await carregar();
-    } catch (err: any) {
-      setErroUpload(err.message || "Erro ao deletar foto");
+    setErroUpload(null);
+    const resultado = await deletarMutation.executar(
+      `/api/produtos/${produto.id}/fotos?nome=${encodeURIComponent(nomeArquivo)}`,
+    );
+
+    if (!resultado) {
+      setErroUpload(deletarMutation.erro ?? "Erro ao deletar foto");
     }
   };
 
@@ -287,9 +343,8 @@ function ModalFotos({
           </button>
         </div>
 
-        {/* Conteúdo */}
         <div className="p-6 space-y-6">
-          {/* Upload Area */}
+          {/* Área de upload */}
           <div>
             <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-3">
               Adicionar Nova Foto
@@ -300,7 +355,7 @@ function ModalFotos({
                 type="file"
                 accept="image/*"
                 onChange={handleFileSelect}
-                disabled={enviando}
+                disabled={uploadMutation.carregando}
                 className="hidden"
                 id="foto-input"
               />
@@ -311,13 +366,13 @@ function ModalFotos({
                   p-8 rounded-xl border-2 border-dashed
                   cursor-pointer transition-all
                   ${
-                    enviando
+                    uploadMutation.carregando
                       ? "border-[var(--color-border)] bg-[var(--color-bg-body)]"
                       : "border-[var(--color-primary)] bg-[var(--color-primary-light)] hover:bg-[var(--color-primary)]/10"
                   }
                 `}
               >
-                {enviando ? (
+                {uploadMutation.carregando ? (
                   <>
                     <div className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
                     <span className="text-sm font-medium text-[var(--color-text-secondary)]">
@@ -345,7 +400,7 @@ function ModalFotos({
             {erro && <p className="text-sm text-red-600 mt-2">❌ {erro}</p>}
           </div>
 
-          {/* Lista de Fotos */}
+          {/* Galeria de fotos existentes */}
           <div>
             <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-3">
               Fotos Existentes ({fotos.length})
@@ -372,6 +427,7 @@ function ModalFotos({
                       className="w-full h-40 object-cover"
                     />
 
+                    {/* Overlay com ações ao hover */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center gap-2">
                       <a
                         href={foto.url}
@@ -391,6 +447,7 @@ function ModalFotos({
                       </button>
                     </div>
 
+                    {/* Nome do arquivo */}
                     <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1">
                       <p className="text-xs text-white truncate">{foto.nome}</p>
                     </div>
@@ -415,8 +472,11 @@ function ModalFotos({
   );
 }
 
-// FIX 1: renamed from SecaoProdutosComFotos → SecaoProdutos to match usage in PainelPage
-export function SecaoProdutos() {
+// ============================================================================
+// SEÇÃO: PRODUTOS
+// ============================================================================
+
+function SecaoProdutos() {
   const [modalFotosAberto, setModalFotosAberto] = useState(false);
   const [produtoSelecionado, setProdutoSelecionado] = useState<Produto | null>(
     null,
@@ -431,17 +491,12 @@ export function SecaoProdutos() {
     marcaId: "",
   });
 
-  // FIX 2: was `{ fotos: listaProdutos }` — `fotos` doesn't exist on useFetch result.
-  // Correct key is `data`, then extract the `produtos` array from the response shape.
   const { data: produtosData, carregando, erro } = useListarProdutos(1, 100);
   const listaProdutos = produtosData?.produtos ?? [];
 
-  // FIX 3: was `{ data: categorias }` — `data` is the full response object
-  // `{ categorias: [...] }`, not the array itself. Extract the nested array.
   const { data: categoriasData } = useListarCategorias();
   const categorias = categoriasData?.categorias ?? [];
 
-  // FIX 4: same issue as categorias above.
   const { data: marcasData } = useListarMarcas();
   const marcas = marcasData?.marcas ?? [];
 
@@ -480,7 +535,7 @@ export function SecaoProdutos() {
 
     const dados = {
       nome: form.nome,
-      descricao: form.descricao,
+      descricao: form.descricao || undefined,
       preco: parseFloat(form.preco),
       categoriaId: parseInt(form.categoriaId),
       marcaId: parseInt(form.marcaId),
@@ -560,9 +615,14 @@ export function SecaoProdutos() {
             {listaProdutos.map((produto) => (
               <tr key={produto.id}>
                 <Td>{produto.nome}</Td>
-                <Td>R$ {parseFloat(String(produto.preco)).toFixed(2)}</Td>
-                <Td>{produto.categoria.nome}</Td>
-                <Td>{produto.marca.nome}</Td>
+                <Td>
+                  {new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }).format(Number(produto.preco))}
+                </Td>
+                <Td>{produto.categoria?.nome || "Categoria não definida"}</Td>
+                <Td>{produto.marca?.nome || "Marca não definida"}</Td>
                 <Td className="space-x-2">
                   <ActionButton
                     variant="edit"
@@ -589,7 +649,7 @@ export function SecaoProdutos() {
         </TableContainer>
       )}
 
-      {/* Modal de Edição/Criação */}
+      {/* Modal de criação/edição */}
       {modalAberto && (
         <Modal
           title={editando ? "Editar Produto" : "Novo Produto"}
@@ -638,20 +698,22 @@ export function SecaoProdutos() {
                 disabled={criar.carregando || atualizar.carregando}
                 className="flex-1 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-hover)] disabled:opacity-50"
               >
-                {editando ? "Atualizar" : "Criar"}
+                {" "}
+                {editando ? "Atualizar" : "Criar"}{" "}
               </button>
               <button
                 onClick={() => setModalAberto(false)}
                 className="flex-1 px-4 py-2 bg-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-border-hover)]"
               >
-                Cancelar
+                {" "}
+                Cancelar{" "}
               </button>
             </div>
           </div>
         </Modal>
       )}
 
-      {/* Modal de Fotos */}
+      {/* Modal de gerenciamento de fotos */}
       {produtoSelecionado && (
         <ModalFotos
           produto={produtoSelecionado}
@@ -660,14 +722,535 @@ export function SecaoProdutos() {
             setModalFotosAberto(false);
             setProdutoSelecionado(null);
           }}
-          onFotoAdicionada={() => {
-            // Aqui você pode atualizar a lista de produtos se necessário
-          }}
+          onFotoAdicionada={() => {}}
         />
       )}
     </>
   );
 }
+
+// ============================================================================
+// SEÇÃO: CATEGORIAS
+// ============================================================================
+
+function SecaoCategorias() {
+  const { data, carregando, erro } = useListarCategorias();
+  const criar = useCriarCategoria();
+  const atualizar = useAtualizarCategoria();
+  const deletar = useDeletarCategoria();
+
+  const categorias = data?.categorias ?? [];
+
+  const [modalAberto, setModalAberto] = useState(false);
+  const [editando, setEditando] = useState<Categoria | null>(null);
+  const [form, setForm] = useState({ nome: "", descricao: "" });
+
+  function abrirCriar() {
+    setEditando(null);
+    setForm({ nome: "", descricao: "" });
+    setModalAberto(true);
+  }
+
+  function abrirEditar(c: Categoria) {
+    setEditando(c);
+    setForm({ nome: c.nome, descricao: c.descricao ?? "" });
+    setModalAberto(true);
+  }
+
+  function fechar() {
+    setModalAberto(false);
+    setEditando(null);
+  }
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const body = { nome: form.nome, descricao: form.descricao || undefined };
+
+    if (editando) {
+      const ok = await atualizar.executar(
+        `/api/categorias/${editando.id}`,
+        body,
+      );
+      if (ok) fechar();
+    } else {
+      const ok = await criar.executar("/api/categorias", body);
+      if (ok) fechar();
+    }
+  }
+
+  async function handleDeletar(id: number) {
+    if (!confirm("Tem certeza que deseja deletar esta categoria?")) return;
+    await deletar.executar(`/api/categorias/${id}`);
+  }
+
+  const mutando = criar.carregando || atualizar.carregando;
+  const erroMutacao = criar.erro || atualizar.erro || deletar.erro;
+
+  return (
+    <section className="animate-[fadeIn_0.4s_ease]">
+      {erroMutacao && <ErrorMessage message={erroMutacao} />}
+      <SectionHeader
+        title="Lista de Categorias"
+        onAdd={abrirCriar}
+        addLabel="Nova Categoria"
+      />
+      <TableContainer>
+        <thead>
+          <tr>
+            <Th>ID</Th>
+            <Th>Nome</Th>
+            <Th>Descrição</Th>
+            <Th>Ações</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {carregando ? (
+            <LoadingRow cols={4} />
+          ) : erro ? (
+            <EmptyRow cols={4} message={`Erro ao carregar: ${erro}`} />
+          ) : categorias.length === 0 ? (
+            <EmptyRow cols={4} message="Nenhuma categoria cadastrada ainda." />
+          ) : (
+            categorias.map((c) => (
+              <tr
+                key={c.id}
+                className="hover:bg-[var(--color-bg-body)] transition-colors duration-150"
+              >
+                <Td>
+                  <span className="font-mono text-xs text-[var(--color-text-secondary)]">
+                    #{c.id}
+                  </span>
+                </Td>
+                <Td>
+                  <span className="font-medium">{c.nome}</span>
+                </Td>
+                <Td className="text-[var(--color-text-secondary)] max-w-xs truncate">
+                  {c.descricao ?? "—"}
+                </Td>
+                <Td>
+                  <div className="flex gap-2">
+                    <ActionButton variant="edit" onClick={() => abrirEditar(c)}>
+                      ✏️ Editar
+                    </ActionButton>
+                    <ActionButton
+                      variant="delete"
+                      onClick={() => handleDeletar(c.id)}
+                    >
+                      🗑️ Deletar
+                    </ActionButton>
+                  </div>
+                </Td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </TableContainer>
+      <Modal
+        open={modalAberto}
+        title={editando ? "Editar Categoria" : "Nova Categoria"}
+        onClose={fechar}
+        onSubmit={handleSubmit}
+        loading={mutando}
+        error={erroMutacao}
+      >
+        <Field label="Nome">
+          <input
+            name="nome"
+            value={form.nome}
+            onChange={handleChange}
+            placeholder="Nome da categoria"
+            required
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Descrição">
+          <input
+            name="descricao"
+            value={form.descricao}
+            onChange={handleChange}
+            placeholder="Descrição opcional"
+            className={inputCls}
+          />
+        </Field>
+      </Modal>
+    </section>
+  );
+}
+
+// ============================================================================
+// SEÇÃO: MARCAS
+// ============================================================================
+
+function SecaoMarcas() {
+  const { data, carregando, erro } = useListarMarcas();
+  const criar = useCriarMarca();
+  const atualizar = useAtualizarMarca();
+  const deletar = useDeletarMarca();
+
+  const marcas = data?.marcas ?? [];
+
+  const [modalAberto, setModalAberto] = useState(false);
+  const [editando, setEditando] = useState<Marca | null>(null);
+  const [form, setForm] = useState({ nome: "", descricao: "", usuarioId: "" });
+
+  function abrirCriar() {
+    setEditando(null);
+    setForm({ nome: "", descricao: "", usuarioId: "" });
+    setModalAberto(true);
+  }
+
+  function abrirEditar(m: Marca) {
+    setEditando(m);
+    setForm({
+      nome: m.nome,
+      descricao: m.descricao ?? "",
+      usuarioId: String(m.usuarioId),
+    });
+    setModalAberto(true);
+  }
+
+  function fechar() {
+    setModalAberto(false);
+    setEditando(null);
+  }
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (editando) {
+      const body = { nome: form.nome, descricao: form.descricao || undefined };
+      const ok = await atualizar.executar(`/api/marcas/${editando.id}`, body);
+      if (ok) fechar();
+    } else {
+      const body = {
+        nome: form.nome,
+        descricao: form.descricao || undefined,
+        usuarioId: Number(form.usuarioId),
+      };
+      const ok = await criar.executar("/api/marcas", body);
+      if (ok) fechar();
+    }
+  }
+
+  async function handleDeletar(id: number) {
+    if (!confirm("Tem certeza que deseja deletar esta marca?")) return;
+    await deletar.executar(`/api/marcas/${id}`);
+  }
+
+  const mutando = criar.carregando || atualizar.carregando;
+  const erroMutacao = criar.erro || atualizar.erro || deletar.erro;
+
+  return (
+    <section className="animate-[fadeIn_0.4s_ease]">
+      {erroMutacao && <ErrorMessage message={erroMutacao} />}
+      <SectionHeader
+        title="Lista de Marcas"
+        onAdd={abrirCriar}
+        addLabel="Nova Marca"
+      />
+      <TableContainer>
+        <thead>
+          <tr>
+            <Th>ID</Th>
+            <Th>Nome</Th>
+            <Th>Descrição</Th>
+            <Th>Responsável</Th>
+            <Th>Ações</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {carregando ? (
+            <LoadingRow cols={5} />
+          ) : erro ? (
+            <EmptyRow cols={5} message={`Erro ao carregar: ${erro}`} />
+          ) : marcas.length === 0 ? (
+            <EmptyRow cols={5} message="Nenhuma marca cadastrada ainda." />
+          ) : (
+            marcas.map((m) => (
+              <tr
+                key={m.id}
+                className="hover:bg-[var(--color-bg-body)] transition-colors duration-150"
+              >
+                <Td>
+                  <span className="font-mono text-xs text-[var(--color-text-secondary)]">
+                    #{m.id}
+                  </span>
+                </Td>
+                <Td>
+                  <span className="font-medium">{m.nome}</span>
+                </Td>
+                <Td className="text-[var(--color-text-secondary)] max-w-xs truncate">
+                  {m.descricao ?? "—"}
+                </Td>
+                <Td>
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-[var(--color-primary-light)] flex items-center justify-center text-xs font-bold text-[var(--color-primary)]">
+                      {m.usuario?.nome.charAt(0).toUpperCase() || "?"}
+                    </div>
+                    <span className="text-sm">
+                      {m.usuario?.nome || "Usuário não definido"}
+                    </span>
+                  </div>
+                </Td>
+                <Td>
+                  <div className="flex gap-2">
+                    <ActionButton variant="edit" onClick={() => abrirEditar(m)}>
+                      ✏️ Editar
+                    </ActionButton>
+                    <ActionButton
+                      variant="delete"
+                      onClick={() => handleDeletar(m.id)}
+                    >
+                      🗑️ Deletar
+                    </ActionButton>
+                  </div>
+                </Td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </TableContainer>
+      <Modal
+        open={modalAberto}
+        title={editando ? "Editar Marca" : "Nova Marca"}
+        onClose={fechar}
+        onSubmit={handleSubmit}
+        loading={mutando}
+        error={erroMutacao}
+      >
+        <Field label="Nome">
+          <input
+            name="nome"
+            value={form.nome}
+            onChange={handleChange}
+            placeholder="Nome da marca"
+            required
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Descrição">
+          <input
+            name="descricao"
+            value={form.descricao}
+            onChange={handleChange}
+            placeholder="Descrição opcional"
+            className={inputCls}
+          />
+        </Field>
+        {!editando && (
+          <Field label="ID do Usuário Responsável">
+            <input
+              name="usuarioId"
+              type="number"
+              value={form.usuarioId}
+              onChange={handleChange}
+              placeholder="Ex: 1"
+              required
+              className={inputCls}
+            />
+          </Field>
+        )}
+      </Modal>
+    </section>
+  );
+}
+
+// ============================================================================
+// SEÇÃO: CERTIFICADOS
+// ============================================================================
+
+function SecaoCertificados() {
+  const { data, carregando, erro } = useListarCertificados();
+  const criar = useCriarCertificado();
+  const atualizar = useAtualizarCertificado();
+  const deletar = useDeletarCertificado();
+
+  const certificados = data?.certificados ?? [];
+
+  const [modalAberto, setModalAberto] = useState(false);
+  const [editando, setEditando] = useState<Certificado | null>(null);
+  const [form, setForm] = useState({
+    nome: "",
+    descricao: "",
+    orgaoEmissor: "",
+  });
+
+  function abrirCriar() {
+    setEditando(null);
+    setForm({ nome: "", descricao: "", orgaoEmissor: "" });
+    setModalAberto(true);
+  }
+
+  function abrirEditar(c: Certificado) {
+    setEditando(c);
+    setForm({
+      nome: c.nome,
+      descricao: c.descricao ?? "",
+      orgaoEmissor: c.orgaoEmissor,
+    });
+    setModalAberto(true);
+  }
+
+  function fechar() {
+    setModalAberto(false);
+    setEditando(null);
+  }
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const body = {
+      nome: form.nome,
+      descricao: form.descricao || undefined,
+      orgaoEmissor: form.orgaoEmissor,
+    };
+
+    if (editando) {
+      const ok = await atualizar.executar(
+        `/api/certificados/${editando.id}`,
+        body,
+      );
+      if (ok) fechar();
+    } else {
+      const ok = await criar.executar("/api/certificados", body);
+      if (ok) fechar();
+    }
+  }
+
+  async function handleDeletar(id: number) {
+    if (!confirm("Tem certeza que deseja deletar este certificado?")) return;
+    await deletar.executar(`/api/certificados/${id}`);
+  }
+
+  const mutando = criar.carregando || atualizar.carregando;
+  const erroMutacao = criar.erro || atualizar.erro || deletar.erro;
+
+  return (
+    <section className="animate-[fadeIn_0.4s_ease]">
+      {erroMutacao && <ErrorMessage message={erroMutacao} />}
+      <SectionHeader
+        title="Lista de Certificados"
+        onAdd={abrirCriar}
+        addLabel="Novo Certificado"
+      />
+      <TableContainer>
+        <thead>
+          <tr>
+            <Th>ID</Th>
+            <Th>Nome</Th>
+            <Th>Órgão Emissor</Th>
+            <Th>Descrição</Th>
+            <Th>Ações</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {carregando ? (
+            <LoadingRow cols={5} />
+          ) : erro ? (
+            <EmptyRow cols={5} message={`Erro ao carregar: ${erro}`} />
+          ) : certificados.length === 0 ? (
+            <EmptyRow cols={5} message="Nenhum certificado cadastrado ainda." />
+          ) : (
+            certificados.map((c) => (
+              <tr
+                key={c.id}
+                className="hover:bg-[var(--color-bg-body)] transition-colors duration-150"
+              >
+                <Td>
+                  <span className="font-mono text-xs text-[var(--color-text-secondary)]">
+                    #{c.id}
+                  </span>
+                </Td>
+                <Td>
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-lg bg-[var(--color-primary-light)] flex items-center justify-center text-sm">
+                      🌿
+                    </span>
+                    <span className="font-medium">{c.nome}</span>
+                  </div>
+                </Td>
+                <Td>
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                    {c.orgaoEmissor}
+                  </span>
+                </Td>
+                <Td className="text-[var(--color-text-secondary)] max-w-xs truncate">
+                  {c.descricao ?? "—"}
+                </Td>
+                <Td>
+                  <div className="flex gap-2">
+                    <ActionButton variant="edit" onClick={() => abrirEditar(c)}>
+                      ✏️ Editar
+                    </ActionButton>
+                    <ActionButton
+                      variant="delete"
+                      onClick={() => handleDeletar(c.id)}
+                    >
+                      🗑️ Deletar
+                    </ActionButton>
+                  </div>
+                </Td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </TableContainer>
+      <Modal
+        open={modalAberto}
+        title={editando ? "Editar Certificado" : "Novo Certificado"}
+        onClose={fechar}
+        onSubmit={handleSubmit}
+        loading={mutando}
+        error={erroMutacao}
+      >
+        <Field label="Nome">
+          <input
+            name="nome"
+            value={form.nome}
+            onChange={handleChange}
+            placeholder="Nome do certificado"
+            required
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Órgão Emissor">
+          <input
+            name="orgaoEmissor"
+            value={form.orgaoEmissor}
+            onChange={handleChange}
+            placeholder="Ex: INMETRO, IBD..."
+            required
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Descrição">
+          <input
+            name="descricao"
+            value={form.descricao}
+            onChange={handleChange}
+            placeholder="Descrição opcional"
+            className={inputCls}
+          />
+        </Field>
+      </Modal>
+    </section>
+  );
+}
+
+// ============================================================================
+// COMPONENTES AUXILIARES REUTILIZÁVEIS
+// ============================================================================
 
 function SectionHeader({
   title,
@@ -782,8 +1365,6 @@ function ErrorMessage({ message }: { message: string }) {
   );
 }
 
-// FIX 5: Modal was missing `open`, `onSubmit`, `loading`, and `error` props that
-// SecaoCategorias, SecaoMarcas and SecaoCertificados all pass to it.
 function Modal({
   title,
   onClose,
@@ -801,8 +1382,6 @@ function Modal({
   loading?: boolean;
   error?: string | null;
 }) {
-  // When used with `open` prop (SecaoCategorias/Marcas/Certificados style),
-  // respect it; when used without (SecaoProdutos inline style), always render.
   if (open === false) return null;
 
   return (
@@ -848,11 +1427,6 @@ function Modal({
   );
 }
 
-// FIX 6: Field was used two different ways — as a wrapper `<Field label="X"><input .../></Field>`
-// in SecaoCategorias/Marcas/Certificados, but as a self-contained field with value/onChange
-// in SecaoProdutos. The original only supported the self-contained style, so `children` was
-// missing. Updated to support both: if `children` is provided it renders as a label wrapper;
-// otherwise it falls back to the original controlled input/select/textarea behavior.
 function Field({
   label,
   value,
@@ -864,7 +1438,11 @@ function Field({
 }: {
   label: string;
   value?: string;
-  onChange?: (e: any) => void;
+  onChange?: (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => void;
   placeholder?: string;
   type?: string;
   options?: { id: number; nome: string }[];
@@ -911,521 +1489,4 @@ function Field({
   );
 }
 
-function SecaoCategorias() {
-  const { data, carregando, erro } = useListarCategorias();
-  const criar = useCriarCategoria();
-  const atualizar = useAtualizarCategoria();
-  const deletar = useDeletarCategoria();
-
-  const categorias = data?.categorias ?? [];
-
-  const [modalAberto, setModalAberto] = useState(false);
-  const [editando, setEditando] = useState<Categoria | null>(null);
-  const [form, setForm] = useState({ nome: "", descricao: "" });
-
-  function abrirCriar() {
-    setEditando(null);
-    setForm({ nome: "", descricao: "" });
-    setModalAberto(true);
-  }
-
-  function abrirEditar(c: Categoria) {
-    setEditando(c);
-    setForm({ nome: c.nome, descricao: c.descricao ?? "" });
-    setModalAberto(true);
-  }
-
-  function fechar() {
-    setModalAberto(false);
-    setEditando(null);
-  }
-
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const body = { nome: form.nome, descricao: form.descricao || undefined };
-
-    if (editando) {
-      const ok = await atualizar.executar(
-        `/api/categorias/${editando.id}`,
-        body,
-      );
-      if (ok) fechar();
-    } else {
-      const ok = await criar.executar("/api/categorias", body);
-      if (ok) fechar();
-    }
-  }
-
-  async function handleDeletar(id: number) {
-    if (!confirm("Tem certeza que deseja deletar esta categoria?")) return;
-    await deletar.executar(`/api/categorias/${id}`);
-  }
-
-  const mutando = criar.carregando || atualizar.carregando;
-  const erroMutacao = criar.erro || atualizar.erro || deletar.erro;
-
-  return (
-    <section className="animate-[fadeIn_0.4s_ease]">
-      {erroMutacao && <ErrorMessage message={erroMutacao} />}
-
-      <SectionHeader
-        title="Lista de Categorias"
-        onAdd={abrirCriar}
-        addLabel="Nova Categoria"
-      />
-
-      <TableContainer>
-        <thead>
-          <tr>
-            <Th>ID</Th>
-            <Th>Nome</Th>
-            <Th>Descrição</Th>
-            <Th>Ações</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {carregando ? (
-            <LoadingRow cols={4} />
-          ) : erro ? (
-            <EmptyRow cols={4} message={`Erro ao carregar: ${erro}`} />
-          ) : categorias.length === 0 ? (
-            <EmptyRow cols={4} message="Nenhuma categoria cadastrada ainda." />
-          ) : (
-            categorias.map((c) => (
-              <tr
-                key={c.id}
-                className="hover:bg-[var(--color-bg-body)] transition-colors duration-150"
-              >
-                <Td>
-                  <span className="font-mono text-xs text-[var(--color-text-secondary)]">
-                    #{c.id}
-                  </span>
-                </Td>
-                <Td>
-                  <span className="font-medium">{c.nome}</span>
-                </Td>
-                <Td className="text-[var(--color-text-secondary)] max-w-xs truncate">
-                  {c.descricao ?? "—"}
-                </Td>
-                <Td>
-                  <div className="flex gap-2">
-                    <ActionButton variant="edit" onClick={() => abrirEditar(c)}>
-                      ✏️ Editar
-                    </ActionButton>
-                    <ActionButton
-                      variant="delete"
-                      onClick={() => handleDeletar(c.id)}
-                    >
-                      🗑️ Deletar
-                    </ActionButton>
-                  </div>
-                </Td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </TableContainer>
-
-      <Modal
-        open={modalAberto}
-        title={editando ? "Editar Categoria" : "Nova Categoria"}
-        onClose={fechar}
-        onSubmit={handleSubmit}
-        loading={mutando}
-        error={erroMutacao}
-      >
-        <Field label="Nome">
-          <input
-            name="nome"
-            value={form.nome}
-            onChange={handleChange}
-            placeholder="Nome da categoria"
-            required
-            className={inputCls}
-          />
-        </Field>
-
-        <Field label="Descrição">
-          <input
-            name="descricao"
-            value={form.descricao}
-            onChange={handleChange}
-            placeholder="Descrição opcional"
-            className={inputCls}
-          />
-        </Field>
-      </Modal>
-    </section>
-  );
-}
-
-function SecaoMarcas() {
-  const { data, carregando, erro } = useListarMarcas();
-  const criar = useCriarMarca();
-  const atualizar = useAtualizarMarca();
-  const deletar = useDeletarMarca();
-
-  const marcas = data?.marcas ?? [];
-
-  const [modalAberto, setModalAberto] = useState(false);
-  const [editando, setEditando] = useState<Marca | null>(null);
-  const [form, setForm] = useState({ nome: "", descricao: "", usuarioId: "" });
-
-  function abrirCriar() {
-    setEditando(null);
-    setForm({ nome: "", descricao: "", usuarioId: "" });
-    setModalAberto(true);
-  }
-
-  function abrirEditar(m: Marca) {
-    setEditando(m);
-    setForm({
-      nome: m.nome,
-      descricao: m.descricao ?? "",
-      usuarioId: String(m.usuarioId),
-    });
-    setModalAberto(true);
-  }
-
-  function fechar() {
-    setModalAberto(false);
-    setEditando(null);
-  }
-
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (editando) {
-      const body = { nome: form.nome, descricao: form.descricao || undefined };
-      const ok = await atualizar.executar(`/api/marcas/${editando.id}`, body);
-      if (ok) fechar();
-    } else {
-      const body = {
-        nome: form.nome,
-        descricao: form.descricao || undefined,
-        usuarioId: Number(form.usuarioId),
-      };
-      const ok = await criar.executar("/api/marcas", body);
-      if (ok) fechar();
-    }
-  }
-
-  async function handleDeletar(id: number) {
-    if (!confirm("Tem certeza que deseja deletar esta marca?")) return;
-    await deletar.executar(`/api/marcas/${id}`);
-  }
-
-  const mutando = criar.carregando || atualizar.carregando;
-  const erroMutacao = criar.erro || atualizar.erro || deletar.erro;
-
-  return (
-    <section className="animate-[fadeIn_0.4s_ease]">
-      {erroMutacao && <ErrorMessage message={erroMutacao} />}
-
-      <SectionHeader
-        title="Lista de Marcas"
-        onAdd={abrirCriar}
-        addLabel="Nova Marca"
-      />
-
-      <TableContainer>
-        <thead>
-          <tr>
-            <Th>ID</Th>
-            <Th>Nome</Th>
-            <Th>Descrição</Th>
-            <Th>Responsável</Th>
-            <Th>Ações</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {carregando ? (
-            <LoadingRow cols={5} />
-          ) : erro ? (
-            <EmptyRow cols={5} message={`Erro ao carregar: ${erro}`} />
-          ) : marcas.length === 0 ? (
-            <EmptyRow cols={5} message="Nenhuma marca cadastrada ainda." />
-          ) : (
-            marcas.map((m) => (
-              <tr
-                key={m.id}
-                className="hover:bg-[var(--color-bg-body)] transition-colors duration-150"
-              >
-                <Td>
-                  <span className="font-mono text-xs text-[var(--color-text-secondary)]">
-                    #{m.id}
-                  </span>
-                </Td>
-                <Td>
-                  <span className="font-medium">{m.nome}</span>
-                </Td>
-                <Td className="text-[var(--color-text-secondary)] max-w-xs truncate">
-                  {m.descricao ?? "—"}
-                </Td>
-                <Td>
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-[var(--color-primary-light)] flex items-center justify-center text-xs font-bold text-[var(--color-primary)]">
-                      {m.usuario.nome.charAt(0).toUpperCase()}
-                    </div>
-                    <span className="text-sm">{m.usuario.nome}</span>
-                  </div>
-                </Td>
-                <Td>
-                  <div className="flex gap-2">
-                    <ActionButton variant="edit" onClick={() => abrirEditar(m)}>
-                      ✏️ Editar
-                    </ActionButton>
-                    <ActionButton
-                      variant="delete"
-                      onClick={() => handleDeletar(m.id)}
-                    >
-                      🗑️ Deletar
-                    </ActionButton>
-                  </div>
-                </Td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </TableContainer>
-
-      <Modal
-        open={modalAberto}
-        title={editando ? "Editar Marca" : "Nova Marca"}
-        onClose={fechar}
-        onSubmit={handleSubmit}
-        loading={mutando}
-        error={erroMutacao}
-      >
-        <Field label="Nome">
-          <input
-            name="nome"
-            value={form.nome}
-            onChange={handleChange}
-            placeholder="Nome da marca"
-            required
-            className={inputCls}
-          />
-        </Field>
-
-        <Field label="Descrição">
-          <input
-            name="descricao"
-            value={form.descricao}
-            onChange={handleChange}
-            placeholder="Descrição opcional"
-            className={inputCls}
-          />
-        </Field>
-
-        {!editando && (
-          <Field label="ID do Usuário Responsável">
-            <input
-              name="usuarioId"
-              type="number"
-              value={form.usuarioId}
-              onChange={handleChange}
-              placeholder="Ex: 1"
-              required
-              className={inputCls}
-            />
-          </Field>
-        )}
-      </Modal>
-    </section>
-  );
-}
-
-function SecaoCertificados() {
-  const { data, carregando, erro } = useListarCertificados();
-  const criar = useCriarCertificado();
-  const atualizar = useAtualizarCertificado();
-  const deletar = useDeletarCertificado();
-
-  const certificados = data?.certificados ?? [];
-
-  const [modalAberto, setModalAberto] = useState(false);
-  const [editando, setEditando] = useState<Certificado | null>(null);
-  const [form, setForm] = useState({
-    nome: "",
-    descricao: "",
-    orgaoEmissor: "",
-  });
-
-  function abrirCriar() {
-    setEditando(null);
-    setForm({ nome: "", descricao: "", orgaoEmissor: "" });
-    setModalAberto(true);
-  }
-
-  function abrirEditar(c: Certificado) {
-    setEditando(c);
-    setForm({
-      nome: c.nome,
-      descricao: c.descricao ?? "",
-      orgaoEmissor: c.orgaoEmissor,
-    });
-    setModalAberto(true);
-  }
-
-  function fechar() {
-    setModalAberto(false);
-    setEditando(null);
-  }
-
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const body = {
-      nome: form.nome,
-      descricao: form.descricao || undefined,
-      orgaoEmissor: form.orgaoEmissor,
-    };
-
-    if (editando) {
-      const ok = await atualizar.executar(
-        `/api/certificados/${editando.id}`,
-        body,
-      );
-      if (ok) fechar();
-    } else {
-      const ok = await criar.executar("/api/certificados", body);
-      if (ok) fechar();
-    }
-  }
-
-  async function handleDeletar(id: number) {
-    if (!confirm("Tem certeza que deseja deletar este certificado?")) return;
-    await deletar.executar(`/api/certificados/${id}`);
-  }
-
-  const mutando = criar.carregando || atualizar.carregando;
-  const erroMutacao = criar.erro || atualizar.erro || deletar.erro;
-
-  return (
-    <section className="animate-[fadeIn_0.4s_ease]">
-      {erroMutacao && <ErrorMessage message={erroMutacao} />}
-
-      <SectionHeader
-        title="Lista de Certificados"
-        onAdd={abrirCriar}
-        addLabel="Novo Certificado"
-      />
-
-      <TableContainer>
-        <thead>
-          <tr>
-            <Th>ID</Th>
-            <Th>Nome</Th>
-            <Th>Órgão Emissor</Th>
-            <Th>Descrição</Th>
-            <Th>Ações</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {carregando ? (
-            <LoadingRow cols={5} />
-          ) : erro ? (
-            <EmptyRow cols={5} message={`Erro ao carregar: ${erro}`} />
-          ) : certificados.length === 0 ? (
-            <EmptyRow cols={5} message="Nenhum certificado cadastrado ainda." />
-          ) : (
-            certificados.map((c) => (
-              <tr
-                key={c.id}
-                className="hover:bg-[var(--color-bg-body)] transition-colors duration-150"
-              >
-                <Td>
-                  <span className="font-mono text-xs text-[var(--color-text-secondary)]">
-                    #{c.id}
-                  </span>
-                </Td>
-                <Td>
-                  <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-lg bg-[var(--color-primary-light)] flex items-center justify-center text-sm">
-                      🌿
-                    </span>
-                    <span className="font-medium">{c.nome}</span>
-                  </div>
-                </Td>
-                <Td>
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                    {c.orgaoEmissor}
-                  </span>
-                </Td>
-                <Td className="text-[var(--color-text-secondary)] max-w-xs truncate">
-                  {c.descricao ?? "—"}
-                </Td>
-                <Td>
-                  <div className="flex gap-2">
-                    <ActionButton variant="edit" onClick={() => abrirEditar(c)}>
-                      ✏️ Editar
-                    </ActionButton>
-                    <ActionButton
-                      variant="delete"
-                      onClick={() => handleDeletar(c.id)}
-                    >
-                      🗑️ Deletar
-                    </ActionButton>
-                  </div>
-                </Td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </TableContainer>
-
-      <Modal
-        open={modalAberto}
-        title={editando ? "Editar Certificado" : "Novo Certificado"}
-        onClose={fechar}
-        onSubmit={handleSubmit}
-        loading={mutando}
-        error={erroMutacao}
-      >
-        <Field label="Nome">
-          <input
-            name="nome"
-            value={form.nome}
-            onChange={handleChange}
-            placeholder="Nome do certificado"
-            required
-            className={inputCls}
-          />
-        </Field>
-
-        <Field label="Órgão Emissor">
-          <input
-            name="orgaoEmissor"
-            value={form.orgaoEmissor}
-            onChange={handleChange}
-            placeholder="Ex: INMETRO, IBD..."
-            required
-            className={inputCls}
-          />
-        </Field>
-
-        <Field label="Descrição">
-          <input
-            name="descricao"
-            value={form.descricao}
-            onChange={handleChange}
-            placeholder="Descrição opcional"
-            className={inputCls}
-          />
-        </Field>
-      </Modal>
-    </section>
-  );
-}
+export default PainelPage;

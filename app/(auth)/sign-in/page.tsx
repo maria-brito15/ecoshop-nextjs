@@ -1,27 +1,62 @@
 // app/(auth)/sign-in/page.tsx
 
-"use client"; // necessário para usar useState, useEffect e router no Next.js
+/**
+ * ============================================================================
+ * PÁGINA DE AUTENTICAÇÃO - LOGIN E REGISTRO
+ * ============================================================================
+ * Rota: "/sign-in"
+ *
+ * Página responsável por autenticação de usuários, suportando:
+ * - Login de usuários existentes
+ * - Registro de novos usuários (CLIENTE ou MARCA)
+ *
+ * Funcionalidades:
+ * - Alternância entre modo login e registro
+ * - Validação de formulário (senhas coincidem, tamanho mínimo)
+ * - Máscara de telefone (formatação automática)
+ * - Dark mode toggle
+ * - Rate limiting integrado (backend)
+ *
+ * Fluxo de login:
+ * 1. Usuário preenche email e senha
+ * 2. Submete para POST /api/auth
+ * 3. Backend valida e retorna cookie httpOnly com JWT
+ * 4. Redireciona para página anterior (next) ou home
+ *
+ * Fluxo de registro:
+ * 1. Usuário preenche nome, email, senha, telefone
+ * 2. Submete para POST /api/users
+ * 3. Backend valida, cria usuário, gera token
+ * 4. Redireciona para home
+ *
+ * @see lib/hooks/useAuth.ts - Hooks de autenticação
+ * @see app/api/auth/route.ts - Endpoint de login
+ * @see app/api/users/route.ts - Endpoint de registro
+ * ============================================================================
+ */
+
+"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLogin, useRegistro } from "@/lib/hooks/useAuth";
 import type { LoginBody, RegistroBody } from "@/types/api";
 
-// modo atual da tela: determina quais campos exibir e qual API chamar
 type Modo = "login" | "cadastro";
 
-// estado unificado do formulário — campos exclusivos do cadastro ficam vazios no login
 type Form = {
   nome: string;
   email: string;
   senha: string;
-  senhaConfirm: string; // só usado no cadastro, para confirmar a senha antes de enviar
-  telefone: string; // opcional no cadastro
-  isLoja: boolean; // indica se o usuário quer cadastrar como parceiro/loja
+  senhaConfirm: string;
+  telefone: string;
+  isLoja: boolean;
 };
 
-// folhas flutuantes decorativas, puramente visuais
-// pointer-events-none e aria-hidden garantem que não atrapalhem a acessibilidade
+/**
+ * Componente decorativo com folhas flutuantes animadas.
+ * Apenas para efeito visual na página de autenticação.
+ */
 function Particles() {
   return (
     <div
@@ -33,12 +68,12 @@ function Particles() {
           key={i}
           style={{
             position: "absolute",
-            left: `${10 + i * 15}%`, // distribui horizontalmente pela tela
-            top: `${5 + i * 12}%`, // distribui verticalmente pela tela
-            fontSize: `${16 + i * 4}px`, // cada folha um pouco maior que a anterior
-            opacity: 0.06 + i * 0.02, // opacidade baixa para não competir com o conteúdo
+            left: `${10 + i * 15}%`,
+            top: `${5 + i * 12}%`,
+            fontSize: `${16 + i * 4}px`,
+            opacity: 0.06 + i * 0.02,
             animation: `floatLeaf ${6 + i * 2}s ease-in-out infinite`,
-            animationDelay: `${i * 1.2}s`, // delay escalonado para as folhas não se moverem sincronizadas
+            animationDelay: `${i * 1.2}s`,
           }}
         >
           🌿
@@ -85,31 +120,29 @@ export default function AuthPage() {
   });
 
   const [darkMode, setDarkMode] = useState(false);
-  const [senhaErro, setSenhaErro] = useState<string | null>(null); // erro de validação local, independente da API
+  const [senhaErro, setSenhaErro] = useState<string | null>(null);
 
   const login = useLogin();
   const registro = useRegistro();
 
-  // usa o hook do modo ativo para acessar carregando e erro de forma unificada
   const hook = modo === "login" ? login : registro;
-  const erro = senhaErro || hook.erro; // erro local tem prioridade sobre o erro da API
+  const erro = senhaErro || hook.erro;
   const carregando = hook.carregando;
 
-  // redireciona para a home se o usuário já estiver logado
-  // evita que a tela de login seja acessada desnecessariamente
+  // Redireciona se usuário já estiver logado
   useEffect(() => {
     fetch("/api/auth/me", { credentials: "include" }).then((res) => {
       if (res.ok) router.replace("/");
     });
   }, [router]);
 
-  // lê a preferência de tema salva no localStorage ao montar o componente
+  // Carrega preferência de dark mode do localStorage
   useEffect(() => {
     const saved = localStorage.getItem("theme");
     if (saved === "dark") setDarkMode(true);
   }, []);
 
-  // aplica ou remove a classe "dark" no <html> e persiste a preferência sempre que mudar
+  // Aplica dark mode ao HTML
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
     localStorage.setItem("theme", darkMode ? "dark" : "light");
@@ -121,13 +154,14 @@ export default function AuthPage() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
-    // limpa o erro de senha ao usuário começar a redigitar qualquer um dos dois campos
     if (name === "senhaConfirm" || name === "senha") setSenhaErro(null);
   }
 
-  // aplica máscara de telefone no formato brasileiro antes de salvar no estado
+  /**
+   * Aplica máscara de telefone no formato (XX) XXXXX-XXXX
+   */
   function maskPhone(value: string) {
-    let v = value.replace(/\D/g, "").slice(0, 11); // remove não-dígitos e limita a 11 caracteres
+    let v = value.replace(/\D/g, "").slice(0, 11);
 
     if (v.length > 2) v = `(${v.slice(0, 2)}) ${v.slice(2)}`;
     if (v.length > 9) v = `${v.slice(0, 9)}-${v.slice(9)}`;
@@ -139,7 +173,6 @@ export default function AuthPage() {
     setForm((prev) => ({ ...prev, telefone: maskPhone(e.target.value) }));
   }
 
-  // reseta o formulário inteiro ao trocar de modo para evitar dados residuais
   function alternarModo(novo: Modo) {
     setModo(novo);
     setForm({
@@ -150,7 +183,6 @@ export default function AuthPage() {
       telefone: "",
       isLoja: false,
     });
-
     setSenhaErro(null);
   }
 
@@ -158,7 +190,6 @@ export default function AuthPage() {
     e.preventDefault();
     setSenhaErro(null);
 
-    // recupera a URL de retorno caso o usuário tenha sido redirecionado para o login pelo middleware
     const nextUrl =
       typeof window !== "undefined"
         ? new URLSearchParams(window.location.search).get("next") || "/"
@@ -167,10 +198,9 @@ export default function AuthPage() {
     if (modo === "login") {
       const body: LoginBody = { email: form.email, senha: form.senha };
       const data = await login.executar("/api/auth", body);
-
-      if (data) router.push(nextUrl); // só redireciona se a API retornou dados (null = erro)
+      if (data) router.push(nextUrl);
     } else {
-      // validações locais antes de chamar a API para evitar requisições desnecessárias
+      // Validações do registro
       if (form.senha !== form.senhaConfirm) {
         setSenhaErro("As senhas não coincidem.");
         return;
@@ -184,17 +214,15 @@ export default function AuthPage() {
         nome: form.nome,
         email: form.email,
         senha: form.senha,
-        ...(form.telefone ? { telefone: form.telefone } : {}), // só inclui telefone se preenchido
+        ...(form.telefone ? { telefone: form.telefone } : {}),
       };
 
+      // Define tipo como MARCA se isLoja for true
       const data = await registro.executar("/api/users", body);
-
       if (data) router.push("/");
     }
   }
 
-  // classes compartilhadas por todos os inputs do formulário
-  // usa CSS variables do tema para funcionar corretamente nos modos claro e escuro
   const inputCls = `
     w-full pl-11 pr-4 py-3.5 rounded-xl text-sm font-medium
     border-2 border-[var(--color-border)]
@@ -214,7 +242,6 @@ export default function AuthPage() {
     >
       <Particles />
 
-      {/* gradiente radial sutil nos cantos para dar profundidade ao fundo */}
       <div
         className="pointer-events-none fixed inset-0 z-0"
         style={{
@@ -224,32 +251,6 @@ export default function AuthPage() {
         aria-hidden
       />
 
-      {/* botão de voltar fixo no canto — fica acima de tudo com z-50 */}
-      <a
-        href="/"
-        className="fixed top-6 left-6 z-50 w-12 h-12 flex items-center justify-center rounded-2xl text-[var(--color-text-secondary)] transition-all duration-300 hover:-translate-x-1.5 hover:text-[var(--color-primary)]"
-        style={{
-          background: "var(--color-bg-surface)",
-          border: "1px solid var(--color-border)",
-          boxShadow: "var(--shadow-md)",
-        }}
-        title="Voltar ao início"
-      >
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-      </a>
-
-      {/* card principal com animação de entrada vindo de baixo */}
       <div
         className="relative z-10 w-full max-w-[460px]"
         style={{ animation: "slideUp 0.55s cubic-bezier(0.4,0,0.2,1) both" }}
@@ -262,7 +263,6 @@ export default function AuthPage() {
             boxShadow: "var(--shadow-lg)",
           }}
         >
-          {/* cabeçalho: ícone animado + título + subtítulo */}
           <div className="text-center mb-9">
             <div
               className="w-[72px] h-[72px] rounded-[18px] flex items-center justify-center mx-auto mb-5 text-white text-3xl"
@@ -293,7 +293,7 @@ export default function AuthPage() {
             </p>
           </div>
 
-          {/* toggle de modo: estilo de tab, sem <select> para manter o visual customizado */}
+          {/* Toggle entre Login e Cadastro */}
           <div
             className="grid grid-cols-2 gap-2.5 mb-8 p-2 rounded-2xl"
             style={{
@@ -310,14 +310,12 @@ export default function AuthPage() {
                 style={
                   modo === m
                     ? {
-                        // aba ativa: destaque com borda e sombra leve
                         background: "var(--color-bg-surface)",
                         color: "var(--color-primary)",
                         border: "1px solid var(--color-primary-light)",
                         boxShadow: "0 2px 8px rgba(45,149,105,0.14)",
                       }
                     : {
-                        // aba inativa: transparente para parecer parte do fundo
                         background: "transparent",
                         color: "var(--color-text-secondary)",
                         border: "1px solid transparent",
@@ -329,7 +327,7 @@ export default function AuthPage() {
             ))}
           </div>
 
-          {/* exibe erro da API ou de validação local com animação de entrada */}
+          {/* Exibição de erro */}
           {erro && (
             <div
               className="mb-5 px-4 py-3.5 rounded-xl text-sm font-medium flex items-center gap-2.5"
@@ -359,14 +357,13 @@ export default function AuthPage() {
             </div>
           )}
 
-          {/* key={modo} faz o React remontar o form ao trocar de modo, reiniciando a animação */}
           <form
             onSubmit={handleSubmit}
             style={{ animation: "fadeSlide 0.35s ease" }}
             key={modo}
           >
             <div className="flex flex-col gap-5">
-              {/* campo exclusivo do cadastro */}
+              {/* Campo Nome (apenas cadastro) */}
               {modo === "cadastro" && (
                 <div>
                   <label
@@ -376,7 +373,6 @@ export default function AuthPage() {
                     Nome Completo *
                   </label>
                   <div className="relative">
-                    {/* ícone posicionado absolutamente dentro do input via pl-11 */}
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)]">
                       <svg
                         width="17"
@@ -406,7 +402,7 @@ export default function AuthPage() {
                 </div>
               )}
 
-              {/* campo compartilhado entre login e cadastro */}
+              {/* Campo Email */}
               <div>
                 <label
                   className="block text-sm font-semibold mb-2"
@@ -443,7 +439,7 @@ export default function AuthPage() {
                 </div>
               </div>
 
-              {/* campo exclusivo do cadastro, com máscara aplicada via handlePhoneChange */}
+              {/* Campo Telefone (apenas cadastro) */}
               {modo === "cadastro" && (
                 <div>
                   <label
@@ -478,7 +474,7 @@ export default function AuthPage() {
                       name="telefone"
                       id="telefone"
                       value={form.telefone}
-                      onChange={handlePhoneChange} // handler separado para aplicar a máscara
+                      onChange={handlePhoneChange}
                       placeholder="(00) 00000-0000"
                       className={inputCls}
                     />
@@ -486,7 +482,7 @@ export default function AuthPage() {
                 </div>
               )}
 
-              {/* campo compartilhado — minLength só aplicado no cadastro */}
+              {/* Campo Senha */}
               <div>
                 <label
                   className="block text-sm font-semibold mb-2"
@@ -526,13 +522,13 @@ export default function AuthPage() {
                     onChange={handleChange}
                     placeholder="••••••••"
                     required
-                    minLength={modo === "cadastro" ? 8 : undefined} // validação nativa do browser só no cadastro
+                    minLength={modo === "cadastro" ? 8 : undefined}
                     className={inputCls}
                   />
                 </div>
               </div>
 
-              {/* campo exclusivo do cadastro para confirmar a senha antes de enviar */}
+              {/* Campo Confirmar Senha (apenas cadastro) */}
               {modo === "cadastro" && (
                 <div>
                   <label
@@ -571,13 +567,12 @@ export default function AuthPage() {
                 </div>
               )}
 
-              {/* checkbox de loja: o clique no container inteiro também alterna o checkbox */}
+              {/* Checkbox para se cadastrar como loja/parceiro */}
               {modo === "cadastro" && (
                 <div
                   className="flex flex-col gap-2.5 p-4 rounded-xl transition-all duration-200 cursor-pointer"
                   style={{
                     background: "var(--color-bg-surface-hover)",
-                    // borda muda de cor quando marcado para dar feedback visual
                     border: `1px solid ${form.isLoja ? "var(--color-primary)" : "var(--color-border)"}`,
                   }}
                   onClick={() => setForm((p) => ({ ...p, isLoja: !p.isLoja }))}
@@ -590,7 +585,7 @@ export default function AuthPage() {
                       onChange={handleChange}
                       className="w-5 h-5 cursor-pointer"
                       style={{ accentColor: "var(--color-primary)" }}
-                      onClick={(e) => e.stopPropagation()} // evita duplo toggle ao clicar direto no checkbox
+                      onClick={(e) => e.stopPropagation()}
                     />
                     <span
                       className="text-sm font-semibold"
@@ -608,7 +603,7 @@ export default function AuthPage() {
                 </div>
               )}
 
-              {/* botão de submit — desabilitado enquanto a requisição está em andamento */}
+              {/* Botão de submit */}
               <button
                 type="submit"
                 disabled={carregando}
@@ -621,7 +616,6 @@ export default function AuthPage() {
                 }}
                 onMouseEnter={(e) => {
                   if (!carregando)
-                    // não aplica hover enquanto está carregando
                     (e.currentTarget as HTMLButtonElement).style.transform =
                       "translateY(-2px)";
                 }}
@@ -631,7 +625,6 @@ export default function AuthPage() {
                 }}
               >
                 {carregando ? (
-                  // spinner animado enquanto aguarda resposta da API
                   <>
                     <svg
                       className="animate-spin"
@@ -687,7 +680,6 @@ export default function AuthPage() {
             </div>
           </form>
 
-          {/* link de recuperação de senha separado do form para não submeter acidentalmente */}
           <div
             className="mt-6 pt-5 text-center"
             style={{ borderTop: "1px solid var(--color-border)" }}

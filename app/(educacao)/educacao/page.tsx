@@ -1,4 +1,29 @@
 // app/(educacao)/educacao/page.tsx
+
+/**
+ * ============================================================================
+ * PÁGINA DE EDUCAÇÃO AMBIENTAL
+ * ============================================================================
+ * Rota: "/educacao"
+ *
+ * Página educativa do EcoShop, responsável por conscientizar usuários
+ * sobre sustentabilidade, reciclagem e práticas ecológicas.
+ *
+ * Funcionalidades:
+ * - Artigos educativos sobre meio ambiente
+ * - Dicas práticas de reciclagem por tipo de material
+ * - Quiz interativo para testar conhecimentos
+ *
+ * Conteúdos abordados:
+ * - O que é Ecologia (produtores, consumidores, decompositores)
+ * - Pilares da Sustentabilidade (ambiental, social, econômico)
+ * - Coleta seletiva e cores das lixeiras
+ * - Tempo de decomposição de materiais
+ *
+ * @see app/components/Header.tsx - Navegação para esta página
+ * ============================================================================
+ */
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -31,6 +56,14 @@ type Questao = {
   exp: string;
 };
 
+// ----------------------------------------------------------------------------
+// CONTEÚDO ESTÁTICO
+// ----------------------------------------------------------------------------
+
+/**
+ * Artigos educativos sobre sustentabilidade.
+ * Cada artigo tem tag, ícone, título, tempo de leitura e conteúdo completo.
+ */
 const ARTIGOS: Artigo[] = [
   {
     tag: "verde",
@@ -81,6 +114,10 @@ const ARTIGOS: Artigo[] = [
   },
 ];
 
+/**
+ * Dicas de reciclagem por tipo de material.
+ * Cada material tem ícone, cor e lista de orientações.
+ */
 const DICAS: Dica[] = [
   {
     icon: "♻️",
@@ -156,6 +193,10 @@ const DICAS: Dica[] = [
   },
 ];
 
+/**
+ * Perguntas do quiz sobre sustentabilidade.
+ * Cada questão tem pergunta, opções, resposta correta e explicação.
+ */
 const QUESTOES: Questao[] = [
   {
     q: "Qual cor de lixeira é usada para plástico na coleta seletiva?",
@@ -194,6 +235,15 @@ const QUESTOES: Questao[] = [
   },
 ];
 
+// ----------------------------------------------------------------------------
+// HOOKS PERSONALIZADOS
+// ----------------------------------------------------------------------------
+
+/**
+ * Hook para animação de revelação ao rolar a página.
+ * Detecta quando elementos com classe "animate-on-scroll" entram na viewport
+ * e adiciona a classe "visible" para trigger da animação CSS.
+ */
 function useScrollReveal(deps: unknown[] = []) {
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -211,7 +261,6 @@ function useScrollReveal(deps: unknown[] = []) {
 
       document.querySelectorAll(".animate-on-scroll").forEach((el) => {
         el.classList.remove("visible");
-
         if (el.getBoundingClientRect().top < window.innerHeight) {
           el.classList.add("visible");
         } else {
@@ -226,12 +275,20 @@ function useScrollReveal(deps: unknown[] = []) {
   }, deps);
 }
 
+// ----------------------------------------------------------------------------
+// COMPONENTES DAS ABAS
+// ----------------------------------------------------------------------------
+
 const ABAS: { id: Aba; label: string; icon: string }[] = [
   { id: "artigos", label: "Artigos", icon: "📖" },
   { id: "dicas", label: "Dicas de reciclagem", icon: "♻️" },
   { id: "quiz", label: "Quiz", icon: "🧠" },
 ];
 
+/**
+ * Seção de artigos educativos.
+ * Exibe lista de artigos em cards. Ao clicar, expande para leitura completa.
+ */
 function SecaoArtigos({
   onArtigoChange,
 }: {
@@ -249,17 +306,13 @@ function SecaoArtigos({
     onArtigoChange?.(false);
   }
 
+  // Visualização expandida do artigo
   if (aberto) {
     return (
       <div className="animate-[fadeSlideUp_0.4s_ease]">
         <button
           onClick={fecharArtigo}
-          className="
-            inline-flex items-center gap-2 mb-8
-            text-sm font-semibold text-[var(--color-text-secondary)]
-            hover:text-[var(--color-primary)]
-            transition-colors
-          "
+          className="inline-flex items-center gap-2 mb-8 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
         >
           ← Voltar para artigos
         </button>
@@ -289,18 +342,13 @@ function SecaoArtigos({
     );
   }
 
+  // Grid de artigos
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {ARTIGOS.map((artigo, i) => (
         <article
           key={i}
-          className="
-            card-eco
-            flex flex-col
-            p-7 cursor-pointer
-            relative overflow-hidden
-            group
-          "
+          className="card-eco flex flex-col p-7 cursor-pointer relative overflow-hidden group"
           onClick={() => abrirArtigo(artigo)}
         >
           <div className="absolute top-0 left-0 w-1 h-full bg-[var(--color-primary)] opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -331,6 +379,10 @@ function SecaoArtigos({
   );
 }
 
+/**
+ * Seção de dicas de reciclagem.
+ * Exibe cards com orientações específicas por tipo de material.
+ */
 function SecaoDicas() {
   const [selecionada, setSelecionada] = useState<Dica>(DICAS[0]);
 
@@ -359,20 +411,11 @@ function SecaoDicas() {
 
       <div
         key={selecionada.title}
-        className="
-          bg-[var(--color-bg-surface)]
-          rounded-2xl p-8
-          border border-[var(--color-border)]
-          shadow-[var(--shadow-card)]
-          animate-[fadeSlideUp_0.35s_ease]
-        "
+        className="bg-[var(--color-bg-surface)] rounded-2xl p-8 border border-[var(--color-border)] shadow-[var(--shadow-card)] animate-[fadeSlideUp_0.35s_ease]"
       >
         <div className="flex items-center gap-4 mb-6">
           <div
-            className={`
-              w-14 h-14 rounded-xl flex items-center justify-center
-              text-2xl border ${selecionada.color}
-            `}
+            className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl border ${selecionada.color}`}
           >
             {selecionada.icon}
           </div>
@@ -390,12 +433,7 @@ function SecaoDicas() {
           {selecionada.tips.map((tip, i) => (
             <li
               key={i}
-              className="
-                flex items-start gap-3 p-3 rounded-xl
-                bg-[var(--color-bg-body)]
-                border border-[var(--color-border)]
-                text-[var(--color-text-secondary)] text-sm leading-6
-              "
+              className="flex items-start gap-3 p-3 rounded-xl bg-[var(--color-bg-body)] border border-[var(--color-border)] text-[var(--color-text-secondary)] text-sm leading-6"
             >
               <span className="text-[var(--color-primary)] font-bold text-base mt-0.5 flex-shrink-0">
                 ✓
@@ -409,6 +447,10 @@ function SecaoDicas() {
   );
 }
 
+/**
+ * Seção do quiz interativo.
+ * Perguntas de múltipla escolha com pontuação e explicações.
+ */
 function SecaoQuiz() {
   const [indice, setIndice] = useState(0);
   const [score, setScore] = useState(0);
@@ -439,6 +481,7 @@ function SecaoQuiz() {
     setFinalizado(false);
   }
 
+  // Tela de resultados
   if (finalizado) {
     const pct = Math.round((score / QUESTOES.length) * 100);
     const emoji = pct >= 80 ? "🏆" : pct >= 60 ? "🌟" : "📚";
@@ -451,14 +494,7 @@ function SecaoQuiz() {
 
     return (
       <div className="max-w-lg mx-auto text-center animate-[fadeSlideUp_0.4s_ease]">
-        <div
-          className="
-            bg-[var(--color-bg-surface)]
-            rounded-2xl p-10
-            border border-[var(--color-border)]
-            shadow-[var(--shadow-card)]
-          "
-        >
+        <div className="bg-[var(--color-bg-surface)] rounded-2xl p-10 border border-[var(--color-border)] shadow-[var(--shadow-card)]">
           <span className="text-6xl block mb-4">{emoji}</span>
           <h3 className="font-display text-2xl font-extrabold text-[var(--color-text-primary)] mb-2">
             Quiz concluído!
@@ -500,15 +536,7 @@ function SecaoQuiz() {
 
           <button
             onClick={reiniciar}
-            className="
-              inline-flex items-center gap-2
-              px-8 py-3.5 rounded-full text-sm font-bold
-              bg-[var(--color-primary)] text-white
-              shadow-[var(--shadow-btn)]
-              hover:bg-[var(--color-primary-hover)]
-              hover:-translate-y-0.5
-              transition-all
-            "
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-sm font-bold bg-[var(--color-primary)] text-white shadow-[var(--shadow-btn)] hover:bg-[var(--color-primary-hover)] hover:-translate-y-0.5 transition-all"
           >
             🔄 Tentar novamente
           </button>
@@ -517,15 +545,10 @@ function SecaoQuiz() {
     );
   }
 
+  // Tela de pergunta ativa
   return (
     <div className="max-w-2xl mx-auto">
-      <div
-        className="
-          rounded-2xl overflow-hidden
-          border border-[var(--color-border)]
-          shadow-[var(--shadow-card)]
-        "
-      >
+      <div className="rounded-2xl overflow-hidden border border-[var(--color-border)] shadow-[var(--shadow-card)]">
         <div className="bg-gradient-to-br from-[var(--color-primary-dark)] to-[#0f2419] px-8 py-8 text-center text-white">
           <span className="inline-block bg-white/15 backdrop-blur-sm px-4 py-1.5 rounded-full text-xs font-semibold mb-3">
             🧠 Quiz Ambiental
@@ -589,19 +612,15 @@ function SecaoQuiz() {
                 >
                   <span className="flex items-center gap-3">
                     <span
-                      className={`
-                        w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center
-                        text-xs font-bold border-2
-                        ${
-                          !respondido
-                            ? "border-[var(--color-border)] text-[var(--color-text-tertiary)]"
-                            : eCorreta
-                              ? "border-emerald-400 bg-emerald-400 text-white"
-                              : eEscolhida
-                                ? "border-red-400 bg-red-400 text-white"
-                                : "border-[var(--color-border)] text-[var(--color-text-tertiary)]"
-                        }
-                      `}
+                      className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold border-2 ${
+                        !respondido
+                          ? "border-[var(--color-border)] text-[var(--color-text-tertiary)]"
+                          : eCorreta
+                            ? "border-emerald-400 bg-emerald-400 text-white"
+                            : eEscolhida
+                              ? "border-red-400 bg-red-400 text-white"
+                              : "border-[var(--color-border)] text-[var(--color-text-tertiary)]"
+                      }`}
                     >
                       {respondido && eCorreta
                         ? "✓"
@@ -618,15 +637,11 @@ function SecaoQuiz() {
 
           {escolha !== null && (
             <div
-              className={`
-                p-4 rounded-xl text-sm mb-6 leading-6 border
-                animate-[fadeSlideUp_0.3s_ease]
-                ${
-                  escolha === questao.ans
-                    ? "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-500/15 dark:border-emerald-500/30 dark:text-emerald-300"
-                    : "bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-500/15 dark:border-amber-500/30 dark:text-amber-300"
-                }
-              `}
+              className={`p-4 rounded-xl text-sm mb-6 leading-6 border animate-[fadeSlideUp_0.3s_ease] ${
+                escolha === questao.ans
+                  ? "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-500/15 dark:border-emerald-500/30 dark:text-emerald-300"
+                  : "bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-500/15 dark:border-amber-500/30 dark:text-amber-300"
+              }`}
             >
               <strong>
                 {escolha === questao.ans ? "✅ Correto! " : "❌ Incorreto. "}
@@ -638,14 +653,7 @@ function SecaoQuiz() {
           {escolha !== null && (
             <button
               onClick={avancar}
-              className="
-                w-full py-3.5 rounded-full text-sm font-bold
-                bg-[var(--color-primary)] text-white
-                shadow-[var(--shadow-btn)]
-                hover:bg-[var(--color-primary-hover)]
-                hover:-translate-y-0.5
-                transition-all animate-[fadeSlideUp_0.3s_ease]
-              "
+              className="w-full py-3.5 rounded-full text-sm font-bold bg-[var(--color-primary)] text-white shadow-[var(--shadow-btn)] hover:bg-[var(--color-primary-hover)] hover:-translate-y-0.5 transition-all animate-[fadeSlideUp_0.3s_ease]"
             >
               {indice + 1 < QUESTOES.length
                 ? "Próxima pergunta →"
@@ -658,6 +666,10 @@ function SecaoQuiz() {
   );
 }
 
+// ----------------------------------------------------------------------------
+// PÁGINA PRINCIPAL
+// ----------------------------------------------------------------------------
+
 export default function EducacaoPage() {
   const [aba, setAba] = useState<Aba>("artigos");
   const [artigoAberto, setArtigoAberto] = useState(false);
@@ -666,28 +678,19 @@ export default function EducacaoPage() {
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
-      <section
-        className="
-          text-center py-20 md:py-28
-          bg-[var(--color-bg-body)]
-          [background-image:radial-gradient(circle_at_50%_0%,rgba(45,149,105,0.08)_0%,transparent_70%)]
-          border-b border-[var(--color-border)]
-          mb-16
-        "
-      >
+      {/* HERO SECTION */}
+      <section className="text-center py-20 md:py-28 bg-[var(--color-bg-body)] [background-image:radial-gradient(circle_at_50%_0%,rgba(45,149,105,0.08)_0%,transparent_70%)] border-b border-[var(--color-border)] mb-16">
         <div className="container-eco">
           <div className="animate-on-scroll">
             <span className="badge-eco mb-6 mx-auto">
               🎓 Centro de Aprendizado
             </span>
-
             <h1 className="font-display text-5xl md:text-6xl font-extrabold leading-tight mb-6">
               Conhecimento para <br className="hidden sm:block" />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-primary)] to-blue-500">
                 mudar o mundo
               </span>
             </h1>
-
             <p className="text-[var(--color-text-secondary)] text-lg max-w-2xl mx-auto leading-relaxed">
               Entenda como suas escolhas impactam o planeta e descubra, passo a
               passo, como fazer parte da solução.
@@ -697,6 +700,7 @@ export default function EducacaoPage() {
       </section>
 
       <div className="container-eco pb-24">
+        {/* SEÇÃO: O QUE É ECOLOGIA? */}
         <section className="animate-on-scroll mb-20">
           <div className="flex items-center gap-5 mb-4">
             <div className="w-14 h-14 rounded-2xl bg-[var(--color-primary-light)] flex items-center justify-center text-2xl flex-shrink-0">
@@ -711,7 +715,6 @@ export default function EducacaoPage() {
               </h2>
             </div>
           </div>
-
           <p className="text-[var(--color-text-secondary)] text-base leading-7 mb-8 max-w-3xl pl-[calc(3.5rem+1.25rem)]">
             A ecologia é a ciência que estuda as interações entre os seres vivos
             e o meio ambiente. É como uma grande rede onde tudo está conectado —
@@ -754,22 +757,8 @@ export default function EducacaoPage() {
             ))}
           </div>
 
-          <div
-            className="
-              relative overflow-hidden
-              bg-gradient-to-br from-[#1e293b] to-[#0f172a]
-              text-white rounded-3xl p-10 text-center
-              shadow-[var(--shadow-xl)]
-            "
-          >
-            <span
-              className="
-                absolute top-[-1rem] right-6
-                text-[12rem] leading-none
-                text-white/[0.04] font-serif
-                pointer-events-none select-none
-              "
-            >
+          <div className="relative overflow-hidden bg-gradient-to-br from-[#1e293b] to-[#0f172a] text-white rounded-3xl p-10 text-center shadow-[var(--shadow-xl)]">
+            <span className="absolute top-[-1rem] right-6 text-[12rem] leading-none text-white/[0.04] font-serif pointer-events-none select-none">
               &ldquo;
             </span>
             <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--color-primary)] mb-5">
@@ -785,6 +774,7 @@ export default function EducacaoPage() {
           </div>
         </section>
 
+        {/* SEÇÃO: PILARES DA SUSTENTABILIDADE */}
         <section className="animate-on-scroll mb-20">
           <div className="flex items-center gap-5 mb-4">
             <div className="w-14 h-14 rounded-2xl bg-[var(--color-primary-light)] flex items-center justify-center text-2xl flex-shrink-0">
@@ -799,7 +789,6 @@ export default function EducacaoPage() {
               </h2>
             </div>
           </div>
-
           <p className="text-[var(--color-text-secondary)] text-base leading-7 mb-8 max-w-3xl pl-[calc(3.5rem+1.25rem)]">
             Sustentabilidade significa atender às necessidades do presente sem
             comprometer a capacidade das futuras gerações de atenderem às suas
@@ -832,13 +821,7 @@ export default function EducacaoPage() {
             ].map((s) => (
               <div
                 key={s.label}
-                className="
-                  flex items-center gap-4 p-5
-                  bg-[var(--color-bg-surface)]
-                  rounded-xl border border-[var(--color-border)]
-                  hover:-translate-y-0.5 hover:border-[var(--color-border-hover)]
-                  transition-all
-                "
+                className="flex items-center gap-4 p-5 bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border)] hover:-translate-y-0.5 hover:border-[var(--color-border-hover)] transition-all"
               >
                 <div
                   className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${s.bg} ${s.color}`}
@@ -873,22 +856,18 @@ export default function EducacaoPage() {
           </div>
         </section>
 
+        {/* SEÇÃO: ARTIGOS / DICAS / QUIZ (TABS) */}
         <section className="animate-on-scroll">
           <div className="flex items-center gap-2 mb-8 flex-wrap">
             {ABAS.map((a) => (
               <button
                 key={a.id}
                 onClick={() => setAba(a.id)}
-                className={`
-                  inline-flex items-center gap-2
-                  px-5 py-2.5 rounded-full text-sm font-semibold
-                  transition-all duration-200
-                  ${
-                    aba === a.id
-                      ? "bg-[var(--color-primary)] text-white shadow-[var(--shadow-btn)]"
-                      : "bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
-                  }
-                `}
+                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
+                  aba === a.id
+                    ? "bg-[var(--color-primary)] text-white shadow-[var(--shadow-btn)]"
+                    : "bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+                }`}
               >
                 {a.icon} {a.label}
               </button>
@@ -904,15 +883,9 @@ export default function EducacaoPage() {
           </div>
         </section>
 
+        {/* CALL-TO-ACTION FINAL */}
         <section className="animate-on-scroll mt-20">
-          <div
-            className="
-              text-center p-12 rounded-3xl
-              bg-[var(--color-primary-light)]
-              border border-dashed border-[var(--color-primary)]/50
-              dark:bg-[rgba(45,149,105,0.1)]
-            "
-          >
+          <div className="text-center p-12 rounded-3xl bg-[var(--color-primary-light)] border border-dashed border-[var(--color-primary)]/50 dark:bg-[rgba(45,149,105,0.1)]">
             <h2 className="font-display text-3xl font-extrabold text-[var(--color-text-primary)] mb-3">
               Pronto para agir?
             </h2>
@@ -922,16 +895,7 @@ export default function EducacaoPage() {
             </p>
             <Link
               href="/produtos"
-              className="
-                inline-flex items-center gap-2
-                px-8 py-4 rounded-full text-base font-bold
-                bg-[var(--color-primary)] text-white
-                shadow-[0_4px_12px_rgba(45,149,105,0.3)]
-                hover:bg-[var(--color-primary-hover)]
-                hover:-translate-y-0.5
-                hover:shadow-[0_8px_24px_rgba(45,149,105,0.4)]
-                transition-all duration-200
-              "
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-base font-bold bg-[var(--color-primary)] text-white shadow-[0_4px_12px_rgba(45,149,105,0.3)] hover:bg-[var(--color-primary-hover)] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(45,149,105,0.4)] transition-all duration-200"
             >
               🛍️ Ver Produtos Eco-Friendly
             </Link>

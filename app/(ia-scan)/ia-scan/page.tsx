@@ -1,12 +1,42 @@
 // app/(ia-scan)/ia-scan/page.tsx
 
+/**
+ * ============================================================================
+ * PÁGINA DO ECOSCAN IA
+ * ============================================================================
+ * Rota: "/ia-scan"
+ *
+ * Página principal da funcionalidade de inteligência artificial do EcoShop.
+ * Permite que usuários tirem fotos de resíduos e recebam informações
+ * sobre como descartá-los corretamente.
+ *
+ * Fluxo:
+ * 1. Usuário seleciona/arrasta uma imagem
+ * 2. Envia para o backend via FormData
+ * 3. Azure Vision classifica o material
+ * 4. Gemini gera análise detalhada de sustentabilidade
+ * 5. Exibe resultados (material, confiança, dicas de descarte)
+ *
+ * Estados da página:
+ * - Upload: usuário seleciona imagem
+ * - Processando: IA está analisando (loading)
+ * - Sucesso: exibe análise detalhada
+ * - Falha: exibe sugestão para melhorar a foto
+ *
+ * @see lib/hooks/useIA.ts - Hook useScan
+ * @see app/api/ia/scan/route.ts - Endpoint da API
+ * ============================================================================
+ */
+
 "use client";
 
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useScan } from "@/lib/hooks/useIA";
-import type { ScanSucesso, ScanInsuficiente } from "@/types/api";
+import type { AnaliseIA } from "@/types/ai";
+import type { ScanResponse } from "@/types/api";
 
+// Formatos de imagem aceitos pelo Azure Vision
 const VALID_TYPES = [
   "image/jpeg",
   "image/jpg",
@@ -14,7 +44,7 @@ const VALID_TYPES = [
   "image/gif",
   "image/webp",
 ];
-const MAX_SIZE = 10 * 1024 * 1024;
+const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 interface ArquivoSelecionado {
   file: File;
@@ -26,17 +56,30 @@ interface ArquivoSelecionado {
 function formatBytes(bytes: number) {
   if (bytes === 0) return "0 B";
   const k = 1024;
-  const s = ["B", "KB", "MB"];
+  const sizes = ["B", "KB", "MB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${s[i]}`;
+  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
 }
 
+/**
+ * Retorna cores baseadas na porcentagem de confiança da IA.
+ * - ≥85%: verde (alta confiança)
+ * - ≥70%: amarelo (média confiança)
+ * - <70%: vermelho (baixa confiança)
+ */
 function getConfidenceColors(conf: number) {
   if (conf >= 85) return { bg: "#d1fae5", color: "#065f46", border: "#10b981" };
   if (conf >= 70) return { bg: "#fef3c7", color: "#92400e", border: "#f59e0b" };
   return { bg: "#fee2e2", color: "#991b1b", border: "#ef4444" };
 }
 
+// ----------------------------------------------------------------------------
+// COMPONENTES DE RESULTADO
+// ----------------------------------------------------------------------------
+
+/**
+ * Card de informação usado na exibição dos resultados.
+ */
 interface CardProps {
   icon: string;
   title: string;
@@ -48,17 +91,7 @@ interface CardProps {
 function InfoCard({ icon, title, colorClass, children, fullWidth }: CardProps) {
   return (
     <div
-      className={`
-        bg-[var(--color-bg-surface)]
-        rounded-2xl p-8
-        border border-[var(--color-border)]
-        shadow-[0_2px_8px_rgba(26,58,46,0.06)]
-        transition-all duration-300
-        hover:-translate-y-1
-        hover:shadow-[var(--shadow-card)]
-        hover:border-[var(--color-primary)]
-        ${fullWidth ? "col-span-full" : ""}
-      `}
+      className={`bg-[var(--color-bg-surface)] rounded-2xl p-8 border border-[var(--color-border)] shadow-[0_2px_8px_rgba(26,58,46,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-card)] hover:border-[var(--color-primary)] ${fullWidth ? "col-span-full" : ""}`}
     >
       <div className="flex items-center gap-4 mb-6 pb-5 border-b border-[var(--color-border)]">
         <div
@@ -99,11 +132,46 @@ function TextoSust({ value }: { value: unknown }) {
   );
 }
 
+function isSucesso(data: ScanResponse): data is ScanResponse & {
+  sucesso: true;
+  material: string;
+  confianca: number;
+  analise_sustentabilidade: AnaliseIA;
+} {
+  return (
+    data.sucesso === true &&
+    data.material != null &&
+    data.confianca != null &&
+    data.analise_sustentabilidade != null
+  );
+}
+
+function isInsuficiente(data: ScanResponse): data is ScanResponse & {
+  sucesso: false;
+  confianca: number;
+  confianca_minima_requerida: number;
+} {
+  return (
+    data.sucesso === false &&
+    data.confianca != null &&
+    data.confianca_minima_requerida != null
+  );
+}
+
+/**
+ * Resultado quando a análise foi bem-sucedida.
+ * Exibe material identificado, confiança e análise completa.
+ */
 function ResultadoSucesso({
   data,
   onReset,
 }: {
-  data: ScanSucesso;
+  data: ScanResponse & {
+    sucesso: true;
+    material: string;
+    confianca: number;
+    analise_sustentabilidade: AnaliseIA;
+  };
   onReset: () => void;
 }) {
   const a = data.analise_sustentabilidade;
@@ -132,7 +200,6 @@ function ResultadoSucesso({
         >
           ✅ Confiança: {conf.toFixed(1)}%
         </span>
-
         <h2 className="font-display text-5xl font-extrabold text-[var(--color-text-primary)] mb-2 leading-tight">
           {materialFormatado}
         </h2>
@@ -149,7 +216,6 @@ function ResultadoSucesso({
         >
           <TextoSust value={a.impacto_ambiental} />
         </InfoCard>
-
         <InfoCard
           icon="⏳"
           title="Decomposição"
@@ -157,7 +223,6 @@ function ResultadoSucesso({
         >
           <TextoSust value={a.tempo_decomposicao} />
         </InfoCard>
-
         <InfoCard
           icon="🗑️"
           title="Como Descartar"
@@ -165,7 +230,6 @@ function ResultadoSucesso({
         >
           <TextoSust value={a.onde_descartar} />
         </InfoCard>
-
         <InfoCard
           icon="♻️"
           title="Reciclabilidade"
@@ -173,7 +237,6 @@ function ResultadoSucesso({
         >
           <TextoSust value={a.reciclabilidade} />
         </InfoCard>
-
         <InfoCard
           icon="💡"
           title="Dicas Sustentáveis"
@@ -182,7 +245,6 @@ function ResultadoSucesso({
         >
           <TextoSust value={a.dicas_sustentaveis} />
         </InfoCard>
-
         <InfoCard
           icon="❤️"
           title="Por que reciclar este item?"
@@ -196,34 +258,13 @@ function ResultadoSucesso({
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
         <button
           onClick={onReset}
-          className="
-            inline-flex items-center gap-2
-            px-8 py-3.5 rounded-full font-semibold text-sm
-            bg-[var(--color-bg-surface)]
-            border-2 border-[var(--color-border)]
-            text-[var(--color-text-primary)]
-            hover:border-[var(--color-primary)]
-            hover:text-[var(--color-primary)]
-            hover:-translate-y-0.5
-            transition-all duration-200
-          "
+          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold text-sm bg-[var(--color-bg-surface)] border-2 border-[var(--color-border)] text-[var(--color-text-primary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] hover:-translate-y-0.5 transition-all duration-200"
         >
           🔄 Analisar Outro Item
         </button>
-
         <Link
           href="/produtos"
-          className="
-            inline-flex items-center gap-2
-            px-8 py-3.5 rounded-full font-semibold text-sm
-            bg-[var(--color-primary)]
-            text-white
-            shadow-[var(--shadow-btn)]
-            hover:bg-[var(--color-primary-hover)]
-            hover:-translate-y-0.5
-            hover:shadow-[0_8px_24px_rgba(45,149,105,0.4)]
-            transition-all duration-200
-          "
+          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold text-sm bg-[var(--color-primary)] text-white shadow-[var(--shadow-btn)] hover:bg-[var(--color-primary-hover)] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(45,149,105,0.4)] transition-all duration-200"
         >
           🛍️ Ver Alternativas Sustentáveis
         </Link>
@@ -232,21 +273,24 @@ function ResultadoSucesso({
   );
 }
 
+/**
+ * Resultado quando a análise falhou (baixa confiança ou material não identificado).
+ * Exibe sugestão para melhorar a foto.
+ */
 function ResultadoInsuficiente({
   data,
   onReset,
 }: {
-  data: ScanInsuficiente;
+  data: ScanResponse & {
+    sucesso: false;
+    confianca: number;
+    confianca_minima_requerida: number;
+  };
   onReset: () => void;
 }) {
   return (
     <div
-      className="
-        mt-10 p-8 rounded-2xl text-center
-        bg-amber-50 border border-amber-200
-        dark:bg-amber-500/10 dark:border-amber-500/30
-        animate-[fadeSlideUp_0.6s_ease_forwards]
-      "
+      className="mt-10 p-8 rounded-2xl text-center bg-amber-50 border border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/30 animate-[fadeSlideUp_0.6s_ease_forwards]"
       aria-live="polite"
     >
       <span className="text-5xl mb-4 block">🔍</span>
@@ -267,21 +311,17 @@ function ResultadoInsuficiente({
       </p>
       <button
         onClick={onReset}
-        className="
-          inline-flex items-center gap-2
-          px-8 py-3.5 rounded-full font-semibold text-sm
-          bg-[var(--color-primary)] text-white
-          shadow-[var(--shadow-btn)]
-          hover:bg-[var(--color-primary-hover)]
-          hover:-translate-y-0.5
-          transition-all duration-200
-        "
+        className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold text-sm bg-[var(--color-primary)] text-white shadow-[var(--shadow-btn)] hover:bg-[var(--color-primary-hover)] hover:-translate-y-0.5 transition-all duration-200"
       >
         📷 Tentar Novamente
       </button>
     </div>
   );
 }
+
+// ----------------------------------------------------------------------------
+// PÁGINA PRINCIPAL
+// ----------------------------------------------------------------------------
 
 export default function IaScanPage() {
   const [arquivo, setArquivo] = useState<ArquivoSelecionado | null>(null);
@@ -303,6 +343,7 @@ export default function IaScanPage() {
       setErroLocal(err);
       return;
     }
+
     setErroLocal(null);
     setArquivo({
       file,
@@ -333,7 +374,9 @@ export default function IaScanPage() {
     e.preventDefault();
     setDragover(true);
   }, []);
+
   const onDragLeave = useCallback(() => setDragover(false), []);
+
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragover(false);
@@ -341,30 +384,22 @@ export default function IaScanPage() {
     if (file) selecionarArquivo(file);
   }, []);
 
-  const mostrarResultado = !carregando && data;
-  const sucesso = mostrarResultado && data.sucesso;
-  const insuficiente = mostrarResultado && !data.sucesso;
+  const mostrarResultado = !carregando && data != null;
+  const sucesso = mostrarResultado && data && isSucesso(data);
+  const insuficiente =
+    mostrarResultado && data && !sucesso && isInsuficiente(data);
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
-      <section
-        className="
-          text-center py-16 md:py-24
-          bg-[var(--color-bg-body)]
-          [background-image:radial-gradient(circle_at_50%_0%,rgba(45,149,105,0.06)_0%,transparent_50%)]
-          border-b border-[var(--color-border)]
-          mb-10
-        "
-      >
+      {/* HERO SECTION */}
+      <section className="text-center py-16 md:py-24 bg-[var(--color-bg-body)] [background-image:radial-gradient(circle_at_50%_0%,rgba(45,149,105,0.06)_0%,transparent_50%)] border-b border-[var(--color-border)] mb-10">
         <div className="container-eco">
           <span className="badge-eco mb-6 mx-auto">
             🤖 Inteligência Artificial
           </span>
-
           <h1 className="font-display text-5xl md:text-6xl font-extrabold leading-tight mb-4">
             EcoScan <span className="text-gradient-eco">IA</span>
           </h1>
-
           <p className="text-[var(--color-text-secondary)] text-lg max-w-xl mx-auto">
             Use nossa tecnologia para identificar resíduos e descobrir o
             descarte correto em segundos.
@@ -373,13 +408,10 @@ export default function IaScanPage() {
       </section>
 
       <div className="container-eco pb-24">
+        {/* MENSAGENS DE ERRO */}
         {(erroLocal || erroHook) && (
           <div
-            className="
-              flex items-start gap-4 p-5 rounded-xl mb-8
-              bg-red-50 border border-red-200 text-red-800
-              dark:bg-red-900/20 dark:border-red-800/40 dark:text-red-300
-            "
+            className="flex items-start gap-4 p-5 rounded-xl mb-8 bg-red-50 border border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800/40 dark:text-red-300"
             role="alert"
           >
             <span className="text-xl flex-shrink-0 mt-0.5">⚠️</span>
@@ -392,16 +424,9 @@ export default function IaScanPage() {
           </div>
         )}
 
+        {/* ÁREA DE UPLOAD */}
         {!arquivo && !mostrarResultado && (
-          <div
-            className="
-              max-w-2xl mx-auto
-              bg-[var(--color-bg-surface)]
-              rounded-2xl p-3
-              border border-[var(--color-border)]
-              shadow-[var(--shadow-card)]
-            "
-          >
+          <div className="max-w-2xl mx-auto bg-[var(--color-bg-surface)] rounded-2xl p-3 border border-[var(--color-border)] shadow-[var(--shadow-card)]">
             <div
               role="button"
               tabIndex={0}
@@ -411,19 +436,11 @@ export default function IaScanPage() {
               onDrop={onDrop}
               onClick={() => fileRef.current?.click()}
               onKeyDown={(e) => e.key === "Enter" && fileRef.current?.click()}
-              className={`
-                flex flex-col items-center justify-center gap-4
-                px-8 py-16 rounded-xl cursor-pointer
-                border-2 border-dashed
-                bg-[var(--color-bg-body)]
-                transition-all duration-200
-                outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]
-                ${
-                  dragover
-                    ? "border-[var(--color-primary)] bg-[var(--color-primary-light)] scale-[1.01]"
-                    : "border-[var(--color-border)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-light)]"
-                }
-              `}
+              className={`flex flex-col items-center justify-center gap-4 px-8 py-16 rounded-xl cursor-pointer border-2 border-dashed bg-[var(--color-bg-body)] transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
+                dragover
+                  ? "border-[var(--color-primary)] bg-[var(--color-primary-light)] scale-[1.01]"
+                  : "border-[var(--color-border)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-light)]"
+              }`}
             >
               <input
                 ref={fileRef}
@@ -435,18 +452,11 @@ export default function IaScanPage() {
                   if (f) selecionarArquivo(f);
                 }}
               />
-
               <div
-                className={`
-                  w-20 h-20 rounded-full flex items-center justify-center
-                  bg-[var(--color-bg-surface)] shadow-sm border border-[var(--color-border)]
-                  text-4xl transition-transform duration-300
-                  ${dragover ? "scale-110 -rotate-12" : "group-hover:scale-110"}
-                `}
+                className={`w-20 h-20 rounded-full flex items-center justify-center bg-[var(--color-bg-surface)] shadow-sm border border-[var(--color-border)] text-4xl transition-transform duration-300 ${dragover ? "scale-110 -rotate-12" : "group-hover:scale-110"}`}
               >
                 ☁️
               </div>
-
               <div className="text-center">
                 <h3 className="font-display text-xl font-bold text-[var(--color-text-primary)] mb-1">
                   Arraste uma foto ou clique para selecionar
@@ -455,34 +465,16 @@ export default function IaScanPage() {
                   Suporta JPG, PNG, GIF, WebP &mdash; máx. 10 MB
                 </p>
               </div>
-
-              <span
-                className="
-                  px-6 py-2.5 rounded-full text-sm font-semibold
-                  bg-[var(--color-bg-surface)] border border-[var(--color-border)]
-                  text-[var(--color-text-primary)]
-                  hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]
-                  transition-colors pointer-events-none
-                "
-              >
+              <span className="px-6 py-2.5 rounded-full text-sm font-semibold bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors pointer-events-none">
                 Selecionar Arquivo
               </span>
             </div>
           </div>
         )}
 
+        {/* PREVIEW DA IMAGEM (antes da análise) */}
         {arquivo && !carregando && !mostrarResultado && (
-          <div
-            className="
-              max-w-2xl mx-auto
-              flex flex-col sm:flex-row items-center justify-between gap-6
-              bg-[var(--color-bg-surface)]
-              rounded-2xl p-6
-              border border-[var(--color-border)]
-              shadow-[var(--shadow-card)]
-              animate-[fadeSlideUp_0.4s_ease]
-            "
-          >
+          <div className="max-w-2xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 bg-[var(--color-bg-surface)] rounded-2xl p-6 border border-[var(--color-border)] shadow-[var(--shadow-card)] animate-[fadeSlideUp_0.4s_ease]">
             <div className="flex items-center gap-5">
               <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-[var(--color-border)] flex-shrink-0 bg-[var(--color-bg-body)]">
                 <img
@@ -500,37 +492,16 @@ export default function IaScanPage() {
                 </p>
               </div>
             </div>
-
             <div className="flex gap-3 w-full sm:w-auto">
               <button
                 onClick={resetar}
-                className="
-                  flex-1 sm:flex-none
-                  inline-flex items-center justify-center gap-2
-                  px-5 py-2.5 rounded-full text-sm font-semibold
-                  border-2 border-[var(--color-border)]
-                  text-[var(--color-text-secondary)]
-                  hover:border-[var(--color-text-primary)] hover:text-[var(--color-text-primary)]
-                  hover:-translate-y-0.5
-                  transition-all duration-200
-                "
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold border-2 border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-primary)] hover:text-[var(--color-text-primary)] hover:-translate-y-0.5 transition-all duration-200"
               >
                 🗑️ Cancelar
               </button>
-
               <button
                 onClick={analisar}
-                className="
-                  flex-1 sm:flex-none
-                  inline-flex items-center justify-center gap-2
-                  px-7 py-2.5 rounded-full text-sm font-bold
-                  bg-gradient-to-br from-[var(--color-primary)] to-[#2ba882]
-                  text-white
-                  shadow-[var(--shadow-btn)]
-                  hover:shadow-[0_8px_24px_rgba(45,149,105,0.4)]
-                  hover:-translate-y-0.5
-                  transition-all duration-200
-                "
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-7 py-2.5 rounded-full text-sm font-bold bg-gradient-to-br from-[var(--color-primary)] to-[#2ba882] text-white shadow-[var(--shadow-btn)] hover:shadow-[0_8px_24px_rgba(45,149,105,0.4)] hover:-translate-y-0.5 transition-all duration-200"
               >
                 ✨ Analisar Agora
               </button>
@@ -538,24 +509,14 @@ export default function IaScanPage() {
           </div>
         )}
 
+        {/* LOADING (processamento) */}
         {carregando && (
           <div
-            className="
-              flex flex-col items-center justify-center
-              py-20 text-center
-              animate-[fadeSlideUp_0.4s_ease]
-            "
+            className="flex flex-col items-center justify-center py-20 text-center animate-[fadeSlideUp_0.4s_ease]"
             aria-live="polite"
             aria-label="Analisando imagem"
           >
-            <div
-              className="
-                w-16 h-16 rounded-full mb-8
-                border-4 border-[var(--color-border)]
-                border-t-[var(--color-primary)]
-                animate-spin
-              "
-            />
+            <div className="w-16 h-16 rounded-full mb-8 border-4 border-[var(--color-border)] border-t-[var(--color-primary)] animate-spin" />
             <h3 className="font-display text-xl font-bold text-[var(--color-text-primary)] mb-2">
               Analisando imagem...
             </h3>
@@ -566,14 +527,12 @@ export default function IaScanPage() {
           </div>
         )}
 
-        {sucesso && (
-          <ResultadoSucesso data={data as ScanSucesso} onReset={resetar} />
+        {/* RESULTADOS */}
+        {sucesso && data && (
+          <ResultadoSucesso data={data as any} onReset={resetar} />
         )}
-        {insuficiente && (
-          <ResultadoInsuficiente
-            data={data as ScanInsuficiente}
-            onReset={resetar}
-          />
+        {insuficiente && data && (
+          <ResultadoInsuficiente data={data as any} onReset={resetar} />
         )}
       </div>
     </main>

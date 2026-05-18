@@ -1,59 +1,43 @@
-/* app/globals.css */
-
-/* importa todas as classes utilitárias do Tailwind (flex, grid, p-4, etc.) */
 @import "tailwindcss";
 
-/* @theme define variáveis CSS customizadas integradas ao Tailwind 4
-   ou seja, você pode usar essas variáveis tanto no CSS quanto como classes do Tailwind */
 @theme {
-  /* cores de fundo */
-  --color-bg-body: #f7faf8; /* fundo da página inteira */
-  --color-bg-surface: #ffffff; /* fundo de cards e superfícies */
-  --color-bg-surface-hover: #f1f6f3; /* fundo de superfícies ao passar o mouse */
+  --color-bg-body: #f7faf8;
+  --color-bg-surface: #ffffff;
+  --color-bg-surface-hover: #f1f6f3;
 
-  /* hierarquia de texto: primary > secondary > tertiary (do mais para o menos importante) */
   --color-text-primary: #1a3a2e;
   --color-text-secondary: #5a7a6f;
   --color-text-tertiary: #8fa89e;
 
-  /* bordas */
   --color-border: #e3ede8;
   --color-border-hover: #c5d9d0;
 
-  /* cor principal do sistema (verde eco) e suas variações */
   --color-primary: #2d9569;
-  --color-primary-hover: #237852; /* mais escuro para hover */
-  --color-primary-light: #e6f5ef; /* fundo suave para badges e destaques */
-  --color-primary-dark: #1d5d3f; /* usado em gradientes e textos sobre fundo claro */
+  --color-primary-hover: #237852;
+  --color-primary-light: #e6f5ef;
+  --color-primary-dark: #1d5d3f;
 
-  /* cores de destaque secundárias */
-  --color-accent-warm: #f59e0b; /* amarelo/laranja para alertas e destaques quentes */
-  --color-accent-cool: #0ea5e9; /* azul para informações e destaques frios */
+  --color-accent-warm: #f59e0b;
+  --color-accent-cool: #0ea5e9;
 
-  /* cores semânticas de feedback */
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-error: #ef4444;
 
-  /* fontes: display para títulos, body para textos */
   --font-display: "Syne", sans-serif;
   --font-body: "Plus Jakarta Sans", sans-serif;
 
-  --spacing-header: 76px; /* altura do header fixo (usada no padding-top do body) */
+  --spacing-header: 76px;
 
-  /* raios de borda para diferentes componentes */
-  --radius-pill: 9999px; /* completamente arredondado (botões, badges) */
-  --radius-card: 16px; /* cards de produto */
-  --radius-btn: 12px; /* botões normais */
+  --radius-pill: 9999px;
+  --radius-card: 16px;
+  --radius-btn: 12px;
 
-  /* sombras com cor esverdeada para manter a identidade visual */
   --shadow-card: 0 8px 24px rgba(26, 58, 46, 0.12);
   --shadow-xl: 0 16px 48px rgba(26, 58, 46, 0.16);
   --shadow-btn: 0 4px 12px rgba(45, 149, 105, 0.25);
 }
 
-/* todas as variáveis do dark mode sobrescrevem as do tema padrão
-   ativado adicionando a classe "dark-mode" no <html> ou <body> */
 .dark-mode {
   --color-bg-body: #0a1612;
   --color-bg-surface: #122420;
@@ -66,21 +50,13 @@
   --color-border: #2a4a3f;
   --color-border-hover: #3a5a4f;
 
-  /* verde um pouco mais claro no dark mode para melhor contraste */
   --color-primary: #3daa7a;
   --color-primary-hover: #4ec18f;
-  --color-primary-light: rgba(
-    61,
-    170,
-    122,
-    0.15
-  ); /* usa rgba para transparência no dark */
+  --color-primary-light: rgba(61, 170, 122, 0.15);
   --color-primary-dark: #2d8a5f;
 }
 
-/* @layer base = estilos de reset e elementos HTML nativos */
 @layer base {
-  /* reset universal: remove margens, paddings e garante box-sizing consistente */
   *,
   *::before,
   *::after {
@@ -90,7 +66,7 @@
   }
 
   html {
-    scroll-behavior: smooth; /* rolagem suave ao clicar em âncoras (#section) */
+    scroll-behavior: smooth;
   }
 
   body {
@@ -98,16 +74,13 @@
     color: var(--color-text-primary);
     font-family: var(--font-body);
     line-height: 1.6;
-    padding-top: var(
-      --spacing-header
-    ); /* empurra o conteúdo para baixo do header fixo */
-    -webkit-font-smoothing: antialiased; /* suaviza as fontes no webkit (Chrome, Safari) */
+    padding-top: var(--spacing-header);
+    -webkit-font-smoothing: antialiased;
     transition:
       background-color 0.25s ease,
-      color 0.25s ease; /* transição suave ao trocar entre light/dark mode */
+      color 0.25s ease;
   }
 
-  /* todos os títulos usam a fonte display e linha mais compacta */
   h1,
   h2,
   h3,
@@ -121,36 +94,30 @@
 
   a {
     text-decoration: none;
-    color: inherit; /* herda a cor do elemento pai (não usa azul padrão do browser) */
+    color: inherit;
   }
 
   img {
     max-width: 100%;
-    display: block; /* remove o espaço extra que imagens inline criam abaixo delas */
+    display: block;
   }
 
   button {
     cursor: pointer;
-    font-family: var(
-      --font-body
-    ); /* botões herdam a fonte do projeto, não a padrão do browser */
+    font-family: var(--font-body);
   }
 }
 
-/* @utility = classes utilitárias reutilizáveis (equivalente a componentes do Tailwind) */
-
-/* centraliza e limita a largura do conteúdo na página */
 @utility container-eco {
   max-width: 1400px;
   margin-inline: auto;
-  padding-inline: 2rem; /* padding horizontal padrão no mobile */
+  padding-inline: 2rem;
 
   @media (width >= 768px) {
-    padding-inline: 4rem; /* mais espaço lateral em telas maiores */
+    padding-inline: 4rem;
   }
 }
 
-/* efeito de texto com gradiente verde (usado em títulos de destaque) */
 @utility text-gradient-eco {
   background: linear-gradient(
     135deg,
@@ -159,10 +126,9 @@
   );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-clip: text; /* faz o gradiente aparecer só no texto */
+  background-clip: text;
 }
 
-/* estilo base de card com hover animado */
 @utility card-eco {
   background-color: var(--color-bg-surface);
   border: 1px solid var(--color-border);
@@ -170,13 +136,12 @@
   transition: all 0.25s ease;
 
   &:hover {
-    transform: translateY(-6px); /* sobe o card ao passar o mouse */
+    transform: translateY(-6px);
     box-shadow: var(--shadow-card);
-    border-color: var(--color-primary); /* borda verde no hover */
+    border-color: var(--color-primary);
   }
 }
 
-/* badge/etiqueta arredondada (usado em certificados, categorias, etc.) */
 @utility badge-eco {
   display: inline-flex;
   align-items: center;
@@ -190,34 +155,30 @@
   font-family: var(--font-body);
 }
 
-/* @layer components = componentes mais complexos e específicos do projeto */
 @layer components {
-  /* header fixo no topo — começa transparente e fica fosco ao rolar */
   .main-header {
     position: fixed;
-    inset-block-start: 0; /* fixado no topo */
-    inset-inline: 0; /* ocupa toda a largura */
+    inset-block-start: 0;
+    inset-inline: 0;
     height: var(--spacing-header);
-    z-index: 1000; /* sempre acima de tudo */
+    z-index: 1000;
     background-color: transparent;
     border-bottom: 1px solid transparent;
     transition: all 0.25s ease;
     transform: translateY(0) !important;
   }
 
-  /* classe adicionada via JavaScript quando o usuário rola a página */
   .main-header.scrolled {
     background-color: color-mix(
       in srgb,
       var(--color-bg-surface) 88%,
       transparent
     );
-    backdrop-filter: blur(16px) saturate(180%); /* efeito de vidro fosco */
+    backdrop-filter: blur(16px) saturate(180%);
     border-bottom-color: var(--color-border);
     box-shadow: 0 2px 4px rgba(26, 58, 46, 0.06);
   }
 
-  /* botão principal (verde sólido) */
   .btn-primary {
     display: inline-flex;
     align-items: center;
@@ -234,12 +195,11 @@
 
     &:hover {
       background-color: var(--color-primary-hover);
-      transform: translateY(-2px); /* leve elevação no hover */
+      transform: translateY(-2px);
       box-shadow: 0 8px 20px rgba(45, 149, 105, 0.35);
     }
   }
 
-  /* botão secundário (contorno, sem preenchimento) */
   .btn-secondary {
     display: inline-flex;
     align-items: center;
@@ -260,7 +220,6 @@
     }
   }
 
-  /* link de navegação do header com indicador de página ativa */
   .nav-link {
     position: relative;
     display: flex;
@@ -272,14 +231,13 @@
     font-size: 0.9375rem;
     border-radius: 12px;
     transition: all 0.15s ease;
-    white-space: nowrap; /* impede quebra de linha nos links */
+    white-space: nowrap;
 
     &:hover {
       color: var(--color-text-primary);
       background-color: var(--color-bg-surface-hover);
     }
 
-    /* página atual: destaque em verde */
     &.active {
       color: var(--color-primary);
       background-color: var(--color-primary-light);
@@ -287,12 +245,11 @@
     }
   }
 
-  /* card de produto com imagem que cresce no hover */
   .product-card {
     background-color: var(--color-bg-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-card);
-    overflow: hidden; /* garante que a imagem escalada não vaze do card */
+    overflow: hidden;
     transition: all 0.25s ease;
     display: flex;
     flex-direction: column;
@@ -303,19 +260,15 @@
       border-color: var(--color-primary);
     }
 
-    /* ao passar o mouse no card, a imagem dentro dele cresce */
     &:hover .card-img {
       transform: scale(1.08);
     }
   }
 
   .card-img {
-    transition: transform 0.4s ease; /* transição mais lenta que o card para efeito suave */
+    transition: transform 0.4s ease;
   }
 
-  /* animação de entrada ao rolar a página
-     elementos começam invisíveis e deslocados para baixo
-     JavaScript adiciona a classe "visible" quando o elemento entra na tela */
   .animate-on-scroll {
     opacity: 0;
     transform: translateY(24px);
@@ -330,7 +283,6 @@
   }
 }
 
-/* flutuação suave — usada em elementos decorativos e ilustrações */
 @keyframes float {
   0%,
   100% {
@@ -338,10 +290,9 @@
   }
   50% {
     transform: translateY(-10px);
-  } /* sobe 10px no meio do ciclo */
+  }
 }
 
-/* entrada de elementos: aparecem vindo de baixo com fade */
 @keyframes fadeSlideUp {
   from {
     opacity: 0;

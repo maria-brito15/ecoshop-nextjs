@@ -1,5 +1,29 @@
 // app/(perfil)/perfil/page.tsx
 
+/**
+ * ============================================================================
+ * PÁGINA DE PERFIL DO USUÁRIO
+ * ============================================================================
+ * Rota: "/perfil" (protegida - requer autenticação)
+ *
+ * Página onde o usuário pode visualizar e editar seus dados pessoais,
+ * além de acompanhar seu histórico de produtos visitados e impacto ambiental.
+ *
+ * Funcionalidades:
+ * - Visualização de dados do perfil (nome, email, telefone, tipo de conta)
+ * - Edição de perfil (nome e telefone)
+ * - Histórico de produtos visualizados (localStorage)
+ * - Métricas de impacto ambiental (baseado no histórico)
+ *
+ * Permissões:
+ * - Usuário só pode ver/editar seu próprio perfil
+ * - Middleware requireAuth protege a rota
+ *
+ * @see lib/auth/jwt.ts - Autenticação
+ * @see app/api/usuarios/[id]/route.ts - Endpoint de perfil
+ * ============================================================================
+ */
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -19,6 +43,14 @@ type EditForm = {
   telefone: string;
 };
 
+// ----------------------------------------------------------------------------
+// COMPONENTES AUXILIARES
+// ----------------------------------------------------------------------------
+
+/**
+ * Card de métrica de impacto ambiental.
+ * Exibe ícone, label e valor com animação.
+ */
 function ImpactCard({
   icon,
   label,
@@ -77,6 +109,9 @@ function ImpactCard({
   );
 }
 
+/**
+ * Botão de aba para alternar entre "Histórico" e "Impacto".
+ */
 function TabBtn({
   active,
   onClick,
@@ -109,6 +144,10 @@ function TabBtn({
   );
 }
 
+/**
+ * Notificação temporária (toast) que aparece no canto superior direito.
+ * Usada para feedback de ações (sucesso/erro).
+ */
 function Notification({
   message,
   type,
@@ -164,6 +203,10 @@ function Notification({
   );
 }
 
+/**
+ * Modal de edição de perfil.
+ * Permite editar nome e telefone (email não é editável).
+ */
 function EditModal({
   usuario,
   form,
@@ -261,7 +304,6 @@ function EditModal({
                 placeholder="Seu nome"
               />
             </div>
-
             <div>
               <label
                 className="block text-sm font-semibold mb-2"
@@ -276,7 +318,6 @@ function EditModal({
                 className={`${inputCls} opacity-50 cursor-not-allowed`}
               />
             </div>
-
             <div>
               <label
                 className="block text-sm font-semibold mb-2"
@@ -299,7 +340,6 @@ function EditModal({
                 placeholder="(00) 00000-0000"
               />
             </div>
-
             {erroEdit && (
               <div
                 className="px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2"
@@ -326,7 +366,6 @@ function EditModal({
               </div>
             )}
           </div>
-
           <div
             className="flex gap-3 px-7 py-5 justify-end"
             style={{ borderTop: "1px solid var(--color-border)" }}
@@ -399,6 +438,10 @@ function EditModal({
   );
 }
 
+// ----------------------------------------------------------------------------
+// PÁGINA PRINCIPAL
+// ----------------------------------------------------------------------------
+
 export default function PerfilPage() {
   const router = useRouter();
 
@@ -417,6 +460,7 @@ export default function PerfilPage() {
     type: "success" | "error";
   } | null>(null);
 
+  // Carrega histórico de produtos visualizados do localStorage
   const [historyCount] = useState(() => {
     if (typeof window === "undefined") return 0;
     try {
@@ -427,6 +471,7 @@ export default function PerfilPage() {
     }
   });
 
+  // Busca dados do usuário autenticado
   useEffect(() => {
     async function fetchPerfil() {
       try {
@@ -510,6 +555,7 @@ export default function PerfilPage() {
     setEditando(false);
   }
 
+  // Estados de carregamento e erro
   if (carregando) {
     return (
       <div
@@ -605,6 +651,7 @@ export default function PerfilPage() {
           paddingTop: "100px",
         }}
       >
+        {/* HEADER DO PERFIL */}
         <section
           className="mb-12"
           style={{ animation: "fadeInUp 0.6s ease-out both" }}
@@ -629,6 +676,7 @@ export default function PerfilPage() {
                 aria-hidden
               />
 
+              {/* Avatar */}
               <div
                 className="w-28 h-28 rounded-full flex items-center justify-center text-white text-5xl relative flex-shrink-0"
                 style={{
@@ -649,6 +697,7 @@ export default function PerfilPage() {
                 />
               </div>
 
+              {/* Informações do usuário */}
               <div className="flex-1 min-w-0">
                 <h1
                   className="text-3xl font-extrabold tracking-tight mb-1.5"
@@ -701,7 +750,7 @@ export default function PerfilPage() {
                       }}
                     >
                       🏪{" "}
-                      {usuario.tipo === "LOJA"
+                      {usuario.tipo === "MARCA"
                         ? "Loja Parceira"
                         : "Administrador"}
                     </span>
@@ -709,6 +758,7 @@ export default function PerfilPage() {
                 </div>
               </div>
 
+              {/* Botões de ação */}
               <div className="flex flex-col gap-3 ml-auto">
                 <button
                   type="button"
@@ -720,14 +770,12 @@ export default function PerfilPage() {
                     border: "2px solid var(--color-border)",
                   }}
                   onMouseEnter={(e) => {
-                    const el = e.currentTarget as HTMLButtonElement;
-                    el.style.borderColor = "var(--color-primary)";
-                    el.style.color = "var(--color-primary)";
+                    e.currentTarget.style.borderColor = "var(--color-primary)";
+                    e.currentTarget.style.color = "var(--color-primary)";
                   }}
                   onMouseLeave={(e) => {
-                    const el = e.currentTarget as HTMLButtonElement;
-                    el.style.borderColor = "var(--color-border)";
-                    el.style.color = "var(--color-text-secondary)";
+                    e.currentTarget.style.borderColor = "var(--color-border)";
+                    e.currentTarget.style.color = "var(--color-text-secondary)";
                   }}
                 >
                   <svg
@@ -755,16 +803,14 @@ export default function PerfilPage() {
                     border: "2px solid var(--color-border)",
                   }}
                   onMouseEnter={(e) => {
-                    const el = e.currentTarget as HTMLButtonElement;
-                    el.style.background = "#ef4444";
-                    el.style.color = "white";
-                    el.style.borderColor = "#ef4444";
+                    e.currentTarget.style.background = "#ef4444";
+                    e.currentTarget.style.color = "white";
+                    e.currentTarget.style.borderColor = "#ef4444";
                   }}
                   onMouseLeave={(e) => {
-                    const el = e.currentTarget as HTMLButtonElement;
-                    el.style.background = "transparent";
-                    el.style.color = "#ef4444";
-                    el.style.borderColor = "var(--color-border)";
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = "#ef4444";
+                    e.currentTarget.style.borderColor = "var(--color-border)";
                   }}
                 >
                   <svg
@@ -788,6 +834,7 @@ export default function PerfilPage() {
           </div>
         </section>
 
+        {/* TABS */}
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
           <div
             className="flex gap-0 mb-10 overflow-x-auto"
@@ -838,6 +885,7 @@ export default function PerfilPage() {
             </TabBtn>
           </div>
 
+          {/* HISTÓRICO (produtos visitados) */}
           {aba === "historico" && (
             <div style={{ animation: "fadeInUp 0.4s ease both" }}>
               <div className="mb-8">
@@ -854,7 +902,6 @@ export default function PerfilPage() {
                   Itens que você visualizou recentemente.
                 </p>
               </div>
-
               <div
                 className="flex flex-col items-center justify-center py-20 text-center rounded-2xl"
                 style={{
@@ -903,6 +950,7 @@ export default function PerfilPage() {
             </div>
           )}
 
+          {/* IMPACTO AMBIENTAL (métricas) */}
           {aba === "impacto" && (
             <div style={{ animation: "fadeInUp 0.4s ease both" }}>
               <div className="mb-8">
@@ -919,7 +967,6 @@ export default function PerfilPage() {
                   O seu engajamento com produtos sustentáveis.
                 </p>
               </div>
-
               <div
                 className="grid gap-6"
                 style={{
@@ -948,7 +995,6 @@ export default function PerfilPage() {
                   delay={300}
                 />
               </div>
-
               <div
                 className="mt-8 p-5 rounded-2xl flex items-start gap-4"
                 style={{
