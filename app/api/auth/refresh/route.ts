@@ -1,71 +1,76 @@
 // app/api/auth/refresh/route.ts
 
-import { NextRequest, NextResponse } from "next/server";
-import { getSession, signToken } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { redisDel, chaveUsuarioMe } from "@/lib/cache";
+/**
+ * ============================================================================
+ * AUTH REFRESH API ROUTE - RENOVAÇÃO DE TOKEN
+ * ============================================================================
+ * Endpoint para renovar o token JWT quando o tipo de usuário muda no banco.
+ *
+ * POST /api/auth/refresh - Renova o token com dados atualizados
+ *
+ * Por que isso é necessário?
+ * - O token JWT contém o tipo do usuário (CLIENTE, MARCA, ADMIN)
+ * - Se um admin promove um usuário para ADMIN, o token antigo ainda tem tipo antigo
+ * - Este endpoint verifica o tipo atual no banco e renova o token se necessário
+ *
+ * Fluxo:
+ * 1. Extrai sessão do cookie
+ * 2. Busca usuário no banco (dados atuais)
+ * 3. Se tipo mudou → gera novo token e atualiza cookie
+ * 4. Invalida cache do perfil do usuário
+ *
+ * Chamado pelo frontend após /api/auth/me retornar dados
+ *
+ * @see app/components/Header.tsx - Chamada após carregar usuário
+ * ============================================================================
+ */
 
-// POST /api/auth/refresh → renova o token do usuário se necessário
-// chamada útil quando o frontend precisa verificar se a sessão ainda é válida
-// ou se o tipo do usuário mudou (ex: um cliente que virou admin)
-// não usa cache — o objetivo é sempre buscar o estado mais atual do banco
+export const dynamic = "force-dynamic";
+
+import { NextRequest, NextResponse } from "next/server";
+import { getSession, signToken, setAuthCookie } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { invalidarChave, chaveUsuarioMe } from "@/lib/cache";
+import { ERROS } from "@/lib/http/responses";
+
+/**
+ * POST /api/auth/refresh - Renova token JWT
+ *
+ * @returns { ok: true, tipo?: string } - tipo incluído se houve mudança
+ * @status 200 - Token válido (renovado ou não)
+ * @status 401 - Não autenticado
+ * @status 404 - Usuário não encontrado no banco
+ * @status 500 - Erro interno
+ */
 export async function POST(req: NextRequest) {
   try {
-    // tenta ler e verificar o token do cookie atual
     const session = await getSession(req);
+    if (!session) return ERROS.naoAutorizado();
 
-    if (!session) {
-      return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
-    }
-
-    // busca o usuário no banco para pegar os dados mais atualizados
-    // select: evita trazer campos desnecessários como a senha
     const usuario = await prisma.usuario.findUnique({
       where: { id: session.id },
       select: { id: true, email: true, tipo: true },
     });
 
-    // usuário pode ter sido deletado do banco após o login
-    if (!usuario) {
-      return NextResponse.json(
-        { error: "Usuário não encontrado" },
-        { status: 404 },
-      );
-    }
+    if (!usuario) return ERROS.naoEncontrado("Usuário");
 
-    // verifica se o tipo do usuário mudou desde que o token foi gerado
-    // ex: era "CLIENTE" no token mas agora é "ADMIN" no banco
-    // nesse caso é necessário gerar um novo token com o tipo atualizado
+    // Se o tipo no banco é diferente do tipo no token, renova
     if (usuario.tipo !== session.tipo) {
       const novoToken = await signToken({
         id: usuario.id,
         email: usuario.email,
-        tipo: usuario.tipo, // tipo atualizado do banco, não do token antigo
+        tipo: usuario.tipo,
       });
 
       const res = NextResponse.json({ ok: true, tipo: usuario.tipo });
-
-      // substitui o cookie com o novo token (mesmas configurações do login)
-      res.cookies.set("token", novoToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 60 * 24 * 7,
-        path: "/",
-      });
-
-      // invalida o cache do /me para refletir o novo tipo imediatamente
-      await redisDel(chaveUsuarioMe(usuario.id));
+      setAuthCookie(res, novoToken);
+      await invalidarChave(chaveUsuarioMe(usuario.id));
 
       return res;
     }
 
-    // tipo não mudou: token ainda é válido, só confirma o tipo atual
     return NextResponse.json({ ok: true, tipo: usuario.tipo });
-  } catch (error) {
-    console.error("Erro ao renovar token:", error);
-    return NextResponse.json(
-      { error: "Erro ao renovar token" },
-      { status: 500 },
-    );
+  } catch {
+    return ERROS.interno("renovar token");
   }
 }
