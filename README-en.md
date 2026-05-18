@@ -246,7 +246,6 @@ Produto        → belongs to Marca and Categoria, has multiple photos and certi
 matcher: [
   "/painel/:path*",
   "/perfil/:path*",
-  "/ia-scan/:path*",
   "/api/admin/:path*",
   "/api/usuarios/:path*",
   "/api/produtos/:path*/fotos",

@@ -246,7 +246,6 @@ Produto        → pertence a Marca e Categoria, possui múltiplas fotos e certi
 matcher: [
   "/painel/:path*",
   "/perfil/:path*",
-  "/ia-scan/:path*",
   "/api/admin/:path*",
   "/api/usuarios/:path*",
   "/api/produtos/:path*/fotos",
