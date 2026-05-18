@@ -1,57 +1,88 @@
-// app/api/users/route.ts — rota de registro público (cadastro + login automático)
+// app/api/users/route.ts
+
+/**
+ * ============================================================================
+ * USERS API ROUTE - REGISTRO PÚBLICO
+ * ============================================================================
+ * Endpoint para registro público de novos usuários.
+ *
+ * POST /api/users - Cria nova conta de usuário (público)
+ *
+ * Diferencia do POST /api/usuarios (admin):
+ * - Este é público (qualquer pessoa pode criar conta)
+ * - Tipo de usuário é restrito a CLIENTE ou MARCA (não ADMIN)
+ *
+ * Fluxo:
+ * 1. Rate limiting por IP (5 tentativas/hora)
+ * 2. Validação dos dados de registro
+ * 3. Verifica se email já está cadastrado
+ * 4. Cria usuário com senha hasheada (bcrypt)
+ * 5. Gera token JWT e define cookie
+ * 6. Retorna dados do usuário (exclui senha)
+ *
+ * @see services/usuario.service.ts - criarUsuario()
+ * ============================================================================
+ */
+
+export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { signToken } from "@/lib/auth"; // importa signToken pois faz login automático após cadastro
-import bcrypt from "bcryptjs";
-import { z } from "zod";
+import { signToken, setAuthCookie } from "@/lib/auth";
+import { ERROS } from "@/lib/http/responses";
+import { invalidarCache } from "@/lib/cache";
+import { registroPublicoSchema } from "@/lib/schemas/usuario";
+import { criarUsuario } from "@/services/usuario.service";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
-const registerSchema = z.object({
-  nome: z.string().min(3),
-  email: z.string().email(),
-  telefone: z.string().optional(),
-  senha: z.string().min(8), // mínimo 8 caracteres (mais restritivo)
-  tipo: z.enum(["CLIENTE", "MARCA", "ADMIN"]).default("CLIENTE"), // permite definir o tipo na criação
-});
+const LIMITE_REGISTRO = 5;
+const JANELA_REGISTRO = 3600;
 
-// POST /api/users → cadastro público (qualquer pessoa pode chamar, sem autenticação)
-// não usa cache — só escrita (cria usuário e gera cookie de sessão)
-// a lista de usuários no redis é invalidada ao final para o painel admin refletir o novo cadastro
+/**
+ * POST /api/users - Registro público de usuário
+ *
+ * @body { nome: string, email: string, telefone?: string, senha: string }
+ * @returns { ok: true, usuario: { id, email, nome, tipo } } + cookie httpOnly
+ * @status 201 - Usuário criado com sucesso
+ * @status 400 - Dados inválidos
+ * @status 409 - Email já cadastrado
+ * @status 429 - Muitas tentativas (rate limit)
+ * @status 500 - Erro interno
+ */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const parsed = registerSchema.safeParse(body);
+    const ip = getClientIp(req);
+    const { bloqueado } = await rateLimit(`${ip}:register`, {
+      limite: LIMITE_REGISTRO,
+      janelaSegundos: JANELA_REGISTRO,
+    });
 
-    if (!parsed.success) {
+    if (bloqueado) {
       return NextResponse.json(
-        { error: "Dados inválidos", details: parsed.error.flatten() },
-        { status: 400 },
+        { erro: "Muitas tentativas de cadastro. Aguarde 1 hora." },
+        { status: 429 },
       );
     }
+
+    const body = await req.json();
+    const parsed = registroPublicoSchema.safeParse(body);
+
+    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
 
     const { nome, email, telefone, senha, tipo } = parsed.data;
 
     const existingUser = await prisma.usuario.findUnique({ where: { email } });
+    if (existingUser) return ERROS.conflito("Email já cadastrado");
 
-    if (existingUser) {
-      return NextResponse.json(
-        { error: "Email já cadastrado" },
-        { status: 409 }, // 409 Conflict = recurso já existe
-      );
-    }
+    const usuario = await criarUsuario({ nome, email, telefone, senha, tipo });
 
-    const senhaHash = bcrypt.hashSync(senha, 10); // cost factor 10
-
-    const usuario = await prisma.usuario.create({
-      data: { nome, email, telefone, senha: senhaHash, tipo: tipo as any },
-    });
-
-    // diferencial desta rota: gera o token e faz login automático após o cadastro
     const token = await signToken({
       id: usuario.id,
       email: usuario.email,
-      tipo: usuario.tipo,
+      tipo: usuario.tipo as "CLIENTE" | "MARCA" | "ADMIN",
     });
+
+    await invalidarCache("USUARIOS");
 
     const res = NextResponse.json(
       {
@@ -63,23 +94,15 @@ export async function POST(req: NextRequest) {
           tipo: usuario.tipo,
         },
       },
-      { status: 201 }, // 201 Created = recurso criado com sucesso
+      { status: 201 },
     );
 
-    // define o cookie de sessão igual ao login normal
-    res.cookies.set("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24 * 7,
-      path: "/",
-    });
-
+    setAuthCookie(res, token);
     return res;
-  } catch (error) {
-    console.error("Erro ao registrar:", error);
-    return NextResponse.json(
-      { error: "Erro interno no servidor" },
-      { status: 500 },
-    );
+  } catch (err) {
+    if (err instanceof Error && err.message === "EMAIL_JA_CADASTRADO") {
+      return ERROS.conflito("Email já cadastrado");
+    }
+    return ERROS.interno("registrar usuário");
   }
 }

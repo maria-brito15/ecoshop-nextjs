@@ -1,60 +1,87 @@
-// app/api/ia/scan/route.ts — análise de imagem com IA (visão computacional)
+// app/api/ia/scan/route.ts
+
+/**
+ * ============================================================================
+ * IA SCAN API ROUTE - ECOSCAN
+ * ============================================================================
+ * Rota de API para análise de imagens com IA (reconhecimento de produtos recicláveis).
+ *
+ * POST /api/ia/scan - Analisa imagem e retorna informações de reciclagem
+ *
+ * Endpoint privado - requer autenticação (usuário logado).
+ *
+ * Fluxo:
+ * 1. Verifica autenticação do usuário (requireAuth)
+ * 2. Extrai arquivo do FormData
+ * 3. Valida tipo e tamanho do arquivo
+ * 4. Converte para Buffer para processamento
+ * 5. Chama serviço de IA para análise da imagem
+ * 6. Retorna resultado (sucesso com dados ou erro)
+ *
+ * Limites:
+ * - Tamanho máximo: 10MB
+ * - Formatos aceitos: JPG, PNG, GIF, WebP
+ *
+ * @see lib/ai/analisar-imagem.ts - Orquestração da análise
+ * ============================================================================
+ */
+
+export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { analisarImagem } from "@/lib/ai"; // função que faz a análise, definida em lib/ai.ts
+import { analisarImagem } from "@/lib/ai";
+import { ERROS } from "@/lib/http/responses";
+import { requireAuth } from "@/app/_middleware/auth";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB em bytes (10 × 1024 × 1024)
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
-// POST /api/ia/scan → recebe uma imagem e retorna análise de sustentabilidade
+/**
+ * POST /api/ia/scan - Analisa imagem
+ *
+ * Requer autenticação (usuário logado).
+ *
+ * @body FormData com campo 'image' (arquivo)
+ * @returns ResultadoScan (sucesso ou falha)
+ * @status 200 - Análise bem-sucedida
+ * @status 401 - Não autenticado
+ * @status 400 - Dados inválidos (arquivo ausente, tipo errado, tamanho excedido)
+ * @status 422 - Imagem não pôde ser analisada (formato não suportado pela IA)
+ * @status 500 - Erro interno
+ */
 export async function POST(req: NextRequest) {
+  const authErro = await requireAuth(req);
+  if (authErro) return authErro;
+
   try {
-    // FormData é o formato usado para upload de arquivos (diferente de req.json())
     const formData = await req.formData();
-    const file = formData.get("image") as File | null; // pega o campo "image" do form
+    const file = formData.get("image") as File | null;
 
     if (!file) {
-      return NextResponse.json(
-        { error: "Nenhuma imagem enviada" },
-        { status: 400 },
-      );
+      return ERROS.dadosInvalidos("Nenhuma imagem enviada");
     }
 
-    // valida o tipo do arquivo pelo MIME type (não pela extensão, que pode ser alterada)
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Formato inválido. Use: jpg, jpeg, png, gif ou webp" },
-        { status: 400 },
+      return ERROS.dadosInvalidos(
+        "Formato inválido. Use: jpg, jpeg, png, gif ou webp",
       );
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: "Arquivo muito grande (máx: 10MB)" },
-        { status: 400 },
-      );
+      return ERROS.dadosInvalidos("Arquivo muito grande (máx: 10MB)");
     }
 
-    // converte o arquivo para Buffer (formato que o Node.js usa para dados binários)
-    // arrayBuffer → Buffer é necessário pois a API do Gemini espera dados binários
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // gera um id único para essa análise combinando timestamp + string aleatória
-    // ex: "analise_1714000000000_k3j8f2a1"
     const imageId = `analise_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 
     const resultado = await analisarImagem(buffer, imageId);
 
-    // se a análise falhou (sucesso: false), retorna 422 Unprocessable Entity
-    // se deu certo, retorna 200 com o resultado
     return NextResponse.json(resultado, {
       status: resultado.sucesso ? 200 : 422,
     });
   } catch {
-    return NextResponse.json(
-      { error: "Erro ao processar análise" },
-      { status: 500 },
-    );
+    return ERROS.interno("processar análise");
   }
 }

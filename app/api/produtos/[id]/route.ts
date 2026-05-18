@@ -1,164 +1,117 @@
 // app/api/produtos/[id]/route.ts
 
+/**
+ * ============================================================================
+ * PRODUTO BY ID API ROUTES
+ * ============================================================================
+ * Endpoints para operações em um produto específico.
+ *
+ * GET /api/produtos/{id} - Busca produto por ID (público)
+ * PUT /api/produtos/{id} - Atualiza produto (requer ADMIN)
+ * DELETE /api/produtos/{id} - Deleta produto (requer ADMIN)
+ *
+ * @see services/produto.service.ts - Lógica de negócio
+ * ============================================================================
+ */
+
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { ERROS } from "@/lib/http/responses";
+import { atualizarProdutoSchema } from "@/lib/schemas/produto";
 import {
-  comCache,
-  invalidarCache,
-  redisDel,
-  chaveProduto,
-  TTL,
-} from "@/lib/cache";
-import { z } from "zod";
-import { cookies } from "next/headers";
-import { jwtVerify } from "jose";
+  buscarProduto,
+  atualizarProduto,
+  deletarProduto,
+} from "@/services/produto.service";
+import { requireAdmin } from "@/app/_middleware/auth";
 
-type JwtPayload = {
-  id: number;
-  email: string;
-  tipo: "CLIENTE" | "MARCA" | "ADMIN";
-};
-
-async function getUsuarioDoToken(req: NextRequest): Promise<JwtPayload | null> {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) return null;
-
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const { payload } = await jwtVerify(token, secret);
-
-    return payload as unknown as JwtPayload;
-  } catch {
-    return null;
-  }
-}
-
-function isAdmin(usuario: JwtPayload | null): boolean {
-  return usuario?.tipo === "ADMIN";
-}
-
-const atualizarSchema = z.object({
-  nome: z.string().min(1).optional(),
-  descricao: z.string().optional(),
-  preco: z.number().positive().optional(),
-  categoriaId: z.number().int().optional(),
-  marcaId: z.number().int().optional(),
-});
-
+/**
+ * GET /api/produtos/{id} - Busca produto por ID
+ *
+ * @param id - ID do produto na URL
+ * @returns { produto: Produto }
+ * @status 200 - Produto encontrado
+ * @status 404 - Produto não existe
+ * @status 500 - Erro ao buscar produto
+ */
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
-
-    // cacheia o produto individual pelo id
-    const resultado = await comCache(chaveProduto(Number(id)), TTL.ITEM, () =>
-      prisma.produto.findUnique({
-        where: { id: Number(id) },
-        include: {
-          categoria: true,
-          marca: true,
-          certificados: { include: { certificado: true } },
-        },
-      }),
-    );
-
-    if (!resultado) {
-      return NextResponse.json(
-        { erro: "Produto não encontrado" },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json({ produto: resultado });
+    const produto = await buscarProduto(Number(id));
+    if (!produto) return ERROS.naoEncontrado("Produto");
+    return NextResponse.json({ produto });
   } catch {
-    return NextResponse.json(
-      { erro: "Erro ao buscar produto" },
-      { status: 500 },
-    );
+    return ERROS.interno("buscar produto");
   }
 }
 
+/**
+ * PUT /api/produtos/{id} - Atualiza produto
+ *
+ * Requer autenticação ADMIN.
+ *
+ * @param id - ID do produto na URL
+ * @body { nome?: string, descricao?: string, preco?: number, categoriaId?: number, marcaId?: number }
+ * @returns { produto: Produto }
+ * @status 200 - Produto atualizado
+ * @status 400 - Dados inválidos
+ * @status 401 - Não autenticado
+ * @status 403 - Não é ADMIN
+ * @status 404 - Produto não existe
+ * @status 500 - Erro ao atualizar produto
+ */
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const usuario = await getUsuarioDoToken(req);
-
-  if (!usuario) {
-    return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
-  }
-
-  if (!isAdmin(usuario)) {
-    return NextResponse.json({ erro: "Acesso negado" }, { status: 403 });
-  }
+  const authErro = await requireAdmin(req);
+  if (authErro) return authErro;
 
   try {
     const { id } = await params;
     const body = await req.json();
-    const parsed = atualizarSchema.safeParse(body);
+    const parsed = atualizarProdutoSchema.safeParse(body);
+    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { erro: "Dados inválidos", detalhes: parsed.error.flatten() },
-        { status: 400 },
-      );
-    }
-
-    const produto = await prisma.produto.update({
-      where: { id: Number(id) },
-      data: parsed.data,
-      include: { categoria: true, marca: true },
-    });
-
-    // invalida o item específico e toda a lista paginada
-    await Promise.all([
-      redisDel(chaveProduto(Number(id))),
-      invalidarCache("PRODUTOS"),
-    ]);
-
+    const produto = await atualizarProduto(Number(id), parsed.data);
     return NextResponse.json({ produto });
   } catch {
-    return NextResponse.json(
-      { erro: "Erro ao atualizar produto" },
-      { status: 500 },
-    );
+    return ERROS.interno("atualizar produto");
   }
 }
 
+/**
+ * DELETE /api/produtos/{id} - Deleta produto
+ *
+ * Requer autenticação ADMIN.
+ *
+ * @param id - ID do produto na URL
+ * @returns { ok: true }
+ * @status 200 - Produto deletado
+ * @status 401 - Não autenticado
+ * @status 403 - Não é ADMIN
+ * @status 404 - Produto não existe
+ * @status 500 - Erro ao deletar produto
+ */
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const usuario = await getUsuarioDoToken(req);
-
-  if (!usuario) {
-    return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
-  }
-
-  if (!isAdmin(usuario)) {
-    return NextResponse.json({ erro: "Acesso negado" }, { status: 403 });
-  }
+  const authErro = await requireAdmin(req);
+  if (authErro) return authErro;
 
   try {
     const { id } = await params;
-
-    await prisma.produto.delete({ where: { id: Number(id) } });
-
-    // invalida o item e a lista — produto deletado não pode aparecer no cache
-    await Promise.all([
-      redisDel(chaveProduto(Number(id))),
-      invalidarCache("PRODUTOS"),
-    ]);
-
+    await deletarProduto(Number(id));
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json(
-      { erro: "Produto não encontrado" },
-      { status: 404 },
-    );
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("P2025")) {
+      return ERROS.naoEncontrado("Produto");
+    }
+    return ERROS.interno("deletar produto");
   }
 }

@@ -1,63 +1,70 @@
 // app/api/marcas/route.ts
 
+/**
+ * ============================================================================
+ * MARCAS API ROUTES
+ * ============================================================================
+ * Endpoints para gerenciamento de marcas.
+ *
+ * GET /api/marcas - Lista todas as marcas (público)
+ * POST /api/marcas - Cria nova marca (requer ADMIN)
+ *
+ * Marcas representam fabricantes/empresas parceiras.
+ * Cada marca está associada a um usuário do tipo MARCA ou ADMIN.
+ *
+ * @see services/marca.service.ts - Lógica de negócio
+ * ============================================================================
+ */
+
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getSession } from "@/lib/auth";
-import { comCache, invalidarCache, chaveMarcas, TTL } from "@/lib/cache";
-import { z } from "zod";
+import { ERROS } from "@/lib/http/responses";
+import { marcaSchema } from "@/lib/schemas/marca";
+import { listarMarcas, criarMarca } from "@/services/marca.service";
+import { requireAdmin } from "@/app/_middleware/auth";
 
-const marcaSchema = z.object({
-  nome: z.string().min(1),
-  descricao: z.string().optional(),
-  usuarioId: z.number().int(),
-});
-
+/**
+ * GET /api/marcas - Lista todas as marcas
+ *
+ * @returns { marcas: Marca[] }
+ * @status 200 - Lista retornada com sucesso
+ * @status 500 - Erro ao buscar marcas
+ */
 export async function GET() {
   try {
-    const marcas = await comCache(chaveMarcas(), TTL.LISTA_CURTA, () =>
-      prisma.marca.findMany({
-        orderBy: { nome: "asc" },
-        include: {
-          usuario: { select: { id: true, nome: true, email: true } },
-        },
-      }),
-    );
-
+    const marcas = await listarMarcas();
     return NextResponse.json({ marcas });
   } catch {
-    return NextResponse.json(
-      { error: "Erro ao listar marcas" },
-      { status: 500 },
-    );
+    return ERROS.interno("listar marcas");
   }
 }
 
+/**
+ * POST /api/marcas - Cria nova marca
+ *
+ * Requer autenticação ADMIN.
+ *
+ * @body { nome: string, descricao?: string, usuarioId: number }
+ * @returns { marca: Marca }
+ * @status 201 - Marca criada
+ * @status 400 - Dados inválidos
+ * @status 401 - Não autenticado
+ * @status 403 - Não é ADMIN
+ * @status 500 - Erro ao criar marca
+ */
 export async function POST(req: NextRequest) {
-  try {
-    const session = await getSession(req);
-    if (!session || session.tipo !== "ADMIN") {
-      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
-    }
+  const authErro = await requireAdmin(req);
+  if (authErro) return authErro;
 
+  try {
     const body = await req.json();
     const parsed = marcaSchema.safeParse(body);
+    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Dados inválidos", detalhes: parsed.error.flatten() },
-        { status: 400 },
-      );
-    }
-
-    const marca = await prisma.marca.create({
-      data: parsed.data,
-      include: { usuario: { select: { id: true, nome: true } } },
-    });
-
-    await invalidarCache("MARCAS");
-
+    const marca = await criarMarca(parsed.data);
     return NextResponse.json({ marca }, { status: 201 });
   } catch {
-    return NextResponse.json({ error: "Erro ao criar marca" }, { status: 500 });
+    return ERROS.interno("criar marca");
   }
 }

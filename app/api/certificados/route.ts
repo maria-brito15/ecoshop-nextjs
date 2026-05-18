@@ -1,63 +1,72 @@
 // app/api/certificados/route.ts
 
+/**
+ * ============================================================================
+ * CERTIFICADOS API ROUTES
+ * ============================================================================
+ * Endpoints para gerenciamento de certificados de sustentabilidade.
+ *
+ * GET /api/certificados - Lista todos os certificados (público)
+ * POST /api/certificados - Cria novo certificado (requer ADMIN)
+ *
+ * Certificados são selos como "FSC", "Orgânico Brasil", "Cruelty Free".
+ *
+ * @see services/certificado.service.ts - Lógica de negócio
+ * ============================================================================
+ */
+
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getSession } from "@/lib/auth";
-import { comCache, invalidarCache, chaveCertificados, TTL } from "@/lib/cache";
-import { z } from "zod";
+import { ERROS } from "@/lib/http/responses";
+import { certificadoSchema } from "@/lib/schemas/certificado";
+import {
+  listarCertificados,
+  criarCertificado,
+} from "@/services/certificado.service";
+import { requireAdmin } from "@/app/_middleware/auth";
 
-const certificadoSchema = z.object({
-  nome: z.string().min(1),
-  descricao: z.string().optional(),
-  orgaoEmissor: z.string().min(1),
-});
-
+/**
+ * GET /api/certificados - Lista todos os certificados
+ *
+ * @returns { certificados: Certificado[] }
+ * @status 200 - Lista retornada com sucesso
+ * @status 500 - Erro ao buscar certificados
+ */
 export async function GET() {
   try {
-    const certificados = await comCache(
-      chaveCertificados(),
-      TTL.LISTA_CURTA,
-      () =>
-        prisma.certificado.findMany({
-          orderBy: { nome: "asc" },
-        }),
-    );
-
+    const certificados = await listarCertificados();
     return NextResponse.json({ certificados });
   } catch {
-    return NextResponse.json(
-      { error: "Erro ao listar certificados" },
-      { status: 500 },
-    );
+    return ERROS.interno("listar certificados");
   }
 }
 
+/**
+ * POST /api/certificados - Cria novo certificado
+ *
+ * Requer autenticação ADMIN.
+ *
+ * @body { nome: string, descricao?: string, orgaoEmissor: string }
+ * @returns { certificado: Certificado }
+ * @status 201 - Certificado criado
+ * @status 400 - Dados inválidos
+ * @status 401 - Não autenticado
+ * @status 403 - Não é ADMIN
+ * @status 500 - Erro ao criar certificado
+ */
 export async function POST(req: NextRequest) {
-  try {
-    const session = await getSession(req);
-    if (!session || session.tipo !== "ADMIN") {
-      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
-    }
+  const authErro = await requireAdmin(req);
+  if (authErro) return authErro;
 
+  try {
     const body = await req.json();
     const parsed = certificadoSchema.safeParse(body);
+    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Dados inválidos", detalhes: parsed.error.flatten() },
-        { status: 400 },
-      );
-    }
-
-    const certificado = await prisma.certificado.create({ data: parsed.data });
-
-    await invalidarCache("CERTIFICADOS");
-
+    const certificado = await criarCertificado(parsed.data);
     return NextResponse.json({ certificado }, { status: 201 });
   } catch {
-    return NextResponse.json(
-      { error: "Erro ao criar certificado" },
-      { status: 500 },
-    );
+    return ERROS.interno("criar certificado");
   }
 }

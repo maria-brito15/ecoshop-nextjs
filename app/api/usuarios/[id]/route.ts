@@ -1,143 +1,140 @@
-// app/api/usuarios/[id]/route.ts — operações em um usuário específico (por id)
+// app/api/usuarios/[id]/route.ts
+
+/**
+ * ============================================================================
+ * USUARIO BY ID API ROUTES
+ * ============================================================================
+ * Endpoints para operações em um usuário específico.
+ *
+ * GET /api/usuarios/{id} - Busca usuário por ID
+ * PUT /api/usuarios/{id} - Atualiza usuário
+ * DELETE /api/usuarios/{id} - Deleta usuário (requer ADMIN)
+ *
+ * Regras de permissão:
+ * - GET: Usuário pode ver apenas seu próprio perfil (ou ADMIN vê qualquer um)
+ * - PUT: Usuário pode editar apenas seu próprio perfil (ou ADMIN edita qualquer um)
+ * - DELETE: Apenas ADMIN pode deletar usuários
+ *
+ * @see services/usuario.service.ts - Lógica de negócio
+ * ============================================================================
+ */
+
+export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { ERROS } from "@/lib/http/responses";
+import { atualizarUsuarioSchema } from "@/lib/schemas/usuario";
 import {
-  comCache,
-  invalidarCache,
-  redisDel,
-  chaveUsuario,
-  chaveUsuarioMe,
-  TTL,
-} from "@/lib/cache";
-import { z } from "zod";
+  buscarUsuario,
+  atualizarUsuario,
+  deletarUsuario,
+} from "@/services/usuario.service";
 
-// só permite atualizar nome e telefone — email, senha e tipo têm rotas próprias
-const atualizarSchema = z.object({
-  nome: z.string().min(1).optional(),
-  telefone: z.string().optional(),
-});
-
-// GET /api/usuarios/[id] → busca um usuário pelo id
+/**
+ * GET /api/usuarios/{id} - Busca usuário por ID
+ *
+ * Permissão: Usuário pode ver apenas seu próprio perfil.
+ * ADMIN pode ver qualquer usuário.
+ *
+ * @param id - ID do usuário na URL
+ * @returns { usuario: Usuario }
+ * @status 200 - Usuário encontrado
+ * @status 401 - Não autenticado
+ * @status 403 - Acesso negado (tentando ver outro usuário sem ser ADMIN)
+ * @status 404 - Usuário não encontrado
+ * @status 500 - Erro ao buscar usuário
+ */
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const session = await getSession(req);
+  const { id } = await params;
+
+  if (!session || (session.id !== Number(id) && session.tipo !== "ADMIN")) {
+    return ERROS.acessoNegado();
+  }
+
   try {
-    const session = await getSession(req);
-    const { id } = await params;
-
-    // regra de acesso: o próprio usuário pode ver seus dados, ou um admin pode ver qualquer um
-    if (!session || (session.id !== Number(id) && session.tipo !== "ADMIN")) {
-      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
-    }
-
-    const usuario = await comCache(chaveUsuario(Number(id)), TTL.USUARIO, () =>
-      prisma.usuario.findUnique({
-        where: { id: Number(id) },
-        select: {
-          id: true,
-          nome: true,
-          email: true,
-          telefone: true,
-          tipo: true,
-          criadoEm: true,
-        },
-      }),
-    );
-
-    if (!usuario) {
-      return NextResponse.json(
-        { error: "Usuário não encontrado" },
-        { status: 404 },
-      );
-    }
-
+    const usuario = await buscarUsuario(Number(id));
+    if (!usuario) return ERROS.naoEncontrado("Usuário");
     return NextResponse.json({ usuario });
   } catch {
-    return NextResponse.json(
-      { error: "Erro ao buscar usuário" },
-      { status: 500 },
-    );
+    return ERROS.interno("buscar usuário");
   }
 }
 
-// PUT /api/usuarios/[id] → atualiza nome e/ou telefone do usuário
+/**
+ * PUT /api/usuarios/{id} - Atualiza usuário
+ *
+ * Permissão: Usuário pode editar apenas seu próprio perfil.
+ * ADMIN pode editar qualquer usuário.
+ *
+ * @param id - ID do usuário na URL
+ * @body { nome?: string, email?: string, telefone?: string, senha?: string }
+ * @returns { usuario: Usuario }
+ * @status 200 - Usuário atualizado
+ * @status 400 - Dados inválidos
+ * @status 401 - Não autenticado
+ * @status 403 - Acesso negado
+ * @status 404 - Usuário não encontrado
+ * @status 500 - Erro ao atualizar usuário
+ */
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const session = await getSession(req);
+  const { id } = await params;
+
+  if (!session || (session.id !== Number(id) && session.tipo !== "ADMIN")) {
+    return ERROS.acessoNegado();
+  }
+
   try {
-    const session = await getSession(req);
-    const { id } = await params;
-
-    // mesma regra: só o próprio usuário ou um admin pode editar
-    if (!session || (session.id !== Number(id) && session.tipo !== "ADMIN")) {
-      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
-    }
-
     const body = await req.json();
-    const parsed = atualizarSchema.safeParse(body);
+    const parsed = atualizarUsuarioSchema.safeParse(body);
+    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Dados inválidos", detalhes: parsed.error.flatten() },
-        { status: 400 },
-      );
-    }
-
-    const usuario = await prisma.usuario.update({
-      where: { id: Number(id) },
-      data: parsed.data,
-      select: { id: true, nome: true, email: true, tipo: true },
-    });
-
-    // invalida o perfil individual, o cache do /me (que mostra nome/email no header)
-    // e a lista admin — tudo que pode exibir o nome antigo
-    await Promise.all([
-      redisDel(chaveUsuario(Number(id))),
-      redisDel(chaveUsuarioMe(Number(id))),
-      invalidarCache("USUARIOS"),
-    ]);
-
+    const usuario = await atualizarUsuario(Number(id), parsed.data);
     return NextResponse.json({ usuario });
-  } catch {
-    return NextResponse.json(
-      { error: "Erro ao atualizar usuário" },
-      { status: 500 },
-    );
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("P2025")) {
+      return ERROS.naoEncontrado("Usuário");
+    }
+    return ERROS.interno("atualizar usuário");
   }
 }
 
-// DELETE /api/usuarios/[id] → remove um usuário (só admin pode deletar)
+/**
+ * DELETE /api/usuarios/{id} - Deleta usuário
+ *
+ * Permissão: Apenas ADMIN pode deletar usuários.
+ *
+ * @param id - ID do usuário na URL
+ * @returns { ok: true }
+ * @status 200 - Usuário deletado
+ * @status 401 - Não autenticado
+ * @status 403 - Acesso negado (não é ADMIN)
+ * @status 404 - Usuário não encontrado
+ * @status 500 - Erro ao deletar usuário
+ */
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const session = await getSession(req);
+  if (!session || session.tipo !== "ADMIN") return ERROS.acessoNegado();
+
   try {
-    const session = await getSession(req);
-
-    // diferente do get e put: aqui nem o próprio usuário pode se deletar, só admin
-    if (!session || session.tipo !== "ADMIN") {
-      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
-    }
-
     const { id } = await params;
-    await prisma.usuario.delete({ where: { id: Number(id) } });
-
-    // remove todas as entradas do usuário deletado do cache
-    await Promise.all([
-      redisDel(chaveUsuario(Number(id))),
-      redisDel(chaveUsuarioMe(Number(id))),
-      invalidarCache("USUARIOS"),
-    ]);
-
+    await deletarUsuario(Number(id));
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json(
-      { error: "Usuário não encontrado" },
-      { status: 404 },
-    );
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("P2025")) {
+      return ERROS.naoEncontrado("Usuário");
+    }
+    return ERROS.interno("deletar usuário");
   }
 }
