@@ -1,101 +1,139 @@
 // lib/hooks/useMutation.ts
 
-"use client"; // roda apenas no navegador
+/**
+ * ============================================================================
+ * useMutation HOOK
+ * ============================================================================
+ * Hook React para operações de escrita na API (POST, PUT, DELETE, PATCH).
+ *
+ * Características:
+ * - Gerencia estado de carregamento e erro
+ * - Invalida cache automaticamente após sucesso
+ * - Suporte a FormData (upload de arquivos)
+ * - Compatível com qualquer endpoint REST
+ *
+ * Diferença do useFetch:
+ * - useFetch: usado para GET (leituras)
+ * - useMutation: usado para POST/PUT/DELETE (escritas)
+ *
+ * Padrão de uso:
+ * ```tsx
+ * const criarProduto = useMutation<Produto, CriarProdutoBody>({
+ *   method: "POST",
+ *   invalidar: ["/api/produtos"] // invalida cache da listagem
+ * });
+ *
+ * const handleSubmit = async (dados) => {
+ *   const resultado = await criarProduto.executar("/api/produtos", dados);
+ *   if (resultado) router.push("/produtos");
+ * };
+ * ```
+ * ============================================================================
+ */
+
+"use client";
 
 import { useState } from "react";
 import { invalidarCacheCliente } from "./useFetch";
 
-// opções que o hook aceita na criação
+/**
+ * Opções de configuração do mutation hook.
+ */
 type Opcoes = {
-  method?: "POST" | "PUT" | "DELETE"; // método http (padrão será post)
-  credentials?: RequestCredentials;   // controle de cookies (padrão será "include")
-
-  // prefixos de url para invalidar no cache do cliente após mutação bem-sucedida
-  // ex: invalidar: ["/api/produtos"] remove todas as entradas que contêm "/api/produtos"
-  // isso inclui urls com query params como /api/produtos?page=1&size=12
-  // a invalidação no redis acontece dentro da route handler — aqui só limpamos o cache do navegador
+  /** Método HTTP da requisição (padrão: POST) */
+  method?: "POST" | "PUT" | "DELETE" | "PATCH";
+  /** Modo de credenciais (padrão: "include" para enviar cookies) */
+  credentials?: RequestCredentials;
+  /** URLs a invalidar no cache cliente após sucesso */
   invalidar?: string[];
 };
 
-// mesmo padrão do useFetch: os 3 estados possíveis de uma requisição
-type Estado<T> = {
-  data: T | null;
-  carregando: boolean;
-  erro: string | null;
-};
+/**
+ * Formato de resposta de erro esperado da API.
+ * A API pode retornar "erro" (português) ou "error" (inglês) conforme rota.
+ */
+type ApiErroResponse = { erro?: string; error?: string };
 
-// TResponse = tipo do que a api devolve
-// TBody = tipo do que você envia no body (unknown por padrão, ou seja, qualquer coisa)
+/**
+ * Hook para operações de mutação na API.
+ *
+ * @template TResponse - Tipo dos dados de resposta (sucesso)
+ * @template TBody - Tipo do corpo da requisição (pode ser objeto ou FormData)
+ * @param opcoes - Configuração do mutation (method, invalidar, etc.)
+ * @returns Estado da mutação + função executar
+ *
+ * @example
+ * // DELETE sem corpo
+ * const deletar = useMutation<{ ok: boolean }>({ method: "DELETE" });
+ * await deletar.executar(`/api/produtos/${id}`);
+ *
+ * @example
+ * // POST com FormData (upload de arquivo)
+ * const upload = useMutation<Foto, FormData>({ method: "POST" });
+ * const formData = new FormData();
+ * formData.append("imagem", file);
+ * await upload.executar("/api/fotos", formData);
+ */
 export function useMutation<TResponse, TBody = unknown>(opcoes?: Opcoes) {
-  // diferente do useFetch, começa com carregando: false
-  // porque a requisição só dispara quando você chamar executar()
-  const [estado, setEstado] = useState<Estado<TResponse>>({
-    data: null,
-    carregando: false,
-    erro: null,
-  });
+  const [data, setData] = useState<TResponse | null>(null);
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
-  // função que de fato dispara a requisição
-  // recebe a url e o body no momento da chamada (não na criação do hook)
+  /**
+   * Executa a mutação.
+   *
+   * @param url - URL do endpoint
+   * @param body - Corpo da requisição (opcional para DELETE)
+   * @returns Dados da resposta ou null em caso de erro
+   */
   async function executar(
     url: string,
     body?: TBody,
   ): Promise<TResponse | null> {
-    setEstado({ data: null, carregando: true, erro: null });
+    setData(null);
+    setCarregando(true);
+    setErro(null);
 
     try {
+      // Detecta se body é FormData (upload de arquivo)
+      // Se for, não seta Content-Type (o browser define multipart/form-data corretamente)
+      const isFormData = body instanceof FormData;
+
       const res = await fetch(url, {
-        method: opcoes?.method ?? "POST", // usa o método definido nas opções, ou post como padrão
-        credentials: opcoes?.credentials ?? "include", // envia cookies por padrão (necessário para auth)
-
-        // se o body for um FormData (upload de arquivo), não define Content-Type
-        // o navegador define automaticamente com o boundary correto
-        // caso contrário, informa que é json
-        headers:
-          body instanceof FormData
-            ? undefined
-            : { "Content-Type": "application/json" },
-
-        // se for FormData, envia direto
-        // se for um objeto, serializa para json
-        // se não tiver body (ex: delete), não envia nada
-        body:
-          body instanceof FormData
-            ? body
-            : body
-              ? JSON.stringify(body)
-              : undefined,
+        method: opcoes?.method ?? "POST",
+        credentials: opcoes?.credentials ?? "include",
+        headers: isFormData
+          ? undefined
+          : { "Content-Type": "application/json" },
+        body: isFormData ? body : body ? JSON.stringify(body) : undefined,
       });
 
-      // lê o json antes de checar res.ok
-      // porque mesmo respostas de erro podem ter um body com detalhes
-      const data: TResponse = await res.json();
+      const responseData = (await res.json()) as TResponse;
 
       if (!res.ok) {
-        // tenta pegar a mensagem de erro vinda da api, ou usa um fallback genérico
-        const erro = (data as any).erro ?? "Erro desconhecido";
-        setEstado({ data: null, carregando: false, erro });
-        return null; // retorna null para quem chamou executar() saber que falhou
+        const errData = responseData as ApiErroResponse;
+        const mensagem = errData.erro ?? errData.error ?? "Erro desconhecido";
+        setErro(mensagem);
+        setCarregando(false);
+        return null;
       }
 
-      setEstado({ data, carregando: false, erro: null });
+      setData(responseData);
+      setCarregando(false);
 
-      // após mutação bem-sucedida, limpa o cache do cliente para os recursos afetados
-      // o redis já foi invalidado dentro da route handler pelo invalidarCache()
+      // Invalida caches do cliente para forçar refetch nos próximos useFetch
+      // Isso garante que a UI mostre dados atualizados após a mutação
       if (opcoes?.invalidar) {
         opcoes.invalidar.forEach(invalidarCacheCliente);
       }
 
-      return data; // retorna os dados para quem precisar usar direto (sem depender do estado)
+      return responseData;
     } catch {
-      // catch sem variável: só cai aqui em falha de rede (sem internet, servidor offline, etc.)
-      // erros http (404, 500) são tratados pelo if (!res.ok) acima
-      setEstado({ data: null, carregando: false, erro: "Falha de conexão" });
+      setErro("Falha de conexão");
+      setCarregando(false);
       return null;
     }
   }
 
-  // expõe o estado + a função executar juntos
-  // uso: const { carregando, erro, executar } = useMutation<Produto>({ method: "PUT" })
-  return { ...estado, executar };
+  return { data, carregando, erro, executar };
 }

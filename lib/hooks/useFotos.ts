@@ -1,114 +1,84 @@
 // lib/hooks/useFotos.ts
 
+/**
+ * ============================================================================
+ * FOTOS HOOKS
+ * ============================================================================
+ * Coleção de hooks para gerenciamento de fotos de produtos.
+ *
+ * As fotos são armazenadas no sistema de arquivos (public/data_fotos/)
+ * e servidas como arquivos estáticos.
+ *
+ * Características:
+ * - Upload via FormData (multipart/form-data)
+ * - Validação de extensões e tamanho no backend
+ * - Nomes sanitizados para evitar colisões (formato: {produtoId}_{timestamp}_{random}.ext)
+ *
+ * Endpoints:
+ * - Listagem: GET /api/produtos/:id/fotos
+ * - Upload: POST /api/produtos/:id/fotos (admin)
+ * - Deleção: DELETE /api/produtos/:id/fotos?nome={nome} (admin)
+ * ============================================================================
+ */
+
 "use client";
 
-import { useState, useCallback } from "react";
+import { useFetch } from "./useFetch";
+import { useMutation } from "./useMutation";
+import type { Foto, FotosResponse } from "@/types/domain";
 
-export interface Foto {
-  nome: string;
-  url: string;
+/**
+ * Lista todas as fotos de um produto específico.
+ *
+ * @param produtoId - ID do produto (se 0 ou null, hook não executa)
+ * @returns Hook com array de fotos, loading e erro
+ *
+ * @example
+ * const { data, carregando } = useListarFotos(produtoId);
+ * const fotos = data?.fotos ?? [];
+ */
+export function useListarFotos(produtoId: number) {
+  return useFetch<FotosResponse>(`/api/produtos/${produtoId}/fotos`);
 }
 
-export interface FotosResponse {
-  fotos: Foto[];
-  total: number;
-  produtoId: number;
+/**
+ * Faz upload de uma nova foto para um produto.
+ * Requer autenticação ADMIN.
+ *
+ * O corpo da requisição deve ser um FormData contendo:
+ * - arquivo: File (a imagem)
+ * - nome: string (opcional, nome personalizado)
+ *
+ * @param produtoId - ID do produto ao qual a foto será associada
+ * @returns Mutation hook para upload de foto
+ *
+ * @example
+ * const upload = useUploadFoto(produtoId);
+ * const formData = new FormData();
+ * formData.append("arquivo", file);
+ * const result = await upload.executar(`/api/produtos/${produtoId}/fotos`, formData);
+ */
+export function useUploadFoto(produtoId: number) {
+  return useMutation<{ ok: boolean; foto: Foto; mensagem: string }, FormData>({
+    method: "POST",
+    invalidar: [`/api/produtos/${produtoId}/fotos`],
+  });
 }
 
-export function useFotos(produtoId: number) {
-  const [fotos, setFotos] = useState<Foto[]>([]);
-  const [carregando, setCarregando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-
-  const carregar = useCallback(async () => {
-    setCarregando(true);
-    setErro(null);
-    try {
-      const res = await fetch(`/api/produtos/${produtoId}/fotos`, {
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        throw new Error("Erro ao carregar fotos");
-      }
-
-      const data: FotosResponse = await res.json();
-      setFotos(data.fotos);
-    } catch (err: any) {
-      setErro(err.message || "Erro ao carregar fotos");
-    } finally {
-      setCarregando(false);
-    }
-  }, [produtoId]);
-
-  const upload = useCallback(
-    async (arquivo: File, nomeCustomizado?: string) => {
-      setErro(null);
-      try {
-        const formData = new FormData();
-        formData.append("arquivo", arquivo);
-        if (nomeCustomizado) {
-          formData.append("nome", nomeCustomizado);
-        }
-
-        const res = await fetch(`/api/produtos/${produtoId}/fotos`, {
-          method: "POST",
-          credentials: "include",
-          body: formData,
-        });
-
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "Erro ao fazer upload");
-        }
-
-        const data = await res.json();
-
-        setFotos((prev) => [...prev, data.foto]);
-
-        return data.foto;
-      } catch (err: any) {
-        const mensagem = err.message || "Erro ao fazer upload";
-        setErro(mensagem);
-        throw err;
-      }
-    },
-    [produtoId],
-  );
-
-  const deletar = useCallback(
-    async (nomeArquivo: string) => {
-      setErro(null);
-      try {
-        const res = await fetch(
-          `/api/produtos/${produtoId}/fotos?nome=${encodeURIComponent(nomeArquivo)}`,
-          {
-            method: "DELETE",
-            credentials: "include",
-          },
-        );
-
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "Erro ao deletar foto");
-        }
-
-        setFotos((prev) => prev.filter((f) => f.nome !== nomeArquivo));
-      } catch (err: any) {
-        const mensagem = err.message || "Erro ao deletar foto";
-        setErro(mensagem);
-        throw err;
-      }
-    },
-    [produtoId],
-  );
-
-  return {
-    fotos,
-    carregando,
-    erro,
-    carregar,
-    upload,
-    deletar,
-  };
+/**
+ * Deleta uma foto específica de um produto.
+ * Requer autenticação ADMIN.
+ *
+ * @param produtoId - ID do produto
+ * @returns Mutation hook para deleção de foto
+ *
+ * @example
+ * const deletar = useDeletarFoto(produtoId);
+ * await deletar.executar(`/api/produtos/${produtoId}/fotos?nome=${nomeArquivo}`);
+ */
+export function useDeletarFoto(produtoId: number) {
+  return useMutation<{ ok: boolean; mensagem: string }>({
+    method: "DELETE",
+    invalidar: [`/api/produtos/${produtoId}/fotos`],
+  });
 }
