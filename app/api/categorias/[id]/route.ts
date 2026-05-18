@@ -1,121 +1,127 @@
-// app/api/categorias/[id]/route.ts — opera em uma categoria específica
+// app/api/categorias/[id]/route.ts
+
+/**
+ * ============================================================================
+ * CATEGORIA BY ID API ROUTES
+ * ============================================================================
+ * Endpoints para operações em uma categoria específica.
+ *
+ * GET /api/categorias/{id} - Busca categoria por ID (público)
+ * PUT /api/categorias/{id} - Atualiza categoria (requer ADMIN)
+ * DELETE /api/categorias/{id} - Deleta categoria (requer ADMIN)
+ *
+ * Permissões:
+ * - GET: Público
+ * - PUT/DELETE: Apenas ADMIN
+ *
+ * @see services/categoria.service.ts - Lógica de negócio
+ * ============================================================================
+ */
+
+export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getSession } from "@/lib/auth";
+import { ERROS } from "@/lib/http/responses";
+import { atualizarCategoriaSchema } from "@/lib/schemas/categoria";
 import {
-  comCache,
-  invalidarCache,
-  redisDel,
-  chaveCategoria,
-  TTL,
-} from "@/lib/cache";
-import { z } from "zod";
+  buscarCategoria,
+  atualizarCategoria,
+  deletarCategoria,
+} from "@/services/categoria.service";
+import { requireAdmin } from "@/app/_middleware/auth";
 
-const atualizarSchema = z.object({
-  nome: z.string().min(1).optional(),
-  descricao: z.string().optional(),
-});
-
-// GET /api/categorias/5 → busca a categoria de id 5, já com os produtos dela
-// _req com underline = parâmetro obrigatório pelo next.js mas não usado nessa função
+/**
+ * GET /api/categorias/{id} - Busca categoria por ID
+ *
+ * @param id - ID da categoria na URL
+ * @returns { categoria: Categoria }
+ * @status 200 - Categoria encontrada
+ * @status 404 - Categoria não existe
+ * @status 500 - Erro ao buscar categoria
+ */
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params; // extrai o id da url (ex: "5")
-
-    const categoria = await comCache(chaveCategoria(Number(id)), TTL.ITEM, () =>
-      prisma.categoria.findUnique({
-        where: { id: Number(id) },
-        include: { produtos: true }, // diferencial: já traz os produtos da categoria junto
-      }),
-    );
-
-    if (!categoria) {
-      return NextResponse.json(
-        { error: "Categoria não encontrada" },
-        { status: 404 },
-      );
-    }
-
+    const { id } = await params;
+    const categoria = await buscarCategoria(Number(id));
+    if (!categoria) return ERROS.naoEncontrado("Categoria");
     return NextResponse.json({ categoria });
   } catch {
-    return NextResponse.json(
-      { error: "Erro ao buscar categoria" },
-      { status: 500 },
-    );
+    return ERROS.interno("buscar categoria");
   }
 }
 
-// PUT /api/categorias/5 → atualiza a categoria de id 5 (só admin)
+/**
+ * PUT /api/categorias/{id} - Atualiza categoria
+ *
+ * Requer autenticação ADMIN.
+ *
+ * @param id - ID da categoria na URL
+ * @body { nome?: string, descricao?: string }
+ * @returns { categoria: Categoria }
+ * @status 200 - Categoria atualizada
+ * @status 400 - Dados inválidos
+ * @status 401 - Não autenticado
+ * @status 403 - Não é ADMIN
+ * @status 404 - Categoria não existe
+ * @status 500 - Erro ao atualizar categoria
+ */
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  try {
-    const session = await getSession(req);
-    if (!session || session.tipo !== "ADMIN") {
-      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
-    }
+  const authErro = await requireAdmin(req);
+  if (authErro) return authErro;
 
+  try {
     const { id } = await params;
     const body = await req.json();
-    const parsed = atualizarSchema.safeParse(body);
+    const parsed = atualizarCategoriaSchema.safeParse(body);
+    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Dados inválidos", detalhes: parsed.error.flatten() },
-        { status: 400 },
-      );
-    }
-
-    const categoria = await prisma.categoria.update({
-      where: { id: Number(id) },
-      data: parsed.data,
-    });
-
-    // invalida o item e a lista para refletir o nome atualizado em ambos
-    await Promise.all([
-      redisDel(chaveCategoria(Number(id))),
-      invalidarCache("CATEGORIAS"),
-    ]);
-
+    const categoria = await atualizarCategoria(Number(id), parsed.data);
     return NextResponse.json({ categoria });
-  } catch {
-    return NextResponse.json(
-      { error: "Erro ao atualizar categoria" },
-      { status: 500 },
-    );
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("P2025")) {
+      return ERROS.naoEncontrado("Categoria");
+    }
+    return ERROS.interno("atualizar categoria");
   }
 }
 
-// DELETE /api/categorias/5 → deleta a categoria de id 5 (só admin)
+/**
+ * DELETE /api/categorias/{id} - Deleta categoria
+ *
+ * Requer autenticação ADMIN.
+ *
+ * ATENÇÃO: Categorias com produtos associados não podem ser deletadas.
+ *
+ * @param id - ID da categoria na URL
+ * @returns { ok: true }
+ * @status 200 - Categoria deletada
+ * @status 401 - Não autenticado
+ * @status 403 - Não é ADMIN
+ * @status 404 - Categoria não existe
+ * @status 409 - Categoria possui produtos (indireto via erro Prisma P2003)
+ * @status 500 - Erro ao deletar categoria
+ */
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const authErro = await requireAdmin(req);
+  if (authErro) return authErro;
+
   try {
-    const session = await getSession(req);
-    if (!session || session.tipo !== "ADMIN") {
-      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
-    }
-
     const { id } = await params;
-    await prisma.categoria.delete({ where: { id: Number(id) } });
-
-    // remove o item e a lista do cache
-    await Promise.all([
-      redisDel(chaveCategoria(Number(id))),
-      invalidarCache("CATEGORIAS"),
-    ]);
-
+    await deletarCategoria(Number(id));
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json(
-      { error: "Categoria não encontrada" },
-      { status: 404 },
-    );
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("P2025")) {
+      return ERROS.naoEncontrado("Categoria");
+    }
+    return ERROS.interno("deletar categoria");
   }
 }

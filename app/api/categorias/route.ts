@@ -1,63 +1,71 @@
-// app/api/categorias/route.ts — opera na coleção (todas as categorias)
+// app/api/categorias/route.ts
+
+/**
+ * ============================================================================
+ * CATEGORIAS API ROUTES
+ * ============================================================================
+ * Endpoints para gerenciamento de categorias de produtos.
+ *
+ * GET /api/categorias - Lista todas as categorias (público)
+ * POST /api/categorias - Cria nova categoria (requer ADMIN)
+ *
+ * Permissões:
+ * - GET: Público (qualquer usuário pode ver categorias)
+ * - POST: Apenas ADMIN
+ *
+ * @see services/categoria.service.ts - Lógica de negócio
+ * ============================================================================
+ */
+
+export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getSession } from "@/lib/auth";
-import { comCache, invalidarCache, chaveCategorias, TTL } from "@/lib/cache";
-import { z } from "zod";
+import { ERROS } from "@/lib/http/responses";
+import { categoriaSchema } from "@/lib/schemas/categoria";
+import { listarCategorias, criarCategoria } from "@/services/categoria.service";
+import { requireAdmin } from "@/app/_middleware/auth";
 
-const categoriaSchema = z.object({
-  nome: z.string().min(1),
-  descricao: z.string().optional(),
-});
-
-// GET /api/categorias → lista todas as categorias (público, sem autenticação)
+/**
+ * GET /api/categorias - Lista todas as categorias
+ *
+ * @returns { categorias: Categoria[] }
+ * @status 200 - Lista retornada com sucesso (pode ser vazia)
+ * @status 500 - Erro ao buscar categorias
+ */
 export async function GET() {
   try {
-    // categorias mudam pouco — ttl de 5 minutos
-    const categorias = await comCache(chaveCategorias(), TTL.LISTA_CURTA, () =>
-      prisma.categoria.findMany({
-        orderBy: { nome: "asc" }, // retorna em ordem alfabética
-      }),
-    );
-
+    const categorias = await listarCategorias();
     return NextResponse.json({ categorias });
   } catch {
-    return NextResponse.json(
-      { error: "Erro ao listar categorias" },
-      { status: 500 },
-    );
+    return ERROS.interno("listar categorias");
   }
 }
 
-// POST /api/categorias → cria uma nova categoria (só admin)
+/**
+ * POST /api/categorias - Cria nova categoria
+ *
+ * Requer autenticação ADMIN.
+ *
+ * @body { nome: string, descricao?: string }
+ * @returns { categoria: Categoria }
+ * @status 201 - Categoria criada com sucesso
+ * @status 400 - Dados inválidos
+ * @status 401 - Não autenticado
+ * @status 403 - Não é ADMIN
+ * @status 500 - Erro ao criar categoria
+ */
 export async function POST(req: NextRequest) {
-  try {
-    const session = await getSession(req);
-    if (!session || session.tipo !== "ADMIN") {
-      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
-    }
+  const authErro = await requireAdmin(req);
+  if (authErro) return authErro;
 
+  try {
     const body = await req.json();
     const parsed = categoriaSchema.safeParse(body);
+    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Dados inválidos", detalhes: parsed.error.flatten() },
-        { status: 400 },
-      );
-    }
-
-    const categoria = await prisma.categoria.create({ data: parsed.data });
-
-    // nova categoria aparece na lista — invalida o cache da coleção
-    await invalidarCache("CATEGORIAS");
-
+    const categoria = await criarCategoria(parsed.data);
     return NextResponse.json({ categoria }, { status: 201 });
   } catch {
-    return NextResponse.json(
-      { error: "Erro ao criar categoria" },
-      { status: 500 },
-    );
+    return ERROS.interno("criar categoria");
   }
 }
