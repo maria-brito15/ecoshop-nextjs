@@ -1,85 +1,167 @@
+# =============================================================================
+# DOCKER COMPOSE - ECOSHOP
+# =============================================================================
+# Orquestração completa dos serviços necessários para o EcoShop:
+# - app: Aplicação Next.js (EcoShop)
+# - postgres: Banco de dados PostgreSQL
+# - redis: Cache e rate limiting
+# - migrate: Job único para migrações (executa antes do app)
+# - seed: Job único para popular o banco (executa após migrate)
+#
+# Como usar:
+#   docker-compose up -d               # Inicia todos os serviços
+#   docker-compose down                # Para e remove containers
+#   docker-compose logs -f app         # Visualiza logs da aplicação
+#   docker-compose exec app sh         # Acessa shell dentro do container
+#
+# IMPORTANTE: Configure as variáveis de ambiente no arquivo .env
+# (GEMINI_KEY, AZURE_VISION_ENDPOINT, AZURE_VISION_KEY, etc.)
+# =============================================================================
+
 services:
+  # ---------------------------------------------------------------------------
+  # SERVIÇO: APLICAÇÃO NEXT.JS
+  # ---------------------------------------------------------------------------
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      target: runner # Usa o estágio runner (produção)
     container_name: ecoshop-app
     ports:
-      - "3000:3000"
-    env_file:
-      # carrega as variáveis do .env local (chaves de api, jwt secret, etc.)
-      # as variáveis abaixo sobrescrevem o .env para apontar para os serviços internos do compose
-      - .env
+      - "3000:3000" # Mapeia porta 3000 do host para porta 3000 do container
     environment:
-      # sobrescreve o DATABASE_URL do .env para usar o hostname do serviço postgres do compose
-      # fora do compose, localhost:5432 funcionaria — dentro, precisa ser o nome do serviço
+      HOSTNAME: "0.0.0.0"
+
+      # Conexões com banco e cache
       DATABASE_URL: postgresql://ecoshop:ecoshop@postgres:5432/ecoshop
       REDIS_URL: redis://redis:6379
-    depends_on:
-      # espera o postgres e o redis estarem prontos para aceitar conexões antes de subir a app
-      # sem o healthcheck, o container da app pode subir antes do banco estar aceitando conexões
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
 
+      # Autenticação JWT
+      JWT_SECRET: ${JWT_SECRET:-supersecretkeychangeinproduction}
+
+      # IA - Gemini
+      GEMINI_KEY: ${GEMINI_KEY}
+
+      # IA - Azure Vision
+      AZURE_VISION_ENDPOINT: ${AZURE_VISION_ENDPOINT}
+      AZURE_VISION_KEY: ${AZURE_VISION_KEY}
+
+      # Configurações da IA
+      AI_CONFIDENCE_THRESHOLD: ${AI_CONFIDENCE_THRESHOLD:-0.7}
+
+      # URL pública da aplicação (para links em emails, etc.)
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+    volumes:
+      # Persiste as fotos enviadas pelos usuários
+      # Importante: não perder os arquivos quando o container reiniciar
+      - fotos_data:/app/public/data_fotos
+    depends_on:
+      postgres:
+        condition: service_healthy # Só inicia quando PostgreSQL estiver saudável
+      redis:
+        condition: service_healthy # Só inicia quando Redis estiver saudável
+      seed:
+        condition: service_completed_successfully # Só inicia após seed concluído
+    restart: unless-stopped # Reinicia automaticamente a menos que parado manualmente
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/api/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ---------------------------------------------------------------------------
+  # SERVIÇO: POSTGRESQL (BANCO DE DADOS)
+  # ---------------------------------------------------------------------------
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16-alpine # Versão leve do PostgreSQL 16
     container_name: ecoshop-postgres
     environment:
       POSTGRES_USER: ecoshop
       POSTGRES_PASSWORD: ecoshop
       POSTGRES_DB: ecoshop
     volumes:
-      # volume nomeado persiste os dados do banco entre reinicializações do container
-      # sem isso, o banco seria zerado toda vez que o compose fosse parado
+      # Persiste os dados do banco fora do container
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5432:5432" # Expõe porta para debugging (opcional)
     healthcheck:
-      # pg_isready retorna 0 se o postgres está aceitando conexões, 1 caso contrário
-      # o depends_on do serviço app aguarda esse healthcheck passar antes de iniciar
+      # Comando para verificar se PostgreSQL está pronto para aceitar conexões
       test: ["CMD-SHELL", "pg_isready -U ecoshop"]
       interval: 5s
       timeout: 5s
       retries: 5
     restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # SERVIÇO: REDIS (CACHE E RATE LIMITING)
+  # ---------------------------------------------------------------------------
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine # Versão leve do Redis 7
     container_name: ecoshop-redis
     volumes:
+      # Persiste os dados do cache (opcional, pode ser volátil)
       - redis_data:/data
     ports:
-      - "6379:6379"
+      - "6379:6379" # Expõe porta para debugging (opcional)
     healthcheck:
+      # Comando para verificar se Redis está respondendo
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
     restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # SERVIÇO: MIGRATOR (MIGRAÇÕES DO PRISMA)
+  # ---------------------------------------------------------------------------
+  # Este serviço executa as migrações do banco de dados e depois encerra.
+  # Útil para garantir que o schema está atualizado antes do app iniciar.
+  # restart: "no" garante que o container não reinicie após completar.
   migrate:
     build:
       context: .
       dockerfile: Dockerfile
+      target: migrator # Usa o estágio migrator
     container_name: ecoshop-migrate
-    # executa as migrations e o seed em sequência — roda uma única vez e encerra
-    # migrate deploy aplica apenas as migrations pendentes, sem gerar novas (diferente de migrate dev)
-    command: sh -c "npx prisma migrate deploy && npx prisma db seed"
-    env_file:
-      - .env
     environment:
       DATABASE_URL: postgresql://ecoshop:ecoshop@postgres:5432/ecoshop
     depends_on:
       postgres:
         condition: service_healthy
-    # restart: "no" garante que o container não tenta rodar o seed novamente após o banco já estar populado
-    restart: "no"
+    restart: "no" # Executa uma vez e para
 
+  # ---------------------------------------------------------------------------
+  # SERVIÇO: SEED (POPULAR O BANCO COM DADOS INICIAIS)
+  # ---------------------------------------------------------------------------
+  # Este serviço executa o seed do banco de dados e depois encerra.
+  # Executa após o migrate para garantir que o schema existe.
+  seed:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator # Reutiliza o estágio migrator (tem tsx e prisma)
+    container_name: ecoshop-seed
+    environment:
+      DATABASE_URL: postgresql://ecoshop:ecoshop@postgres:5432/ecoshop
+    command: npx tsx prisma/seed.ts
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no" # Executa uma vez e para
+
+# -----------------------------------------------------------------------------
+# VOLUMES PERSISTENTES
+# -----------------------------------------------------------------------------
+# Dados que sobrevivem à reinicialização/remoção dos containers
 volumes:
-  # volumes nomeados são gerenciados pelo docker e sobrevivem a docker compose down
-  # para resetar completamente o banco, use: docker compose down -v
-  postgres_data:
-  redis_data:
+  postgres_data: # Dados do banco PostgreSQL
+  redis_data: # Dados do cache Redis (opcional, pode ser volátil)
+  fotos_data: # Fotos enviadas pelos usuários

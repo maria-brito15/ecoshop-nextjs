@@ -1,35 +1,30 @@
-# deps e build local
 node_modules
 .next
 out
 
-# env
 .env
 .env.local
 .env.*.local
 
-# git
 .git
 .gitignore
 
-# editor
 .vscode
 .idea
 *.swp
 *.swo
 
-# logs
 *.log
 npm-debug.log*
 
-# OS
 .DS_Store
 Thumbs.db
 
-# testes e coverage
 coverage
 .nyc_output
 
-# misc
 README.md
-prints
+README-en.md
+prints/
+
+tsconfig.seed.json
