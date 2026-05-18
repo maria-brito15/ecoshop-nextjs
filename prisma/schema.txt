@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TipoUsuario {
+  ADMIN
+  CLIENTE
+  MARCA
+}
+
+model Usuario {
+  id         Int         @id @default(autoincrement())
+  nome       String
+  email      String      @unique
+  senha      String
+  telefone   String?
+  tipo       TipoUsuario @default(CLIENTE)
+  criadoEm   DateTime    @default(now()) @map("criado_em")
+  marca      Marca?
+
+  @@map("usuarios")
+}
+
+model Categoria {
+  id        Int       @id @default(autoincrement())
+  nome      String    @unique
+  descricao String?
+  produtos  Produto[]
+
+  @@map("categorias")
+}
+
+model Marca {
+  id        Int       @id @default(autoincrement())
+  nome      String    @unique
+  descricao String?
+  usuarioId Int       @unique @map("usuario_id")
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id])
+  produtos  Produto[]
+
+  @@map("marcas")
+}
+
+model Certificado {
+  id           Int                  @id @default(autoincrement())
+  nome         String               @unique
+  descricao    String?
+  orgaoEmissor String               @map("orgao_emissor")
+  produtos     ProdutoCertificado[]
+
+  @@map("certificados")
+}
+
+model Produto {
+  id           Int                  @id @default(autoincrement())
+  nome         String
+  descricao    String?
+  preco        Decimal              @db.Decimal(10, 2)
+  fotoUrl      String?              @map("foto_url")
+  categoriaId  Int                  @map("categoria_id")
+  marcaId      Int                  @map("marca_id")
+  criadoEm    DateTime             @default(now()) @map("criado_em")
+  categoria    Categoria            @relation(fields: [categoriaId], references: [id])
+  marca        Marca                @relation(fields: [marcaId], references: [id])
+  certificados ProdutoCertificado[]
+
+  @@map("produtos")
+}
+
+model ProdutoCertificado {
+  produtoId     Int         @map("produto_id")
+  certificadoId Int         @map("certificado_id")
+  produto       Produto     @relation(fields: [produtoId], references: [id])
+  certificado   Certificado @relation(fields: [certificadoId], references: [id])
+
+  @@id([produtoId, certificadoId])
+  @@map("produto_certificado")
+}

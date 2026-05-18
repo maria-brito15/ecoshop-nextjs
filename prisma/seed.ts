@@ -1,3 +1,35 @@
+// prisma/seed.ts
+
+/**
+ * ============================================================================
+ * SEED SCRIPT - POPULAÇÃO INICIAL DO BANCO DE DADOS
+ * ============================================================================
+ * Script para popular o banco de dados com dados iniciais de desenvolvimento.
+ *
+ * O que é seed?
+ * - Conjunto de dados iniciais inseridos no banco quando a aplicação é configurada
+ * - Útil para desenvolvimento, testes e demonstração da plataforma
+ *
+ * Como executar:
+ *   npm run seed
+ *   ou
+ *   npx prisma db seed
+ *
+ * Dados criados por este script:
+ * - Categorias (5 categorias de produtos sustentáveis)
+ * - Certificados (5 certificações ambientais)
+ * - Usuários (6 usuários com diferentes perfis: ADMIN, CLIENTE, MARCA)
+ * - Marcas (3 marcas parceiras)
+ * - Produtos (10 produtos com certificações)
+ *
+ * IMPORTANTE: Este script é DESTRUTIVO - ele limpa dados existentes antes de inserir.
+ * NÃO execute em produção a menos que seja intencional.
+ *
+ * @see prisma/schema.prisma - Definição dos modelos
+ * @see prisma.config.ts - Configuração do seed
+ * ============================================================================
+ */
+
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
@@ -5,19 +37,48 @@ import { PrismaClient, TipoUsuario } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 
+/**
+ * String de conexão com o banco de dados.
+ * Deve estar definida no arquivo .env.local
+ */
 const connectionString = process.env.DATABASE_URL!;
 const pool = new pg.Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
+/**
+ * Instância do Prisma Client usando o adapter PostgreSQL.
+ * Necessário porque o seed roda fora do contexto da aplicação Next.js.
+ */
 const prisma = new PrismaClient({ adapter });
 
+/**
+ * Função principal de seed.
+ * Ordem de execução é importante devido às relações de chave estrangeira:
+ * 1. Limpa dados existentes (começa pelas tabelas de relação)
+ * 2. Cria categorias
+ * 3. Cria certificados
+ * 4. Cria usuários
+ * 5. Cria marcas (depende de usuários)
+ * 6. Cria produtos (depende de categorias e marcas)
+ * 7. Associa certificados aos produtos
+ */
 async function main() {
   console.log("Iniciando o povoamento (seed) do banco de dados...\n");
 
+  // ---------------------------------------------------------------------------
+  // STEP 1: LIMPEZA DOS DADOS EXISTENTES
+  // ---------------------------------------------------------------------------
+  // Ordem correta para evitar violação de chaves estrangeiras:
+  // Primeiro limpa as tabelas de relação, depois as principais.
   console.log("Limpando produtos e certificados associados...");
   await prisma.produtoCertificado.deleteMany();
   await prisma.produto.deleteMany();
 
+  // ---------------------------------------------------------------------------
+  // STEP 2: CATEGORIAS
+  // ---------------------------------------------------------------------------
+  // Categorias organizam produtos por tipo.
+  // Usa upsert para não duplicar se já existirem (idempotência).
   console.log("Criando categorias...");
   const categoriasInput = [
     {
@@ -57,6 +118,10 @@ async function main() {
     categorias[registro.nome] = registro.id;
   }
 
+  // ---------------------------------------------------------------------------
+  // STEP 3: CERTIFICADOS
+  // ---------------------------------------------------------------------------
+  // Certificados atestam práticas sustentáveis dos produtos.
   console.log("Criando certificados...");
   const certificadosInput = [
     {
@@ -98,12 +163,18 @@ async function main() {
     certificados[registro.nome] = registro.id;
   }
 
+  // ---------------------------------------------------------------------------
+  // STEP 4: USUÁRIOS
+  // ---------------------------------------------------------------------------
+  // Cria usuários com diferentes perfis para testar autenticação e permissões.
+  // ATENÇÃO: As senhas aqui são placeholders ("hash-seguro-aqui").
+  // Em desenvolvimento real, substitua por hashes bcrypt reais.
   console.log("Criando usuários...");
   const usuariosInput = [
     {
       email: "admin@ecoplace.com",
       nome: "Admin Principal",
-      senha: "hash-seguro-aqui",
+      senha: "hash-seguro-aqui", // TODO: substituir por bcrypt.hashSync("senha123", 12)
       tipo: TipoUsuario.ADMIN,
     },
     {
@@ -150,6 +221,10 @@ async function main() {
     usuarios[registro.email] = registro.id;
   }
 
+  // ---------------------------------------------------------------------------
+  // STEP 5: MARCAS
+  // ---------------------------------------------------------------------------
+  // Cada marca está associada a um usuário (relacionamento 1:1).
   console.log("Criando marcas...");
   const marcasInput = [
     {
@@ -179,8 +254,13 @@ async function main() {
     marcas[registro.nome] = registro.id;
   }
 
+  // ---------------------------------------------------------------------------
+  // STEP 6: PRODUTOS
+  // ---------------------------------------------------------------------------
+  // Catálogo de produtos sustentáveis com certificações associadas.
   console.log("Criando catálogo de produtos...");
   const produtosInput = [
+    // EcoBrand - Roupas Sustentáveis
     {
       nome: "Camiseta Básica Orgânica",
       descricao: "100% algodão orgânico, tingimento natural.",
@@ -206,6 +286,7 @@ async function main() {
       certs: ["Cruelty Free"],
     },
 
+    // Pureza Naturais - Cosméticos e Alimentos
     {
       nome: "Shampoo Sólido de Alecrim",
       descricao: "Rende até 60 lavagens. Zero plástico.",
@@ -239,6 +320,7 @@ async function main() {
       certs: ["Orgânico Brasil", "FSC"],
     },
 
+    // Bambu Home - Casa e Decoração
     {
       nome: "Kit Escovas de Dente de Bambu",
       descricao: "Pack com 4 escovas 100% biodegradáveis.",
@@ -289,6 +371,11 @@ async function main() {
   );
 }
 
+/**
+ * Executa o seed e trata erros.
+ * - Em caso de erro, exibe no console e encerra com código 1
+ * - Ao final, desconecta do banco de dados
+ */
 main()
   .catch((e) => {
     console.error("Erro ao executar o seed:", e);
