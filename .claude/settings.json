@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "echo 'EcoShop (SDD): leia CLAUDE.md. Specs vivas em docs/capabilities, Constitution em .specify/memory/constitution.md. Verifique com npm run sdd:check.'" } ] }
+    ],
+    "PreToolUse": [
+      { "matcher": "Edit|Write", "hooks": [ { "type": "command", "command": "node scripts/sdd/hooks/guarda-edicao.mjs" } ] },
+      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node scripts/sdd/hooks/guarda-bash.mjs" } ] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Edit|Write", "hooks": [ { "type": "command", "command": "node scripts/sdd/hooks/lembrete-impacto.mjs" } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "node scripts/sdd/hooks/ao-parar.mjs" } ] }
+    ]
+  }
+}

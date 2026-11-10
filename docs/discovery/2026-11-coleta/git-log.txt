@@ -1,0 +1,46 @@
+71a0e7a 2026-05-18 maria-brito15 chore: remove unused route matcher for IA scan in README
+30b3a45 2026-05-18 maria-brito15 docs: update README with project details, technical decisions, and architecture improvements
+6ea44e1 2026-05-18 maria-brito15 feat: add authentication middleware for API routes and improve layout structure
+272b228 2026-05-18 maria-brito15 Refactor API routes for products and users
+71d8927 2026-05-18 maria-brito15 feat: enhance category API routes with detailed documentation and improved error handling
+fbe8fc6 2026-05-18 maria-brito15 feat: enhance authentication API routes with detailed documentation and error handling
+d97632f 2026-05-18 maria-brito15 feat: optimize CI/CD workflow with Prisma Client caching and secure SSH action versioning
+63aefa6 2026-05-18 maria-brito15 feat: implement CRUD services for categories, certificates, photos, brands, products, and users with caching strategies
+6a2ffd6 2026-05-18 maria-brito15 feat: update environment configuration and improve project structure
+582f806 2026-05-18 maria-brito15 feat: update Docker configuration with multi-stage builds and health checks for services
+aab3fb5 2026-05-18 maria-brito15 feat: enhance authentication middleware with detailed access control and error handling
+73362a9 2026-05-18 maria-brito15 feat: add route protection configuration with access rules and response types
+2180e95 2026-05-18 maria-brito15 feat: add HTTP response helpers for standardized error handling in API routes
+1de1802 2026-05-18 maria-brito15 feat: enhance hooks with detailed documentation and improve cache management
+d6d35e9 2026-05-18 maria-brito15 feat: implement caching module with Redis provider and TTL management
+dad0ff9 2026-05-18 maria-brito15 feat: implement JWT authentication service with session management and cookie handling
+f0dfacd 2026-05-18 maria-brito15 feat: implement AI image analysis and sustainability features with Azure and Gemini integration
+88821e2 2026-05-18 maria-brito15 feat: add Prisma schema, types and seed scripts for EcoShop
+d92a926 2026-05-15 maria-brito15 update README.md
+41a33d2 2026-05-15 maria-brito15 feat: enhance About page with Docker and CI/CD details
+e270c34 2026-05-14 maria-brito15 ci: add Docker, CI/CD pipeline and update docs
+ac738ef 2026-05-11 maria-brito15 update README.md + .env.example
+d7280e8 2026-05-11 maria-brito15 feat(api): integrate redis cache across all route handlers with scoped invalidation
+bf6f35c 2026-05-11 maria-brito15 feat: integrate redis two-layer caching (server redis + client memory cache)
+f61731d 2026-05-05 maria-brito15 docs: add English README and bilingual INTERFACE.md
+207f43d 2026-05-05 maria-brito15 adding comments
+5d556d6 2026-05-02 maria-brito15 add interface.md com prints da aplicação
+a98cda4 2026-05-02 maria-brito15 README completo
+56ca911 2026-05-01 maria-brito15 implement api for product photos, user profile, and checking session
+104726d 2026-05-01 maria-brito15 update pages
+bdc978b 2026-05-01 maria-brito15 refactor(): ajuste de rotas autenticadas
+5bcb914 2026-05-01 maria-brito15 feat(useFotos): hook para gerenciar upload e listagem de fotos de produtos
+bae5e62 2026-04-27 maria-brito15 feat: implements page.tsx of educational page, ai scan page and product pages
+bc2c6ce 2026-04-26 maria-brito15 feat: enhance data fetching with error handling and loading states in HomePage
+039db27 2026-04-26 maria-brito15 feat: implement Header component and enhance layout with global styles
+19cb938 2026-04-26 maria-brito15 feat: add educational content, recycling tips, and quiz functionality
+b3af705 2026-04-26 maria-brito15 feat: add new pages for admin panel, education, IA scan, and product management
+5b54f5a 2026-04-26 maria-brito15 feat: add product and product detail pages with data fetching hooks
+a80d2a0 2026-04-26 maria-brito15 Refactor API routes and remove unused files
+e668677 2026-04-26 maria-brito15 feat: implement hooks for authentication, categories, certificates, brands, and products
+4783c33 2026-04-26 maria-brito15 fix: update product routes to require ADMIN authentication
+9e3b6f2 2026-04-26 maria-brito15 feat: add product detail page and photo retrieval API
+7f7e55c 2026-04-25 Duda Brito Fix TypeScript error in message type
+bf8bd29 2026-04-25 Duda Brito Update login page with better validation and MARCA type
+374dea6 2026-04-25 Duda Brito Create user registration endpoint
+68f56e7 2026-04-25 maria-brito15 first commit

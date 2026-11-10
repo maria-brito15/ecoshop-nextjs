@@ -1,0 +1,40 @@
+name: SDD drift (mensal)
+
+on:
+  schedule:
+    - cron: "0 12 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Relatório de specs obsoletas
+        id: relatorio
+        run: |
+          {
+            echo "## Validações"
+            node scripts/sdd/spec-lint.mjs || true
+            node scripts/sdd/adr-index.mjs --check || true
+            echo
+            echo "## Rastreabilidade e itens obsoletos"
+            node scripts/sdd/trace-check.mjs --stale || true
+          } > drift.md 2>&1
+          cat drift.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Abrir issue com o relatório
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "SDD: revisão mensal de drift ($(date +%Y-%m))" \
+            --body-file drift.md

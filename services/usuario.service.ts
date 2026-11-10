@@ -42,6 +42,20 @@ import bcrypt from "bcryptjs";
  */
 const SALT_ROUNDS = 12;
 
+/**
+ * Campos de Usuario que podem sair do servidor.
+ * NUNCA inclua `senha` aqui (Constitution, Art. IV): toda resposta de usuário
+ * deve usar esta projeção em vez da entidade Prisma completa.
+ */
+const USUARIO_PUBLICO = {
+  id: true,
+  nome: true,
+  email: true,
+  telefone: true,
+  tipo: true,
+  criadoEm: true,
+} as const;
+
 interface CriarUsuarioData {
   nome: string;
   email: string;
@@ -86,6 +100,7 @@ export async function criarUsuario(data: CriarUsuarioData) {
       senha: senhaCriptografada,
       tipo: data.tipo,
     },
+    select: USUARIO_PUBLICO,
   });
 
   await invalidarCache("USUARIOS");
@@ -104,14 +119,7 @@ export async function criarUsuario(data: CriarUsuarioData) {
  */
 export async function listarUsuarios() {
   return prisma.usuario.findMany({
-    select: {
-      id: true,
-      nome: true,
-      email: true,
-      telefone: true,
-      tipo: true,
-      criadoEm: true,
-    },
+    select: USUARIO_PUBLICO,
   });
 }
 
@@ -124,14 +132,7 @@ export async function listarUsuarios() {
 export async function buscarUsuario(id: number) {
   return prisma.usuario.findUnique({
     where: { id },
-    select: {
-      id: true,
-      nome: true,
-      email: true,
-      telefone: true,
-      tipo: true,
-      criadoEm: true,
-    },
+    select: USUARIO_PUBLICO,
   });
 }
 
@@ -160,6 +161,7 @@ export async function atualizarUsuario(id: number, data: AtualizarUsuarioData) {
   const usuario = await prisma.usuario.update({
     where: { id },
     data: updateData,
+    select: USUARIO_PUBLICO,
   });
 
   // Invalida múltiplas chaves de cache em paralelo

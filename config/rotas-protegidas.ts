@@ -78,7 +78,9 @@ export interface RegraRota {
  * Regras atuais:
  * 1. /perfil → autenticado (qualquer usuário logado pode ver seu perfil)
  * 2. /painel → admin (apenas administradores acessam o painel)
- * 3. /api/usuarios → admin (CRUD de usuários é restrito a admin)
+ * 3. /api/usuarios → autenticado (o middleware só exige sessão; quem pode ler/editar cada
+ *    registro é decidido no handler: o próprio usuário ou ADMIN, e só ADMIN lista, cria e exclui.
+ *    Ver ADR-0017 e specs/001-perfil-proprio-usuario)
  * 4. /api/admin → admin (endpoints administrativos)
  */
 export const REGRAS_ROTAS: RegraRota[] = [
@@ -94,7 +96,7 @@ export const REGRAS_ROTAS: RegraRota[] = [
   },
   {
     prefixo: "/api/usuarios",
-    nivel: "admin",
+    nivel: "autenticado", // o handler aplica "ADMIN ou o próprio" (ADR-0017)
     tipoResposta: "api",
   },
   {

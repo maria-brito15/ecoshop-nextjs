@@ -1,0 +1,132 @@
+{
+  "_ajuda": "Mapa código → capacidade (spec viva) e caminhos sensíveis → ADR dono. Usado por scripts/sdd/*. Atualize ao criar capacidade ou mover código.",
+  "capacidades": {
+    "AUTZ": {
+      "pasta": "autorizacao",
+      "codigo": [
+        "middleware.ts",
+        "config/rotas-protegidas.ts",
+        "app/_middleware/**"
+      ]
+    },
+    "AUTH": {
+      "pasta": "autenticacao",
+      "codigo": [
+        "app/api/auth/**",
+        "app/api/users/**",
+        "lib/auth/**",
+        "lib/rate-limit.ts",
+        "app/(auth)/**",
+        "lib/schemas/usuario.ts",
+        "types/auth.ts"
+      ]
+    },
+    "PERF": {
+      "pasta": "conta-e-perfil",
+      "codigo": ["app/(perfil)/**", "app/api/usuarios/[id]/**"]
+    },
+    "CAT": {
+      "pasta": "catalogo",
+      "codigo": [
+        "app/(store)/**",
+        "app/api/produtos/route.ts",
+        "app/api/produtos/[id]/route.ts",
+        "services/produto.service.ts",
+        "lib/hooks/useProdutos.ts"
+      ]
+    },
+    "PROD": {
+      "pasta": "gestao-de-produtos",
+      "codigo": [
+        "app/(admin)/painel/**",
+        "app/api/produtos/**",
+        "services/produto.service.ts",
+        "lib/schemas/produto.ts"
+      ]
+    },
+    "REF": {
+      "pasta": "cadastros-de-referencia",
+      "codigo": [
+        "app/api/categorias/**",
+        "app/api/marcas/**",
+        "app/api/certificados/**",
+        "services/categoria.service.ts",
+        "services/marca.service.ts",
+        "services/certificado.service.ts",
+        "lib/schemas/categoria.ts",
+        "lib/schemas/marca.ts",
+        "lib/schemas/certificado.ts"
+      ]
+    },
+    "MIDIA": {
+      "pasta": "midia-de-produto",
+      "codigo": [
+        "app/api/produtos/[id]/fotos/**",
+        "services/foto.service.ts",
+        "lib/hooks/useFotos.ts"
+      ]
+    },
+    "USR": {
+      "pasta": "gestao-de-usuarios",
+      "codigo": ["app/api/usuarios/**", "services/usuario.service.ts"]
+    },
+    "SCAN": {
+      "pasta": "ecoscan",
+      "codigo": [
+        "lib/ai/**",
+        "app/api/ia/scan/**",
+        "app/(ia-scan)/**",
+        "types/ai.ts"
+      ]
+    },
+    "CHAT": {
+      "pasta": "chat-sustentabilidade",
+      "codigo": [
+        "app/api/ia/chat/**",
+        "lib/schemas/ia-chat.ts",
+        "lib/ai/providers/gemini-chat.ts"
+      ]
+    },
+    "CONT": {
+      "pasta": "conteudo-institucional",
+      "codigo": [
+        "app/page.tsx",
+        "app/(educacao)/**",
+        "app/(sobre)/**",
+        "app/layout.tsx",
+        "app/components/**"
+      ]
+    },
+    "OPS": {
+      "pasta": "operacao",
+      "codigo": [
+        "Dockerfile",
+        "docker-compose.yml",
+        "docker-entrypoint.sh",
+        ".github/workflows/**",
+        "prisma/**",
+        "app/api/health/**",
+        "lib/redis.ts",
+        "lib/cache/**",
+        "lib/db.ts",
+        ".env.example"
+      ]
+    }
+  },
+  "sensiveis": [
+    { "caminho": "middleware.ts", "adr": "ADR-0017" },
+    { "caminho": "config/rotas-protegidas.ts", "adr": "ADR-0017" },
+    { "caminho": "app/_middleware/**", "adr": "ADR-0017" },
+    { "caminho": "lib/auth/**", "adr": "ADR-0007" },
+    { "caminho": "lib/cache/**", "adr": "ADR-0009" },
+    { "caminho": "lib/redis.ts", "adr": "ADR-0010" },
+    { "caminho": "lib/rate-limit.ts", "adr": "ADR-0010" },
+    { "caminho": "services/foto.service.ts", "adr": "ADR-0011" },
+    { "caminho": "lib/ai/**", "adr": "ADR-0012" },
+    { "caminho": "Dockerfile", "adr": "ADR-0013" },
+    { "caminho": "docker-compose.yml", "adr": "ADR-0013" },
+    { "caminho": ".github/workflows/**", "adr": "ADR-0013" },
+    { "caminho": "prisma/schema.prisma", "adr": "ADR-0006" },
+    { "caminho": "prisma/migrations/**", "adr": "ADR-0006" }
+  ]
+}
