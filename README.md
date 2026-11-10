@@ -22,7 +22,17 @@ cp .env.example .env        # preencha JWT_SECRET e, para IA, GEMINI_KEY e AZURE
 docker compose up --build   # app em http://localhost:3000 · GET /api/health
 ```
 
-Os usuários criados pelo seed **não conseguem entrar** (senha placeholder). Para criar um ADMIN real: `ADMIN_EMAIL`/`ADMIN_PASSWORD` no `.env` e `npm run seed:admin`. Detalhes e outros defeitos conhecidos: [`docs/guides/rodar-e-testar.md`](docs/guides/rodar-e-testar.md).
+Sem Docker: suba Postgres 16 e Redis 7, exporte `DATABASE_URL` e `REDIS_URL` e rode `npm ci && npx prisma migrate deploy && npm run dev`.
+
+Os usuários criados pelo seed **não conseguem entrar** (senha placeholder). Para criar um ADMIN real, defina `ADMIN_EMAIL`, `ADMIN_PASSWORD` e `ADMIN_NAME` no `.env` (ou `.env.local`) e rode:
+
+```bash
+npx tsx prisma/seed-admin.ts
+```
+
+> `npm run seed:admin` **não funciona**: os scripts `seed` e `seed:admin` estão sob a chave `"prisma"` do `package.json`, e não em `"scripts"`.
+
+Detalhes e outros defeitos conhecidos: [`docs/guides/rodar-e-testar.md`](docs/guides/rodar-e-testar.md).
 
 ## Verificar
 
@@ -30,7 +40,18 @@ Os usuários criados pelo seed **não conseguem entrar** (senha placeholder). Pa
 npm run lint && npx tsc --noEmit && npm test && npm run sdd:check && npm run build
 ```
 
-`npm test` precisa de Postgres e Redis (ver o guia).
+`npm test` precisa de Postgres e Redis, **de um banco de teste** (os testes criam usuários `@test.local`); use um banco separado e, de preferência, outro db do Redis (ex.: `redis://localhost:6379/1`).
+
+## Estado verificado (2026-11-10)
+
+Retrato da coleta em [`docs/discovery/2026-11-coleta/`](docs/discovery/2026-11-coleta):
+
+- `npm run lint`: 0 erros, 32 avisos · `npx tsc --noEmit`: limpo.
+- `npm test`: 47 testes (40 ok, 6 `todo`, 1 `skip`), que cobrem defeitos conhecidos.
+- **CI:** as 5 execuções registradas no GitHub Actions falharam no job `Lint & Build` (logs expirados; causa não consta).
+- `npm run sdd:check` falha **no Windows** por separador de caminho nos scripts (`scripts/sdd/lib.mjs`); não foi confirmado em Linux.
+- Defeitos observados: `/ia-scan` abre para visitante (REQ-AUTZ-08 pede login) e o histórico de produtos vistos do perfil nunca é gravado (REQ-PERF-05).
+- A integração real com Azure Custom Vision não foi exercitada (endpoint de exemplo no ambiente local).
 
 ## Como o projeto é especificado (Spec-Driven Development)
 

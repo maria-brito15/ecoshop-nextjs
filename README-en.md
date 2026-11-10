@@ -22,7 +22,17 @@ cp .env.example .env        # set JWT_SECRET and, for AI, GEMINI_KEY and AZURE_V
 docker compose up --build   # app at http://localhost:3000 · GET /api/health
 ```
 
-Users created by the seed **cannot sign in** (placeholder password). To create a real ADMIN: set `ADMIN_EMAIL`/`ADMIN_PASSWORD` in `.env` and run `npm run seed:admin`. See [`docs/guides/rodar-e-testar.md`](docs/guides/rodar-e-testar.md) (Portuguese).
+Without Docker: start Postgres 16 and Redis 7, export `DATABASE_URL` and `REDIS_URL`, then run `npm ci && npx prisma migrate deploy && npm run dev`.
+
+Users created by the seed **cannot sign in** (placeholder password). To create a real ADMIN, set `ADMIN_EMAIL`, `ADMIN_PASSWORD` and `ADMIN_NAME` in `.env` (or `.env.local`) and run:
+
+```bash
+npx tsx prisma/seed-admin.ts
+```
+
+> `npm run seed:admin` **does not work**: the `seed` and `seed:admin` scripts sit under the `"prisma"` key of `package.json`, not under `"scripts"`.
+
+See [`docs/guides/rodar-e-testar.md`](docs/guides/rodar-e-testar.md) (Portuguese).
 
 ## Verify
 
@@ -30,7 +40,18 @@ Users created by the seed **cannot sign in** (placeholder password). To create a
 npm run lint && npx tsc --noEmit && npm test && npm run sdd:check && npm run build
 ```
 
-`npm test` needs Postgres and Redis.
+`npm test` needs Postgres and Redis, **using a test database** (tests create `@test.local` users); use a separate database and, preferably, another Redis db (e.g. `redis://localhost:6379/1`).
+
+## Verified status (2026-11-10)
+
+Snapshot in [`docs/discovery/2026-11-coleta/`](docs/discovery/2026-11-coleta) (Portuguese):
+
+- `npm run lint`: 0 errors, 32 warnings · `npx tsc --noEmit`: clean.
+- `npm test`: 47 tests (40 pass, 6 `todo`, 1 `skip`); the `todo`s cover known defects.
+- **CI:** all 5 recorded GitHub Actions runs failed in the `Lint & Build` job (logs expired; cause unknown).
+- `npm run sdd:check` fails **on Windows** because of path separators in the scripts (`scripts/sdd/lib.mjs`); not confirmed on Linux.
+- Observed defects: `/ia-scan` is open to visitors (REQ-AUTZ-08 requires login) and the profile's viewed-products history is never written (REQ-PERF-05).
+- The real Azure Custom Vision integration was not exercised (placeholder endpoint in the local environment).
 
 ## Spec-Driven Development
 
