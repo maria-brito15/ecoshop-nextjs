@@ -68,6 +68,7 @@ build/
 
 # Arquivos de dump
 *.sql
+!prisma/migrations/**/*.sql
 *.sqlite
 
 # Relatórios
