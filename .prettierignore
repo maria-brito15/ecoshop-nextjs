@@ -1,0 +1,13 @@
+.next
+node_modules
+package-lock.json
+public
+prisma/migrations
+*.md
+docs
+specs
+.claude
+.specify
+prints
+tsconfig.tsbuildinfo
+next-env.d.ts
