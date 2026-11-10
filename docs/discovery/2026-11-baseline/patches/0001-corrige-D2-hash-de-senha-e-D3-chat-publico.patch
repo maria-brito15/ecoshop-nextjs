@@ -1,0 +1,279 @@
+diff --git a/app/api/ia/chat/route.ts b/app/api/ia/chat/route.ts
+index 1ba04b0..e48996a 100644
+--- a/app/api/ia/chat/route.ts
++++ b/app/api/ia/chat/route.ts
+@@ -34,6 +34,9 @@ import { NextRequest, NextResponse } from "next/server";
+ import { ERROS } from "@/lib/http/responses";
+ import { chatSchema } from "@/lib/schemas/ia-chat";
+ import { gerarTexto, GEMINI_MODEL } from "@/lib/ai/providers/gemini-chat";
++import { requireAuth } from "@/app/_middleware/auth";
++import { getSession } from "@/lib/auth";
++import { rateLimit } from "@/lib/rate-limit";
+ 
+ const SYSTEM_PROMPT = `Você é um assistente especialista em sustentabilidade e reciclagem da EcoShop. Responda em português. Seja objetivo e informativo. Forneça dicas práticas sobre descarte correto, reciclagem e alternativas sustentáveis.`;
+ 
+@@ -48,7 +51,26 @@ const SYSTEM_PROMPT = `Você é um assistente especialista em sustentabilidade e
+  * @status 502 - IA retornou erro
+  * @status 500 - Erro interno no servidor
+  */
++// Limite por usuário: o chat consome a cota paga do Gemini (D3).
++const LIMITE_MENSAGENS = 20;
++const JANELA_SEGUNDOS = 60;
++
+ export async function POST(req: NextRequest) {
++  const authErro = await requireAuth(req);
++  if (authErro) return authErro;
++
++  const session = await getSession(req);
++  const { bloqueado } = await rateLimit(`chat:${session!.id}`, {
++    limite: LIMITE_MENSAGENS,
++    janelaSegundos: JANELA_SEGUNDOS,
++  });
++  if (bloqueado) {
++    return NextResponse.json(
++      { erro: "Muitas mensagens. Aguarde 1 minuto e tente novamente." },
++      { status: 429 },
++    );
++  }
++
+   try {
+     const body = await req.json();
+     const parsed = chatSchema.safeParse(body);
+diff --git a/package.json b/package.json
+index ea8d2ad..54b1d12 100644
+--- a/package.json
++++ b/package.json
+@@ -7,7 +7,8 @@
+     "build": "next build",
+     "start": "next start -H 0.0.0.0",
+     "lint": "next lint",
+-    "typecheck": "tsc --noEmit"
++    "typecheck": "tsc --noEmit",
++    "test:integration": "tsx --test tests/integration/*.test.ts"
+   },
+   "prisma": {
+     "seed": "tsx prisma/seed.ts",
+diff --git a/services/usuario.service.ts b/services/usuario.service.ts
+index 3413572..66a329b 100644
+--- a/services/usuario.service.ts
++++ b/services/usuario.service.ts
+@@ -42,6 +42,20 @@ import bcrypt from "bcryptjs";
+  */
+ const SALT_ROUNDS = 12;
+ 
++/**
++ * Campos de Usuario que podem sair do servidor.
++ * NUNCA inclua `senha` aqui (Constitution, Art. IV): toda resposta de usuário
++ * deve usar esta projeção em vez da entidade Prisma completa.
++ */
++const USUARIO_PUBLICO = {
++  id: true,
++  nome: true,
++  email: true,
++  telefone: true,
++  tipo: true,
++  criadoEm: true,
++} as const;
++
+ interface CriarUsuarioData {
+   nome: string;
+   email: string;
+@@ -86,6 +100,7 @@ export async function criarUsuario(data: CriarUsuarioData) {
+       senha: senhaCriptografada,
+       tipo: data.tipo,
+     },
++    select: USUARIO_PUBLICO,
+   });
+ 
+   await invalidarCache("USUARIOS");
+@@ -104,14 +119,7 @@ export async function criarUsuario(data: CriarUsuarioData) {
+  */
+ export async function listarUsuarios() {
+   return prisma.usuario.findMany({
+-    select: {
+-      id: true,
+-      nome: true,
+-      email: true,
+-      telefone: true,
+-      tipo: true,
+-      criadoEm: true,
+-    },
++    select: USUARIO_PUBLICO,
+   });
+ }
+ 
+@@ -124,14 +132,7 @@ export async function listarUsuarios() {
+ export async function buscarUsuario(id: number) {
+   return prisma.usuario.findUnique({
+     where: { id },
+-    select: {
+-      id: true,
+-      nome: true,
+-      email: true,
+-      telefone: true,
+-      tipo: true,
+-      criadoEm: true,
+-    },
++    select: USUARIO_PUBLICO,
+   });
+ }
+ 
+@@ -160,6 +161,7 @@ export async function atualizarUsuario(id: number, data: AtualizarUsuarioData) {
+   const usuario = await prisma.usuario.update({
+     where: { id },
+     data: updateData,
++    select: USUARIO_PUBLICO,
+   });
+ 
+   // Invalida múltiplas chaves de cache em paralelo
+diff --git a/tests/integration/chat-ia-acesso.test.ts b/tests/integration/chat-ia-acesso.test.ts
+new file mode 100644
+index 0000000..38573b6
+--- /dev/null
++++ b/tests/integration/chat-ia-acesso.test.ts
+@@ -0,0 +1,42 @@
++// D3 — O chat de IA exige autenticação e tem limite de uso (Constitution, Art. III.3).
++import { test, after } from "node:test";
++import assert from "node:assert/strict";
++import { prisma } from "@/lib/db";
++import { redis, redisDelPattern } from "@/lib/redis";
++import { criarUsuarioDireto, cookieDe, req } from "./helpers";
++import { POST as chat } from "@/app/api/ia/chat/route";
++
++after(async () => {
++  await prisma.$disconnect();
++  await redis.quit().catch(() => {});
++});
++
++const corpo = { mensagem: "Como descartar pilhas?" };
++
++test("D3: sem login, o chat responde 401 e não chama a IA", async () => {
++  const res = await chat(req("/api/ia/chat", { method: "POST", body: corpo }));
++  assert.equal(res.status, 401);
++});
++
++test("D3: autenticado, mas sem GEMINI_KEY, responde 503", async () => {
++  delete process.env.GEMINI_KEY;
++  const u = await criarUsuarioDireto("d3-user@test.local");
++  const res = await chat(
++    req("/api/ia/chat", { method: "POST", cookie: await cookieDe(u), body: corpo }),
++  );
++  assert.equal(res.status, 503);
++});
++
++test("D3: excesso de mensagens por usuário responde 429", async () => {
++  delete process.env.GEMINI_KEY;
++  await redisDelPattern("rate_limit:*");
++  const u = await criarUsuarioDireto("d3-rate@test.local");
++  const cookie = await cookieDe(u);
++  let ultimo = 0;
++  for (let i = 0; i < 25; i++) {
++    const res = await chat(req("/api/ia/chat", { method: "POST", cookie, body: corpo }));
++    ultimo = res.status;
++    if (ultimo === 429) break;
++  }
++  assert.equal(ultimo, 429);
++});
+diff --git a/tests/integration/helpers.ts b/tests/integration/helpers.ts
+new file mode 100644
+index 0000000..d61ecd8
+--- /dev/null
++++ b/tests/integration/helpers.ts
+@@ -0,0 +1,41 @@
++// tests/integration/helpers.ts
++// Utilitários dos testes de integração: ambiente, requisições e cookies de sessão.
++// Requer DATABASE_URL (Postgres) e, opcionalmente, REDIS_URL. Veja README.
++
++process.env.JWT_SECRET ??= "test-secret-at-least-32-characters-long";
++
++import { NextRequest } from "next/server";
++import { signToken } from "@/lib/auth";
++import { prisma } from "@/lib/db";
++
++export type Tipo = "CLIENTE" | "MARCA" | "ADMIN";
++
++export async function criarUsuarioDireto(email: string, tipo: Tipo = "CLIENTE") {
++  await prisma.usuario.deleteMany({ where: { email } });
++  return prisma.usuario.create({
++    data: { nome: "Teste " + tipo, email, senha: "hash-qualquer", tipo },
++  });
++}
++
++export async function cookieDe(u: { id: number; email: string; tipo: Tipo }) {
++  const token = await signToken({ id: u.id, email: u.email, tipo: u.tipo });
++  return `token=${token}`;
++}
++
++export function req(
++  url: string,
++  opts: { method?: string; cookie?: string; body?: unknown } = {},
++) {
++  return new NextRequest(`http://localhost${url}`, {
++    method: opts.method ?? "GET",
++    headers: {
++      "content-type": "application/json",
++      ...(opts.cookie ? { cookie: opts.cookie } : {}),
++    },
++    body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
++  });
++}
++
++export const ctx = (id: number | string) => ({
++  params: Promise.resolve({ id: String(id) }),
++});
+diff --git a/tests/integration/usuarios-sem-senha.test.ts b/tests/integration/usuarios-sem-senha.test.ts
+new file mode 100644
+index 0000000..6f75300
+--- /dev/null
++++ b/tests/integration/usuarios-sem-senha.test.ts
+@@ -0,0 +1,50 @@
++// D2 — Respostas de usuário nunca expõem o hash da senha (Constitution, Art. IV).
++import { test, after } from "node:test";
++import assert from "node:assert/strict";
++import { prisma } from "@/lib/db";
++import { redis } from "@/lib/redis";
++import { criarUsuarioDireto, cookieDe, req, ctx } from "./helpers";
++import { POST as criarUsuarioRoute } from "@/app/api/usuarios/route";
++import { PUT as atualizarUsuarioRoute } from "@/app/api/usuarios/[id]/route";
++
++after(async () => {
++  await prisma.$disconnect();
++  await redis.quit().catch(() => {});
++});
++
++test("D2: POST /api/usuarios (admin) não devolve senha", async () => {
++  const admin = await criarUsuarioDireto("d2-admin@test.local", "ADMIN");
++  const cookie = await cookieDe(admin);
++  await prisma.usuario.deleteMany({ where: { email: "d2-novo@test.local" } });
++
++  const res = await criarUsuarioRoute(
++    req("/api/usuarios", {
++      method: "POST",
++      cookie,
++      body: { nome: "Novo Usuario", email: "d2-novo@test.local", senha: "12345678" },
++    }),
++  );
++  assert.equal(res.status, 201);
++  const corpo = await res.json();
++  assert.ok(corpo.usuario.id);
++  assert.equal("senha" in corpo.usuario, false, "resposta não pode conter senha");
++});
++
++test("D2: PUT /api/usuarios/[id] não devolve senha", async () => {
++  const admin = await criarUsuarioDireto("d2-admin2@test.local", "ADMIN");
++  const alvo = await criarUsuarioDireto("d2-alvo@test.local", "CLIENTE");
++  const cookie = await cookieDe(admin);
++
++  const res = await atualizarUsuarioRoute(
++    req(`/api/usuarios/${alvo.id}`, {
++      method: "PUT",
++      cookie,
++      body: { nome: "Nome Atualizado" },
++    }),
++    ctx(alvo.id),
++  );
++  assert.equal(res.status, 200);
++  const corpo = await res.json();
++  assert.equal(corpo.usuario.nome, "Nome Atualizado");
++  assert.equal("senha" in corpo.usuario, false, "resposta não pode conter senha");
++});
