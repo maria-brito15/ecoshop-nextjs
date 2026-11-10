@@ -22,8 +22,18 @@
  * - Marcas (3 marcas parceiras)
  * - Produtos (10 produtos com certificações)
  *
- * IMPORTANTE: Este script é DESTRUTIVO - ele limpa dados existentes antes de inserir.
- * NÃO execute em produção a menos que seja intencional.
+ * IDEMPOTÊNCIA (REQ-OPS-03): categorias, certificados, usuários e marcas usam
+ * upsert (sempre seguro repetir). Os produtos só são criados se o catálogo
+ * estiver vazio — o seed NUNCA apaga produtos existentes. Antes, este script
+ * apagava e recriava os produtos em toda subida (`docker compose up`), e isso
+ * destruía qualquer foto ou edição feita depois do primeiro seed.
+ * Para resetar de fato, use `prisma migrate reset` (apaga o banco todo).
+ *
+ * SENHA (REQ-OPS-02): os usuários de demonstração agora recebem um hash
+ * bcrypt real (não mais o placeholder "hash-seguro-aqui", que não permitia
+ * login de ninguém). A senha é a mesma para todos os usuários de demo —
+ * defina SEED_USER_PASSWORD no ambiente para trocá-la; o padrão é
+ * "EcoshopDemo@2026".
  *
  * @see prisma/schema.prisma - Definição dos modelos
  * @see prisma.config.ts - Configuração do seed
@@ -36,6 +46,16 @@ config({ path: ".env.local" });
 import { PrismaClient, TipoUsuario } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
+import bcrypt from "bcryptjs";
+
+/**
+ * Senha em texto plano dos usuários de demonstração (todos compartilham a
+ * mesma, por simplicidade). Mesmo custo de hashing usado no resto do app
+ * (services/usuario.service.ts, prisma/seed-admin.ts).
+ */
+const SEED_USER_PASSWORD =
+  process.env.SEED_USER_PASSWORD ?? "EcoshopDemo@2026";
+const SALT_ROUNDS = 12;
 
 /**
  * String de conexão com o banco de dados.
@@ -64,15 +84,6 @@ const prisma = new PrismaClient({ adapter });
  */
 async function main() {
   console.log("Iniciando o povoamento (seed) do banco de dados...\n");
-
-  // ---------------------------------------------------------------------------
-  // STEP 1: LIMPEZA DOS DADOS EXISTENTES
-  // ---------------------------------------------------------------------------
-  // Ordem correta para evitar violação de chaves estrangeiras:
-  // Primeiro limpa as tabelas de relação, depois as principais.
-  console.log("Limpando produtos e certificados associados...");
-  await prisma.produtoCertificado.deleteMany();
-  await prisma.produto.deleteMany();
 
   // ---------------------------------------------------------------------------
   // STEP 2: CATEGORIAS
@@ -167,46 +178,48 @@ async function main() {
   // STEP 4: USUÁRIOS
   // ---------------------------------------------------------------------------
   // Cria usuários com diferentes perfis para testar autenticação e permissões.
-  // ATENÇÃO: As senhas aqui são placeholders ("hash-seguro-aqui").
-  // Em desenvolvimento real, substitua por hashes bcrypt reais.
+  // Todos compartilham SEED_USER_PASSWORD (ver topo do arquivo) com hash bcrypt
+  // real — antes, a senha era o placeholder "hash-seguro-aqui" e ninguém
+  // conseguia logar com nenhum desses usuários (REQ-OPS-02).
   console.log("Criando usuários...");
+  const senhaHash = await bcrypt.hash(SEED_USER_PASSWORD, SALT_ROUNDS);
   const usuariosInput = [
     {
       email: "admin@ecoplace.com",
       nome: "Admin Principal",
-      senha: "hash-seguro-aqui", // TODO: substituir por bcrypt.hashSync("senha123", 12)
+      senha: senhaHash,
       tipo: TipoUsuario.ADMIN,
     },
     {
       email: "joao@cliente.com",
       nome: "João Silva",
-      senha: "hash-seguro-aqui",
+      senha: senhaHash,
       telefone: "11999998888",
       tipo: TipoUsuario.CLIENTE,
     },
     {
       email: "maria@cliente.com",
       nome: "Maria Souza",
-      senha: "hash-seguro-aqui",
+      senha: senhaHash,
       telefone: "21988887777",
       tipo: TipoUsuario.CLIENTE,
     },
     {
       email: "contato@ecobrand.com",
       nome: "Lucas (EcoBrand)",
-      senha: "hash-seguro-aqui",
+      senha: senhaHash,
       tipo: TipoUsuario.MARCA,
     },
     {
       email: "falecom@pureza.com",
       nome: "Ana (Pureza Naturais)",
-      senha: "hash-seguro-aqui",
+      senha: senhaHash,
       tipo: TipoUsuario.MARCA,
     },
     {
       email: "vendas@bambuhome.com",
       nome: "Carlos (Bambu Home)",
-      senha: "hash-seguro-aqui",
+      senha: senhaHash,
       tipo: TipoUsuario.MARCA,
     },
   ];
@@ -347,27 +360,35 @@ async function main() {
     },
   ];
 
-  for (const prod of produtosInput) {
-    const nomeCorrigido = prod.nome || (prod as any).row;
+  const totalProdutosExistentes = await prisma.produto.count();
+  if (totalProdutosExistentes > 0) {
+    console.log(
+      `Catálogo já tem ${totalProdutosExistentes} produto(s); pulando a criação ` +
+        "(seed idempotente, REQ-OPS-03 — produtos existentes nunca são apagados).",
+    );
+  } else {
+    for (const prod of produtosInput) {
+      const nomeCorrigido = prod.nome || (prod as any).row;
 
-    await prisma.produto.create({
-      data: {
-        nome: nomeCorrigido as string,
-        descricao: prod.descricao,
-        preco: prod.preco,
-        categoriaId: categorias[prod.categoria],
-        marcaId: marcas[prod.marca],
-        certificados: {
-          create: prod.certs.map((nomeCertificado) => ({
-            certificadoId: certificados[nomeCertificado],
-          })),
+      await prisma.produto.create({
+        data: {
+          nome: nomeCorrigido as string,
+          descricao: prod.descricao,
+          preco: prod.preco,
+          categoriaId: categorias[prod.categoria],
+          marcaId: marcas[prod.marca],
+          certificados: {
+            create: prod.certs.map((nomeCertificado) => ({
+              certificadoId: certificados[nomeCertificado],
+            })),
+          },
         },
-      },
-    });
+      });
+    }
   }
 
   console.log(
-    "\nSeed massivo concluído com sucesso! Banco de dados pronto para testes.",
+    `\nSeed concluído. Login de demonstração: qualquer e-mail acima + senha "${SEED_USER_PASSWORD}".`,
   );
 }
 
