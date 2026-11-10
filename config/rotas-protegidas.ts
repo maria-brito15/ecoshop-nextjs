@@ -77,15 +77,22 @@ export interface RegraRota {
  *
  * Regras atuais:
  * 1. /perfil → autenticado (qualquer usuário logado pode ver seu perfil)
- * 2. /painel → admin (apenas administradores acessam o painel)
- * 3. /api/usuarios → autenticado (o middleware só exige sessão; quem pode ler/editar cada
+ * 2. /ia-scan → autenticado (REQ-AUTZ-08; a API /api/ia/scan já exigia login,
+ *    mas a página abria para qualquer visitante antes de tentar enviar a foto)
+ * 3. /painel → admin (apenas administradores acessam o painel)
+ * 4. /api/usuarios → autenticado (o middleware só exige sessão; quem pode ler/editar cada
  *    registro é decidido no handler: o próprio usuário ou ADMIN, e só ADMIN lista, cria e exclui.
  *    Ver ADR-0017 e specs/001-perfil-proprio-usuario)
- * 4. /api/admin → admin (endpoints administrativos)
+ * 5. /api/admin → admin (endpoints administrativos)
  */
 export const REGRAS_ROTAS: RegraRota[] = [
   {
     prefixo: "/perfil",
+    nivel: "autenticado",
+    tipoResposta: "pagina",
+  },
+  {
+    prefixo: "/ia-scan",
     nivel: "autenticado",
     tipoResposta: "pagina",
   },

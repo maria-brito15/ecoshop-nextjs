@@ -120,6 +120,7 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     "/perfil/:path*",
+    "/ia-scan/:path*",
     "/painel/:path*",
     "/api/usuarios/:path*",
     "/api/admin/:path*",
