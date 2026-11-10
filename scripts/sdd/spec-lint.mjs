@@ -89,7 +89,9 @@ for (const spec of listar(
   (p) => basename(p) === "spec.md",
 )) {
   const pasta = spec.slice(0, -"/spec.md".length);
-  const nome = pasta.slice(pasta.lastIndexOf("/") + 1);
+  // basename() entende tanto "/" quanto "\" (Windows); pasta.lastIndexOf("/")
+  // sozinho não achava nada em caminhos Windows e devolvia o caminho inteiro.
+  const nome = basename(pasta);
   if (!/^\d{3}-/.test(nome))
     erros.push(`specs/${nome}: o nome deve começar com NNN-`);
   for (const f of ["plan.md", "tasks.md"])

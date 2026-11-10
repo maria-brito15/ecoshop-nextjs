@@ -60,15 +60,17 @@ export function capacidades() {
 
 export function lerAdrs() {
   return listar(
+    // [\\/]: a aplicação roda em Linux (Docker/CI), mas quem desenvolve pode
+    // estar no Windows, onde `listar` devolve caminhos com "\" em vez de "/".
     ADR_DIR,
-    (p) => /\/\d{4}-.*\.md$/.test(p) && !p.includes("0000-template"),
+    (p) => /[\\/]\d{4}-.*\.md$/.test(p) && !p.includes("0000-template"),
   ).map((p) => {
     const md = ler(p);
     const campo = (nome) =>
       (md.match(new RegExp(`^- ${nome}:\\s*(.+)$`, "m")) ?? [])[1]?.trim();
     return {
       arquivo: relative(RAIZ, p),
-      id: "ADR-" + p.match(/(\d{4})-[^/]*\.md$/)[1],
+      id: "ADR-" + p.match(/(\d{4})-[^\\/]*\.md$/)[1],
       titulo: (md.match(/^# ADR-\d{4}:\s*(.+)$/m) ?? [])[1],
       status: campo("Status"),
       substitui: campo("Substitui"),
