@@ -534,7 +534,7 @@ export default function PerfilPage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        setErroEdit(data.mensagem ?? "Erro ao salvar.");
+        setErroEdit(data.erro ?? "Erro ao salvar.");
         return;
       }
       const data = await res.json();

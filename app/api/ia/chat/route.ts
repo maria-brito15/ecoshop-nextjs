@@ -34,6 +34,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { ERROS } from "@/lib/http/responses";
 import { chatSchema } from "@/lib/schemas/ia-chat";
 import { gerarTexto, GEMINI_MODEL } from "@/lib/ai/providers/gemini-chat";
+import { requireAuth } from "@/app/_middleware/auth";
+import { getSession } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 const SYSTEM_PROMPT = `Você é um assistente especialista em sustentabilidade e reciclagem da EcoShop. Responda em português. Seja objetivo e informativo. Forneça dicas práticas sobre descarte correto, reciclagem e alternativas sustentáveis.`;
 
@@ -48,7 +51,26 @@ const SYSTEM_PROMPT = `Você é um assistente especialista em sustentabilidade e
  * @status 502 - IA retornou erro
  * @status 500 - Erro interno no servidor
  */
+// Limite por usuário: o chat consome a cota paga do Gemini (D3).
+const LIMITE_MENSAGENS = 20;
+const JANELA_SEGUNDOS = 60;
+
 export async function POST(req: NextRequest) {
+  const authErro = await requireAuth(req);
+  if (authErro) return authErro;
+
+  const session = await getSession(req);
+  const { bloqueado } = await rateLimit(`chat:${session!.id}`, {
+    limite: LIMITE_MENSAGENS,
+    janelaSegundos: JANELA_SEGUNDOS,
+  });
+  if (bloqueado) {
+    return NextResponse.json(
+      { erro: "Muitas mensagens. Aguarde 1 minuto e tente novamente." },
+      { status: 429 },
+    );
+  }
+
   try {
     const body = await req.json();
     const parsed = chatSchema.safeParse(body);
