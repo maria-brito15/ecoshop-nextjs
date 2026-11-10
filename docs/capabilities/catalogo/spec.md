@@ -46,5 +46,5 @@ Carrinho, pedido, pagamento, estoque, avaliações.
 
 ## Perguntas abertas
 
-1. Ordenação e limite de preço devem valer para o catálogo inteiro (REQ-CAT-06)?
-2. Filtro por marca é requisito (REQ-CAT-07)?
+1. Ordenação e limite de preço no catálogo inteiro (REQ-CAT-06): decidido (2026-11-10) que é funcionalidade desejada, mas fica em backlog — hoje não existe nem no servidor (não é só a UI que falta). Ver `docs/architecture/adr/pendentes.md`.
+2. Filtro por marca (REQ-CAT-07): decidido (2026-11-10) que é funcionalidade desejada, mas fica em backlog pelo mesmo motivo.

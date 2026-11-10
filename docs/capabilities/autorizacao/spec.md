@@ -27,7 +27,7 @@ Visitante (sem sessão) · CLIENTE · MARCA (hoje sem direitos além de CLIENTE)
 | REQ-AUTZ-05 | Quando alguém lê ou altera /api/usuarios/[id], o sistema deve permitir apenas o próprio usuário ou um ADMIN, e deve permitir excluir apenas a um ADMIN. | CLIENTE A lê A → 200; lê B → 403; altera B → 403; exclui A → 403; ADMIN lê A → 200 |
 | REQ-AUTZ-06 | Quando uma requisição chega ao middleware, o sistema deve exigir sessão em /perfil e em /api/usuarios (redirecionar a /sign-in?next= para páginas e responder 401 JSON para a API) e deve exigir ADMIN em /painel (redirecionar a / para outros papéis). | middleware(/perfil) sem cookie → 307 para /sign-in?next=%2Fperfil; /api/usuarios/1 sem cookie → 401; /painel com CLIENTE → 307 para / |
 | REQ-AUTZ-07 | Se uma rota de API não declara sua política de acesso, o sistema deve negá-la por padrão. | Existe teste que percorre todas as rotas de app/api e falha para rota sem política declarada |
-| REQ-AUTZ-08 | Quando um visitante abre a página /ia-scan, o sistema deve redirecioná-lo ao login. | /ia-scan sem sessão → redirecionamento a /sign-in?next=/ia-scan |
+| REQ-AUTZ-08 | Quando um visitante abre a página /ia-scan, o sistema deve redirecioná-lo ao login. | /ia-scan sem sessão → 307 para /sign-in?next=%2Fia-scan |
 
 ## Casos-limite
 
@@ -58,5 +58,5 @@ Papéis novos; permissões por marca (MARCA gerir os próprios produtos) — dep
 
 ## Perguntas abertas
 
-1. A página /ia-scan deve exigir login antes de abrir (REQ-AUTZ-08) ou continuar pública com erro ao enviar?
+1. ~~A página /ia-scan deve exigir login antes de abrir (REQ-AUTZ-08)?~~ Decidido (2026-11-10): sim, exigir login. Implementado em `config/rotas-protegidas.ts`.
 2. O que o papel MARCA pode fazer? Enquanto não houver resposta, MARCA = CLIENTE.

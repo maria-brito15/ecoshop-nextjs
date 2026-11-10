@@ -12,8 +12,8 @@ ADMIN (escrita) · todos (leitura).
 
 ## Regras de negócio
 
-- **BR-MIDIA-01** — A foto é guardada no banco como bytes e servida por URL da própria API (ADR-0011).
-- **BR-MIDIA-02** — Cada produto tem no máximo uma foto principal.
+- **BR-MIDIA-01** — A foto é guardada no filesystem local (`public/data_fotos/`, prefixo `{produtoId}_`) e servida como arquivo estático (ADR-0011, ratificado em 2026-11-10). O texto anterior desta regra dizia "banco como bytes" — isso nunca esteve no código; era a spec errada, corrigida junto com o ADR.
+- ~~BR-MIDIA-02 — Cada produto tem no máximo uma foto principal.~~ Removida em 2026-11-10: nunca foi verdade no código, que sempre aceitou várias fotos por produto (é 1:N pelo prefixo do nome do arquivo).
 
 ## Requisitos
 
@@ -42,5 +42,5 @@ Redimensionamento automático; CDN.
 
 ## Perguntas abertas
 
-1. Foto no banco continua adequada, ou migrar para armazenamento de objetos (revisar ADR-0011)?
-2. A galeria (REQ-MIDIA-04) é desejada?
+1. ~~Foto no banco continua adequada, ou migrar para armazenamento de objetos?~~ Decidido (2026-11-10): manter o filesystem local (nunca foi "no banco" — ver BR-MIDIA-01). ADR-0011 ratificado como Aceito. Revisitar se o deploy for multi-instância.
+2. A galeria (REQ-MIDIA-04): decidido (2026-11-10) que é desejada, mas fica em backlog — o armazenamento já suporta várias fotos por produto, só falta a UI. Ver `docs/architecture/adr/pendentes.md`.

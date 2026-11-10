@@ -44,5 +44,5 @@ Excluir a própria conta; alterar e-mail e senha pela tela.
 
 ## Perguntas abertas
 
-1. O histórico de produtos vistos (REQ-PERF-05) e as métricas de impacto pessoal (REQ-PERF-06) são requisitos? Se sim, de onde vêm os dados?
+1. O histórico de produtos vistos (REQ-PERF-05) e as métricas de impacto pessoal (REQ-PERF-06): decidido (2026-11-10) que são desejados, mas ficam em backlog — nenhum dos dois tem dados reais hoje (o histórico nem é gravado). Ver `docs/architecture/adr/pendentes.md`.
 2. O usuário pode alterar o próprio e-mail e senha? (a API permite; a tela não)

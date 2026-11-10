@@ -12,5 +12,5 @@ Legenda: ✅ implementado e testado · ◐ parcial ou sem teste · ❌ não impl
 | REQ-AUTZ-04 | ✅ | test: tests/integration/autorizacao.test.ts | 2026-11-10 |
 | REQ-AUTZ-05 | ✅ | test: tests/integration/autorizacao.test.ts | 2026-11-10 |
 | REQ-AUTZ-06 | ✅ | test: tests/integration/perfil-e-middleware.test.ts | 2026-11-10 |
-| REQ-AUTZ-07 | ❌ | código: não há declaração de política por rota; o acesso é decidido por chamadas pontuais a requireAdmin/requireAuth (app/_middleware/auth.ts) | 2026-11-10 |
-| REQ-AUTZ-08 | ❔ | código: a página é pública e só a chamada à API devolve 401 (ver pergunta aberta 1) | 2026-11-10 |
+| REQ-AUTZ-07 | ✅ | test: tests/integration/autorizacao.test.ts (guarda de regressão por análise estática de app/api/**/route.ts; ADR-0017 decidiu que a política mora no handler, não numa tabela central — este teste supre a falta dela) | 2026-11-10 |
+| REQ-AUTZ-08 | ✅ | test: tests/integration/perfil-e-middleware.test.ts (decisão 2026-11-10: exigir login; config/rotas-protegidas.ts e middleware.ts protegem /ia-scan) | 2026-11-10 |

@@ -43,4 +43,4 @@ Importação em massa; histórico de alterações.
 ## Perguntas abertas
 
 1. Quem mantém produtos: só ADMIN ou também MARCA (para os próprios)?
-2. O vínculo produto↔certificado deve ser editável no painel (REQ-PROD-05)?
+2. O vínculo produto↔certificado editável no painel (REQ-PROD-05): decidido (2026-11-10) que é desejado, mas fica em backlog — hoje só o seed preenche o vínculo. Ver `docs/architecture/adr/pendentes.md`.

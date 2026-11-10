@@ -7,6 +7,6 @@ Legenda: ✅ implementado e testado · ◐ parcial ou sem teste · ❌ não impl
 | REQ | Status | Evidência | Verificado em |
 |---|---|---|---|
 | REQ-REF-01 | ✅ | test: tests/integration/catalogo.test.ts | 2026-11-10 |
-| REQ-REF-02 | ❌ | código: a violação de unicidade chega ao catch genérico e vira 500; teste todo em catalogo.test.ts (categoria) | 2026-11-10 |
-| REQ-REF-03 | ❌ | código: a FK RESTRICT gera erro Prisma P2003; o handler responde 404 (a mensagem do erro contém o trecho "P2025" do código-fonte) — D7; teste todo | 2026-11-10 |
-| REQ-REF-04 | ❔ | código: marcaSchema só pede usuarioId inteiro; confirmar a regra | 2026-11-10 |
+| REQ-REF-02 | ✅ | test: tests/integration/catalogo.test.ts (corrigido: mapeiaErroPrisma usa err.code, P2002 → 409) | 2026-11-10 |
+| REQ-REF-03 | ✅ | test: tests/integration/catalogo.test.ts (corrigido D7: a causa era checar err.message.includes("P2025") em vez de err.code; agora usa err.code === "P2003" → 409) | 2026-11-10 |
+| REQ-REF-04 | ✅ | test: tests/integration/catalogo.test.ts (decisão 2026-11-10: dono da marca precisa ser MARCA ou ADMIN; marca.service.ts valida antes de criar) | 2026-11-10 |

@@ -23,7 +23,7 @@ ADMIN (escrita); todos (leitura, ver AUTZ-02).
 | REQ-REF-01 | Quando um ADMIN cria uma categoria válida, o sistema deve responder 201. | POST /api/categorias → 201 |
 | REQ-REF-02 | Se o nome informado já existe, o sistema deve responder 409 ao criar categoria, marca ou certificado. | Nome duplicado → 409 |
 | REQ-REF-03 | Se uma categoria, marca ou certificado tem vínculos, o sistema deve responder 409 ao excluí-lo. | DELETE de categoria com produtos → 409 |
-| REQ-REF-04 | Se um ADMIN cria uma marca para um usuário que não é do tipo MARCA, o sistema deve recusar. | POST /api/marcas com usuário CLIENTE → 400/409 |
+| REQ-REF-04 | Se um ADMIN cria uma marca para um usuário que não é do tipo MARCA nem ADMIN, o sistema deve recusar. | POST /api/marcas com usuário CLIENTE → 409; com usuário inexistente → 404 |
 
 ## Casos-limite
 
@@ -43,4 +43,4 @@ Hierarquia de categorias.
 
 ## Perguntas abertas
 
-1. O dono de uma marca precisa ser do tipo MARCA (REQ-REF-04)?
+1. ~~O dono de uma marca precisa ser do tipo MARCA (REQ-REF-04)?~~ Decidido (2026-11-10): precisa ser MARCA ou ADMIN; `services/marca.service.ts` recusa CLIENTE com 409.
