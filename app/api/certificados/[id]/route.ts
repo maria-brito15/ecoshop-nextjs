@@ -17,7 +17,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS } from "@/lib/http/responses";
+import { ERROS, mapeiaErroPrisma } from "@/lib/http/responses";
 import { atualizarCertificadoSchema } from "@/lib/schemas/certificado";
 import {
   buscarCertificado,
@@ -80,10 +80,10 @@ export async function PUT(
     const certificado = await atualizarCertificado(Number(id), parsed.data);
     return NextResponse.json({ certificado });
   } catch (err) {
-    if (err instanceof Error && err.message.includes("P2025")) {
-      return ERROS.naoEncontrado("Certificado");
-    }
-    return ERROS.interno("atualizar certificado");
+    return (
+      mapeiaErroPrisma(err, "Certificado") ??
+      ERROS.interno("atualizar certificado")
+    );
   }
 }
 
@@ -114,9 +114,9 @@ export async function DELETE(
     await deletarCertificado(Number(id));
     return NextResponse.json({ ok: true });
   } catch (err) {
-    if (err instanceof Error && err.message.includes("P2025")) {
-      return ERROS.naoEncontrado("Certificado");
-    }
-    return ERROS.interno("deletar certificado");
+    return (
+      mapeiaErroPrisma(err, "Certificado") ??
+      ERROS.interno("deletar certificado")
+    );
   }
 }

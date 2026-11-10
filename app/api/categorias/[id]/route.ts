@@ -21,7 +21,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS } from "@/lib/http/responses";
+import { ERROS, mapeiaErroPrisma } from "@/lib/http/responses";
 import { atualizarCategoriaSchema } from "@/lib/schemas/categoria";
 import {
   buscarCategoria,
@@ -84,10 +84,10 @@ export async function PUT(
     const categoria = await atualizarCategoria(Number(id), parsed.data);
     return NextResponse.json({ categoria });
   } catch (err) {
-    if (err instanceof Error && err.message.includes("P2025")) {
-      return ERROS.naoEncontrado("Categoria");
-    }
-    return ERROS.interno("atualizar categoria");
+    return (
+      mapeiaErroPrisma(err, "Categoria") ??
+      ERROS.interno("atualizar categoria")
+    );
   }
 }
 
@@ -119,9 +119,8 @@ export async function DELETE(
     await deletarCategoria(Number(id));
     return NextResponse.json({ ok: true });
   } catch (err) {
-    if (err instanceof Error && err.message.includes("P2025")) {
-      return ERROS.naoEncontrado("Categoria");
-    }
-    return ERROS.interno("deletar categoria");
+    return (
+      mapeiaErroPrisma(err, "Categoria") ?? ERROS.interno("deletar categoria")
+    );
   }
 }

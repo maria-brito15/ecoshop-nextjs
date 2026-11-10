@@ -90,6 +90,36 @@ export const atualizarProdutoSchema = z.object({
   marcaId: z.number().int("ID da marca deve ser um número inteiro").optional(),
 });
 
+/**
+ * Schema de validação dos parâmetros de query de GET /api/produtos.
+ *
+ * REQ-CAT-05: page e size inválidos, ou size acima de 100, respondem 400
+ * em vez de serem aceitos silenciosamente (antes, `Number(...)` de um valor
+ * inválido virava NaN e seguia para o Prisma sem checagem).
+ *
+ * Usa `coerce` porque searchParams só entrega strings.
+ */
+export const listarProdutosQuerySchema = z.object({
+  page: z.coerce
+    .number({ message: "page deve ser um número" })
+    .int("page deve ser um número inteiro")
+    .min(1, "page deve ser pelo menos 1")
+    .optional()
+    .default(1),
+  size: z.coerce
+    .number({ message: "size deve ser um número" })
+    .int("size deve ser um número inteiro")
+    .min(1, "size deve ser pelo menos 1")
+    .max(100, "size não pode passar de 100")
+    .optional()
+    .default(12),
+  categoriaId: z.coerce
+    .number()
+    .int()
+    .optional(),
+  nome: z.string().optional(),
+});
+
 // Tipos inferidos para uso nos services
 export type ProdutoInput = z.infer<typeof produtoSchema>;
 export type AtualizarProdutoInput = z.infer<typeof atualizarProdutoSchema>;

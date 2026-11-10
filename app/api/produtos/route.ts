@@ -22,8 +22,8 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS } from "@/lib/http/responses";
-import { produtoSchema } from "@/lib/schemas/produto";
+import { ERROS, mapeiaErroPrisma } from "@/lib/http/responses";
+import { produtoSchema, listarProdutosQuerySchema } from "@/lib/schemas/produto";
 import { listarProdutos, criarProduto } from "@/services/produto.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
@@ -41,6 +41,11 @@ import { requireAdmin } from "@/app/_middleware/auth";
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+    const parsed = listarProdutosQuerySchema.safeParse(
+      Object.fromEntries(searchParams),
+    );
+    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+
     const resultado = await listarProdutos(searchParams);
     return NextResponse.json(resultado);
   } catch {
@@ -72,7 +77,7 @@ export async function POST(req: NextRequest) {
 
     const produto = await criarProduto(parsed.data);
     return NextResponse.json({ produto }, { status: 201 });
-  } catch {
-    return ERROS.interno("criar produto");
+  } catch (err) {
+    return mapeiaErroPrisma(err, "Produto") ?? ERROS.interno("criar produto");
   }
 }

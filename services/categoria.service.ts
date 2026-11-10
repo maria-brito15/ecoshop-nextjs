@@ -105,6 +105,10 @@ export async function criarCategoria(data: {
  * @param data - Dados para atualização (nome, descrição - ambos opcionais)
  * @returns Categoria atualizada
  * @throws Error P2025 se categoria não existir
+ *
+ * NOTA (REQ-PROD-02, NFR-CONS-01): também invalida o cache de produtos,
+ * pelo mesmo motivo da marca (o nome da categoria aparece embutido nos
+ * produtos cacheados).
  */
 export async function atualizarCategoria(
   id: number,
@@ -114,6 +118,7 @@ export async function atualizarCategoria(
   await Promise.all([
     invalidarChave(chaveCategoria(id)),
     invalidarCache("CATEGORIAS"),
+    invalidarCache("PRODUTOS"),
   ]);
   return categoria;
 }

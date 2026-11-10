@@ -18,7 +18,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS } from "@/lib/http/responses";
+import { ERROS, mapeiaErroPrisma } from "@/lib/http/responses";
 import { certificadoSchema } from "@/lib/schemas/certificado";
 import {
   listarCertificados,
@@ -66,7 +66,10 @@ export async function POST(req: NextRequest) {
 
     const certificado = await criarCertificado(parsed.data);
     return NextResponse.json({ certificado }, { status: 201 });
-  } catch {
-    return ERROS.interno("criar certificado");
+  } catch (err) {
+    return (
+      mapeiaErroPrisma(err, "Certificado") ??
+      ERROS.interno("criar certificado")
+    );
   }
 }

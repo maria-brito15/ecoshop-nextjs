@@ -17,7 +17,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS } from "@/lib/http/responses";
+import { ERROS, mapeiaErroPrisma } from "@/lib/http/responses";
 import { atualizarMarcaSchema } from "@/lib/schemas/marca";
 import {
   buscarMarca,
@@ -81,10 +81,7 @@ export async function PUT(
     const marca = await atualizarMarca(Number(id), parsed.data);
     return NextResponse.json({ marca });
   } catch (err) {
-    if (err instanceof Error && err.message.includes("P2025")) {
-      return ERROS.naoEncontrado("Marca");
-    }
-    return ERROS.interno("atualizar marca");
+    return mapeiaErroPrisma(err, "Marca") ?? ERROS.interno("atualizar marca");
   }
 }
 
@@ -115,9 +112,6 @@ export async function DELETE(
     await deletarMarca(Number(id));
     return NextResponse.json({ ok: true });
   } catch (err) {
-    if (err instanceof Error && err.message.includes("P2025")) {
-      return ERROS.naoEncontrado("Marca");
-    }
-    return ERROS.interno("deletar marca");
+    return mapeiaErroPrisma(err, "Marca") ?? ERROS.interno("deletar marca");
   }
 }

@@ -17,7 +17,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS } from "@/lib/http/responses";
+import { ERROS, mapeiaErroPrisma } from "@/lib/http/responses";
 import { atualizarProdutoSchema } from "@/lib/schemas/produto";
 import {
   buscarProduto,
@@ -79,8 +79,10 @@ export async function PUT(
 
     const produto = await atualizarProduto(Number(id), parsed.data);
     return NextResponse.json({ produto });
-  } catch {
-    return ERROS.interno("atualizar produto");
+  } catch (err) {
+    return (
+      mapeiaErroPrisma(err, "Produto") ?? ERROS.interno("atualizar produto")
+    );
   }
 }
 
@@ -109,9 +111,8 @@ export async function DELETE(
     await deletarProduto(Number(id));
     return NextResponse.json({ ok: true });
   } catch (err) {
-    if (err instanceof Error && err.message.includes("P2025")) {
-      return ERROS.naoEncontrado("Produto");
-    }
-    return ERROS.interno("deletar produto");
+    return (
+      mapeiaErroPrisma(err, "Produto") ?? ERROS.interno("deletar produto")
+    );
   }
 }

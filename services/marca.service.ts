@@ -91,12 +91,26 @@ export async function buscarMarca(id: number) {
  *   descricao: "Roupas sustentáveis",
  *   usuarioId: 5
  * });
+ *
+ * @throws Error("USUARIO_NAO_ENCONTRADO") se usuarioId não existir
+ * @throws Error("USUARIO_TIPO_INVALIDO") se o usuário não for MARCA nem ADMIN
+ *   (REQ-REF-04; decisão registrada em docs/capabilities/cadastros-de-referencia/spec.md)
  */
 export async function criarMarca(data: {
   nome: string;
   descricao?: string;
   usuarioId: number;
 }) {
+  const usuario = await prisma.usuario.findUnique({
+    where: { id: data.usuarioId },
+  });
+  if (!usuario) {
+    throw new Error("USUARIO_NAO_ENCONTRADO");
+  }
+  if (usuario.tipo !== "MARCA" && usuario.tipo !== "ADMIN") {
+    throw new Error("USUARIO_TIPO_INVALIDO");
+  }
+
   const marca = await prisma.marca.create({
     data,
     include: { usuario: { select: { id: true, nome: true } } },
@@ -116,13 +130,21 @@ export async function criarMarca(data: {
  * @param data - Dados para atualização (nome, descrição - ambos opcionais)
  * @returns Marca atualizada
  * @throws Error P2025 se marca não existir
+ *
+ * NOTA (REQ-PROD-02, NFR-CONS-01): também invalida o cache de produtos,
+ * porque a listagem e o detalhe de produto embutem o nome da marca.
+ * Sem isso, renomear a marca só refletia nos produtos após o TTL de 2–3 min.
  */
 export async function atualizarMarca(
   id: number,
   data: { nome?: string; descricao?: string },
 ) {
   const marca = await prisma.marca.update({ where: { id }, data });
-  await Promise.all([invalidarChave(chaveMarca(id)), invalidarCache("MARCAS")]);
+  await Promise.all([
+    invalidarChave(chaveMarca(id)),
+    invalidarCache("MARCAS"),
+    invalidarCache("PRODUTOS"),
+  ]);
   return marca;
 }
 

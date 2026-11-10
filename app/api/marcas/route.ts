@@ -19,7 +19,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS } from "@/lib/http/responses";
+import { ERROS, mapeiaErroPrisma } from "@/lib/http/responses";
 import { marcaSchema } from "@/lib/schemas/marca";
 import { listarMarcas, criarMarca } from "@/services/marca.service";
 import { requireAdmin } from "@/app/_middleware/auth";
@@ -64,7 +64,15 @@ export async function POST(req: NextRequest) {
 
     const marca = await criarMarca(parsed.data);
     return NextResponse.json({ marca }, { status: 201 });
-  } catch {
-    return ERROS.interno("criar marca");
+  } catch (err) {
+    if (err instanceof Error && err.message === "USUARIO_NAO_ENCONTRADO") {
+      return ERROS.naoEncontrado("Usuário");
+    }
+    if (err instanceof Error && err.message === "USUARIO_TIPO_INVALIDO") {
+      return ERROS.conflito(
+        "O usuário responsável por uma marca precisa ser do tipo MARCA ou ADMIN",
+      );
+    }
+    return mapeiaErroPrisma(err, "Marca") ?? ERROS.interno("criar marca");
   }
 }

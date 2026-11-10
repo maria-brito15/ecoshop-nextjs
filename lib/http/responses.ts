@@ -18,6 +18,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 
 /**
  * Cria uma resposta de erro padrão.
@@ -85,3 +86,51 @@ export const ERROS = {
    */
   conflito: (mensagem: string) => erroResponse(mensagem, 409),
 } as const;
+
+/**
+ * Mapeia um erro conhecido do Prisma (ou o `Error("P2025")` lançado manualmente
+ * pelos services antes de deletar) para a resposta HTTP correta.
+ *
+ * IMPORTANTE: usa `err.code` (campo oficial do Prisma), nunca
+ * `err.message.includes("P20..")`. A mensagem de erro do Prisma é texto livre
+ * e pode conter a substring de outro código por coincidência — foi exatamente
+ * isso que fez uma exclusão bloqueada por FK (P2003) virar 404 em vez de 409
+ * (REQ-REF-03, D7).
+ *
+ * @param err - Erro capturado no catch da rota
+ * @param recurso - Nome do recurso para a mensagem (ex: "Categoria")
+ * @returns A resposta adequada, ou `null` se o erro não é um dos conhecidos
+ *          (o chamador deve então cair em `ERROS.interno(...)`)
+ *
+ * @example
+ * try {
+ *   await atualizarCategoria(id, data);
+ * } catch (err) {
+ *   return mapeiaErroPrisma(err, "Categoria") ?? ERROS.interno("atualizar categoria");
+ * }
+ */
+export function mapeiaErroPrisma(
+  err: unknown,
+  recurso: string,
+): NextResponse | null {
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === "P2025") return ERROS.naoEncontrado(recurso);
+    if (err.code === "P2002")
+      return ERROS.conflito(`Já existe ${recurso.toLowerCase()} com esse nome`);
+    if (err.code === "P2003")
+      return ERROS.conflito(
+        `${recurso} possui vínculos e não pode ser excluído(a) ou alterado(a) para uma referência inexistente`,
+      );
+    return null;
+  }
+
+  // Pré-checagem manual nos services (findUnique + throw antes do delete).
+  if (err instanceof Error && err.message === "P2025") {
+    return ERROS.naoEncontrado(recurso);
+  }
+  if (err instanceof Error && err.message === "P2003") {
+    return ERROS.conflito(`${recurso} possui vínculos`);
+  }
+
+  return null;
+}
