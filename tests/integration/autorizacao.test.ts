@@ -29,6 +29,8 @@ import {
 } from "@/app/api/usuarios/[id]/route";
 import { POST as scan } from "@/app/api/ia/scan/route";
 import { POST as chat } from "@/app/api/ia/chat/route";
+import fs from "node:fs";
+import path from "node:path";
 
 after(encerrar);
 
@@ -175,5 +177,118 @@ test("REQ-AUTZ-05: /api/usuarios/[id]: o próprio usuário ou ADMIN; excluir só
       )
     ).status,
     403,
+  );
+});
+
+/**
+ * REQ-AUTZ-07: "negar por padrão" como guarda de regressão.
+ *
+ * Não existe tabela central de políticas por rota (ADR-0017 decidiu
+ * deliberadamente que a autorização mora no handler, não no middleware).
+ * Este teste supre a falta de uma tabela central fazendo o equivalente por
+ * análise estática: percorre todo `app/api/**\/route.ts`, acha cada handler
+ * exportado (GET/POST/PUT/DELETE/PATCH) e falha se o handler não chama
+ * `requireAuth`/`requireAdmin`/`getSession` E não está na lista explícita de
+ * rotas públicas abaixo. Uma rota nova sem nenhuma das duas coisas quebra
+ * este teste — não fica pública "por acidente".
+ */
+test("REQ-AUTZ-07: toda rota de API declara sua política de acesso (autenticação explícita, ou pública na allowlist)", () => {
+  const API_DIR = path.join(process.cwd(), "app", "api");
+
+  // Rotas intencionalmente públicas (leitura do catálogo, login, cadastro,
+  // logout e health-check). Qualquer outra precisa chamar um guard.
+  const PUBLICAS = new Set([
+    "health/route.ts:GET",
+    "auth/route.ts:POST",
+    "auth/route.ts:DELETE",
+    "users/route.ts:POST",
+    "categorias/route.ts:GET",
+    "categorias/[id]/route.ts:GET",
+    "certificados/route.ts:GET",
+    "certificados/[id]/route.ts:GET",
+    "marcas/route.ts:GET",
+    "marcas/[id]/route.ts:GET",
+    "produtos/route.ts:GET",
+    "produtos/[id]/route.ts:GET",
+    "produtos/[id]/fotos/route.ts:GET",
+  ]);
+
+  const GUARDS = ["requireAuth(", "requireAdmin(", "getSession("];
+  const METODOS = ["GET", "POST", "PUT", "DELETE", "PATCH"];
+
+  function listarArquivosRoute(dir: string): string[] {
+    const resultado: string[] = [];
+    for (const nome of fs.readdirSync(dir)) {
+      const caminho = path.join(dir, nome);
+      if (fs.statSync(caminho).isDirectory()) {
+        resultado.push(...listarArquivosRoute(caminho));
+      } else if (nome === "route.ts") {
+        resultado.push(caminho);
+      }
+    }
+    return resultado;
+  }
+
+  /** Extrai o corpo (entre chaves balanceadas) de uma função a partir do índice do seu "{" inicial. */
+  function corpoAPartirDe(fonte: string, indiceAbreChave: number): string {
+    let profundidade = 0;
+    for (let i = indiceAbreChave; i < fonte.length; i++) {
+      if (fonte[i] === "{") profundidade++;
+      if (fonte[i] === "}") {
+        profundidade--;
+        if (profundidade === 0) return fonte.slice(indiceAbreChave, i + 1);
+      }
+    }
+    return fonte.slice(indiceAbreChave);
+  }
+
+  /**
+   * Acha o "{" que abre o CORPO da função (não o de uma desestruturação de
+   * parâmetro, ex. `{ params }: { params: Promise<{ id: string }> }`).
+   * Conta parênteses a partir do primeiro "(" após o nome da função até seu
+   * fechamento, e só então procura o próximo "{" — esse é o corpo real.
+   */
+  function corpoDoHandler(fonte: string, indiceNomeFuncao: number): string {
+    const abreParen = fonte.indexOf("(", indiceNomeFuncao);
+    let profundidade = 0;
+    let i = abreParen;
+    for (; i < fonte.length; i++) {
+      if (fonte[i] === "(") profundidade++;
+      if (fonte[i] === ")") {
+        profundidade--;
+        if (profundidade === 0) break;
+      }
+    }
+    const abreChave = fonte.indexOf("{", i);
+    return corpoAPartirDe(fonte, abreChave);
+  }
+
+  const semPolitica: string[] = [];
+
+  for (const arquivo of listarArquivosRoute(API_DIR)) {
+    const fonte = fs.readFileSync(arquivo, "utf8");
+    const chaveArquivo = path
+      .relative(API_DIR, arquivo)
+      .split(path.sep)
+      .join("/");
+
+    for (const metodo of METODOS) {
+      const re = new RegExp(`export\\s+async\\s+function\\s+${metodo}\\s*\\(`);
+      const m = re.exec(fonte);
+      if (!m) continue;
+
+      const chave = `${chaveArquivo}:${metodo}`;
+      if (PUBLICAS.has(chave)) continue;
+
+      const corpo = corpoDoHandler(fonte, m.index);
+      const declaraGuard = GUARDS.some((g) => corpo.includes(g));
+      if (!declaraGuard) semPolitica.push(chave);
+    }
+  }
+
+  assert.deepEqual(
+    semPolitica,
+    [],
+    `Rota(s) de API sem política de acesso declarada (nem guard, nem na allowlist de públicas): ${semPolitica.join(", ")}`,
   );
 });

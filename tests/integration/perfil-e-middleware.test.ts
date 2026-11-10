@@ -102,6 +102,20 @@ test("REQ-AUTZ-06: o middleware exige sessão em /perfil e /api/usuarios, e ADMI
   assert.equal(passa(await viaMiddleware("/painel", ca)), true);
 });
 
+test("REQ-AUTZ-08: /ia-scan exige login (redireciona visitante, libera usuário logado)", async () => {
+  const cliente = await criarUsuarioDireto(email("authz08"), "CLIENTE");
+  const cc = await cookieDe(cliente);
+
+  const semSessao = await viaMiddleware("/ia-scan");
+  assert.equal(semSessao.status, 307);
+  assert.match(
+    semSessao.headers.get("location") ?? "",
+    /\/sign-in\?next=%2Fia-scan/,
+  );
+
+  assert.equal(passa(await viaMiddleware("/ia-scan", cc)), true);
+});
+
 test(
   "REQ-PERF-04: a edição de perfil mostra a mensagem de erro devolvida pela API",
   { skip: "verificação manual: ver status.md" },

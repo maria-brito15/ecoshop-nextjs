@@ -12,9 +12,13 @@ import { test, after, before } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "@/lib/db";
 import { GET as listar, POST as criarProduto } from "@/app/api/produtos/route";
-import { GET as detalhe } from "@/app/api/produtos/[id]/route";
+import {
+  GET as detalhe,
+  PUT as atualizarProduto,
+} from "@/app/api/produtos/[id]/route";
 import { POST as criarCategoria } from "@/app/api/categorias/route";
 import { DELETE as excluirCategoria } from "@/app/api/categorias/[id]/route";
+import { POST as criarMarca } from "@/app/api/marcas/route";
 import { PUT as atualizarMarca } from "@/app/api/marcas/[id]/route";
 
 after(async () => {
@@ -82,14 +86,12 @@ test("REQ-CAT-04: produto inexistente responde 404", async () => {
   );
 });
 
-test(
-  "REQ-CAT-05: page ou size inválidos, ou size acima de 100, respondem 400",
-  { todo: "D9: hoje aceita qualquer valor" },
-  async () => {
-    assert.equal((await listar(req("/api/produtos?size=1000"))).status, 400);
-    assert.equal((await listar(req("/api/produtos?page=abc"))).status, 400);
-  },
-);
+test("REQ-CAT-05: page ou size inválidos, ou size acima de 100, respondem 400", async () => {
+  assert.equal((await listar(req("/api/produtos?size=1000"))).status, 400);
+  assert.equal((await listar(req("/api/produtos?page=abc"))).status, 400);
+  // o painel pede size=100 (caso-limite da spec): tem que continuar aceito
+  assert.equal((await listar(req("/api/produtos?size=100"))).status, 200);
+});
 
 test("REQ-PROD-01: produto criado por ADMIN aparece no catálogo logo depois (cache invalidado)", async () => {
   const nome = `Novo ${prefixo}`;
@@ -105,31 +107,27 @@ test("REQ-PROD-01: produto criado por ADMIN aparece no catálogo logo depois (ca
   assert.equal((await lista(`nome=${encodeURIComponent(nome)}`)).total, 1);
 });
 
-test(
-  "REQ-PROD-02: renomear uma marca reflete no detalhe do produto sem esperar o TTL",
-  { todo: "NFR-CONS-01: marca não invalida produtos" },
-  async () => {
-    const produto = await prisma.produto.findFirstOrThrow({
-      where: { marcaId },
-    });
-    const antes = await (
-      await detalhe(req(`/api/produtos/${produto.id}`), ctx(produto.id))
-    ).json();
-    assert.equal(antes.produto.marca.nome, `Marca ${prefixo}`);
-    await atualizarMarca(
-      req(`/api/marcas/${marcaId}`, {
-        method: "PUT",
-        cookie: adminCookie,
-        body: { nome: `Marca ${prefixo} v2` },
-      }),
-      ctx(marcaId),
-    );
-    const depois = await (
-      await detalhe(req(`/api/produtos/${produto.id}`), ctx(produto.id))
-    ).json();
-    assert.equal(depois.produto.marca.nome, `Marca ${prefixo} v2`);
-  },
-);
+test("REQ-PROD-02: renomear uma marca reflete no detalhe do produto sem esperar o TTL", async () => {
+  const produto = await prisma.produto.findFirstOrThrow({
+    where: { marcaId },
+  });
+  const antes = await (
+    await detalhe(req(`/api/produtos/${produto.id}`), ctx(produto.id))
+  ).json();
+  assert.equal(antes.produto.marca.nome, `Marca ${prefixo}`);
+  await atualizarMarca(
+    req(`/api/marcas/${marcaId}`, {
+      method: "PUT",
+      cookie: adminCookie,
+      body: { nome: `Marca ${prefixo} v2` },
+    }),
+    ctx(marcaId),
+  );
+  const depois = await (
+    await detalhe(req(`/api/produtos/${produto.id}`), ctx(produto.id))
+  ).json();
+  assert.equal(depois.produto.marca.nome, `Marca ${prefixo} v2`);
+});
 
 test("REQ-REF-01: ADMIN cria categoria (201)", async () => {
   const res = await criarCategoria(
@@ -142,34 +140,89 @@ test("REQ-REF-01: ADMIN cria categoria (201)", async () => {
   assert.equal(res.status, 201);
 });
 
-test(
-  "REQ-REF-02: criar categoria com nome já existente responde 409",
-  { todo: "hoje a violação de unicidade vira 500" },
-  async () => {
-    const res = await criarCategoria(
-      req("/api/categorias", {
-        method: "POST",
-        cookie: adminCookie,
-        body: { nome: `Categoria ${prefixo}` },
-      }),
-    );
-    assert.equal(res.status, 409);
-  },
-);
+test("REQ-REF-02: criar categoria com nome já existente responde 409", async () => {
+  const res = await criarCategoria(
+    req("/api/categorias", {
+      method: "POST",
+      cookie: adminCookie,
+      body: { nome: `Categoria ${prefixo}` },
+    }),
+  );
+  assert.equal(res.status, 409);
+});
 
-test(
-  "REQ-REF-03: excluir categoria que tem produtos responde 409",
-  {
-    todo: "D7: hoje vira 404 (a mensagem do erro do Prisma contém o texto P2025 do código-fonte)",
-  },
-  async () => {
-    const res = await excluirCategoria(
-      req(`/api/categorias/${categoriaId}`, {
-        method: "DELETE",
-        cookie: adminCookie,
-      }),
-      ctx(categoriaId),
-    );
-    assert.equal(res.status, 409);
-  },
-);
+test("REQ-REF-03: excluir categoria que tem produtos responde 409", async () => {
+  const res = await excluirCategoria(
+    req(`/api/categorias/${categoriaId}`, {
+      method: "DELETE",
+      cookie: adminCookie,
+    }),
+    ctx(categoriaId),
+  );
+  assert.equal(res.status, 409);
+});
+
+test("REQ-REF-04: criar marca para usuário CLIENTE é recusado; para MARCA é aceito", async () => {
+  const cliente = await criarUsuarioDireto(email("ref04-cliente"), "CLIENTE");
+  const semMarca = await criarUsuarioDireto(email("ref04-marca"), "MARCA");
+  const res1 = await criarMarca(
+    req("/api/marcas", {
+      method: "POST",
+      cookie: adminCookie,
+      body: { nome: `Marca inválida ${prefixo}`, usuarioId: cliente.id },
+    }),
+  );
+  assert.equal(res1.status, 409);
+
+  const res2 = await criarMarca(
+    req("/api/marcas", {
+      method: "POST",
+      cookie: adminCookie,
+      body: { nome: `Marca válida ${prefixo}`, usuarioId: semMarca.id },
+    }),
+  );
+  assert.equal(res2.status, 201);
+});
+
+test("REQ-PROD-03: atualizar produto inexistente responde 404", async () => {
+  const res = await atualizarProduto(
+    req("/api/produtos/99999999", {
+      method: "PUT",
+      cookie: adminCookie,
+      body: { nome: "Não existe" },
+    }),
+    ctx(99999999),
+  );
+  assert.equal(res.status, 404);
+});
+
+test("REQ-PROD-04: criar ou atualizar produto com categoria/marca inexistente não é 500", async () => {
+  const criado = await criarProduto(
+    req("/api/produtos", {
+      method: "POST",
+      cookie: adminCookie,
+      body: {
+        nome: `PROD04 ${prefixo}`,
+        preco: 10,
+        categoriaId: 99999999,
+        marcaId,
+      },
+    }),
+  );
+  assert.notEqual(criado.status, 500);
+  assert.ok([404, 409].includes(criado.status));
+
+  const produtoExistente = await prisma.produto.findFirstOrThrow({
+    where: { marcaId },
+  });
+  const atualizado = await atualizarProduto(
+    req(`/api/produtos/${produtoExistente.id}`, {
+      method: "PUT",
+      cookie: adminCookie,
+      body: { marcaId: 99999999 },
+    }),
+    ctx(produtoExistente.id),
+  );
+  assert.notEqual(atualizado.status, 500);
+  assert.ok([404, 409].includes(atualizado.status));
+});
