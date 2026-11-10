@@ -125,6 +125,10 @@ function ImpactCard({ preco }: { preco: number }) {
           </div>
         ))}
       </div>
+      <p className="text-[10px] text-[var(--color-text-tertiary)] italic mt-3">
+        Estimativa ilustrativa calculada a partir do preço — ainda não há
+        fonte de dado real por produto (REQ-CONT-05).
+      </p>
     </div>
   );
 }

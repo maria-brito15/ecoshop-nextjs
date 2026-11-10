@@ -246,6 +246,10 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
+              <p className="text-xs text-[var(--color-text-tertiary)] italic pt-1">
+                Números ilustrativos — ainda sem fonte de dados real
+                (REQ-CONT-02).
+              </p>
             </div>
 
             {/* Imagem/ilustração do lado direito */}
