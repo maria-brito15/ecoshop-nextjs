@@ -1,9 +1,9 @@
 /**
- * Spec 010: sessão com acesso curto + renovação revogável (ADR-0021).
+ * Spec 010: short-lived access plus revocable renewal (ADR-0021).
  *
- * Os testes do serviço usam um armazém em memória (sem Redis nem banco). O teste
- * do armazém real precisa de um Redis em REDIS_URL. Os de ponta a ponta (login →
- * cookies, senha atual, rebaixamento de admin) precisam de Postgres e rodam no CI.
+ * The service tests use an in-memory store (no Redis or database). The real-store
+ * test needs a Redis at REDIS_URL. The end-to-end ones (login → cookies, current
+ * password, admin demotion) need Postgres and run in CI.
  */
 import { email, createUserDirectly, cookieDe, req, ctx, closeConnections } from "./helpers";
 import { test, after } from "node:test";
@@ -37,7 +37,7 @@ import { NextRequest } from "next/server";
 
 after(closeConnections);
 
-// ---- armazém em memória com a mesma semântica de uso único -----------------
+// ---- in-memory store with the same single-use semantics -----------------
 class InMemoryStore implements RefreshTokenStore {
   readonly tokens = new Map<string, number>();
   quebrado = false;
@@ -82,7 +82,7 @@ test("REQ-AUTH-18: the access JWT expires in 15 minutes (no longer 7 days)", asy
 });
 
 // ---------------------------------------------------------------------------
-// REQ-AUTH-19: renovação de uso único, com papel relido
+// REQ-AUTH-19: single-use renewal, with the role re-read
 // ---------------------------------------------------------------------------
 
 test("REQ-AUTH-19: starting a session issues access and refresh; refreshing SPENDS the token and issues another pair", async () => {
@@ -96,7 +96,7 @@ test("REQ-AUTH-19: starting a session issues access and refresh; refreshing SPEN
   if (!r.ok) return;
   assert.notEqual(r.session.refresh, s1.refresh);
 
-  // o token antigo não serve mais (uso único)
+  // the old token no longer works (single use)
   const reuse = await refreshSession(s1.refresh, lookup("ADMIN"), store);
   assert.deepEqual(reuse, { ok: false, reason: "INVALID" });
 });
@@ -143,7 +143,7 @@ test("REQ-AUTH-19: without Redis the refresh is DENIED (unavailable) and login c
 });
 
 // ---------------------------------------------------------------------------
-// REQ-AUTH-20: revogação
+// REQ-AUTH-20: revocation
 // ---------------------------------------------------------------------------
 
 test("REQ-AUTH-20: logout revokes the refresh token; revoking all of a user's sessions invalidates all their tokens", async () => {
@@ -195,7 +195,7 @@ test("REQ-AUTH-19: on real Redis, only the token hash is stored, with a TTL, and
 });
 
 // ---------------------------------------------------------------------------
-// REQ-AUTH-21: senha atual
+// REQ-AUTH-21: current password
 // ---------------------------------------------------------------------------
 
 test("REQ-AUTH-21: OperationNotAllowed becomes 403 with its own message; the schema accepts senhaAtual", async () => {
@@ -206,7 +206,7 @@ test("REQ-AUTH-21: OperationNotAllowed becomes 403 with its own message; the sch
 });
 
 // ---------------------------------------------------------------------------
-// middleware: acesso expirado com renovação → renova e volta
+// middleware: expired access with renewal → renews and returns
 // ---------------------------------------------------------------------------
 
 const page = (cookie?: string) =>
@@ -229,7 +229,7 @@ test("REQ-AUTH-22: without access and without refresh it goes to login; with a v
 });
 
 // ===========================================================================
-// COM BANCO — rodam no CI
+// WITH DATABASE — run in CI
 // ===========================================================================
 
 const PASSWORD = "SenhaAtual123";
@@ -272,7 +272,7 @@ test("REQ-AUTH-23: login with an unknown email also runs bcrypt (same order of t
     await login(req("/api/auth", { method: "POST", body: { email: mail, senha: "any-password" } }));
     return Number(process.hrtime.bigint() - t) / 1e6;
   };
-  await measure(u.email); // aquece o hash de comparação
+  await measure(u.email); // warms up the comparison hash
   const existing = await measure(u.email);
   const missing = await measure(email("nao-existe"));
   assert.ok(missing > existing / 4, `missing=${missing}ms existing=${existing}ms: without bcrypt it would be almost instant`);

@@ -1,44 +1,42 @@
 // prisma/seed.ts
 
 /**
- * ============================================================================
- * SEED SCRIPT - POPULAÇÃO INICIAL DO BANCO DE DADOS
- * ============================================================================
- * Script para popular o banco de dados com dados iniciais de desenvolvimento.
+ * SEED SCRIPT - INITIAL DATABASE POPULATION
  *
- * O que é seed?
- * - Conjunto de dados iniciais inseridos no banco quando a aplicação é configurada
- * - Útil para desenvolvimento, testes e demonstração da plataforma
+ * Script that populates the database with initial development data.
  *
- * Como executar:
+ * What is a seed?
+ * - A set of initial data inserted into the database when the application is set up
+ * - Useful for development, testing and demonstrating the platform
+ *
+ * How to run:
  *   npm run seed
- *   ou
+ *   or
  *   npx prisma db seed
  *
- * Dados criados por este script:
- * - Categorias (5 categorias de produtos sustentáveis)
- * - Certificados (5 certificações ambientais)
- * - Usuários (6 usuários com diferentes perfis: ADMIN, CLIENTE, MARCA)
- * - Marcas (3 marcas parceiras)
- * - Produtos (10 produtos com certificações)
+ * Data created by this script:
+ * - Categories (5 categories of sustainable products)
+ * - Certificates (5 environmental certifications)
+ * - Users (6 users with different profiles: ADMIN, CLIENTE, MARCA)
+ * - Brands (3 partner brands)
+ * - Products (10 products with certifications)
  *
- * IDEMPOTÊNCIA (REQ-OPS-03): categorias, certificados, usuários e marcas usam
- * upsert (sempre seguro repetir). Os produtos só são criados se o catálogo
- * estiver vazio — o seed NUNCA apaga produtos existentes. Antes, este script
- * apagava e recriava os produtos em toda subida (`docker compose up`), e isso
- * destruía qualquer foto ou edição feita depois do primeiro seed.
- * Para resetar de fato, use `prisma migrate reset` (apaga o banco todo).
+ * IDEMPOTENCY (REQ-OPS-03): categories, certificates, users and brands use
+ * upsert (always safe to repeat). Products are only created if the catalog is
+ * empty — the seed NEVER deletes existing products. Previously, this script
+ * deleted and recreated the products on every startup (`docker compose up`), which
+ * destroyed any photo or edit made after the first seed.
+ * To really reset, use `prisma migrate reset` (wipes the whole database).
  *
- * SENHA (REQ-OPS-02): os usuários de demonstração agora recebem um hash
- * bcrypt real (não mais o placeholder "hash-seguro-aqui", que não permitia
- * login de ninguém). A senha é a mesma para todos os usuários de demo e vem
- * **obrigatoriamente** de SEED_USER_PASSWORD (12+ caracteres): não há senha
- * embutida no código (REQ-OPS-09). Este seed é só para desenvolvimento; em
- * produção o catálogo começa vazio e só o ADMIN é criado (seed-admin.ts).
+ * PASSWORD (REQ-OPS-02): the demo users now get a real bcrypt hash (no longer
+ * the "hash-seguro-aqui" placeholder, which let nobody log in). The password is
+ * the same for all demo users and **must** come from SEED_USER_PASSWORD
+ * (12+ characters): there is no embedded password in the code (REQ-OPS-09). This
+ * seed is for development only; in production the catalog starts empty and only
+ * the ADMIN is created (seed-admin.ts).
  *
- * @see prisma/schema.prisma - Definição dos modelos
- * @see prisma.config.ts - Configuração do seed
- * ============================================================================
+ * @see prisma/schema.prisma - Model definitions
+ * @see prisma.config.ts - Seed configuration
  */
 
 import { config } from "dotenv";
@@ -51,8 +49,8 @@ import bcrypt from "bcryptjs";
 import { requireSeedPassword } from "./seed-password";
 
 /**
- * Senha em texto plano dos usuários de demonstração (todos compartilham a
- * mesma, por simplicidade). Mesmo custo de hashing usado no resto do app
+ * Plain-text password of the demo users (they all share the same one,
+ * for simplicity). Same hashing cost used in the rest of the app
  * (services/user.service.ts, prisma/seed-admin.ts).
  */
 const SEED_USER_PASSWORD = requireSeedPassword(
@@ -62,29 +60,29 @@ const SEED_USER_PASSWORD = requireSeedPassword(
 const SALT_ROUNDS = 12;
 
 /**
- * String de conexão com o banco de dados.
- * Deve estar definida no arquivo .env.local
+ * Database connection string.
+ * Must be defined in the .env.local file.
  */
 const connectionString = process.env.DATABASE_URL!;
 const pool = new pg.Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
 /**
- * Instância do Prisma Client usando o adapter PostgreSQL.
- * Necessário porque o seed roda fora do contexto da aplicação Next.js.
+ * Prisma Client instance using the PostgreSQL adapter.
+ * Needed because the seed runs outside the Next.js application context.
  */
 const prisma = new PrismaClient({ adapter });
 
 /**
- * Função principal de seed.
- * Ordem de execução é importante devido às relações de chave estrangeira:
- * 1. Limpa dados existentes (começa pelas tabelas de relação)
- * 2. Cria categorias
- * 3. Cria certificados
- * 4. Cria usuários
- * 5. Cria marcas (depende de usuários)
- * 6. Cria produtos (depende de categorias e marcas)
- * 7. Associa certificados aos produtos
+ * Main seed function.
+ * Execution order matters because of the foreign key relations:
+ * 1. Clears existing data (starting with the relation tables)
+ * 2. Creates categories
+ * 3. Creates certificates
+ * 4. Creates users
+ * 5. Creates brands (depends on users)
+ * 6. Creates products (depends on categories and brands)
+ * 7. Associates certificates with products
  */
 async function main() {
   console.log("Starting database seeding...\n");
@@ -92,8 +90,8 @@ async function main() {
   // ---------------------------------------------------------------------------
   // STEP 2: CATEGORIAS
   // ---------------------------------------------------------------------------
-  // Categorias organizam produtos por tipo.
-  // Usa upsert para não duplicar se já existirem (idempotência).
+  // Categories organize products by type.
+  // Uses upsert so nothing is duplicated if they already exist (idempotency).
   console.log("Creating categories...");
   const categoriesInput = [
     {
@@ -136,7 +134,7 @@ async function main() {
   // ---------------------------------------------------------------------------
   // STEP 3: CERTIFICADOS
   // ---------------------------------------------------------------------------
-  // Certificados atestam práticas sustentáveis dos produtos.
+  // Certificates attest to the products' sustainable practices.
   console.log("Creating certificates...");
   const certificatesInput = [
     {
@@ -179,12 +177,12 @@ async function main() {
   }
 
   // ---------------------------------------------------------------------------
-  // STEP 4: USUÁRIOS
+  // STEP 4: USERS
   // ---------------------------------------------------------------------------
-  // Cria usuários com diferentes perfis para testar autenticação e permissões.
+  // Creates users with different profiles to test authentication and permissions.
   // Todos compartilham SEED_USER_PASSWORD (ver topo do arquivo) com hash bcrypt
-  // real — antes, a senha era o placeholder "hash-seguro-aqui" e ninguém
-  // conseguia logar com nenhum desses usuários (REQ-OPS-02).
+  // real hash — previously the password was the "hash-seguro-aqui" placeholder and nobody
+  // could log in as any of these users (REQ-OPS-02).
   console.log("Creating users...");
   const passwordHash = await bcrypt.hash(SEED_USER_PASSWORD, SALT_ROUNDS);
   const usersInput = [
@@ -241,7 +239,7 @@ async function main() {
   // ---------------------------------------------------------------------------
   // STEP 5: MARCAS
   // ---------------------------------------------------------------------------
-  // Cada marca está associada a um usuário (relacionamento 1:1).
+  // Each brand is associated with a user (1:1 relationship).
   console.log("Creating brands...");
   const brandsInput = [
     {
@@ -274,10 +272,10 @@ async function main() {
   // ---------------------------------------------------------------------------
   // STEP 6: PRODUTOS
   // ---------------------------------------------------------------------------
-  // Catálogo de produtos sustentáveis com certificações associadas.
+  // Catalog of sustainable products with associated certifications.
   console.log("Creating product catalog...");
   const productsInput = [
-    // EcoBrand - Roupas Sustentáveis
+    // EcoBrand - Sustainable Clothing
     {
       nome: "Organic Basic T-Shirt",
       descricao: "100% organic cotton, natural dyeing.",
@@ -303,7 +301,7 @@ async function main() {
       certs: ["Cruelty Free"],
     },
 
-    // Pureza Naturais - Cosméticos e Alimentos
+    // Pureza Naturais - Cosmetics and Food
     {
       nome: "Rosemary Solid Shampoo",
       descricao: "Lasts up to 60 washes. Zero plastic.",
@@ -337,7 +335,7 @@ async function main() {
       certs: ["Organic Brazil", "FSC"],
     },
 
-    // Bambu Home - Casa e Decoração
+    // Bambu Home - Home and Decor
     {
       nome: "Bamboo Toothbrush Kit",
       descricao: "Pack of 4 100% biodegradable brushes.",
@@ -397,9 +395,9 @@ async function main() {
 }
 
 /**
- * Executa o seed e trata erros.
- * - Em caso de erro, exibe no console e encerra com código 1
- * - Ao final, desconecta do banco de dados
+ * Runs the seed and handles errors.
+ * - On error, prints to the console and exits with code 1
+ * - At the end, disconnects from the database
  */
 main()
   .catch((e) => {

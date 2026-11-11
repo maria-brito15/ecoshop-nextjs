@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// scripts/sdd/adr-index.mjs — gera docs/architecture/adr/README.md e valida a cadeia de substituições.
-// Uso: node scripts/sdd/adr-index.mjs [--check]   (--check: falha se o índice estiver desatualizado)
+// scripts/sdd/adr-index.mjs — generates docs/architecture/adr/README.md and validates the supersession chain.
+// Usage: node scripts/sdd/adr-index.mjs [--check]   (--check: fails if the index is out of date)
 import { join } from "node:path";
 import { existsSync, writeFileSync } from "node:fs";
 import { ADR_DIR, RAIZ, ler, lerAdrs, listar, relatar } from "./lib.mjs";
@@ -27,7 +27,7 @@ for (const a of adrs) {
   }
 }
 
-// specs e planos não podem citar ADR substituído como vigente (na linha "ADRs:")
+// specs and plans must not cite a superseded ADR as current (on the "ADRs:" line)
 const docs = [
   ...listar(join(RAIZ, "docs/capabilities"), (p) => p.endsWith("spec.md")),
   ...listar(

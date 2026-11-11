@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // scripts/sdd/impact-map.mjs — quais capacidades, REQs e ADRs um diff pode afetar.
 // Uso: node scripts/sdd/impact-map.mjs [--base <ref>] [--worktree] [--arquivos a,b] [--exige-adr] [--json]
-//  --base        compara <ref>...HEAD (padrão: HEAD~1)         --worktree  compara o working tree com HEAD
-//  --exige-adr   falha se um caminho sensível mudou e o corpo do PR ($GITHUB_EVENT_PATH ou $PR_BODY) não cita o ADR dono
+//  --base        compares <ref>...HEAD (default: HEAD~1)         --worktree  compares the working tree with HEAD
+//  --exige-adr   fails if a sensitive path changed and the PR body ($GITHUB_EVENT_PATH or $PR_BODY) does not cite the owning ADR
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import {

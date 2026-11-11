@@ -19,18 +19,18 @@ test("REQ-OPS-01: /api/health returns 200 and reports database and Redis when bo
 });
 
 /**
- * O seed não tem mais senha embutida (REQ-OPS-09): o teste a fornece. Este valor
- * é só um dado de teste; é o mesmo que bancos já semeados antes da 008 usam, e o
- * seed não troca o hash de usuários existentes (upsert com `update: {}`).
+ * The seed no longer has an embedded password (REQ-OPS-09): the test supplies it. This value
+ * is just test data; it is the same one that databases seeded before 008 use, and the
+ * seed does not replace the hash of existing users (upsert with `update: {}`).
  */
 const SEED_PASSWORD = "EcoshopDemo@2026";
 const ENV_SEED = { ...process.env, SEED_USER_PASSWORD: SEED_PASSWORD };
 
 /**
- * REQ-OPS-02 e REQ-OPS-03 rodam o seed real (`npx tsx prisma/seed.ts`) como
- * processo filho, contra o mesmo DATABASE_URL/REDIS_URL deste processo de
- * teste — é o jeito mais fiel de verificar um script que o app não importa
- * (ele tem seu próprio PrismaClient). Pode demorar alguns segundos.
+ * REQ-OPS-02 and REQ-OPS-03 run the real seed (`npx tsx prisma/seed.ts`) as a
+ * child process, against the same DATABASE_URL/REDIS_URL as this test
+ * process — the most faithful way to verify a script the app does not import
+ * (it has its own PrismaClient). It may take a few seconds.
  */
 test("REQ-OPS-02: the seed creates users with a usable password for login (real bcrypt hash)", async () => {
   execFileSync("npx", ["tsx", "prisma/seed.ts"], {
@@ -48,7 +48,7 @@ test("REQ-OPS-02: the seed creates users with a usable password for login (real 
 });
 
 test("REQ-OPS-03: running the seed again neither duplicates nor deletes existing products", async () => {
-  // garante que já existe ao menos 1 produto antes de medir idempotência
+  // ensures at least 1 product exists before measuring idempotency
   execFileSync("npx", ["tsx", "prisma/seed.ts"], {
     cwd: process.cwd(),
     env: ENV_SEED,

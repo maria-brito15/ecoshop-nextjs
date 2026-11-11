@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// PreToolUse (Bash): pede confirmação para comandos destrutivos.
+// PreToolUse (Bash): asks for confirmation on destructive commands.
 import { entrada, pedirConfirmacao } from "./lib.mjs";
 
 const ev = await entrada();

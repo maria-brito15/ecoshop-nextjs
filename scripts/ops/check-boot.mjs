@@ -1,9 +1,9 @@
 // scripts/ops/check-boot.mjs
 //
-// Verifica REQ-OPS-06 contra o servidor REAL construído (`npm run build` antes):
-// em produção, o servidor standalone precisa recusar iniciar com JWT_SECRET
-// inválido e iniciar com um válido. O teste de unidade cobre a regra; este script
-// cobre o que só o Next faz: abortar o início quando `register()` lança.
+// Verifies REQ-OPS-06 against the REAL built server (`npm run build` first):
+// in production, the standalone server must refuse to start with an invalid JWT_SECRET
+// and start with a valid one. The unit test covers the rule; this script
+// covers what only Next does: aborting startup when `register()` throws.
 //
 // Uso: node scripts/ops/check-boot.mjs
 
@@ -14,9 +14,9 @@ import { join } from "node:path";
 const RAIZ_STANDALONE = ".next/standalone";
 
 /**
- * No CI e no Docker o servidor fica em `.next/standalone/server.js`. Se existir
- * outro lockfile acima do projeto (comum em máquinas de desenvolvimento), o Next
- * aninha o standalone em subpastas; por isso, se não estiver na raiz, procura-o.
+ * In CI and Docker the server lives at `.next/standalone/server.js`. If another
+ * lockfile exists above the project (common on development machines), Next
+ * nests the standalone output in subfolders; so, if it is not at the root, look for it.
  */
 function localizarServidor(pasta = RAIZ_STANDALONE) {
   if (!existsSync(pasta)) return null;
@@ -45,7 +45,7 @@ function iniciar(jwtSecret) {
     ...process.env,
     NODE_ENV: "production",
     PORT: "3987",
-    // o caso "válido" precisa de uma DATABASE_URL de forma válida (o servidor não conecta ao iniciar)
+    // the "valid" case needs a well-formed DATABASE_URL (the server does not connect on startup)
     DATABASE_URL: process.env.DATABASE_URL ?? "postgresql://usuario:senha@127.0.0.1:1/banco",
     HOSTNAME: "127.0.0.1",
   };

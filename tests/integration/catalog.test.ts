@@ -89,12 +89,12 @@ test("REQ-CAT-04: unknown product returns 404", async () => {
 test("REQ-CAT-05: invalid page or size, or size above 100, return 400", async () => {
   assert.equal((await listar(req("/api/produtos?size=1000"))).status, 400);
   assert.equal((await listar(req("/api/produtos?page=abc"))).status, 400);
-  // o painel pede size=100 (caso-limite da spec): tem que continuar aceito
+  // the panel asks for size=100 (spec edge case): it must remain accepted
   assert.equal((await listar(req("/api/produtos?size=100"))).status, 200);
 });
 
 test("REQ-CAT-06: sorting by price applies to the whole catalog, not just the page", async () => {
-  // Os 14 produtos do before() têm preço 10..23 (nome em ordem crescente também).
+  // The 14 products from before() have prices 10..23 (name in ascending order too).
   const desc = await list(`nome=${prefix}&size=5&sort=preco_desc`);
   assert.equal(desc.total, 14);
   assert.equal(desc.produtos.length, 5);
@@ -112,7 +112,7 @@ test("REQ-CAT-06: sorting by price applies to the whole catalog, not just the pa
 
 test("REQ-CAT-06: precoMax limits the whole catalog, not just the page", async () => {
   const r = await list(`nome=${prefix}&size=3&precoMax=15`);
-  // preços 10..15 => 6 produtos no total, mesmo pedindo só 3 por página
+  // prices 10..15 => 6 products in total, even when asking for only 3 per page
   assert.equal(r.total, 6);
   assert.ok(
     r.produtos.every((p: { preco: number }) => Number(p.preco) <= 15),
@@ -269,7 +269,7 @@ test("REQ-PROD-05: PUT with certificadoIds updates the product↔certificate lin
     [cert1.id, cert2.id].sort(),
   );
 
-  // Substitui o vínculo: tira o cert2, mantém só o cert1
+  // Replaces the link: removes cert2, keeps only cert1
   const res2 = await atualizarProduto(
     req(`/api/produtos/${product.id}`, {
       method: "PUT",

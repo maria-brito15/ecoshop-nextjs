@@ -1,31 +1,29 @@
 // prisma/seed-admin.ts
 
 /**
- * ============================================================================
- * SEED ADMIN SCRIPT - CRIAÇÃO DE ADMINISTRADOR
- * ============================================================================
- * Script específico para criar um usuário administrador no banco de dados.
+ * SEED ADMIN SCRIPT - ADMINISTRATOR CREATION
  *
- * Por que um script separado?
- * - O seed principal (seed.ts) usa placeholders de senha ("hash-seguro-aqui")
- * - Este script gera um hash bcrypt REAL a partir de uma senha fornecida
- * - Permite criar um admin com credenciais funcionais para login
+ * Dedicated script to create an administrator user in the database.
  *
- * Como usar:
- *   1. Defina as variáveis de ambiente (ou edite os valores diretamente)
- *   2. Execute: npx tsx prisma/seed-admin.ts
+ * Why a separate script?
+ * - The main seed (seed.ts) uses password placeholders ("hash-seguro-aqui")
+ * - This script generates a REAL bcrypt hash from a supplied password
+ * - It creates an admin with working credentials for login
  *
- * Não há senha embutida (REQ-OPS-09): ADMIN_PASSWORD é obrigatória, com no
- * mínimo 12 caracteres; sem ela o script encerra antes de gravar qualquer coisa.
+ * How to use:
+ *   1. Set the environment variables (or edit the values directly)
+ *   2. Run: npx tsx prisma/seed-admin.ts
  *
- * Variáveis de ambiente:
- *   ADMIN_PASSWORD - Senha do administrador (obrigatória, 12+ caracteres)
- *   ADMIN_EMAIL - Email do administrador (padrão: admin@ecoshop.com)
- *   ADMIN_NAME - Nome do administrador (opcional)
- *   ADMIN_PHONE - Telefone do administrador (opcional)
+ * There is no embedded password (REQ-OPS-09): ADMIN_PASSWORD is required, with at
+ * least 12 characters; without it the script exits before writing anything.
  *
- * @see prisma/seed.ts - Seed completo com dados de demonstração
- * ============================================================================
+ * Environment variables:
+ *   ADMIN_PASSWORD - Administrator password (required, 12+ characters)
+ *   ADMIN_EMAIL - Administrator email (default: admin@ecoshop.com)
+ *   ADMIN_NAME - Administrator name (optional)
+ *   ADMIN_PHONE - Administrator phone (optional)
+ *
+ * @see prisma/seed.ts - Full seed with demo data
  */
 
 import { config } from "dotenv";
@@ -38,8 +36,8 @@ import bcrypt from "bcryptjs";
 import { requireSeedPassword } from "./seed-password";
 
 /**
- * Configurações do administrador.
- * Pode ser sobrescrita por variáveis de ambiente.
+ * Administrator settings.
+ * Can be overridden by environment variables.
  */
 const ADMIN_CONFIG = {
   email: process.env.ADMIN_EMAIL || "admin@ecoshop.com",
@@ -49,13 +47,13 @@ const ADMIN_CONFIG = {
 };
 
 /**
- * Número de rounds de hashing do bcrypt.
- * Mesmo valor usado no service (SALT_ROUNDS = 12).
+ * Number of bcrypt hashing rounds.
+ * Same value used in the service (SALT_ROUNDS = 12).
  */
 const SALT_ROUNDS = 12;
 
 /**
- * String de conexão com o banco de dados.
+ * Database connection string.
  */
 const connectionString = process.env.DATABASE_URL!;
 const pool = new pg.Pool({ connectionString });
@@ -63,21 +61,21 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 /**
- * Gera um hash bcrypt a partir da senha.
+ * Generates a bcrypt hash from the password.
  *
- * @param password - Senha em texto plano
- * @returns Hash bcrypt da senha
+ * @param password - Plain-text password
+ * @returns Bcrypt hash of the password
  */
 async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, SALT_ROUNDS);
 }
 
 /**
- * Cria ou atualiza o usuário administrador.
+ * Creates or updates the administrator user.
  *
- * Se o email já existir, atualiza a senha e o nome para os valores atuais.
- * Isso garante que você sempre tenha um admin funcional, mesmo se o seed
- * principal foi executado com placeholders.
+ * If the email already exists, updates the password and name to the current values.
+ * This guarantees you always have a working admin, even if the main seed
+ * was run with placeholders.
  */
 async function createOrUpdateAdmin() {
   console.log("\n🔧 Configurando administrador...");
@@ -85,18 +83,18 @@ async function createOrUpdateAdmin() {
   console.log(`   Nome: ${ADMIN_CONFIG.nome}`);
   console.log(`   Password: ${"•".repeat(ADMIN_CONFIG.senha.length)} (hidden)`);
 
-  // A senha já foi validada ao montar ADMIN_CONFIG (REQ-OPS-09).
+  // The password was already validated when ADMIN_CONFIG was built (REQ-OPS-09).
 
-  // Gera hash da senha
+  // Hash the password
   const passwordHash = await hashPassword(ADMIN_CONFIG.senha);
 
-  // Verifica se já existe um usuário com este email
+  // Check whether a user with this email already exists
   const existingUser = await prisma.usuario.findUnique({
     where: { email: ADMIN_CONFIG.email },
   });
 
   if (existingUser) {
-    // Atualiza usuário existente
+    // Update the existing user
     console.log("\n📝 User already exists. Updating data...");
 
     const updatedUser = await prisma.usuario.update({
@@ -114,7 +112,7 @@ async function createOrUpdateAdmin() {
     console.log(`   Email: ${updatedUser.email}`);
     console.log(`   Tipo: ${updatedUser.tipo}`);
   } else {
-    // Cria novo usuário administrador
+    // Create a new administrator user
     console.log("\n📝 Criando novo administrador...");
 
     const newAdmin = await prisma.usuario.create({
@@ -135,8 +133,8 @@ async function createOrUpdateAdmin() {
 }
 
 /**
- * Lista todos os administradores existentes no sistema.
- * Útil para verificar quais contas admin estão disponíveis.
+ * Lists all existing administrators in the system.
+ * Useful to check which admin accounts are available.
  */
 async function listAdmins() {
   const admins = await prisma.usuario.findMany({
@@ -162,7 +160,7 @@ async function listAdmins() {
 }
 
 /**
- * Função principal
+ * Main function
  */
 async function main() {
   console.log("\n🌿 ========================================");
@@ -170,20 +168,20 @@ async function main() {
   console.log("   ========================================\n");
 
   try {
-    // Testa conexão com o banco
+    // Test the database connection
     await prisma.$queryRaw`SELECT 1`;
     console.log("✅ Database connection established.\n");
 
-    // Lista admins existentes antes da operação
+    // List existing admins before the operation
     await listAdmins();
 
-    // Cria ou atualiza o admin principal
+    // Create or update the main admin
     await createOrUpdateAdmin();
 
     // Lista admins atualizados
     await listAdmins();
 
-    // A senha NUNCA é impressa: logs de Docker e de CI ficam retidos (REQ-OPS-09).
+    // The password is NEVER printed: Docker and CI logs are retained (REQ-OPS-09).
     console.log("\n🔐 Administrador pronto.");
     console.log(`   📧 Email: ${ADMIN_CONFIG.email}`);
     console.log("   🔑 Password: the one set in ADMIN_PASSWORD (not shown).");

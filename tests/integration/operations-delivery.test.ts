@@ -1,9 +1,9 @@
 /**
- * Operação segura (spec 008): comportamento de inicialização e do que o repositório
- * entrega para rodar e publicar o sistema.
+ * Safe operation (spec 008): startup behavior and what the repository
+ * delivers to run and publish the system.
  *
- * Não precisa de banco nem de Redis: valida funções puras e lê arquivos versionados
- * (compose, workflow, scripts). O que exige Docker ou build roda no CI (ver ci.yml).
+ * Needs neither a database nor Redis: validates pure functions and reads versioned files
+ * (compose, workflow, scripts). What requires Docker or a build runs in CI (see ci.yml).
  */
 import { email, closeConnections } from "./helpers";
 import test, { after, mock } from "node:test";
@@ -21,7 +21,7 @@ const VALID_SECRET ="x7Qm2LbR9vTn4KcE8wYpZa3JdHfUg6Nz";
 
 type Environment = Record<string, string | undefined>;
 
-/** Executa `fn` com variáveis de ambiente alteradas e restaura tudo no final. */
+/** Runs `fn` with changed environment variables and restores everything at the end. */
 async function withEnvironment(changes: Environment, fn: () => Promise<void>) {
   const env = process.env as Environment;
   const previous: Environment = {};
@@ -59,7 +59,7 @@ test("REQ-OPS-06: validateJwtSecret refuses a missing, empty or short secret", (
 });
 
 test("REQ-OPS-06: validateJwtSecret refuses the known sample values, even with 32+ characters", () => {
-  // O .env.example antigo tinha 38 caracteres: só a regra de tamanho não o barraria.
+  // The old .env.example had 38 characters: the length rule alone would not reject it.
   const examples = [
     "supersecretkeychangeinproduction",
     "seu-segredo-jwt-aqui-mude-em-producao",
@@ -80,9 +80,9 @@ test("REQ-OPS-06: the error message never contains the secret value", () => {
 });
 
 /**
- * Executa `register()` observando se o processo seria encerrado. `process.exit` é
- * trocado por uma função que lança (um exit de verdade mataria o teste) e
- * `console.error` é capturado.
+ * Runs `register()` observing whether the process would exit. `process.exit` is
+ * replaced by a function that throws (a real exit would kill the test) and
+ * `console.error` is captured.
  */
 async function runRegister(): Promise<{ codigoDeSaida?: number; mensagem: string }> {
   const leave = mock.method(process, "exit", (code?: number) => {
@@ -111,7 +111,7 @@ test("REQ-OPS-06: in production, register() ends the process (code 1) with an in
       const r = await runRegister();
       assert.equal(r.codigoDeSaida, 1, `JWT_SECRET=${jwt === undefined ? "(ausente)" : "invalid"}`);
       assert.match(r.mensagem, /JWT_SECRET/);
-      // só valores longos: "curto" é uma palavra que a própria mensagem usa
+      // only long values: "curto" is a word the message itself uses
       if (jwt && jwt.length >= 20) {
         assert.ok(!r.mensagem.includes(jwt), "the message must not reveal the secret");
       }
@@ -170,13 +170,13 @@ test("REQ-OPS-06: during the build and in the edge runtime, register() does not 
 });
 
 // ---------------------------------------------------------------------------
-// REQ-OPS-09: seeds sem senha embutida
+// REQ-OPS-09: seeds without an embedded password
 // ---------------------------------------------------------------------------
 
 /**
- * Roda um seed como processo filho. As variáveis de senha são sempre definidas
- * (mesmo vazias): o dotenv dos seeds carrega `.env.local` sem sobrescrever o que
- * já existe no ambiente, e o teste não pode depender do arquivo de quem o roda.
+ * Runs a seed as a child process. The password variables are always defined
+ * (even if empty): the seeds' dotenv loads `.env.local` without overriding what
+ * already exists in the environment, and the test cannot depend on the runner's file.
  */
 function runSeed(file: string, environment: Environment) {
   return spawnSync("npx", ["tsx", file], {
@@ -244,7 +244,7 @@ test("REQ-OPS-09: no seed file contains a hard-coded password", () => {
 
 test("REQ-OPS-09: the seed-admin does not print the administrator password to the log", () => {
   const text = readFileSync("prisma/seed-admin.ts", "utf8");
-  // a linha que mostra a senha MASCARADA (`"•".repeat(...)`) é permitida
+  // the line that shows the MASKED password (`"•".repeat(...)`) is allowed
   assert.doesNotMatch(text, /Senha: \$\{(?!"•")/);
   assert.doesNotMatch(text, /console\.(log|error)\(\s*`[^`]*ADMIN_CONFIG\.senha(?!\.length)/);
 });

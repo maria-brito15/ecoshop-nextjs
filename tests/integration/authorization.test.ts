@@ -181,21 +181,21 @@ test("REQ-AUTZ-05: /api/usuarios/[id]: the user themselves or ADMIN; deleting is
 });
 
 /**
- * REQ-AUTZ-07: "negar por padrão" como guarda de regressão.
+ * REQ-AUTZ-07: "deny by default" as a regression guard.
  *
- * Não existe tabela central de políticas por rota (ADR-0017 decidiu
- * deliberadamente que a autorização mora no handler, não no middleware).
- * Este teste supre a falta de uma tabela central fazendo o equivalente por
- * análise estática: percorre todo `app/api/**\/route.ts`, acha cada handler
- * exportado (GET/POST/PUT/DELETE/PATCH) e falha se o handler não chama
- * `requireAuth`/`requireAdmin`/`getSession` E não está na lista explícita de
- * rotas públicas abaixo. Uma rota nova sem nenhuma das duas coisas quebra
- * este teste — não fica pública "por acidente".
+ * There is no central per-route policy table (ADR-0017 deliberately decided
+ * that authorization lives in the handler, not in the middleware).
+ * This test makes up for the missing central table by doing the equivalent
+ * through static analysis: it walks every `app/api/**\/route.ts`, finds each
+ * exported handler (GET/POST/PUT/DELETE/PATCH) and fails if the handler does not call
+ * `requireAuth`/`requireAdmin`/`getSession` AND is not in the explicit list of
+ * public routes below. A new route with neither breaks this test — it does
+ * not become public "by accident".
  */
 test("REQ-AUTZ-07: every API route declares its access policy (explicit authentication, or public on the allowlist)", () => {
   const API_DIR = path.join(process.cwd(), "app", "api");
 
-  // Rotas intencionalmente públicas (leitura do catálogo, login, cadastro,
+  // Intentionally public routes (catalog reads, login, registration,
   // logout e health-check). Qualquer outra precisa chamar um guard.
   const PUBLIC_ROUTES = new Set([
     "health/route.ts:GET",
@@ -229,7 +229,7 @@ test("REQ-AUTZ-07: every API route declares its access policy (explicit authenti
     return result;
   }
 
-  /** Extrai o corpo (entre chaves balanceadas) de uma função a partir do índice do seu "{" inicial. */
+  /** Extracts the body (between balanced braces) of a function from the index of its opening "{". */
   function bodyFrom(source: string, openBraceIndex: number): string {
     let depth = 0;
     for (let i = openBraceIndex; i < source.length; i++) {
@@ -243,10 +243,10 @@ test("REQ-AUTZ-07: every API route declares its access policy (explicit authenti
   }
 
   /**
-   * Acha o "{" que abre o CORPO da função (não o de uma desestruturação de
-   * parâmetro, ex. `{ params }: { params: Promise<{ id: string }> }`).
-   * Conta parênteses a partir do primeiro "(" após o nome da função até seu
-   * fechamento, e só então procura o próximo "{" — esse é o corpo real.
+   * Finds the "{" that opens the function BODY (not that of a parameter
+   * destructuring, e.g. `{ params }: { params: Promise<{ id: string }> }`).
+   * Counts parentheses from the first "(" after the function name to its
+   * closing, and only then looks for the next "{" — that is the real body.
    */
   function handlerBody(source: string, functionNameIndex: number): string {
     const openParen = source.indexOf("(", functionNameIndex);

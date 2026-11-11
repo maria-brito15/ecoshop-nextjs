@@ -1,9 +1,9 @@
 /**
- * Operação segura (spec 008): configuração de entrega versionada no repositório.
+ * Safe operation (spec 008): delivery configuration versioned in the repository.
  *
- * Testes estáticos: leem compose, Dockerfile, workflow e script de deploy. O que
- * exige Docker ou um servidor (subir de fato, reverter de fato) roda no CI ou é
- * registrado como verificação manual em `docs/capabilities/operacao/status.md`.
+ * Static tests: they read the compose file, Dockerfile, workflow and deploy script. What
+ * requires Docker or a server (actually starting, actually rolling back) runs in CI or is
+ * recorded as manual verification in `docs/capabilities/operacao/status.md`.
  */
 import { closeConnections } from "./helpers";
 import test, { after } from "node:test";
@@ -13,7 +13,7 @@ import nextConfig from "@/next.config";
 
 after(closeConnections);
 
-/** Texto do arquivo sem as linhas de comentário (um comentário pode citar `:-` ou portas de propósito). */
+/** File text without the comment lines (a comment may cite `:-` or ports on purpose). */
 function withoutComments(file: string): string {
   return readFileSync(file, "utf8")
     .split("\n")
@@ -116,10 +116,10 @@ test("REQ-OPS-10: the deploy job uses native ssh/scp with a verified host, no th
 });
 
 // ---------------------------------------------------------------------------
-// REQ-OPS-12: cabeçalhos de segurança
+// REQ-OPS-12: security headers
 // ---------------------------------------------------------------------------
 
-/** Executa `fn` com `NODE_ENV` alterado e restaura no final. */
+/** Runs `fn` with `NODE_ENV` changed and restores it at the end. */
 async function comNodeEnv(value: string, fn: () => Promise<void>) {
   const env = process.env as Record<string, string | undefined>;
   const previous = env.NODE_ENV;
@@ -167,7 +167,7 @@ test("REQ-OPS-13: every base image (Dockerfile and compose) is pinned by digest"
   for (const from of froms) assert.match(from, /@sha256:[0-9a-f]{64}/, from);
 
   for (const text of [COMPOSE_BASE, COMPOSE_PROD]) {
-    // A imagem da própria aplicação (variável) é identificada por tag de commit, não por digest.
+    // The application's own image (a variable) is identified by commit tag, not by digest.
     const images = (text.match(/^\s*image:\s*\S+/gm) ?? []).filter((l) => !l.includes("${"));
     assert.ok(images.length >= 2, "esperava postgres e redis");
     for (const image of images) assert.match(image, /@sha256:[0-9a-f]{64}/, image);

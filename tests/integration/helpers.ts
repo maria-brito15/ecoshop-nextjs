@@ -1,8 +1,8 @@
 // tests/integration/helpers.ts
-// Utilitários dos testes de integração (ADR-0016): ambiente, requisições, sessão e dublês.
-// Requer DATABASE_URL (Postgres com migrations aplicadas) e REDIS_URL (Redis).
-// IMPORTANTE: este arquivo deve ser o PRIMEIRO import de cada teste: ele define variáveis
-// de ambiente lidas na carga dos módulos da aplicação (ex.: lib/ai/providers/azure-vision).
+// Integration test utilities (ADR-0016): environment, requests, session and doubles.
+// Requires DATABASE_URL (Postgres with migrations applied) and REDIS_URL (Redis).
+// IMPORTANT: this file must be the FIRST import of every test: it defines environment variables
+// read when the application modules load (e.g. lib/ai/providers/azure-vision).
 
 process.env.JWT_SECRET ??= "test-secret-at-least-32-characters-long";
 process.env.AZURE_VISION_ENDPOINT = "https://azure.test/predict";
@@ -16,7 +16,7 @@ import { redis } from "@/lib/redis";
 
 export type Type = "CLIENTE" | "MARCA" | "ADMIN";
 
-/** Sufixo único por execução: evita colisão entre arquivos e execuções. */
+/** Unique suffix per run: avoids collisions between files and runs. */
 export const RUN = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 export const email = (name: string) => `${name}-${RUN}@test.local`;
 
@@ -36,7 +36,7 @@ export async function cookieDe(u: { id: number; email: string; tipo: Type }) {
 }
 
 let seq = 0;
-/** IP simulado distinto por requisição, para o rate limit não vazar entre testes. */
+/** Distinct simulated IP per request, so the rate limit does not leak between tests. */
 export const newIp = () =>
   `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${++seq % 250}`;
 
@@ -69,7 +69,7 @@ export const ctx = (id: number | string) => ({
   params: Promise.resolve({ id: String(id) }),
 });
 
-/** Substitui o fetch global (Azure/Gemini) por um dublê. Retorna a função de restauração. */
+/** Replaces the global fetch (Azure/Gemini) with a double. Returns the restore function. */
 export function stubFetch(
   handler: (url: string, init?: RequestInit) => Response | Promise<Response>,
 ) {

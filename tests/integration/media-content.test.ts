@@ -1,6 +1,6 @@
 /**
- * Spec 014: mídia de produto — conteúdo real da imagem e gravação exclusiva.
- * Não precisa de banco: usa `gravarFoto` com uma pasta temporária.
+ * Spec 014: product media — real image content and exclusive write.
+ * Needs no database: uses `gravarFoto` with a temporary folder.
  */
 import { closeConnections } from "./helpers";
 import { test, after } from "node:test";
@@ -34,7 +34,7 @@ test("REQ-MIDIA-06: detectImageType recognizes JPEG, PNG, GIF and WebP by byte s
   assert.equal(detectImageType(HTML), null);
   assert.equal(detectImageType(Buffer.alloc(0)), null);
   assert.equal(detectImageType(Buffer.from([0xff, 0xd8])), null, "curto demais");
-  // RIFF que não é WebP (ex.: WAV)
+  // RIFF that is not WebP (e.g. WAV)
   assert.equal(detectImageType(Buffer.concat([Buffer.from("RIFF"), Buffer.from([4, 0, 0, 0]), Buffer.from("WAVEfmt ")])), null);
 });
 

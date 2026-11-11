@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// PostToolUse (Edit|Write): lembra qual capacidade/ADR o arquivo editado afeta.
+// PostToolUse (Edit|Write): reminds which capability/ADR the edited file affects.
 import { execFileSync } from "node:child_process";
 import { relative } from "node:path";
 import { entrada, contexto } from "./lib.mjs";

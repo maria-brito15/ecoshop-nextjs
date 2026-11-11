@@ -1,6 +1,6 @@
-// Roteiro executado como processo filho por redis-and-cache.test.ts (não é um teste:
-// o nome não termina em .test.ts). Aponta para um Redis INEXISTENTE e mede quanto
-// tempo cada operação leva para falhar.
+// Script run as a child process by redis-and-cache.test.ts (not a test:
+// its name does not end in .test.ts). Points at a NON-EXISTENT Redis and measures how
+// long each operation takes to fail.
 process.env.REDIS_URL = "redis://127.0.0.1:1";
 
 import { redisGet, redisSet, redisDel, redisDelPattern } from "@/lib/redis";

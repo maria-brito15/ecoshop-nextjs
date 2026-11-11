@@ -1,10 +1,10 @@
 /**
- * Spec 009: entrada validada e erros explícitos (Constitution Art. VI, VII e VIII).
+ * Spec 009: validated input and explicit errors (Constitution Art. VI, VII and VIII).
  *
- * A maior parte NÃO precisa de banco: o mapeador de erros, `parseId`, os schemas,
- * `?next=`, os timeouts e as rotas que respondem 400 antes de tocar o banco.
- * Os testes do bloco "COM BANCO" (404/409 de ponta a ponta, busca sem diferença
- * de caixa) precisam de Postgres e rodam no CI.
+ * Most of it does NOT need a database: the error mapper, `parseId`, the schemas,
+ * `?next=`, the timeouts and the routes that answer 400 before touching the database.
+ * The tests in the "WITH DATABASE" block (end-to-end 404/409, case-insensitive
+ * search) need Postgres and run in CI.
  */
 import {
   email,
@@ -229,7 +229,7 @@ test("REQ-USR-06: the session is checked before the id (a visitor gets 403, not 
 });
 
 // ---------------------------------------------------------------------------
-// E-mail e senha — REQ-AUTH-15 e REQ-AUTH-16
+// Email and password — REQ-AUTH-15 and REQ-AUTH-16
 // ---------------------------------------------------------------------------
 
 test("REQ-AUTH-15: the schemas normalize the email (spaces and case) on login, registration and update", () => {
@@ -251,7 +251,7 @@ test("REQ-AUTH-16: a password above 72 bytes is refused; 72 bytes is accepted (c
   const base = { nome: "Fulano", email: "a@b.com" };
   assert.ok(publicRegistrationSchema.safeParse({ ...base, senha: "a".repeat(72) }).success);
   assert.ok(!publicRegistrationSchema.safeParse({ ...base, senha: "a".repeat(73) }).success);
-  // "ç" ocupa 2 bytes em UTF-8: 37 × 2 = 74 bytes, mas só 37 caracteres
+  // "ç" takes 2 bytes in UTF-8: 37 × 2 = 74 bytes, but only 37 characters
   assert.ok(!publicRegistrationSchema.safeParse({ ...base, senha: "ç".repeat(37) }).success);
   assert.ok(publicRegistrationSchema.safeParse({ ...base, senha: "ç".repeat(36) }).success);
   assert.ok(!adminRegistrationSchema.safeParse({ ...base, senha: "a".repeat(73) }).success);
@@ -259,7 +259,7 @@ test("REQ-AUTH-16: a password above 72 bytes is refused; 72 bytes is accepted (c
 });
 
 // ---------------------------------------------------------------------------
-// ?next= do login — REQ-AUTH-17
+// login ?next= — REQ-AUTH-17
 // ---------------------------------------------------------------------------
 
 test("REQ-AUTH-17: localPathOrRoot accepts a local path and sends everything else to /", () => {
@@ -317,7 +317,7 @@ test("REQ-CHAT-08: the Gemini key goes in the x-goog-api-key header, never in th
     assert.ok(!usedUrl.includes("key="), "the key must not be in the URL");
     assert.equal(headers["x-goog-api-key"], "chave-gemini-de-teste-123");
 
-    // o mesmo vale para o provedor usado pelo EcoScan
+    // the same applies to the provider used by EcoScan
     usedUrl = "";
     headers = {};
     await generateText("prompt");
@@ -359,14 +359,14 @@ test("REQ-CHAT-09: if the Gemini call throws, the chat returns 502 (not 500)", a
 // Timeouts — REQ-SCAN-09
 // ---------------------------------------------------------------------------
 
-/** `fetch` que nunca responde, mas rejeita quando o `signal` aborta. */
+/** `fetch` that never answers, but rejects when the `signal` aborts. */
 const fetchHangingUntilAborted = (_url: string, init?: RequestInit) =>
   new Promise<Response>((_, rejects) => {
-    if (!init?.signal) return; // sem signal fica pendurado: o corredor abaixo acusa a falha
+    if (!init?.signal) return; // without a signal it hangs: the racer below reports the failure
     init.signal.addEventListener("abort", () => rejects(init.signal!.reason));
   });
 
-/** Falha claramente (em vez de travar o teste) se a promessa não terminar. */
+/** Fails clearly (instead of hanging the test) if the promise does not finish. */
 const withTimeout = <T,>(promise: Promise<T>, ms = 2000) =>
   Promise.race([
     promise,
@@ -426,7 +426,7 @@ test("REQ-SCAN-05: if the Gemini network fails, the scan returns the fallback an
 });
 
 // ===========================================================================
-// COM BANCO — rodam no CI (precisam de Postgres)
+// WITH DATABASE — run in CI (need Postgres)
 // ===========================================================================
 
 test("REQ-USR-07: PUT of an unknown user by ADMIN returns 404", async () => {

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // scripts/sdd/trace-check.mjs — rastreabilidade REQ ↔ teste ↔ status.
 // Regras (Constitution, Art. II e XVI):
-//  1. todo REQ citado em teste existe numa spec;
-//  2. REQ ✅ precisa de teste que roda (não todo/skip) ou de evidência "manual: AAAA-MM-DD …";
-//  3. REQ ❌ não pode ter teste ativo passando por inteiro (status desatualizado);
+//  1. every REQ cited in a test exists in a spec;
+//  2. a ✅ REQ needs a test that runs (not todo/skip) or "manual: YYYY-MM-DD …" evidence;
+//  3. a ❌ REQ cannot have an active test passing entirely (outdated status);
 //  4. tarefas de specs/NNN citam REQ existentes.
-// Opções: --write  reescreve docs/capabilities/README.md ; --stale  lista pendências antigas (aviso).
+// Options: --write  rewrites docs/capabilities/README.md ; --stale  lists old pending items (warning).
 import { join } from "node:path";
 import { writeFileSync } from "node:fs";
 import {
@@ -30,7 +30,7 @@ for (const arq of listar(join(RAIZ, "tests"), (p) => p.endsWith(".test.ts"))) {
   linhas.forEach((l, i) => {
     if (!/^\s*test\(/.test(l)) return;
     const ids = l.match(REQ_RE) ?? [];
-    // o modificador pode estar na mesma linha ou na seguinte (títulos longos)
+    // the modifier may be on the same line or the next one (long titles)
     const janela = linhas.slice(i, i + 2).join(" ");
     const inativo = /\{\s*(todo|skip)\b/.test(janela);
     for (const id of ids) {

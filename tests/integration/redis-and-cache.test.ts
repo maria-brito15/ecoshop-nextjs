@@ -1,8 +1,8 @@
 /**
- * Spec 011: Redis opcional de verdade, rate limit e cache (ADR-0020; Constitution Art. VIII e IX).
+ * Spec 011: truly optional Redis, rate limit and cache (ADR-0020; Constitution Art. VIII and IX).
  *
- * Não precisam de banco. Os que usam o Redis real (contagem atômica) precisam de
- * um Redis em REDIS_URL; o resto roda sem nenhum.
+ * They need no database. Those that use the real Redis (atomic counting) need
+ * a Redis at REDIS_URL; the rest run without any.
  */
 import { closeConnections, req } from "./helpers";
 import { test, after } from "node:test";
@@ -26,7 +26,7 @@ after(closeConnections);
 const single = (base: string) => `${base}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
 // ---------------------------------------------------------------------------
-// REQ-OPS-14: Redis fora do ar falha rápido (não pendura a requisição)
+// REQ-OPS-14: Redis being down fails fast (does not hang the request)
 // ---------------------------------------------------------------------------
 
 test("REQ-OPS-14: withTimeout releases the waiter when the command does not respond", async () => {
@@ -40,7 +40,7 @@ test("REQ-OPS-14: with Redis down, cache and rate limit respond fast and without
   const child = spawnSync(
     process.execPath,
     ["--import", "tsx", "tests/integration/_redis-down.script.ts"],
-    // a inicialização do tsx pode levar dezenas de segundos em disco lento
+    // tsx startup can take tens of seconds on a slow disk
     { cwd: process.cwd(), encoding: "utf8", timeout: 150_000 },
   );
   assert.equal(child.status, 0, child.stderr);
@@ -54,13 +54,13 @@ ${child.stderr}`);
   for (const ms of r.times) {
     assert.ok(ms < 2500, `operation took ${ms} ms: Redis being down must not hang the request`);
   }
-  // REQ-OPS-15: sem Redis, o rate limit continua valendo (memória local)
+  // REQ-OPS-15: without Redis, the rate limit still holds (local memory)
   assert.equal(r.limit1.blocked, false);
   assert.equal(r.limit2.blocked, true, "the second access exceeds limit 1 and must be blocked");
 });
 
 // ---------------------------------------------------------------------------
-// REQ-OPS-15: rate limit atômico e com reserva em memória
+// REQ-OPS-15: atomic rate limit with in-memory reservation
 // ---------------------------------------------------------------------------
 
 test("REQ-OPS-15: the Redis count is born with a TTL (SET NX EX + INCR), no immortal key", async () => {
@@ -103,7 +103,7 @@ test("REQ-OPS-15: the in-memory counter resets when the window ends", async () =
 });
 
 // ---------------------------------------------------------------------------
-// REQ-OPS-16: IP do cliente atrás de proxy confiável
+// REQ-OPS-16: client IP behind a trusted proxy
 // ---------------------------------------------------------------------------
 
 const comXff = (value?: string) =>
@@ -152,7 +152,7 @@ test("REQ-OPS-16: TRUST_PROXY_HOPS sets the default and an invalid value falls b
 });
 
 // ---------------------------------------------------------------------------
-// REQ-CAT-10: chave de cache da listagem
+// REQ-CAT-10: listing cache key
 // ---------------------------------------------------------------------------
 
 const keyFor = (query: Record<string, string>) =>
@@ -216,7 +216,7 @@ test("REQ-OPS-17: different keys do not mix and a failed fetch does not get stuc
 });
 
 // ---------------------------------------------------------------------------
-// REQ-OPS-01 (emenda): saúde com Redis opcional
+// REQ-OPS-01 (amendment): health with optional Redis
 // ---------------------------------------------------------------------------
 
 test("REQ-OPS-01: database and Redis up → ok (200); only Redis down → degraded (200); database down → unavailable (503)", () => {

@@ -1,4 +1,4 @@
-// Utilitário dos hooks do Claude Code: lê o JSON do stdin e emite decisões.
+// Claude Code hook utility: reads the JSON from stdin and emits decisions.
 export async function entrada() {
   let s = "";
   for await (const c of process.stdin) s += c;

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// PreToolUse (Edit|Write): pede confirmação ao editar a Constitution, ADR aceito ou o baseline congelado.
+// PreToolUse (Edit|Write): asks for confirmation when editing the Constitution, an accepted ADR or the frozen baseline.
 import { readFileSync, existsSync } from "node:fs";
 import { relative } from "node:path";
 import { entrada, pedirConfirmacao } from "./lib.mjs";

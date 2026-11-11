@@ -1,4 +1,4 @@
-// scripts/sdd/lib.mjs — utilitários compartilhados pelos validadores de SDD (Node puro, sem dependências).
+// scripts/sdd/lib.mjs — utilities shared by the SDD validators (plain Node, no dependencies).
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
@@ -23,7 +23,7 @@ export function listar(dir, filtro = () => true) {
   return out;
 }
 
-/** Linhas de tabela markdown abaixo de um cabeçalho "## ..." que contém `titulo`. */
+/** Markdown table rows below a "## ..." heading that contains `titulo`. */
 export function tabela(md, titulo) {
   const linhas = md.split("\n");
   const i = linhas.findIndex(
@@ -41,7 +41,7 @@ export function tabela(md, titulo) {
         .map((c) => c.trim()),
     );
   }
-  return rows.slice(1); // descarta o cabeçalho
+  return rows.slice(1); // drops the header
 }
 
 export const temSecao = (md, nome) =>
@@ -60,8 +60,8 @@ export function capacidades() {
 
 export function lerAdrs() {
   return listar(
-    // [\\/]: a aplicação roda em Linux (Docker/CI), mas quem desenvolve pode
-    // estar no Windows, onde `listar` devolve caminhos com "\" em vez de "/".
+    // [\\/]: the application runs on Linux (Docker/CI), but whoever develops may
+    // be on Windows, where `listar` returns paths with "\" instead of "/".
     ADR_DIR,
     (p) => /[\\/]\d{4}-.*\.md$/.test(p) && !p.includes("0000-template"),
   ).map((p) => {

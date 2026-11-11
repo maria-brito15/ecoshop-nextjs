@@ -1,6 +1,6 @@
 /**
- * Observabilidade mínima (Constitution Art. XIII.1; REQ-OPS-19): erro 5xx deixa
- * rastro estruturado, sem segredo. Não precisa de banco nem de Redis.
+ * Minimal observability (Constitution Art. XIII.1; REQ-OPS-19): a 5xx error leaves a
+ * structured trace, with no secret. Needs neither a database nor Redis.
  */
 import { closeConnections } from "./helpers";
 import { test, after, mock } from "node:test";
@@ -10,7 +10,7 @@ import { ERRORS } from "@/lib/http/responses";
 
 after(closeConnections);
 
-/** Captura o que o log escreve (uma linha JSON por chamada) enquanto `fn` roda. */
+/** Captures what the log writes (one JSON line per call) while `fn` runs. */
 function capture(method: "log" | "warn" | "error", fn: () => void): Record<string, unknown>[] {
   const spy = mock.method(console, method, () => {});
   try {

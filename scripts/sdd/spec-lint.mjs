@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// scripts/sdd/spec-lint.mjs — formato das specs de capacidade e de mudança.
-// Verifica: seções obrigatórias, IDs únicos e no prefixo da capacidade, requisitos em EARS,
+// scripts/sdd/spec-lint.mjs — format of capability specs and change specs.
+// Checks: required sections, unique IDs with the capability prefix, EARS requirements,
 // ADRs citados existentes, spec.md ↔ status.md consistentes, specs/NNN completas.
 import { existsSync } from "node:fs";
 import { join, basename } from "node:path";
@@ -83,14 +83,14 @@ for (const cap of capacidades()) {
       erros.push(`${onde}/spec.md cita ${m[0]}, que não existe`);
 }
 
-// specs de mudança (Spec Kit)
+// change specs (Spec Kit)
 for (const spec of listar(
   join(RAIZ, "specs"),
   (p) => basename(p) === "spec.md",
 )) {
   const pasta = spec.slice(0, -"/spec.md".length);
   // basename() entende tanto "/" quanto "\" (Windows); pasta.lastIndexOf("/")
-  // sozinho não achava nada em caminhos Windows e devolvia o caminho inteiro.
+  // alone found nothing on Windows paths and returned the whole path.
   const nome = basename(pasta);
   if (!/^\d{3}-/.test(nome))
     erros.push(`specs/${nome}: o nome deve começar com NNN-`);

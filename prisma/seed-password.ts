@@ -1,18 +1,18 @@
 // prisma/seed-password.ts
 
 /**
- * Validação compartilhada das senhas lidas pelos seeds (REQ-OPS-09).
+ * Shared validation of the passwords read by the seeds (REQ-OPS-09).
  *
- * Os seeds não têm senha embutida: sem a variável (ou com uma senha curta) o
- * processo encerra **antes** de abrir conexão com o banco, sem gravar nada.
+ * The seeds have no embedded password: without the variable (or with a short
+ * password) the process exits **before** opening a database connection, writing nothing.
  */
 
 const MIN_LENGTH = 12;
 
 /**
- * @param variable - nome da variável de ambiente (para a mensagem de erro)
- * @param value - valor lido do ambiente
- * @returns a senha, se válida; caso contrário encerra o processo com código 1
+ * @param variable - name of the environment variable (for the error message)
+ * @param value - value read from the environment
+ * @returns the password, if valid; otherwise exits the process with code 1
  */
 export function requireSeedPassword(
   variable: string,

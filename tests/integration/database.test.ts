@@ -1,6 +1,6 @@
 /**
- * Spec 013: banco de dados (índices e exclusão de produto com vínculos).
- * TODOS estes testes precisam de Postgres (rodam no CI).
+ * Spec 013: database (indexes and product deletion with links).
+ * ALL of these tests need Postgres (they run in CI).
  */
 import { email, createUserDirectly, cookieDe, req, ctx, closeConnections } from "./helpers";
 import { test, after } from "node:test";

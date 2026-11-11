@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Stop: roda as validações rápidas de SDD e avisa se algo ficou inconsistente (não bloqueia).
+// Stop: runs the quick SDD validations and warns if anything is inconsistent (does not block).
 import { spawnSync } from "node:child_process";
 const falhas = [];
 for (const s of ["spec-lint", "trace-check", "adr-index"]) {

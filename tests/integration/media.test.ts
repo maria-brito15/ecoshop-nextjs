@@ -1,4 +1,4 @@
-// Capacidade MIDIA — docs/capabilities/midia-de-produto/spec.md
+// MIDIA capability — docs/capabilities/midia-de-produto/spec.md
 import {
   RUN,
   email,
@@ -19,7 +19,7 @@ import {
   DELETE as deletarFoto,
 } from "@/app/api/produtos/[id]/fotos/route";
 
-/** Bytes que começam com a assinatura de um JPEG (REQ-MIDIA-06 valida o conteúdo, não só a extensão). */
+/** Bytes that start with a JPEG signature (REQ-MIDIA-06 validates the content, not just the extension). */
 const VALID_JPEG = (text: string) =>
   Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.from(text)]);
 
@@ -51,7 +51,7 @@ before(async () => {
   productId = product.id;
 });
 
-// Limpa os arquivos reais gravados em public/data_fotos durante os testes.
+// Cleans up the real files written to public/data_fotos during the tests.
 after(async () => {
   for (const name of createdFiles) {
     await fs
