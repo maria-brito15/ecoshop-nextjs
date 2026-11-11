@@ -11,8 +11,8 @@ import type { NextConfig } from "next";
  *   HTTPS. Em HTTP o navegador ignora o cabeçalho.
  * - Sem Content-Security-Policy: fica para uma spec própria.
  */
-function cabecalhosDeSeguranca() {
-  const cabecalhos = [
+function securityHeaders() {
+  const headers = [
     { key: "X-Content-Type-Options", value: "nosniff" },
     { key: "X-Frame-Options", value: "DENY" },
     { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -22,12 +22,12 @@ function cabecalhosDeSeguranca() {
     },
   ];
   if (process.env.NODE_ENV === "production") {
-    cabecalhos.push({
+    headers.push({
       key: "Strict-Transport-Security",
       value: "max-age=300",
     });
   }
-  return cabecalhos;
+  return headers;
 }
 
 const nextConfig: NextConfig = {
@@ -41,7 +41,7 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
-    return [{ source: "/:path*", headers: cabecalhosDeSeguranca() }];
+    return [{ source: "/:path*", headers: securityHeaders() }];
   },
 };
 

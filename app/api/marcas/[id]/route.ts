@@ -10,7 +10,7 @@
  * PUT /api/marcas/{id} - Atualiza marca (requer ADMIN)
  * DELETE /api/marcas/{id} - Deleta marca (requer ADMIN)
  *
- * @see services/marca.service.ts - Lógica de negócio
+ * @see services/brand.service.ts - Lógica de negócio
  * ============================================================================
  */
 
@@ -19,12 +19,12 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { ERRORS, mapError } from "@/lib/http/responses";
 import { routeId } from "@/lib/http/params";
-import { updateBrandSchema } from "@/lib/schemas/marca";
+import { updateBrandSchema } from "@/lib/schemas/brand";
 import {
   getBrand,
   updateBrand,
   deleteBrand,
-} from "@/services/marca.service";
+} from "@/services/brand.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**

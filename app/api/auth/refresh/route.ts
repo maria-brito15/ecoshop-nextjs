@@ -18,7 +18,7 @@
  * mantém o comportamento antigo — com um acesso válido, reemite o JWT se o papel
  * do usuário mudou no banco.
  *
- * @see services/sessao.service.ts
+ * @see services/session.service.ts
  * ============================================================================
  */
 
@@ -32,12 +32,12 @@ import {
   setRefreshCookie,
   clearSessionCookies,
 } from "@/lib/auth";
-import { REFRESH_COOKIE } from "@/lib/auth/constantes";
+import { REFRESH_COOKIE } from "@/lib/auth/constants";
 import { invalidateKey, currentUserKey } from "@/lib/cache";
 import { ERRORS } from "@/lib/http/responses";
 import { localPathOrRoot } from "@/lib/http/next-url";
-import { getIdentity } from "@/services/usuario.service";
-import { refreshSession, type IssuedSession } from "@/services/sessao.service";
+import { getIdentity } from "@/services/user.service";
+import { refreshSession, type IssuedSession } from "@/services/session.service";
 
 /** Cookies da renovação concluída. */
 function applySession(

@@ -23,7 +23,7 @@ ADR-0021 (substitui o ADR-0007).
 
 ## Verificação
 
-`tests/integration/sessao.test.ts` (22 testes; os de HTTP com banco **não foram executados**).
+`tests/integration/session.test.ts` (22 testes; os de HTTP com banco **não foram executados**).
 
 ## Perguntas em aberto
 

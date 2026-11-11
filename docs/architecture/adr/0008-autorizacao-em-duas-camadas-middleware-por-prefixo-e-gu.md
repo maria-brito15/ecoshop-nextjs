@@ -8,7 +8,7 @@
 - Substituído por: ADR-0017
 
 ## Contexto
-Evidência: `middleware.ts` + `config/rotas-protegidas.ts` (por prefixo) e `app/_middleware/auth.ts` (`requireAuth`/`requireAdmin`). Divergiam: o middleware exigia ADMIN em `/api/usuarios/*`, enquanto o handler permitia o próprio usuário (D1).
+Evidência: `middleware.ts` + `config/protected-routes.ts` (por prefixo) e `app/_middleware/auth.ts` (`requireAuth`/`requireAdmin`). Divergiam: o middleware exigia ADMIN em `/api/usuarios/*`, enquanto o handler permitia o próprio usuário (D1).
 
 ## Problema
 Onde mora a decisão de quem pode o quê?

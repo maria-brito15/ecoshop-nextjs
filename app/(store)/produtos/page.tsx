@@ -17,8 +17,8 @@
  * - Skeletons durante carregamento
  * - Lazy loading com Intersection Observer
  *
- * @see lib/hooks/useProdutos.ts - Hook useListarProdutos
- * @see lib/hooks/useCategorias.ts - Hook useListarCategorias
+ * @see lib/hooks/useProducts.ts - Hook useListarProdutos
+ * @see lib/hooks/useCategories.ts - Hook useListarCategorias
  * ============================================================================
  */
 
@@ -27,9 +27,9 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useListProducts, type ProductOrder } from "@/lib/hooks/useProdutos";
-import { useListCategories } from "@/lib/hooks/useCategorias";
-import { useListBrands } from "@/lib/hooks/useMarcas";
+import { useListProducts, type ProductOrder } from "@/lib/hooks/useProducts";
+import { useListCategories } from "@/lib/hooks/useCategories";
+import { useListBrands } from "@/lib/hooks/useBrands";
 import type { Produto, ProdutoCertificado } from "@/types/api";
 
 // ----------------------------------------------------------------------------

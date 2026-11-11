@@ -17,8 +17,8 @@
 
 ## Comportamento atual (fato, com evidência)
 
-- `lib/schemas/produto.ts` (`listarProdutosQuerySchema`): sem `marcaId`, `precoMax`, `sort`.
-- `services/produto.service.ts::listarProdutos`: `orderBy: { id: "asc" }` fixo; `where` só filtra `categoriaId`/`nome`.
+- `lib/schemas/product.ts` (`listarProdutosQuerySchema`): sem `marcaId`, `precoMax`, `sort`.
+- `services/product.service.ts::listarProdutos`: `orderBy: { id: "asc" }` fixo; `where` só filtra `categoriaId`/`nome`.
 - `app/(store)/produtos/page.tsx:270-283` (antes da mudança): ordenava e filtrava por preço com `Array.prototype.sort`/`.filter` sobre os 12 itens já devolvidos pela página atual — e o contador "N produtos encontrados" mostrava esse N local, não o total real.
 - `docs/capabilities/catalogo/status.md`: REQ-CAT-06/07 ❌.
 
@@ -44,7 +44,7 @@
 
 ## Interfaces afetadas
 
-`GET /api/produtos` (query `marcaId`, `precoMax`, `sort`) · `lib/hooks/useProdutos.ts` (`useListarProdutos` ganha um 5º parâmetro opcional) · `app/(store)/produtos/page.tsx` (filtro por marca na UI; remove a ordenação/filtro client-side).
+`GET /api/produtos` (query `marcaId`, `precoMax`, `sort`) · `lib/hooks/useProducts.ts` (`useListarProdutos` ganha um 5º parâmetro opcional) · `app/(store)/produtos/page.tsx` (filtro por marca na UI; remove a ordenação/filtro client-side).
 
 ## Delta na spec viva
 

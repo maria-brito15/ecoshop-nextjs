@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { TipoUsuario } from "@/types/api";
-import { fetchSession, endClientSession } from "@/lib/hooks/sessao";
+import { fetchSession, endClientSession } from "@/lib/hooks/session";
 
 type SessionUser = {
   id: number;

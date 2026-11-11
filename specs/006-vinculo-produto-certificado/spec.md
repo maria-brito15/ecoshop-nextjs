@@ -17,8 +17,8 @@
 
 ## Comportamento atual (fato, com evidência)
 
-- `lib/schemas/produto.ts` (`atualizarProdutoSchema`): sem `certificadoIds`.
-- `services/produto.service.ts::atualizarProduto`: só repassa os campos escalares do produto ao Prisma.
+- `lib/schemas/product.ts` (`atualizarProdutoSchema`): sem `certificadoIds`.
+- `services/product.service.ts::atualizarProduto`: só repassa os campos escalares do produto ao Prisma.
 - `prisma/seed.ts`: é o único lugar que cria linhas em `ProdutoCertificado`.
 - `docs/capabilities/gestao-de-produtos/status.md`: REQ-PROD-05 (implícito, sem linha própria — ver nota).
 

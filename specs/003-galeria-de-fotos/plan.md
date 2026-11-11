@@ -5,7 +5,7 @@
 
 ## Abordagem técnica
 
-A API e o armazenamento já suportam várias fotos por produto (ADR-0011, REQ-MIDIA-01/02/03, todos ✅). Só a tela não usava isso. `app/(store)/produtos/[id]/page.tsx` já chama `useBuscarProduto`; adiciono `useListarFotos(Number(id))` (hook já existente, sem mudança em `lib/hooks/useFotos.ts`) e um estado `fotoSelecionada`. A imagem principal passa a ser `fotoSelecionada ?? produto.fotoUrl ?? fotos[0]?.url ?? null`, e uma faixa de miniaturas (uma por foto) aparece abaixo da imagem principal quando `fotos.length > 0`; clicar numa miniatura troca `fotoSelecionada`.
+A API e o armazenamento já suportam várias fotos por produto (ADR-0011, REQ-MIDIA-01/02/03, todos ✅). Só a tela não usava isso. `app/(store)/produtos/[id]/page.tsx` já chama `useBuscarProduto`; adiciono `useListarFotos(Number(id))` (hook já existente, sem mudança em `lib/hooks/usePhotos.ts`) e um estado `fotoSelecionada`. A imagem principal passa a ser `fotoSelecionada ?? produto.fotoUrl ?? fotos[0]?.url ?? null`, e uma faixa de miniaturas (uma por foto) aparece abaixo da imagem principal quando `fotos.length > 0`; clicar numa miniatura troca `fotoSelecionada`.
 
 Alternativa descartada: um componente de carrossel de terceiros. Rejeitada por ser um add-on desproporcional para uma galeria de miniaturas simples, e por introduzir uma dependência nova sem necessidade.
 

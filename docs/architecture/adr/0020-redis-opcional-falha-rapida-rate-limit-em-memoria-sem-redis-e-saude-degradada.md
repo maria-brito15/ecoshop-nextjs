@@ -49,8 +49,8 @@ Mantém o Redis opcional (diferencial do projeto) sem custar disponibilidade nem
 
 - Sem Redis, cada processo conta sozinho; reiniciar zera a contagem.
 - `/api/health` passa a ter o campo `status` ("ok", "degradado", "indisponivel"), além de `ok` e `services`.
-- Afeta: `lib/redis.ts`, `lib/rate-limit.ts`, `lib/cache/**`, `services/saude.service.ts`, `app/api/health/route.ts`, `services/produto.service.ts`, `lib/schemas/produto.ts`.
+- Afeta: `lib/redis.ts`, `lib/rate-limit.ts`, `lib/cache/**`, `services/health.service.ts`, `app/api/health/route.ts`, `services/product.service.ts`, `lib/schemas/product.ts`.
 
 ## Verificação
 
-`tests/integration/redis-e-cache.test.ts`, incluindo um processo filho apontando para um Redis inexistente que mede o tempo de cada operação.
+`tests/integration/redis-and-cache.test.ts`, incluindo um processo filho apontando para um Redis inexistente que mede o tempo de cada operação.

@@ -5,7 +5,7 @@
       "pasta": "autorizacao",
       "codigo": [
         "middleware.ts",
-        "config/rotas-protegidas.ts",
+        "config/protected-routes.ts",
         "app/_middleware/**"
       ]
     },
@@ -17,7 +17,7 @@
         "lib/auth/**",
         "lib/rate-limit.ts",
         "app/(auth)/**",
-        "lib/schemas/usuario.ts",
+        "lib/schemas/user.ts",
         "types/auth.ts"
       ]
     },
@@ -31,8 +31,8 @@
         "app/(store)/**",
         "app/api/produtos/route.ts",
         "app/api/produtos/[id]/route.ts",
-        "services/produto.service.ts",
-        "lib/hooks/useProdutos.ts"
+        "services/product.service.ts",
+        "lib/hooks/useProducts.ts"
       ]
     },
     "PROD": {
@@ -40,8 +40,8 @@
       "codigo": [
         "app/(admin)/painel/**",
         "app/api/produtos/**",
-        "services/produto.service.ts",
-        "lib/schemas/produto.ts"
+        "services/product.service.ts",
+        "lib/schemas/product.ts"
       ]
     },
     "REF": {
@@ -50,25 +50,25 @@
         "app/api/categorias/**",
         "app/api/marcas/**",
         "app/api/certificados/**",
-        "services/categoria.service.ts",
-        "services/marca.service.ts",
-        "services/certificado.service.ts",
-        "lib/schemas/categoria.ts",
-        "lib/schemas/marca.ts",
-        "lib/schemas/certificado.ts"
+        "services/category.service.ts",
+        "services/brand.service.ts",
+        "services/certificate.service.ts",
+        "lib/schemas/category.ts",
+        "lib/schemas/brand.ts",
+        "lib/schemas/certificate.ts"
       ]
     },
     "MIDIA": {
       "pasta": "midia-de-produto",
       "codigo": [
         "app/api/produtos/[id]/fotos/**",
-        "services/foto.service.ts",
-        "lib/hooks/useFotos.ts"
+        "services/photo.service.ts",
+        "lib/hooks/usePhotos.ts"
       ]
     },
     "USR": {
       "pasta": "gestao-de-usuarios",
-      "codigo": ["app/api/usuarios/**", "services/usuario.service.ts"]
+      "codigo": ["app/api/usuarios/**", "services/user.service.ts"]
     },
     "SCAN": {
       "pasta": "ecoscan",
@@ -83,7 +83,7 @@
       "pasta": "chat-sustentabilidade",
       "codigo": [
         "app/api/ia/chat/**",
-        "lib/schemas/ia-chat.ts",
+        "lib/schemas/ai-chat.ts",
         "lib/ai/providers/gemini-chat.ts"
       ]
     },
@@ -121,13 +121,13 @@
   },
   "sensiveis": [
     { "caminho": "middleware.ts", "adr": "ADR-0017" },
-    { "caminho": "config/rotas-protegidas.ts", "adr": "ADR-0017" },
+    { "caminho": "config/protected-routes.ts", "adr": "ADR-0017" },
     { "caminho": "app/_middleware/**", "adr": "ADR-0017" },
     { "caminho": "lib/auth/**", "adr": "ADR-0021" },
     { "caminho": "lib/cache/**", "adr": "ADR-0009" },
     { "caminho": "lib/redis.ts", "adr": "ADR-0020" },
     { "caminho": "lib/rate-limit.ts", "adr": "ADR-0020" },
-    { "caminho": "services/foto.service.ts", "adr": "ADR-0011" },
+    { "caminho": "services/photo.service.ts", "adr": "ADR-0011" },
     { "caminho": "lib/ai/**", "adr": "ADR-0012" },
     { "caminho": "Dockerfile", "adr": "ADR-0019" },
     { "caminho": "docker-compose*.yml", "adr": "ADR-0019" },

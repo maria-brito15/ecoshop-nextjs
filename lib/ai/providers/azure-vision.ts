@@ -24,7 +24,7 @@
  * ============================================================================
  */
 
-import { fetchWithTimeout } from "@/lib/http/fetch-com-timeout";
+import { fetchWithTimeout } from "@/lib/http/fetch-with-timeout";
 
 const AZURE_URL = process.env.AZURE_VISION_ENDPOINT ?? "";
 const AZURE_KEY = process.env.AZURE_VISION_KEY ?? "";

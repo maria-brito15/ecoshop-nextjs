@@ -17,7 +17,7 @@
 
 import { createHash, randomBytes } from "node:crypto";
 import { redis, withTimeout, COMMAND_TIMEOUT_MS } from "@/lib/redis";
-import { REFRESH_TOKEN_SECONDS } from "./constantes";
+import { REFRESH_TOKEN_SECONDS } from "./constants";
 
 /** Onde os tokens de renovação ficam. Lança se o armazenamento está indisponível. */
 export interface RefreshTokenStore {

@@ -27,13 +27,13 @@ A auditoria de 2026-11-11 achou, em entrada de dados e tratamento de erro:
 
 ## Comportamento atual (fato, com evidência)
 
-- `services/usuario.service.ts:100,218`, `services/marca.service.ts:115,118,143,146,216`, `services/categoria.service.ts:147`, `services/certificado.service.ts:126`: `throw new Error("<texto>")`.
+- `services/user.service.ts:100,218`, `services/brand.service.ts:115,118,143,146,216`, `services/category.service.ts:147`, `services/certificate.service.ts:126`: `throw new Error("<texto>")`.
 - `app/api/usuarios/[id]/route.ts:103,135`: `err.message.includes("P2025")`; `app/api/marcas/[id]/aprovar/route.ts`, `app/api/marcas/route.ts`, `app/api/users/route.ts`, `app/api/usuarios/route.ts`: comparação de `err.message` com strings.
 - `lib/http/responses.ts`: `mapeiaErroPrisma` também compara `err.message === "P2025"`.
 - Rotas `[id]`: `Number(id)` sem validação (produtos, usuarios, marcas, aprovar, categorias, certificados); só `fotos` checa `isNaN`.
-- `lib/schemas/usuario.ts`: e-mail só `z.string().email()`; senha `min(8)`.
+- `lib/schemas/user.ts`: e-mail só `z.string().email()`; senha `min(8)`.
 - `app/(auth)/sign-in/page.tsx:200`: `get("next") || "/"` sem validação.
-- `lib/schemas/ia-chat.ts`: só `mensagem` tem limite. `app/api/ia/chat/route.ts` monta a URL do Gemini com `?key=` e tem sua própria `gerarTextoWithHistory`.
+- `lib/schemas/ai-chat.ts`: só `mensagem` tem limite. `app/api/ia/chat/route.ts` monta a URL do Gemini com `?key=` e tem sua própria `gerarTextoWithHistory`.
 - `lib/ai/providers/*.ts`: `fetch` sem `signal`; `gerarTexto` sem `try/catch`.
 - `tests/integration/ecoscan.test.ts:117`: o teste de REQ-SCAN-05 está como `todo: "D4: hoje a exceção vira 500"`.
 
@@ -74,7 +74,7 @@ REQ-SCAN-05 (Gemini falha por rede → 200 com contingência) já existia; esta 
 
 ## Interfaces afetadas
 
-`lib/errors/dominio.ts` (novo) · `lib/http/responses.ts` · `lib/http/params.ts` e `lib/schemas/id.ts` (novos) · `lib/http/fetch-com-timeout.ts` (novo) · `lib/http/next-url.ts` (novo) · `lib/schemas/usuario.ts` · `lib/schemas/ia-chat.ts` · `lib/ai/providers/*.ts` · `services/{usuario,marca,categoria,certificado}.service.ts` · handlers de `produtos`, `usuarios`, `marcas`, `categorias`, `certificados`, `auth`, `users`, `ia/chat` · `app/(auth)/sign-in/page.tsx`.
+`lib/errors/dominio.ts` (novo) · `lib/http/responses.ts` · `lib/http/params.ts` e `lib/schemas/id.ts` (novos) · `lib/http/fetch-with-timeout.ts` (novo) · `lib/http/next-url.ts` (novo) · `lib/schemas/user.ts` · `lib/schemas/ai-chat.ts` · `lib/ai/providers/*.ts` · `services/{usuario,marca,categoria,certificado}.service.ts` · handlers de `produtos`, `usuarios`, `marcas`, `categorias`, `certificados`, `auth`, `users`, `ia/chat` · `app/(auth)/sign-in/page.tsx`.
 
 ## Delta na spec viva
 

@@ -12,7 +12,7 @@
  *
  * As fotos são armazenadas no sistema de arquivos (public/data_fotos/).
  *
- * @see services/foto.service.ts - Lógica de negócio
+ * @see services/photo.service.ts - Lógica de negócio
  * ============================================================================
  */
 
@@ -26,7 +26,7 @@ import {
   uploadPhoto,
   deletePhoto,
   ALLOWED_EXTENSIONS,
-} from "@/services/foto.service";
+} from "@/services/photo.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**

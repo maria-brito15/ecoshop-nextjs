@@ -12,7 +12,7 @@
  * Marcas representam fabricantes/empresas parceiras.
  * Cada marca está associada a um usuário do tipo MARCA ou ADMIN.
  *
- * @see services/marca.service.ts - Lógica de negócio
+ * @see services/brand.service.ts - Lógica de negócio
  * ============================================================================
  */
 
@@ -20,8 +20,8 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { ERRORS, mapError } from "@/lib/http/responses";
-import { brandSchema } from "@/lib/schemas/marca";
-import { listBrands, createBrand } from "@/services/marca.service";
+import { brandSchema } from "@/lib/schemas/brand";
+import { listBrands, createBrand } from "@/services/brand.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**

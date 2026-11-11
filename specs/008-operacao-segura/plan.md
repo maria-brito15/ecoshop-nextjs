@@ -1,7 +1,7 @@
 # Plano: 008-operacao-segura
 
 - **Status:** Implementado em 2026-11-11 (dono concedeu autonomia técnica; G2 tratado como concedido). Desvios em relação ao plano original:
-  - **D1:** lançar erro em `register()` **não** impede o início (o Next só loga e o processo segue vivo; descoberto com o servidor real). Passou a ser `lib/config/verificar-ambiente.ts`, carregado só no runtime `nodejs`, que registra o erro e chama `process.exit(1)`.
+  - **D1:** lançar erro em `register()` **não** impede o início (o Next só loga e o processo segue vivo; descoberto com o servidor real). Passou a ser `lib/config/verify-environment.ts`, carregado só no runtime `nodejs`, que registra o erro e chama `process.exit(1)`.
   - **D4:** o ensaio do deploy e da reversão **não foi feito** (o daemon do Docker não estava ativo e não há servidor).
   - Os testes que precisam de banco (seeds, REQ-OPS-02/03) foram escritos mas **não executados**: não havia banco de teste disponível.
 - **Spec:** `spec.md` (G1 aprovado em 2026-11-11)
@@ -38,7 +38,7 @@
 - A validação é a mesma nos dois (uma função pequena compartilhada em `prisma/`), reaproveitando a de `seed-admin.ts`.
 - Em produção o ADMIN é criado uma vez, a pedido: `docker compose -f docker-compose.prod.yml --profile bootstrap run --rm seed-admin`. Catálogo vazio.
 - O `seed-admin.ts` hoje cria **ou atualiza** o admin. Fica como está (redefine a senha do admin pelo `.env`), mas, como no compose base ele roda a cada `up`, a nota no README avisa que ele sobrescreve a senha de `ADMIN_EMAIL` a cada subida em desenvolvimento.
-- Os testes REQ-OPS-02/03 em `operacao.test.ts` rodam o seed real; passam a definir `SEED_USER_PASSWORD` e ganham casos de falha sem a variável.
+- Os testes REQ-OPS-02/03 em `operations.test.ts` rodam o seed real; passam a definir `SEED_USER_PASSWORD` e ganham casos de falha sem a variável.
 
 ### D4. Deploy com ordem, saúde e reversão (REQ-OPS-10)
 

@@ -41,7 +41,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLogin, useRegistration } from "@/lib/hooks/useAuth";
 import { localPathOrRoot } from "@/lib/http/next-url";
-import { fetchSession } from "@/lib/hooks/sessao";
+import { fetchSession } from "@/lib/hooks/session";
 import type { LoginBody, RegistrationBody } from "@/types/api";
 
 type Mode = "login" | "cadastro";

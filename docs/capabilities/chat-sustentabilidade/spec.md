@@ -35,7 +35,7 @@ O contexto da conversa não é persistido no servidor. Corrigido em 2026-11-10: 
 
 ## Interfaces
 
-POST /api/ia/chat · Gemini 2.0 Flash · `app/components/ChatFlutuante.tsx` (montado em `app/layout.tsx`).
+POST /api/ia/chat · Gemini 2.0 Flash · `app/components/FloatingChat.tsx` (montado em `app/layout.tsx`).
 
 ## NFRs aplicáveis
 

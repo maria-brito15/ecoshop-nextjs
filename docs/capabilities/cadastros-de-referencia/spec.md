@@ -44,4 +44,4 @@ Hierarquia de categorias.
 
 ## Perguntas abertas
 
-1. ~~O dono de uma marca precisa ser do tipo MARCA (REQ-REF-04)?~~ Decidido (2026-11-10): precisa ser MARCA ou ADMIN; `services/marca.service.ts` recusa CLIENTE com 409.
+1. ~~O dono de uma marca precisa ser do tipo MARCA (REQ-REF-04)?~~ Decidido (2026-11-10): precisa ser MARCA ou ADMIN; `services/brand.service.ts` recusa CLIENTE com 409.

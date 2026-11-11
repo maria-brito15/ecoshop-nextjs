@@ -14,7 +14,7 @@ Um CLIENTE ou MARCA logado abre `/perfil` e a página não carrega os próprios 
 - Mudar quem pode listar, criar ou excluir usuários.
 
 ## Comportamento atual (fato, com evidência)
-- `config/rotas-protegidas.ts`: `/api/usuarios` com `nivel: "admin"` → middleware nega CLIENTE/MARCA com 403 (`middleware.ts:86-89`).
+- `config/protected-routes.ts`: `/api/usuarios` com `nivel: "admin"` → middleware nega CLIENTE/MARCA com 403 (`middleware.ts:86-89`).
 - `app/api/usuarios/[id]/route.ts`: o handler já aplica "próprio ou ADMIN" (REQ-AUTZ-05, coberto por teste).
 - `app/(perfil)/perfil/page.tsx:537`: `data.mensagem ?? "Erro ao salvar."`; a API responde `{ erro }`.
 - Teste de caracterização `REQ-PERF-01` marcado `todo` (D1).

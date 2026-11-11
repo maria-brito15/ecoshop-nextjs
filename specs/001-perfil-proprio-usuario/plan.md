@@ -4,7 +4,7 @@
 - **ADRs que segue:** ADR-0017 · **ADRs novos/que substitui:** nenhum
 
 ## Abordagem técnica
-Rebaixar `/api/usuarios` de `admin` para `autenticado` em `config/rotas-protegidas.ts`. A segurança não diminui: os handlers já exigem ADMIN para listar, criar e excluir, e "próprio ou ADMIN" para ler e alterar (cobertos por REQ-AUTZ-04 e REQ-AUTZ-05). Corrigir o campo lido na tela de perfil (`data.erro`).
+Rebaixar `/api/usuarios` de `admin` para `autenticado` em `config/protected-routes.ts`. A segurança não diminui: os handlers já exigem ADMIN para listar, criar e excluir, e "próprio ou ADMIN" para ler e alterar (cobertos por REQ-AUTZ-04 e REQ-AUTZ-05). Corrigir o campo lido na tela de perfil (`data.erro`).
 
 Alternativa descartada: manter `admin` no middleware e criar `/api/me` para o próprio perfil. Exigiria rota nova, mudança na página e duplicaria a regra; o ADR-0017 já define o handler como lugar da decisão.
 
@@ -21,9 +21,9 @@ Alternativa descartada: manter `admin` no middleware e criar `/api/me` para o pr
 ## Arquivos afetados
 | Arquivo | Mudança | REQ |
 |---|---|---|
-| `config/rotas-protegidas.ts` | `/api/usuarios` → `autenticado` | REQ-PERF-01, REQ-AUTZ-06 |
+| `config/protected-routes.ts` | `/api/usuarios` → `autenticado` | REQ-PERF-01, REQ-AUTZ-06 |
 | `app/(perfil)/perfil/page.tsx` | `data.mensagem` → `data.erro` | REQ-PERF-04 |
-| `tests/integration/perfil-e-middleware.test.ts` | remove o `todo` de REQ-PERF-01 | REQ-PERF-01 |
+| `tests/integration/profile-and-middleware.test.ts` | remove o `todo` de REQ-PERF-01 | REQ-PERF-01 |
 | `docs/capabilities/conta-e-perfil/status.md` | status | REQ-PERF-01, REQ-PERF-04 |
 
 ## Plano de verificação

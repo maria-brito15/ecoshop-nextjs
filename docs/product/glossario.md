@@ -8,7 +8,7 @@
 | Categoria | Agrupamento de produtos (ex.: Cosméticos Naturais). | `Categoria` |
 | Produto | Item do catálogo: nome, descrição, preço, categoria, marca, foto, certificados. Não é item de compra. | `Produto` |
 | Certificado | Selo de sustentabilidade emitido por um órgão (ex.: FSC). | `Certificado` |
-| Foto | Imagem enviada para um produto, guardada em disco (`public/data_fotos`). Diferente de `fotoUrl`. | `foto.service.ts` |
+| Foto | Imagem enviada para um produto, guardada em disco (`public/data_fotos`). Diferente de `fotoUrl`. | `photo.service.ts` |
 | EcoScan | Funcionalidade que identifica o material de uma foto e explica o descarte. | `/ia-scan` |
 | Material | Tag devolvida pelo classificador (Azure) para uma foto. | `tagName` |
 | Confiança | Probabilidade (0–100%) do material identificado. | `AI_CONFIDENCE_THRESHOLD` |

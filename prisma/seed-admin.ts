@@ -35,7 +35,7 @@ import { PrismaClient, TipoUsuario } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 import bcrypt from "bcryptjs";
-import { requireSeedPassword } from "./senha-seed";
+import { requireSeedPassword } from "./seed-password";
 
 /**
  * Configurações do administrador.
@@ -117,7 +117,7 @@ async function createOrUpdateAdmin() {
     // Cria novo usuário administrador
     console.log("\n📝 Criando novo administrador...");
 
-    const novoAdmin = await prisma.usuario.create({
+    const newAdmin = await prisma.usuario.create({
       data: {
         nome: ADMIN_CONFIG.nome,
         email: ADMIN_CONFIG.email,
@@ -128,9 +128,9 @@ async function createOrUpdateAdmin() {
     });
 
     console.log("\n✅ Administrador criado com sucesso!");
-    console.log(`   ID: ${novoAdmin.id}`);
-    console.log(`   Email: ${novoAdmin.email}`);
-    console.log(`   Tipo: ${novoAdmin.tipo}`);
+    console.log(`   ID: ${newAdmin.id}`);
+    console.log(`   Email: ${newAdmin.email}`);
+    console.log(`   Tipo: ${newAdmin.tipo}`);
   }
 }
 

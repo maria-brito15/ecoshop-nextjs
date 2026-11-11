@@ -23,7 +23,7 @@ nenhum (Constitution Art. XII.2 e XIII.1).
 
 ## Verificação
 
-`tests/integration/log.test.ts` e `operacao-entrega.test.ts` (executados, sem banco).
+`tests/integration/log.test.ts` e `operations-delivery.test.ts` (executados, sem banco).
 
 ## Perguntas em aberto
 

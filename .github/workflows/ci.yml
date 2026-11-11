@@ -106,7 +106,7 @@ jobs:
 
       - name: Servidor recusa iniciar com JWT_SECRET inválido (REQ-OPS-06)
         # usa o servidor standalone gerado pelo build acima
-        run: node scripts/ops/checar-boot.mjs
+        run: node scripts/ops/check-boot.mjs
 
       - name: Compose exige os segredos e é válido (REQ-OPS-07/08/11)
         # valores descartáveis, só para validar a sintaxe; sem eles a validação deve FALHAR

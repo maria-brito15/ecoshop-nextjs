@@ -11,7 +11,7 @@
  *
  * Certificados são selos como "FSC", "Orgânico Brasil", "Cruelty Free".
  *
- * @see services/certificado.service.ts - Lógica de negócio
+ * @see services/certificate.service.ts - Lógica de negócio
  * ============================================================================
  */
 
@@ -19,11 +19,11 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { ERRORS, mapError } from "@/lib/http/responses";
-import { certificateSchema } from "@/lib/schemas/certificado";
+import { certificateSchema } from "@/lib/schemas/certificate";
 import {
   listCertificates,
   createCertificate,
-} from "@/services/certificado.service";
+} from "@/services/certificate.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**

@@ -20,7 +20,7 @@
  * 5. Gera token JWT e define cookie
  * 6. Retorna dados do usuário (exclui senha)
  *
- * @see services/usuario.service.ts - criarUsuario()
+ * @see services/user.service.ts - criarUsuario()
  * ============================================================================
  */
 
@@ -29,9 +29,9 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { setAuthCookie, setRefreshCookie } from "@/lib/auth";
 import { ERRORS, mapError } from "@/lib/http/responses";
-import { publicRegistrationSchema } from "@/lib/schemas/usuario";
-import { createUser } from "@/services/usuario.service";
-import { startSession } from "@/services/sessao.service";
+import { publicRegistrationSchema } from "@/lib/schemas/user";
+import { createUser } from "@/services/user.service";
+import { startSession } from "@/services/session.service";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const REGISTRATION_LIMIT = 5;

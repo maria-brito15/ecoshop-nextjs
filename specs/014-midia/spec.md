@@ -23,7 +23,7 @@ ADR-0011 (segue: fotos no filesystem; instância única).
 
 ## Verificação
 
-`tests/integration/midia-conteudo.test.ts` (6 testes, sem banco, executados).
+`tests/integration/media-content.test.ts` (6 testes, sem banco, executados).
 
 ## Perguntas em aberto
 

@@ -8,7 +8,7 @@
  *
  * Responsabilidades:
  * 1. Verificar autenticação do usuário via token JWT nos cookies
- * 2. Aplicar regras de proteção definidas em config/rotas-protegidas.ts
+ * 2. Aplicar regras de proteção definidas em config/protected-routes.ts
  * 3. Redirecionar usuários não autenticados para login (rotas de página)
  * 4. Retornar erro JSON para APIs quando acesso negado
  * 5. Verificar nível de acesso (admin vs. autenticado comum)
@@ -25,14 +25,14 @@
  * IMPORTANTE: O middleware roda no Edge Runtime (não no Node.js).
  * Por isso não podemos usar dependências Node.js (fs, path, etc.).
  *
- * @see config/rotas-protegidas.ts - Definição das regras de proteção
+ * @see config/protected-routes.ts - Definição das regras de proteção
  * ============================================================================
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/auth/constantes";
-import { ROUTE_RULES } from "./config/rotas-protegidas";
+import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/auth/constants";
+import { ROUTE_RULES } from "./config/protected-routes";
 
 /**
  * Middleware principal da aplicação.

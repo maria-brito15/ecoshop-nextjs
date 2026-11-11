@@ -35,7 +35,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { ERRORS } from "@/lib/http/responses";
-import { getSessionProfile } from "@/services/usuario.service";
+import { getSessionProfile } from "@/services/user.service";
 
 /**
  * GET /api/auth/me - Obtém usuário atual

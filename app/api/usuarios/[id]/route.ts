@@ -15,7 +15,7 @@
  * - PUT: Usuário pode editar apenas seu próprio perfil (ou ADMIN edita qualquer um)
  * - DELETE: Apenas ADMIN pode deletar usuários
  *
- * @see services/usuario.service.ts - Lógica de negócio
+ * @see services/user.service.ts - Lógica de negócio
  * ============================================================================
  */
 
@@ -25,12 +25,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { ERRORS, mapError } from "@/lib/http/responses";
 import { routeId } from "@/lib/http/params";
-import { updateUserSchema } from "@/lib/schemas/usuario";
+import { updateUserSchema } from "@/lib/schemas/user";
 import {
   getUser,
   updateUser,
   deleteUser,
-} from "@/services/usuario.service";
+} from "@/services/user.service";
 
 /**
  * GET /api/usuarios/{id} - Busca usuário por ID

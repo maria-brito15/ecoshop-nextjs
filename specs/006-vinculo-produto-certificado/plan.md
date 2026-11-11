@@ -5,8 +5,8 @@
 
 ## Abordagem técnica
 
-1. `lib/schemas/produto.ts`: `atualizarProdutoSchema` ganha `certificadoIds?: number[]` (array de inteiros, opcional).
-2. `services/produto.service.ts::atualizarProduto`: separa `certificadoIds` do resto do corpo (`produtoData`). Dentro de um `prisma.$transaction`: atualiza os campos escalares (se houver algum) ou só confirma que o produto existe (`findUniqueOrThrow`, garante 404 mesmo quando só `certificadoIds` é enviado); se `certificadoIds !== undefined`, remove todo o vínculo atual (`produtoCertificado.deleteMany`) e cria o novo, deduplicado (`produtoCertificado.createMany`); devolve o produto com `certificados` incluído.
+1. `lib/schemas/product.ts`: `atualizarProdutoSchema` ganha `certificadoIds?: number[]` (array de inteiros, opcional).
+2. `services/product.service.ts::atualizarProduto`: separa `certificadoIds` do resto do corpo (`produtoData`). Dentro de um `prisma.$transaction`: atualiza os campos escalares (se houver algum) ou só confirma que o produto existe (`findUniqueOrThrow`, garante 404 mesmo quando só `certificadoIds` é enviado); se `certificadoIds !== undefined`, remove todo o vínculo atual (`produtoCertificado.deleteMany`) e cria o novo, deduplicado (`produtoCertificado.createMany`); devolve o produto com `certificados` incluído.
 3. `app/api/produtos/[id]/route.ts`: só documentação — a validação e o repasse ao service já eram genéricos.
 4. `types/api.ts`: `AtualizarProdutoBody` ganha `certificadoIds?: number[]`.
 5. Painel (`app/(admin)/painel/page.tsx`, `SecaoProdutos`): estado `certificadoIds`; ao abrir "Editar", pré-marca os certificados já vinculados (`produto.certificados.map(pc => pc.certificado.id)`); checklist de certificados visível só no modo edição (criação não tem produto ainda); `handleSalvar` manda `certificadoIds` só no PUT.
@@ -25,18 +25,18 @@ Alternativa descartada: endpoint dedicado (`POST/DELETE /api/produtos/{id}/certi
 
 | Arquivo | Mudança | REQ |
 |---|---|---|
-| `lib/schemas/produto.ts` | `certificadoIds` em `atualizarProdutoSchema` | REQ-PROD-05 |
-| `services/produto.service.ts` | `atualizarProduto` substitui o vínculo numa transação | REQ-PROD-05 |
+| `lib/schemas/product.ts` | `certificadoIds` em `atualizarProdutoSchema` | REQ-PROD-05 |
+| `services/product.service.ts` | `atualizarProduto` substitui o vínculo numa transação | REQ-PROD-05 |
 | `app/api/produtos/[id]/route.ts` | doc do novo campo | REQ-PROD-05 |
 | `types/api.ts` | `AtualizarProdutoBody.certificadoIds` | REQ-PROD-05 |
 | `app/(admin)/painel/page.tsx` | checklist de certificados no modal de edição de produto | REQ-PROD-05 |
-| `tests/integration/catalogo.test.ts` | 2 testes novos | REQ-PROD-05 |
+| `tests/integration/catalog.test.ts` | 2 testes novos | REQ-PROD-05 |
 | `docs/capabilities/gestao-de-produtos/{spec,status}.md` | REQ-PROD-05 ❌→✅ | REQ-PROD-05 |
 | `docs/architecture/adr/pendentes.md` | remove a linha do backlog | — |
 
 ## Plano de verificação
 
-Integração (`tests/integration/catalogo.test.ts`): substituir vínculo (2 certificados → 1 → nenhum) e confirmar o array devolvido em cada etapa; `certificadoId` inexistente não gera 500. REQ-PROD-01 a 04 continuam passando sem alteração. Manual: não feito (sem navegador nesta sessão), mas a lógica decisiva está na API, coberta por teste; a UI só reflete o que a API já faz.
+Integração (`tests/integration/catalog.test.ts`): substituir vínculo (2 certificados → 1 → nenhum) e confirmar o array devolvido em cada etapa; `certificadoId` inexistente não gera 500. REQ-PROD-01 a 04 continuam passando sem alteração. Manual: não feito (sem navegador nesta sessão), mas a lógica decisiva está na API, coberta por teste; a UI só reflete o que a API já faz.
 
 ## Riscos e reversão
 

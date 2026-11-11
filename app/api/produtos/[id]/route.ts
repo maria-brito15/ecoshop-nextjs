@@ -10,7 +10,7 @@
  * PUT /api/produtos/{id} - Atualiza produto (requer ADMIN)
  * DELETE /api/produtos/{id} - Deleta produto (requer ADMIN)
  *
- * @see services/produto.service.ts - Lógica de negócio
+ * @see services/product.service.ts - Lógica de negócio
  * ============================================================================
  */
 
@@ -19,12 +19,12 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { ERRORS, mapError } from "@/lib/http/responses";
 import { routeId } from "@/lib/http/params";
-import { updateProductSchema } from "@/lib/schemas/produto";
+import { updateProductSchema } from "@/lib/schemas/product";
 import {
   getProduct,
   updateProduct,
   deleteProduct,
-} from "@/services/produto.service";
+} from "@/services/product.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**

@@ -58,5 +58,5 @@ Papéis novos; permissões por marca (MARCA gerir os próprios produtos) — dep
 
 ## Perguntas abertas
 
-1. ~~A página /ia-scan deve exigir login antes de abrir (REQ-AUTZ-08)?~~ Decidido (2026-11-10): sim, exigir login. Implementado em `config/rotas-protegidas.ts`.
+1. ~~A página /ia-scan deve exigir login antes de abrir (REQ-AUTZ-08)?~~ Decidido (2026-11-10): sim, exigir login. Implementado em `config/protected-routes.ts`.
 2. O que o papel MARCA pode fazer? Enquanto não houver resposta, MARCA = CLIENTE.

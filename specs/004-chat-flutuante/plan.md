@@ -5,9 +5,9 @@
 
 ## Abordagem técnica
 
-Novo componente `app/components/ChatFlutuante.tsx` ("use client"), montado no `app/layout.tsx` ao lado do `<Header />` para aparecer em todas as páginas. Ele:
+Novo componente `app/components/FloatingChat.tsx` ("use client"), montado no `app/layout.tsx` ao lado do `<Header />` para aparecer em todas as páginas. Ele:
 1. Checa sessão com `GET /api/auth/me` (mesmo padrão do `useSession` interno do `Header.tsx`); sem sessão, não renderiza nada (`return null`).
-2. Mantém `mensagens` (histórico local, não persistido) e usa `useChat()` (`lib/hooks/useIA.ts`, já existente) para chamar `POST /api/ia/chat`, convertendo o histórico local para o formato `{ role, parts: [{ text }] }` que a API espera.
+2. Mantém `mensagens` (histórico local, não persistido) e usa `useChat()` (`lib/hooks/useAI.ts`, já existente) para chamar `POST /api/ia/chat`, convertendo o histórico local para o formato `{ role, parts: [{ text }] }` que a API espera.
 3. Mostra o erro devolvido pela API (`chat.erro`) em vez de um texto genérico (`ui.md`).
 
 Alternativa descartada: hook de sessão compartilhado extraído de `Header.tsx`. Rejeitada para esta mudança por aumentar o escopo (refatorar `Header.tsx` não é necessário só para o chat); o componente novo faz sua própria checagem leve, do mesmo jeito que `Header.tsx` já faz.
@@ -26,14 +26,14 @@ Alternativa descartada: hook de sessão compartilhado extraído de `Header.tsx`.
 
 | Arquivo | Mudança | REQ |
 |---|---|---|
-| `app/components/ChatFlutuante.tsx` (novo) | botão flutuante + painel de chat | REQ-CHAT-06 |
+| `app/components/FloatingChat.tsx` (novo) | botão flutuante + painel de chat | REQ-CHAT-06 |
 | `app/layout.tsx` | monta `<ChatFlutuante />` | REQ-CHAT-06 |
 | `docs/capabilities/chat-sustentabilidade/{spec,status}.md` | REQ-CHAT-06 ❌→◐; resolve pergunta aberta #1 | REQ-CHAT-06 |
 | `docs/architecture/adr/pendentes.md` | remove a linha do chat do backlog | — |
 
 ## Plano de verificação
 
-API: REQ-CHAT-01 a 05, 07 já cobertas por `tests/integration/chat-ia.test.ts`, sem alteração. Manual pendente: abrir qualquer página autenticado, ver o botão flutuante, enviar mensagem e receber resposta; deslogado, confirmar que o botão não aparece — não feito nesta sessão por falta de ferramenta de navegador.
+API: REQ-CHAT-01 a 05, 07 já cobertas por `tests/integration/chat-ai.test.ts`, sem alteração. Manual pendente: abrir qualquer página autenticado, ver o botão flutuante, enviar mensagem e receber resposta; deslogado, confirmar que o botão não aparece — não feito nesta sessão por falta de ferramenta de navegador.
 
 ## Riscos e reversão
 

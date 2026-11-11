@@ -18,7 +18,7 @@ A página de produto (`/produtos/[id]`) só exibe `produto.fotoUrl` (uma imagem)
 ## Comportamento atual (fato, com evidência)
 
 - `app/(store)/produtos/[id]/page.tsx:257-271`: renderiza só `produto.fotoUrl`, sem chamar `useListarFotos`.
-- `lib/hooks/useFotos.ts:40-42`: `useListarFotos(produtoId)` já existe e chama `GET /api/produtos/{id}/fotos`.
+- `lib/hooks/usePhotos.ts:40-42`: `useListarFotos(produtoId)` já existe e chama `GET /api/produtos/{id}/fotos`.
 - `docs/capabilities/midia-de-produto/status.md:12`: REQ-MIDIA-04 ❌, em backlog.
 
 ## Requisitos

@@ -28,7 +28,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { fetchSession, endClientSession } from "@/lib/hooks/sessao";
+import { fetchSession, endClientSession } from "@/lib/hooks/session";
 
 type User = {
   id: number;

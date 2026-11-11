@@ -22,7 +22,7 @@
  * - Skeleton durante o fetch
  * - Mensagem amigável se produto não encontrado
  *
- * @see lib/hooks/useProdutos.ts - Hook useBuscarProduto
+ * @see lib/hooks/useProducts.ts - Hook useBuscarProduto
  * ============================================================================
  */
 
@@ -30,8 +30,8 @@
 
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
-import { useGetProduct } from "@/lib/hooks/useProdutos";
-import { useListPhotos } from "@/lib/hooks/useFotos";
+import { useGetProduct } from "@/lib/hooks/useProducts";
+import { useListPhotos } from "@/lib/hooks/usePhotos";
 import type { Certificado } from "@/types/api";
 
 type Props = {

@@ -20,7 +20,7 @@ Hoje, quem se cadastra com `tipo: "MARCA"` recebe o papel MARCA imediatamente (`
 **Modelo recomendado: status na `Marca`, não no `Usuario`.**
 
 - O `Usuario` cadastrado como MARCA é criado com `tipo: "CLIENTE"` (direitos de CLIENTE enquanto pendente, como o BR-AUTH-04 já propõe) e, junto, uma `Marca` é criada com um novo campo `status: StatusMarca` (`PENDENTE` por padrão).
-- Isso exige capturar nome (e opcionalmente descrição) da marca pretendida no cadastro público, hoje ausente de `registroPublicoSchema` (`lib/schemas/usuario.ts:86-91`).
+- Isso exige capturar nome (e opcionalmente descrição) da marca pretendida no cadastro público, hoje ausente de `registroPublicoSchema` (`lib/schemas/user.ts:86-91`).
 - ADMIN aprova: `Marca.status → APROVADA` e `Usuario.tipo → MARCA`, numa transação (`$transaction`).
 - Marcas já existentes (criadas hoje pelo ADMIN direto no painel, sem esse fluxo) recebem `status: APROVADA` na migração de dados, para não regredir o comportamento atual do CRUD de marcas.
 
@@ -32,9 +32,9 @@ Isso vira ADR-0018 no plano (G2), com as alternativas acima.
 
 ## Comportamento atual (fato, com evidência)
 
-- `lib/schemas/usuario.ts:86-91`: `registroPublicoSchema` aceita `tipo: "CLIENTE" | "MARCA"`, sem campo de marca.
-- `services/usuario.service.ts:85` (`criarUsuario`): grava `tipo` exatamente como recebido — não há pendência.
-- `services/marca.service.ts:107-117` (`criarMarca`): hoje só é chamada pelo ADMIN no painel, depois que o usuário já é MARCA; exige `usuario.tipo === "MARCA" || "ADMIN"`.
+- `lib/schemas/user.ts:86-91`: `registroPublicoSchema` aceita `tipo: "CLIENTE" | "MARCA"`, sem campo de marca.
+- `services/user.service.ts:85` (`criarUsuario`): grava `tipo` exatamente como recebido — não há pendência.
+- `services/brand.service.ts:107-117` (`criarMarca`): hoje só é chamada pelo ADMIN no painel, depois que o usuário já é MARCA; exige `usuario.tipo === "MARCA" || "ADMIN"`.
 - `docs/capabilities/autenticacao/status.md:19`: REQ-AUTH-11 ❌.
 - `docs/capabilities/gestao-de-usuarios/status.md:11`: REQ-USR-03 ❌, em backlog por P11.
 - `prisma/schema.prisma:37-46`: `Marca` não tem campo de status.

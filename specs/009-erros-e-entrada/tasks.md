@@ -1,6 +1,6 @@
 # Tarefas: 009-erros-e-entrada
 
-- **Status:** Implementadas em 2026-11-11, **sem commits**. Resultado por requisito nos `status.md` das capacidades. **Não executado:** os testes que precisam de banco (5 de `entrada-e-erros.test.ts`, mais `ecoscan.test.ts` e `chat-ia.test.ts` existentes, que usam banco nos helpers), porque não havia banco de teste disponível; 22 dos 27 testes novos foram executados e passam. O ADR-0012 (`lib/ai/**`) deve ser citado na PR.
+- **Status:** Implementadas em 2026-11-11, **sem commits**. Resultado por requisito nos `status.md` das capacidades. **Não executado:** os testes que precisam de banco (5 de `input-and-errors.test.ts`, mais `ecoscan.test.ts` e `chat-ai.test.ts` existentes, que usam banco nos helpers), porque não havia banco de teste disponível; 22 dos 27 testes novos foram executados e passam. O ADR-0012 (`lib/ai/**`) deve ser citado na PR.
 
 | # | Tarefa | REQ | Feito quando |
 |---|---|---|---|

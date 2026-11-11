@@ -11,14 +11,14 @@
 
 ## Fora de escopo
 
-- Qualquer mudança no backend do chat (`app/api/ia/chat/route.ts`, `lib/schemas/ia-chat.ts`): já funciona e está fora de escopo.
+- Qualquer mudança no backend do chat (`app/api/ia/chat/route.ts`, `lib/schemas/ai-chat.ts`): já funciona e está fora de escopo.
 - Persistir a conversa no servidor (já é "fora de escopo" explícito na spec viva).
 - Decidir o escopo do EcoScan/Azure (P06 também cita isso, mas é uma capacidade separada — `ecoscan`, já implementada).
 
 ## Comportamento atual (fato, com evidência)
 
-- `app/api/ia/chat/route.ts`: endpoint completo, testado (`tests/integration/chat-ia.test.ts`), aceita `{ mensagem, historico? }` e devolve `{ resposta }`.
-- `lib/hooks/useIA.ts:45-47` (`useChat`): hook de mutation já pronto para esse endpoint.
+- `app/api/ia/chat/route.ts`: endpoint completo, testado (`tests/integration/chat-ai.test.ts`), aceita `{ mensagem, historico? }` e devolve `{ resposta }`.
+- `lib/hooks/useAI.ts:45-47` (`useChat`): hook de mutation já pronto para esse endpoint.
 - Nenhum componente de UI chamava `useChat` antes desta mudança.
 - `docs/capabilities/chat-sustentabilidade/status.md`: REQ-CHAT-06 ❌.
 
@@ -43,7 +43,7 @@
 
 ## Interfaces afetadas
 
-`app/components/ChatFlutuante.tsx` (novo) · `app/layout.tsx` (monta o componente para todas as páginas).
+`app/components/FloatingChat.tsx` (novo) · `app/layout.tsx` (monta o componente para todas as páginas).
 
 ## Delta na spec viva
 

@@ -34,7 +34,7 @@ A `Marca` já é a entidade que carrega os dados do "pedido" (nome, descrição)
 - `registroPublicoSchema` ganha `marcaNome` obrigatório (e `marcaDescricao` opcional) quando `tipo: "MARCA"` (REQ-AUTH-14).
 - Migração de dados: marcas existentes recebem `status = APROVADA` para não regredir o catálogo atual.
 - `criarUsuario`/rota de cadastro passam a criar `Usuario` + `Marca` juntos quando `tipo: "MARCA"` — decisão de acesso e transação ficam no serviço, chamado pelo handler (ADR-0017).
-- Afeta: `prisma/schema.prisma`, `lib/schemas/usuario.ts`, `services/usuario.service.ts`, `services/marca.service.ts`, `app/api/users/route.ts`, novo `app/api/marcas/[id]/aprovar/route.ts`, `app/(admin)/painel/page.tsx` (`SecaoMarcas`).
+- Afeta: `prisma/schema.prisma`, `lib/schemas/user.ts`, `services/user.service.ts`, `services/brand.service.ts`, `app/api/users/route.ts`, novo `app/api/marcas/[id]/aprovar/route.ts`, `app/(admin)/painel/page.tsx` (`SecaoMarcas`).
 
 ## Verificação
 

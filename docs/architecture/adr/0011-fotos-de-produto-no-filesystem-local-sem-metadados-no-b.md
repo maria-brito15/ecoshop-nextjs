@@ -7,7 +7,7 @@
 - Capacidades: MIDIA
 
 ## Contexto
-Evidência: `services/foto.service.ts` grava em `public/data_fotos/{produtoId}_*`; `Produto.fotoUrl` independente e único exibido pela UI; volume `fotos_data` no Compose. A spec viva de MIDIA chegou a descrever "foto guardada no banco como bytes" (BR-MIDIA-01) — isso nunca existiu no código; era a spec errada, não o código. Corrigido em 2026-11-10 junto com esta ratificação.
+Evidência: `services/photo.service.ts` grava em `public/data_fotos/{produtoId}_*`; `Produto.fotoUrl` independente e único exibido pela UI; volume `fotos_data` no Compose. A spec viva de MIDIA chegou a descrever "foto guardada no banco como bytes" (BR-MIDIA-01) — isso nunca existiu no código; era a spec errada, não o código. Corrigido em 2026-11-10 junto com esta ratificação.
 
 ## Problema
 Onde guardar mídia e como associá-la ao produto?
@@ -32,9 +32,9 @@ storage antes de precisar é custo sem benefício. Sem dependência externa nova
 é o ADR-0003 (monolito simples) aplicado à mídia.
 
 ## Consequências
-Afeta: `services/foto.service.ts`, `docker-compose.yml` (volume `fotos_data`).
+Afeta: `services/photo.service.ts`, `docker-compose.yml` (volume `fotos_data`).
 BR-MIDIA-02 ("no máximo uma foto principal") foi removida da spec: nunca foi
 verdade no código, que sempre aceitou várias fotos por produto.
 
 ## Verificação
-REQ-MIDIA-01/02/03 em `tests/integration/midia.test.ts`.
+REQ-MIDIA-01/02/03 em `tests/integration/media.test.ts`.

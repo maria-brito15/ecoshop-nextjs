@@ -13,7 +13,7 @@
  * - GET: Público (qualquer usuário pode ver categorias)
  * - POST: Apenas ADMIN
  *
- * @see services/categoria.service.ts - Lógica de negócio
+ * @see services/category.service.ts - Lógica de negócio
  * ============================================================================
  */
 
@@ -21,8 +21,8 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { ERRORS, mapError } from "@/lib/http/responses";
-import { categorySchema } from "@/lib/schemas/categoria";
-import { listCategories, createCategory } from "@/services/categoria.service";
+import { categorySchema } from "@/lib/schemas/category";
+import { listCategories, createCategory } from "@/services/category.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**

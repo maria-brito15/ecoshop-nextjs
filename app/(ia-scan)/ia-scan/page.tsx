@@ -23,7 +23,7 @@
  * - Sucesso: exibe análise detalhada
  * - Falha: exibe sugestão para melhorar a foto
  *
- * @see lib/hooks/useIA.ts - Hook useScan
+ * @see lib/hooks/useAI.ts - Hook useScan
  * @see app/api/ia/scan/route.ts - Endpoint da API
  * ============================================================================
  */
@@ -32,7 +32,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
-import { useScan } from "@/lib/hooks/useIA";
+import { useScan } from "@/lib/hooks/useAI";
 import type { AiAnalysis } from "@/types/ai";
 import type { ScanResponse } from "@/types/api";
 

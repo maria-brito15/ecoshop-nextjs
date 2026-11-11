@@ -18,7 +18,7 @@
  * - sort: relevancia (padrão) | preco_asc | preco_desc | nome_asc | nome_desc (REQ-CAT-06)
  * - nome: busca textual por nome
  *
- * @see services/produto.service.ts - Lógica de negócio
+ * @see services/product.service.ts - Lógica de negócio
  * ============================================================================
  */
 
@@ -26,8 +26,8 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { ERRORS, mapError } from "@/lib/http/responses";
-import { productSchema, listProductsQuerySchema } from "@/lib/schemas/produto";
-import { listProducts, createProduct } from "@/services/produto.service";
+import { productSchema, listProductsQuerySchema } from "@/lib/schemas/product";
+import { listProducts, createProduct } from "@/services/product.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**

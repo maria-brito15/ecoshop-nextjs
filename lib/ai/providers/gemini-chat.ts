@@ -27,7 +27,7 @@
  * ============================================================================
  */
 
-import { fetchWithTimeout } from "@/lib/http/fetch-com-timeout";
+import { fetchWithTimeout } from "@/lib/http/fetch-with-timeout";
 
 export const GEMINI_MODEL = "gemini-2.0-flash";
 

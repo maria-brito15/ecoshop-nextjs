@@ -7,7 +7,7 @@
  * POST /api/marcas/{id}/aprovar - Aprova um pedido de marca pendente (ADMIN)
  *
  * REQ-USR-03, ADR-0018.
- * @see services/marca.service.ts - aprovarMarca()
+ * @see services/brand.service.ts - aprovarMarca()
  * ============================================================================
  */
 
@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { ERRORS, mapError } from "@/lib/http/responses";
 import { routeId } from "@/lib/http/params";
-import { approveBrand } from "@/services/marca.service";
+import { approveBrand } from "@/services/brand.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**

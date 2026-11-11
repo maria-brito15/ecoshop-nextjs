@@ -32,7 +32,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { ERRORS } from "@/lib/http/responses";
-import { chatSchema } from "@/lib/schemas/ia-chat";
+import { chatSchema } from "@/lib/schemas/ai-chat";
 import {
   generateWithHistory,
   isGeminiConfigured,

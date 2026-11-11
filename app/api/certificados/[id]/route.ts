@@ -10,7 +10,7 @@
  * PUT /api/certificados/{id} - Atualiza certificado (requer ADMIN)
  * DELETE /api/certificados/{id} - Deleta certificado (requer ADMIN)
  *
- * @see services/certificado.service.ts - Lógica de negócio
+ * @see services/certificate.service.ts - Lógica de negócio
  * ============================================================================
  */
 
@@ -19,12 +19,12 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { ERRORS, mapError } from "@/lib/http/responses";
 import { routeId } from "@/lib/http/params";
-import { updateCertificateSchema } from "@/lib/schemas/certificado";
+import { updateCertificateSchema } from "@/lib/schemas/certificate";
 import {
   getCertificate,
   updateCertificate,
   deleteCertificate,
-} from "@/services/certificado.service";
+} from "@/services/certificate.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**

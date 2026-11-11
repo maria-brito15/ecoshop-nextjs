@@ -20,8 +20,8 @@
  * - Skeleton loading enquanto busca produtos/categorias
  * - Mensagem amigável em caso de erro
  *
- * @see lib/hooks/useProdutos.ts - Hook para listar produtos
- * @see lib/hooks/useCategorias.ts - Hook para listar categorias
+ * @see lib/hooks/useProducts.ts - Hook para listar produtos
+ * @see lib/hooks/useCategories.ts - Hook para listar categorias
  * ============================================================================
  */
 
@@ -29,8 +29,8 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
-import { useListProducts } from "@/lib/hooks/useProdutos";
-import { useListCategories } from "@/lib/hooks/useCategorias";
+import { useListProducts } from "@/lib/hooks/useProducts";
+import { useListCategories } from "@/lib/hooks/useCategories";
 import type { Produto, Categoria } from "@/types/api";
 
 // ----------------------------------------------------------------------------

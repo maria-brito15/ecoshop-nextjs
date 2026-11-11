@@ -12,14 +12,14 @@
  * @status 200 - O banco responde (Redis fora aparece como "degradado")
  * @status 503 - O banco não responde
  *
- * @see services/saude.service.ts - Regra de composição (REQ-OPS-01)
+ * @see services/health.service.ts - Regra de composição (REQ-OPS-01)
  * ============================================================================
  */
 
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { checkHealth } from "@/services/saude.service";
+import { checkHealth } from "@/services/health.service";
 
 export async function GET() {
   const { relatorio: report, httpStatus } = await checkHealth();

@@ -48,12 +48,12 @@ import { PrismaClient, TipoUsuario } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 import bcrypt from "bcryptjs";
-import { requireSeedPassword } from "./senha-seed";
+import { requireSeedPassword } from "./seed-password";
 
 /**
  * Senha em texto plano dos usuários de demonstração (todos compartilham a
  * mesma, por simplicidade). Mesmo custo de hashing usado no resto do app
- * (services/usuario.service.ts, prisma/seed-admin.ts).
+ * (services/user.service.ts, prisma/seed-admin.ts).
  */
 const SEED_USER_PASSWORD = requireSeedPassword(
   "SEED_USER_PASSWORD",
@@ -125,12 +125,12 @@ async function main() {
 
   const categories = {} as Record<string, number>;
   for (const cat of categoriesInput) {
-    const registro = await prisma.categoria.upsert({
+    const record = await prisma.categoria.upsert({
       where: { nome: cat.nome },
       update: {},
       create: cat,
     });
-    categories[registro.nome] = registro.id;
+    categories[record.nome] = record.id;
   }
 
   // ---------------------------------------------------------------------------
@@ -170,12 +170,12 @@ async function main() {
 
   const certificates = {} as Record<string, number>;
   for (const cert of certificatesInput) {
-    const registro = await prisma.certificado.upsert({
+    const record = await prisma.certificado.upsert({
       where: { nome: cert.nome },
       update: {},
       create: cert,
     });
-    certificates[registro.nome] = registro.id;
+    certificates[record.nome] = record.id;
   }
 
   // ---------------------------------------------------------------------------
@@ -230,12 +230,12 @@ async function main() {
 
   const users = {} as Record<string, number>;
   for (const user of usersInput) {
-    const registro = await prisma.usuario.upsert({
+    const record = await prisma.usuario.upsert({
       where: { email: user.email },
       update: {},
       create: user,
     });
-    users[registro.email] = registro.id;
+    users[record.email] = record.id;
   }
 
   // ---------------------------------------------------------------------------
@@ -263,12 +263,12 @@ async function main() {
 
   const brands = {} as Record<string, number>;
   for (const brand of brandsInput) {
-    const registro = await prisma.marca.upsert({
+    const record = await prisma.marca.upsert({
       where: { nome: brand.nome },
       update: {},
       create: { ...brand, status: "APROVADA" },
     });
-    brands[registro.nome] = registro.id;
+    brands[record.nome] = record.id;
   }
 
   // ---------------------------------------------------------------------------
@@ -382,8 +382,8 @@ async function main() {
           categoriaId: categories[prod.categoria],
           marcaId: brands[prod.marca],
           certificados: {
-            create: prod.certs.map((nomeCertificado) => ({
-              certificadoId: certificates[nomeCertificado],
+            create: prod.certs.map((certificateName) => ({
+              certificadoId: certificates[certificateName],
             })),
           },
         },

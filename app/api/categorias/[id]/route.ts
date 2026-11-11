@@ -14,7 +14,7 @@
  * - GET: Público
  * - PUT/DELETE: Apenas ADMIN
  *
- * @see services/categoria.service.ts - Lógica de negócio
+ * @see services/category.service.ts - Lógica de negócio
  * ============================================================================
  */
 
@@ -23,12 +23,12 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { ERRORS, mapError } from "@/lib/http/responses";
 import { routeId } from "@/lib/http/params";
-import { updateCategorySchema } from "@/lib/schemas/categoria";
+import { updateCategorySchema } from "@/lib/schemas/category";
 import {
   getCategory,
   updateCategory,
   deleteCategory,
-} from "@/services/categoria.service";
+} from "@/services/category.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**

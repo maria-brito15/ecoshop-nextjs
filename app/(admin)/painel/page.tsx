@@ -32,7 +32,7 @@ import {
   useListPhotos,
   useUploadPhoto,
   useDeletePhoto,
-} from "@/lib/hooks/useFotos";
+} from "@/lib/hooks/usePhotos";
 
 
 import {
@@ -40,26 +40,26 @@ import {
   useCreateProduct,
   useUpdateProduct,
   useDeleteProduct,
-} from "@/lib/hooks/useProdutos";
+} from "@/lib/hooks/useProducts";
 import {
   useListCategories,
   useCreateCategory,
   useUpdateCategory,
   useDeleteCategory,
-} from "@/lib/hooks/useCategorias";
+} from "@/lib/hooks/useCategories";
 import {
   useListBrands,
   useCreateBrand,
   useUpdateBrand,
   useDeleteBrand,
   useApproveBrand,
-} from "@/lib/hooks/useMarcas";
+} from "@/lib/hooks/useBrands";
 import {
   useListCertificates,
   useCreateCertificate,
   useUpdateCertificate,
   useDeleteCertificate,
-} from "@/lib/hooks/useCertificados";
+} from "@/lib/hooks/useCertificates";
 
 import type { Produto, Categoria, Marca, Certificado } from "@/types/api";
 

@@ -16,7 +16,7 @@
  *
  * Sem Redis o login continua: só não há token de renovação (REQ-AUTH-19).
  *
- * @see services/sessao.service.ts - Sessão
+ * @see services/session.service.ts - Sessão
  * @see lib/rate-limit.ts - Rate limiting
  * ============================================================================
  */
@@ -25,12 +25,12 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { setAuthCookie, setRefreshCookie, clearSessionCookies } from "@/lib/auth";
-import { REFRESH_COOKIE } from "@/lib/auth/constantes";
+import { REFRESH_COOKIE } from "@/lib/auth/constants";
 import { ERRORS } from "@/lib/http/responses";
-import { loginSchema } from "@/lib/schemas/usuario";
+import { loginSchema } from "@/lib/schemas/user";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
-import { verifyCredentials } from "@/services/usuario.service";
-import { startSession, endSession } from "@/services/sessao.service";
+import { verifyCredentials } from "@/services/user.service";
+import { startSession, endSession } from "@/services/session.service";
 
 const ATTEMPT_LIMIT = 10;
 const WINDOW_SECONDS = 60;

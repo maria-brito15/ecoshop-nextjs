@@ -47,4 +47,4 @@ Aceita-se um segredo e uma imagem a mais em troca de uma entrega verificável: a
 
 ## Verificação
 
-`tests/integration/operacao-config.test.ts` (ordem do script, ausência de `appleboy`, `SSH_KNOWN_HOSTS`, imagem sem `build`, digests); o job do CI valida os compose. A reversão real só pode ser ensaiada num servidor: até lá REQ-OPS-10 fica ◐ no `status.md`.
+`tests/integration/operations-config.test.ts` (ordem do script, ausência de `appleboy`, `SSH_KNOWN_HOSTS`, imagem sem `build`, digests); o job do CI valida os compose. A reversão real só pode ser ensaiada num servidor: até lá REQ-OPS-10 fica ◐ no `status.md`.

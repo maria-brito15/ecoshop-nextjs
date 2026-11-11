@@ -13,7 +13,7 @@
  * - Este é restrito a ADMIN
  * - Permite criar usuários de qualquer tipo (incluindo ADMIN)
  *
- * @see services/usuario.service.ts - Lógica de negócio
+ * @see services/user.service.ts - Lógica de negócio
  * ============================================================================
  */
 
@@ -21,8 +21,8 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { ERRORS, mapError } from "@/lib/http/responses";
-import { adminRegistrationSchema } from "@/lib/schemas/usuario";
-import { listUsers, createUser } from "@/services/usuario.service";
+import { adminRegistrationSchema } from "@/lib/schemas/user";
+import { listUsers, createUser } from "@/services/user.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**

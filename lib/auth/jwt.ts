@@ -32,7 +32,7 @@ import {
   REFRESH_COOKIE,
   ACCESS_TOKEN_SECONDS,
   REFRESH_TOKEN_SECONDS,
-} from "./constantes";
+} from "./constants";
 import type {
   JwtPayload,
   TokenIssuer,

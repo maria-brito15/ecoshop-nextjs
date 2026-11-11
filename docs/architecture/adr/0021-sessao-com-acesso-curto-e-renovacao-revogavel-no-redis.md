@@ -27,7 +27,7 @@ Como permitir revogar sessões e propagar mudança de papel sem consultar o banc
 
 Opção A.
 
-- **Acesso:** JWT HS256, cookie `token`, 15 minutos (`lib/auth/constantes.ts`). Verificado sem consultar o Redis, inclusive no middleware.
+- **Acesso:** JWT HS256, cookie `token`, 15 minutos (`lib/auth/constants.ts`). Verificado sem consultar o Redis, inclusive no middleware.
 - **Renovação:** 256 bits aleatórios, cookie `refresh` (httpOnly, `SameSite=lax`, `secure` em produção, 7 dias). No Redis só fica o hash SHA-256 (`refresh:<hash>` → id do usuário; `refresh_usuario:<id>` → conjunto de hashes).
 - **Uso único (rotação):** renovar apaga o token com `GETDEL` e emite um par novo; dois pedidos simultâneos com o mesmo token renovam só um. O papel do usuário é relido do banco.
 - **Revogação:** logout revoga o token da sessão; trocar a senha e excluir o usuário revogam todos os dele.
@@ -44,8 +44,8 @@ Troca disponibilidade do Redis para renovação (aceita pelo dono) por revogaç�
 - Em ambiente com Redis instável, usuários logados são deslogados a cada 15 minutos.
 - Acesso já emitido não é revogável antes de expirar (máx. 15 min).
 - Trocar a PRÓPRIA senha exige `senhaAtual` (REQ-AUTH-21).
-- Afeta: `lib/auth/**`, `services/sessao.service.ts`, `services/usuario.service.ts`, `app/api/auth/**`, `app/api/users/route.ts`, `middleware.ts`.
+- Afeta: `lib/auth/**`, `services/session.service.ts`, `services/user.service.ts`, `app/api/auth/**`, `app/api/users/route.ts`, `middleware.ts`.
 
 ## Verificação
 
-`tests/integration/sessao.test.ts`: serviço com armazém em memória; armazém real no Redis (hash, uso único, revogação); middleware; e, com banco, cookies do login e senha atual.
+`tests/integration/session.test.ts`: serviço com armazém em memória; armazém real no Redis (hash, uso único, revogação); middleware; e, com banco, cookies do login e senha atual.

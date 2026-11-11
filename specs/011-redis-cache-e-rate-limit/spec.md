@@ -26,7 +26,7 @@ REQ-OPS-14, 15, 16, 17 e a emenda de REQ-OPS-01, em `docs/capabilities/operacao/
 
 ## Interfaces afetadas
 
-`lib/redis.ts` · `lib/rate-limit.ts` · `lib/cache/{index,keys}.ts` · `lib/log.ts` (novo) · `services/saude.service.ts` (novo) · `app/api/health/route.ts` · `services/produto.service.ts` · `lib/schemas/produto.ts` · `app/api/produtos/route.ts` · `.env.example` · compose.
+`lib/redis.ts` · `lib/rate-limit.ts` · `lib/cache/{index,keys}.ts` · `lib/log.ts` (novo) · `services/health.service.ts` (novo) · `app/api/health/route.ts` · `services/product.service.ts` · `lib/schemas/product.ts` · `app/api/produtos/route.ts` · `.env.example` · compose.
 
 ## Delta na spec viva
 

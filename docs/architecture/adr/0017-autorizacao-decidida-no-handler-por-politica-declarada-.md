@@ -27,7 +27,7 @@ Opção A. O middleware passa a exigir apenas **autenticação** em `/api/usuari
 BR-06 ('usuário vê/edita só o próprio perfil, exceto ADMIN') exige conhecer o recurso.
 
 ## Consequências
-Rotas novas devem declarar acesso no handler; matriz coberta por teste. Afeta: `config/rotas-protegidas.ts`, `api/usuarios/**`.
+Rotas novas devem declarar acesso no handler; matriz coberta por teste. Afeta: `config/protected-routes.ts`, `api/usuarios/**`.
 
 ## Verificação
 Testes REQ-AUTZ-*/REQ-PERF-* em `tests/integration`.
