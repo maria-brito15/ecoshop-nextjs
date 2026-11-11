@@ -66,8 +66,19 @@ jobs:
         run: npx prisma generate
 
       - name: Lint
-        # ESLint 9 (flat config); `next lint` está depreciado (ADR-0015)
-        run: npm run lint
+        # ESLint 9 (flat config); `next lint` está depreciado (ADR-0015).
+        # O teto de avisos só pode DESCER: ao corrigir avisos, reduza o número;
+        # novo aviso quebra o CI. Meta: 0 (REQ-OPS-20).
+        run: npx eslint . --max-warnings 16
+
+      - name: Auditoria de dependências de produção
+        # REQ-OPS-20. Em 2026-11-11 a auditoria achou 15 vulnerabilidades (1 crítica em
+        # `next`, 11 altas), quase todas com correção sem quebra, mas a atualização
+        # troca muitas dependências e ainda não foi validada com a suíte completa.
+        # Por isso NÃO bloqueia por enquanto (continue-on-error). Depois de atualizar,
+        # remova a linha `continue-on-error` para o gate passar a valer.
+        continue-on-error: true
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Type check
         run: npm run typecheck
@@ -93,6 +104,32 @@ jobs:
           AZURE_VISION_ENDPOINT: https://placeholder.cognitiveservices.azure.com/
           AZURE_VISION_KEY: ci-placeholder
 
+      - name: Servidor recusa iniciar com JWT_SECRET inválido (REQ-OPS-06)
+        # usa o servidor standalone gerado pelo build acima
+        run: node scripts/ops/checar-boot.mjs
+
+      - name: Compose exige os segredos e é válido (REQ-OPS-07/08/11)
+        # valores descartáveis, só para validar a sintaxe; sem eles a validação deve FALHAR
+        env:
+          VARIAVEIS: >-
+            JWT_SECRET=x7Qm2LbR9vTn4KcE8wYpZa3JdHfUg6Nz
+            POSTGRES_PASSWORD=pgci123 REDIS_PASSWORD=rdci123
+            ADMIN_PASSWORD=AdminDeTeste-123 SEED_USER_PASSWORD=SeedDeTeste-123
+            ECOSHOP_IMAGE=ghcr.io/exemplo/ecoshop APP_TAG=sha-0000000
+            NEXT_PUBLIC_SITE_URL=https://exemplo.test
+        run: |
+          set -eu
+          VAZIO="$(mktemp)"
+          for arquivos in "" "-f docker-compose.yml" "-f docker-compose.prod.yml"; do
+            # com as variáveis: válido
+            env -i PATH="$PATH" HOME="$HOME" $VARIAVEIS docker compose --env-file "$VAZIO" $arquivos config -q
+            # sem as variáveis: deve falhar
+            if env -i PATH="$PATH" HOME="$HOME" docker compose --env-file "$VAZIO" $arquivos config -q 2>/dev/null; then
+              echo "::error::compose ${arquivos:-base+override} subiu sem os segredos obrigatórios"
+              exit 1
+            fi
+          done
+
   # --- 2. build & push da imagem docker
   # só roda em push — PRs não publicam imagem porque podem vir de forks sem acesso a secrets
   docker:
@@ -100,6 +137,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint-and-build
     if: github.event_name == 'push'
+
+    outputs:
+      tag: ${{ steps.tag.outputs.valor }}
+      imagem: ${{ steps.tag.outputs.imagem }}
 
     steps:
       - name: Checkout
@@ -117,21 +158,30 @@ jobs:
           # GITHUB_TOKEN é gerado automaticamente pelo actions — não precisa configurar nenhum secret
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Definir tag e nome da imagem
+        id: tag
+        # a tag é calculada UMA vez aqui e repassada ao job de deploy (REQ-OPS-10/11);
+        # o nome da imagem precisa estar em minúsculas para o ghcr.io
+        run: |
+          echo "valor=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "imagem=${REGISTRY}/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
       - name: Extract image metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ steps.tag.outputs.imagem }}
           tags: |
             # sha-<commit> permite rastrear exatamente qual commit gerou cada imagem
-            type=sha,prefix=sha-
+            type=raw,value=${{ steps.tag.outputs.valor }}
             # tag latest só é atualizada em pushes na main, nunca em develop
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
-      - name: Build & Push
+      - name: Build & Push (aplicação)
         uses: docker/build-push-action@v6
         with:
           context: .
+          target: runner
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -139,6 +189,17 @@ jobs:
           # reduz o tempo de build significativamente quando só o código da app muda
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Build & Push (migrations)
+        # o alvo "runner" não tem o CLI do Prisma; o deploy aplica as migrations com esta imagem
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: migrator
+          push: true
+          tags: ${{ steps.tag.outputs.imagem }}:${{ steps.tag.outputs.valor }}-migrator
+          cache-from: type=gha,scope=migrator
+          cache-to: type=gha,mode=max,scope=migrator
 
   # --- 3. CD — deploy no vps via ssh
   # só executa em push na main — develop não deploya para produção automaticamente
@@ -156,32 +217,39 @@ jobs:
       name: production
       url: ${{ vars.APP_URL }}
 
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      TAG: ${{ needs.docker.outputs.tag }}
+      IMAGEM: ${{ needs.docker.outputs.imagem }}
+
     steps:
-      - name: Deploy via SSH
-        # SHA fixo para segurança de supply chain — evita que uma tag flutuante (@v1)
-        # possa ser redirecionada para um commit malicioso sem aviso
-        uses: appleboy/ssh-action@1d1b21ca96111b1542fcbb83791f2dca5dfaa3d8
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          # chave privada SSH cadastrada nos secrets do repositório
-          # a chave pública correspondente precisa estar no ~/.ssh/authorized_keys do servidor
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /opt/ecoshop
+      - name: Checkout (arquivos de deploy)
+        uses: actions/checkout@v4
 
-            # puxa apenas a imagem da app — postgres e redis continuam rodando sem interrupção
-            docker compose pull app
+      - name: Configurar SSH
+        # ssh/scp nativos do runner, sem action de terceiros na cadeia de entrega (REQ-OPS-10).
+        # SSH_KNOWN_HOSTS (saída de `ssh-keyscan <host>` conferida por uma pessoa) permite
+        # verificar a chave do servidor; sem ela o deploy falha em vez de confiar em qualquer host.
+        # A chave pública correspondente a SSH_PRIVATE_KEY precisa estar no authorized_keys do servidor.
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
 
-            # --no-deps recria só o container da app sem reiniciar postgres e redis
-            # -d sobe em background e libera o terminal do ssh
-            docker compose up -d --no-deps app
+      - name: Copiar compose e script de deploy
+        run: |
+          scp -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes -o BatchMode=yes \
+            docker-compose.prod.yml scripts/deploy/deploy.sh \
+            "$SSH_USER@$SSH_HOST:/opt/ecoshop/"
 
-            # aplica APENAS as migrations pendentes — nunca roda o seed em produção via CI
-            # o seed é executado uma única vez na criação do ambiente (docker compose up inicial)
-            # rodá-lo a cada deploy causaria dados duplicados ou erros de constraint
-            docker compose run --rm migrate sh -c "npx prisma migrate deploy"
-
-            # remove imagens antigas que não são mais referenciadas por nenhum container
-            # sem isso, cada deploy deixa uma imagem "dangling" acumulando espaço em disco
-            docker image prune -f
+      - name: Deploy (migra, sobe, verifica a saúde e reverte se falhar)
+        # o .env com os segredos fica só no servidor (/opt/ecoshop/.env), fora do repositório
+        run: |
+          ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes -o BatchMode=yes \
+            "$SSH_USER@$SSH_HOST" \
+            "cd /opt/ecoshop && ECOSHOP_IMAGE='$IMAGEM' APP_TAG='$TAG' sh ./deploy.sh"

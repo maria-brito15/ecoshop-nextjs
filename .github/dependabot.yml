@@ -1,0 +1,27 @@
+# Atualização automática das imagens base (fixadas por digest) e das actions (REQ-OPS-13).
+version: 2
+updates:
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    # atualizações menores e de correção chegam agrupadas, para reduzir ruído
+    groups:
+      menores-e-correcoes:
+        update-types: ["minor", "patch"]

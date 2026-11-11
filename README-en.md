@@ -18,13 +18,13 @@ A showcase (catalog) of sustainable products with an AI material scanner. Full-s
 Requirements: Node 22 (`.nvmrc`), Docker.
 
 ```bash
-cp .env.example .env        # set JWT_SECRET and, for AI, GEMINI_KEY and AZURE_VISION_*
+cp .env.example .env        # fill in the REQUIRED variables (below) and, for AI, GEMINI_KEY and AZURE_VISION_*
 docker compose up --build   # app at http://localhost:3000 · GET /api/health
 ```
 
-Without Docker: start Postgres 16 and Redis 7, export `DATABASE_URL` and `REDIS_URL`, then run `npm ci && npx prisma migrate deploy && npm run dev`.
+No secret has a default value: without `JWT_SECRET`, `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, `ADMIN_PASSWORD` (12+ characters) and `SEED_USER_PASSWORD` (12+ characters), `docker compose up` fails naming the missing variable. `.env.example` explains how to generate each value. In development Compose also loads `docker-compose.override.yml`, which publishes Postgres and Redis on `127.0.0.1` and runs the demo seed; the ADMIN is created by `prisma/seed-admin.ts`.
 
-Users created by the seed **cannot sign in** (placeholder password). To create a real ADMIN, set `ADMIN_EMAIL`, `ADMIN_PASSWORD` and `ADMIN_NAME` in `.env` (or `.env.local`) and run:
+Without Docker: start Postgres 16 and Redis 7, export `DATABASE_URL` and `REDIS_URL` (templates in `.env.example`), then run `npm ci && npx prisma migrate deploy && npm run dev`. To create the ADMIN outside Docker, with `ADMIN_PASSWORD` set in `.env` (or `.env.local`):
 
 ```bash
 npx tsx prisma/seed-admin.ts

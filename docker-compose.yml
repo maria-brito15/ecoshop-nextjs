@@ -1,21 +1,28 @@
 # =============================================================================
-# DOCKER COMPOSE - ECOSHOP
+# DOCKER COMPOSE - ECOSHOP (base e desenvolvimento)
 # =============================================================================
-# Orquestração completa dos serviços necessários para o EcoShop:
-# - app: Aplicação Next.js (EcoShop)
-# - postgres: Banco de dados PostgreSQL
-# - redis: Cache e rate limiting
-# - migrate: Job único para migrações (executa antes do app)
-# - seed: Job único para popular o banco (executa após migrate)
+# Serviços:
+# - app: aplicação Next.js (build local)
+# - postgres: banco de dados PostgreSQL
+# - redis: cache e rate limiting (com senha)
+# - migrate: job único de migrations (executa antes do app)
+# - seed: job único que cria o ADMIN (prisma/seed-admin.ts), após o migrate
+#
+# Em desenvolvimento o Docker Compose também carrega, sozinho,
+# docker-compose.override.yml: ele publica as portas do banco e do Redis em
+# 127.0.0.1 e acrescenta o seed de demonstração (REQ-OPS-08/09).
+# Para publicar em servidor use docker-compose.prod.yml (REQ-OPS-11).
 #
 # Como usar:
-#   docker-compose up -d               # Inicia todos os serviços
-#   docker-compose down                # Para e remove containers
-#   docker-compose logs -f app         # Visualiza logs da aplicação
-#   docker-compose exec app sh         # Acessa shell dentro do container
+#   cp .env.example .env     # e preencha as variáveis obrigatórias
+#   docker compose up --build
 #
-# IMPORTANTE: Configure as variáveis de ambiente no arquivo .env
-# (GEMINI_KEY, AZURE_VISION_ENDPOINT, AZURE_VISION_KEY, etc.)
+# Variáveis OBRIGATÓRIAS (a subida falha nomeando a que faltar; REQ-OPS-07):
+#   JWT_SECRET         32+ caracteres aleatórios, sem valor-exemplo
+#   POSTGRES_PASSWORD  senha do banco (use só letras e números: vai dentro de uma URL)
+#   REDIS_PASSWORD     senha do Redis (idem)
+#   ADMIN_PASSWORD     senha do ADMIN criado pelo seed (12+ caracteres)
+# Opcionais: ADMIN_EMAIL, ADMIN_NAME, GEMINI_KEY, AZURE_VISION_*, AI_CONFIDENCE_THRESHOLD
 # =============================================================================
 
 services:
@@ -29,41 +36,35 @@ services:
       target: runner # Usa o estágio runner (produção)
     container_name: ecoshop-app
     ports:
-      - "3000:3000" # Mapeia porta 3000 do host para porta 3000 do container
+      - "3000:3000"
     environment:
       HOSTNAME: "0.0.0.0"
 
-      # Conexões com banco e cache
-      DATABASE_URL: postgresql://ecoshop:ecoshop@postgres:5432/ecoshop
-      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://ecoshop:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@postgres:5432/ecoshop
+      REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD no .env}@redis:6379
 
-      # Autenticação JWT
-      JWT_SECRET: ${JWT_SECRET:-supersecretkeychangeinproduction}
+      # Em produção a aplicação recusa iniciar sem um segredo forte (REQ-OPS-06).
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env (32+ caracteres aleatórios)}
 
-      # IA - Gemini
       GEMINI_KEY: ${GEMINI_KEY}
 
-      # IA - Azure Vision
       AZURE_VISION_ENDPOINT: ${AZURE_VISION_ENDPOINT}
       AZURE_VISION_KEY: ${AZURE_VISION_KEY}
 
-      # Configurações da IA
       AI_CONFIDENCE_THRESHOLD: ${AI_CONFIDENCE_THRESHOLD:-0.7}
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
 
-      # URL pública da aplicação (para links em emails, etc.)
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
     volumes:
-      # Persiste as fotos enviadas pelos usuários
-      # Importante: não perder os arquivos quando o container reiniciar
       - fotos_data:/app/public/data_fotos
     depends_on:
       postgres:
-        condition: service_healthy # Só inicia quando PostgreSQL estiver saudável
+        condition: service_healthy
       redis:
-        condition: service_healthy # Só inicia quando Redis estiver saudável
+        condition: service_healthy
       seed:
-        condition: service_completed_successfully # Só inicia após seed concluído
-    restart: unless-stopped # Reinicia automaticamente a menos que parado manualmente
+        condition: service_completed_successfully
+    restart: unless-stopped
     healthcheck:
       test:
         [
@@ -78,22 +79,18 @@ services:
       start_period: 40s
 
   # ---------------------------------------------------------------------------
-  # SERVIÇO: POSTGRESQL (BANCO DE DADOS)
+  # SERVIÇO: POSTGRESQL (sem porta publicada no host; ver o override de dev)
   # ---------------------------------------------------------------------------
   postgres:
-    image: postgres:16-alpine # Versão leve do PostgreSQL 16
+    image: postgres:16-alpine@sha256:aa6cb33cf4c19c765cefcf48d96176258800870a9a1e930ad126200f9d825139
     container_name: ecoshop-postgres
     environment:
       POSTGRES_USER: ecoshop
-      POSTGRES_PASSWORD: ecoshop
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
       POSTGRES_DB: ecoshop
     volumes:
-      # Persiste os dados do banco fora do container
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432" # Expõe porta para debugging (opcional)
     healthcheck:
-      # Comando para verificar se PostgreSQL está pronto para aceitar conexões
       test: ["CMD-SHELL", "pg_isready -U ecoshop"]
       interval: 5s
       timeout: 5s
@@ -101,18 +98,18 @@ services:
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
-  # SERVIÇO: REDIS (CACHE E RATE LIMITING)
+  # SERVIÇO: REDIS (com senha; sem porta publicada no host)
   # ---------------------------------------------------------------------------
   redis:
-    image: redis:7-alpine # Versão leve do Redis 7
+    image: redis:7-alpine@sha256:7b1753b4c5ad8458906c272a8132b8c15f5557b000379eb115fb239706a384b7
     container_name: ecoshop-redis
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?defina REDIS_PASSWORD no .env}"]
+    environment:
+      # O redis-cli lê a senha desta variável (evita a senha na linha de comando).
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
     volumes:
-      # Persiste os dados do cache (opcional, pode ser volátil)
       - redis_data:/data
-    ports:
-      - "6379:6379" # Expõe porta para debugging (opcional)
     healthcheck:
-      # Comando para verificar se Redis está respondendo
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
@@ -120,29 +117,26 @@ services:
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
-  # SERVIÇO: MIGRATOR (MIGRAÇÕES DO PRISMA)
+  # JOB: MIGRATIONS
   # ---------------------------------------------------------------------------
-  # Este serviço executa as migrações do banco de dados e depois encerra.
-  # Útil para garantir que o schema está atualizado antes do app iniciar.
-  # restart: "no" garante que o container não reinicie após completar.
   migrate:
     build:
       context: .
       dockerfile: Dockerfile
-      target: migrator # Usa o estágio migrator
+      target: migrator
     container_name: ecoshop-migrate
     environment:
-      DATABASE_URL: postgresql://ecoshop:ecoshop@postgres:5432/ecoshop
+      DATABASE_URL: postgresql://ecoshop:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@postgres:5432/ecoshop
     depends_on:
       postgres:
         condition: service_healthy
-    restart: "no" # Executa uma vez e para
+    restart: "no"
 
   # ---------------------------------------------------------------------------
-  # SERVIÇO: SEED (POPULAR O BANCO COM DADOS INICIAIS)
+  # JOB: CRIA O ADMIN (REQ-OPS-02/09)
+  # Sem senha embutida: ADMIN_PASSWORD é obrigatória. Este seed cria ou ATUALIZA
+  # o ADMIN de ADMIN_EMAIL, redefinindo a senha para o valor do .env a cada subida.
   # ---------------------------------------------------------------------------
-  # Este serviço executa o seed do banco de dados e depois encerra.
-  # Executa após o migrate para garantir que o schema existe.
   seed:
     build:
       context: .
@@ -150,18 +144,17 @@ services:
       target: migrator # Reutiliza o estágio migrator (tem tsx e prisma)
     container_name: ecoshop-seed
     environment:
-      DATABASE_URL: postgresql://ecoshop:ecoshop@postgres:5432/ecoshop
-    command: npx tsx prisma/seed.ts
+      DATABASE_URL: postgresql://ecoshop:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@postgres:5432/ecoshop
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@ecoshop.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?defina ADMIN_PASSWORD no .env (12+ caracteres)}
+      ADMIN_NAME: ${ADMIN_NAME:-Administrador EcoShop}
+    command: npx tsx prisma/seed-admin.ts
     depends_on:
       migrate:
         condition: service_completed_successfully
-    restart: "no" # Executa uma vez e para
+    restart: "no"
 
-# -----------------------------------------------------------------------------
-# VOLUMES PERSISTENTES
-# -----------------------------------------------------------------------------
-# Dados que sobrevivem à reinicialização/remoção dos containers
 volumes:
-  postgres_data: # Dados do banco PostgreSQL
-  redis_data: # Dados do cache Redis (opcional, pode ser volátil)
-  fotos_data: # Fotos enviadas pelos usuários
+  postgres_data:
+  redis_data:
+  fotos_data:

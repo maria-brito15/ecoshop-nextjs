@@ -12,3 +12,4 @@
 - [ ] Spec viva consolidada (`docs/capabilities/…/spec.md` e `status.md`)
 - [ ] Verificação manual (se houver critério não automatizável): …
 - [ ] Nenhum dado inventado na interface (Constitution, Art. XI)
+- [ ] Se há migration: ela é compatível com a versão anterior da aplicação (adiciona antes de remover), porque a reversão do deploy não desfaz migrations (`scripts/deploy/deploy.sh`)

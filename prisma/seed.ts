@@ -31,9 +31,10 @@
  *
  * SENHA (REQ-OPS-02): os usuários de demonstração agora recebem um hash
  * bcrypt real (não mais o placeholder "hash-seguro-aqui", que não permitia
- * login de ninguém). A senha é a mesma para todos os usuários de demo —
- * defina SEED_USER_PASSWORD no ambiente para trocá-la; o padrão é
- * "EcoshopDemo@2026".
+ * login de ninguém). A senha é a mesma para todos os usuários de demo e vem
+ * **obrigatoriamente** de SEED_USER_PASSWORD (12+ caracteres): não há senha
+ * embutida no código (REQ-OPS-09). Este seed é só para desenvolvimento; em
+ * produção o catálogo começa vazio e só o ADMIN é criado (seed-admin.ts).
  *
  * @see prisma/schema.prisma - Definição dos modelos
  * @see prisma.config.ts - Configuração do seed
@@ -47,14 +48,17 @@ import { PrismaClient, TipoUsuario } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 import bcrypt from "bcryptjs";
+import { exigirSenhaDeSeed } from "./senha-seed";
 
 /**
  * Senha em texto plano dos usuários de demonstração (todos compartilham a
  * mesma, por simplicidade). Mesmo custo de hashing usado no resto do app
  * (services/usuario.service.ts, prisma/seed-admin.ts).
  */
-const SEED_USER_PASSWORD =
-  process.env.SEED_USER_PASSWORD ?? "EcoshopDemo@2026";
+const SEED_USER_PASSWORD = exigirSenhaDeSeed(
+  "SEED_USER_PASSWORD",
+  process.env.SEED_USER_PASSWORD,
+);
 const SALT_ROUNDS = 12;
 
 /**
@@ -262,7 +266,7 @@ async function main() {
     const registro = await prisma.marca.upsert({
       where: { nome: marca.nome },
       update: {},
-      create: marca,
+      create: { ...marca, status: "APROVADA" },
     });
     marcas[registro.nome] = registro.id;
   }
@@ -388,7 +392,7 @@ async function main() {
   }
 
   console.log(
-    `\nSeed concluído. Login de demonstração: qualquer e-mail acima + senha "${SEED_USER_PASSWORD}".`,
+    "\nSeed concluído. Login de demonstração: qualquer e-mail acima + a senha definida em SEED_USER_PASSWORD.",
   );
 }
 

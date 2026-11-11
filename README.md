@@ -18,17 +18,19 @@ Vitrine de produtos sustentáveis com um scanner de materiais por IA. Projeto fu
 Requisitos: Node 22 (`.nvmrc`), Docker.
 
 ```bash
-cp .env.example .env        # preencha JWT_SECRET e, para IA, GEMINI_KEY e AZURE_VISION_*
+cp .env.example .env        # preencha as variáveis OBRIGATÓRIAS (abaixo) e, para IA, GEMINI_KEY e AZURE_VISION_*
 docker compose up --build   # app em http://localhost:3000 · GET /api/health
 ```
 
-Sem Docker: suba Postgres 16 e Redis 7, exporte `DATABASE_URL` e `REDIS_URL` e rode `npm ci && npx prisma migrate deploy && npm run dev`.
+Nenhum segredo tem valor padrão: sem `JWT_SECRET`, `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, `ADMIN_PASSWORD` (12+ caracteres) e `SEED_USER_PASSWORD` (12+ caracteres) o `docker compose up` falha nomeando a variável que falta. O `.env.example` explica como gerar cada valor. Em desenvolvimento o Compose carrega `docker-compose.override.yml`, que publica Postgres e Redis em `127.0.0.1` e roda o seed de demonstração; o ADMIN é criado por `prisma/seed-admin.ts` com `ADMIN_EMAIL`/`ADMIN_PASSWORD`.
 
-Os usuários criados pelo seed **não conseguem entrar** (senha placeholder). Para criar um ADMIN real, defina `ADMIN_EMAIL`, `ADMIN_PASSWORD` e `ADMIN_NAME` no `.env` (ou `.env.local`) e rode:
+Sem Docker: suba Postgres 16 e Redis 7, exporte `DATABASE_URL` e `REDIS_URL` (modelos no `.env.example`) e rode `npm ci && npx prisma migrate deploy && npm run dev`. Para criar o ADMIN fora do Docker, com `ADMIN_PASSWORD` definida no `.env` (ou `.env.local`):
 
 ```bash
 npx tsx prisma/seed-admin.ts
 ```
+
+**Publicar em servidor:** use `docker-compose.prod.yml` (imagens do GHCR, sem portas de banco, catálogo vazio) pelo `scripts/deploy/deploy.sh`, que migra, sobe, verifica a saúde e reverte se falhar. Ele não desfaz migrations: toda migration deve ser compatível com a versão anterior da aplicação. O cabeçalho do `docker-compose.prod.yml` lista as variáveis do `.env` do servidor e o passo único que cria o ADMIN.
 
 > `npm run seed:admin` **não funciona**: os scripts `seed` e `seed:admin` estão sob a chave `"prisma"` do `package.json`, e não em `"scripts"`.
 

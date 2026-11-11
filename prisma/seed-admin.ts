@@ -15,14 +15,14 @@
  *   1. Defina as variáveis de ambiente (ou edite os valores diretamente)
  *   2. Execute: npx tsx prisma/seed-admin.ts
  *
- * Credenciais padrão (se não informar via ambiente):
- *   Email: admin@ecoshop.com
- *   Senha: Admin@123456
+ * Não há senha embutida (REQ-OPS-09): ADMIN_PASSWORD é obrigatória, com no
+ * mínimo 12 caracteres; sem ela o script encerra antes de gravar qualquer coisa.
  *
- * Variáveis de ambiente opcionais:
- *   ADMIN_EMAIL - Email do administrador
- *   ADMIN_PASSWORD - Senha do administrador (mínimo 8 caracteres)
- *   ADMIN_NAME - Nome do administrador
+ * Variáveis de ambiente:
+ *   ADMIN_PASSWORD - Senha do administrador (obrigatória, 12+ caracteres)
+ *   ADMIN_EMAIL - Email do administrador (padrão: admin@ecoshop.com)
+ *   ADMIN_NAME - Nome do administrador (opcional)
+ *   ADMIN_PHONE - Telefone do administrador (opcional)
  *
  * @see prisma/seed.ts - Seed completo com dados de demonstração
  * ============================================================================
@@ -35,6 +35,7 @@ import { PrismaClient, TipoUsuario } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 import bcrypt from "bcryptjs";
+import { exigirSenhaDeSeed } from "./senha-seed";
 
 /**
  * Configurações do administrador.
@@ -42,7 +43,7 @@ import bcrypt from "bcryptjs";
  */
 const ADMIN_CONFIG = {
   email: process.env.ADMIN_EMAIL || "admin@ecoshop.com",
-  senha: process.env.ADMIN_PASSWORD || "Admin@123456",
+  senha: exigirSenhaDeSeed("ADMIN_PASSWORD", process.env.ADMIN_PASSWORD),
   nome: process.env.ADMIN_NAME || "Administrador EcoShop",
   telefone: process.env.ADMIN_PHONE || "(11) 99999-8888",
 };
@@ -60,20 +61,6 @@ const connectionString = process.env.DATABASE_URL!;
 const pool = new pg.Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
-
-/**
- * Valida a senha antes de criar o hash.
- *
- * @param senha - Senha em texto plano
- * @returns true se válida, false caso contrário
- */
-function validarSenha(senha: string): boolean {
-  if (senha.length < 8) {
-    console.error("❌ A senha deve ter pelo menos 8 caracteres.");
-    return false;
-  }
-  return true;
-}
 
 /**
  * Gera um hash bcrypt a partir da senha.
@@ -98,10 +85,7 @@ async function criarOuAtualizarAdmin() {
   console.log(`   Nome: ${ADMIN_CONFIG.nome}`);
   console.log(`   Senha: ${"•".repeat(ADMIN_CONFIG.senha.length)} (oculta)`);
 
-  // Valida senha
-  if (!validarSenha(ADMIN_CONFIG.senha)) {
-    process.exit(1);
-  }
+  // A senha já foi validada ao montar ADMIN_CONFIG (REQ-OPS-09).
 
   // Gera hash da senha
   const senhaHash = await gerarHashSenha(ADMIN_CONFIG.senha);
@@ -197,18 +181,13 @@ async function main() {
     await criarOuAtualizarAdmin();
 
     // Lista admins atualizados
-    const admins = await listarAdministradores();
+    await listarAdministradores();
 
-    console.log("\n🔐 ========================================");
-    console.log("   CREDENCIAIS PARA LOGIN");
-    console.log("   ========================================");
+    // A senha NUNCA é impressa: logs de Docker e de CI ficam retidos (REQ-OPS-09).
+    console.log("\n🔐 Administrador pronto.");
     console.log(`   📧 Email: ${ADMIN_CONFIG.email}`);
-    console.log(`   🔑 Senha: ${ADMIN_CONFIG.senha}`);
-    console.log("   ========================================\n");
-    console.log(
-      "💡 Dica: Use estas credenciais para acessar o painel admin em /painel",
-    );
-    console.log("   O token JWT será gerado automaticamente ao fazer login.\n");
+    console.log("   🔑 Senha: a definida em ADMIN_PASSWORD (não exibida).");
+    console.log("   Acesse o painel em /painel.\n");
   } catch (error) {
     console.error("\n❌ Erro ao executar seed de administrador:");
     console.error(error);

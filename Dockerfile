@@ -20,7 +20,7 @@
 # -----------------------------------------------------------------------------
 # Instala todas as dependências (incluindo devDependencies)
 # Usado pelo estágio builder para compilar a aplicação
-FROM node:22-alpine AS deps
+FROM node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS deps
 
 # Define o diretório de trabalho dentro do container
 WORKDIR /app
@@ -37,7 +37,7 @@ RUN npm ci --frozen-lockfile
 # ESTÁGIO 2: BUILDER (COMPILAÇÃO)
 # -----------------------------------------------------------------------------
 # Compila a aplicação Next.js para produção
-FROM node:22-alpine AS builder
+FROM node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS builder
 
 WORKDIR /app
 
@@ -63,7 +63,7 @@ RUN npm run build
 # ESTÁGIO 3: RUNNER (PRODUÇÃO)
 # -----------------------------------------------------------------------------
 # Imagem final de produção - mínima e otimizada
-FROM node:22-alpine AS runner
+FROM node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS runner
 
 WORKDIR /app
 
@@ -116,7 +116,7 @@ CMD ["node", "server.js"]
 # -----------------------------------------------------------------------------
 # Estágio separado para executar migrações do Prisma
 # Útil em pipelines de CI/CD e docker-compose para garantir schema atualizado
-FROM node:22-alpine AS migrator
+FROM node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS migrator
 
 WORKDIR /app
 
