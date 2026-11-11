@@ -196,7 +196,7 @@ export default function AboutPage() {
               About <span className="text-gradient-eco">EcoShop</span>
             </h1>
             <p className="text-xl text-[var(--color-text-secondary)] max-w-2xl leading-relaxed">
-              Academic project, finalist of PUC Minas' Interdisciplinary Work 2 — originally developed by a team with Java and Spark Framework, then completely refactored to Next.js.
+              Academic project, finalist of PUC Minas&apos; Interdisciplinary Work 2 — originally developed by a team with Java and Spark Framework, then completely refactored to Next.js.
             </p>
             <div className="flex flex-wrap gap-x-10 gap-y-6 pt-4 border-t border-[var(--color-border)] mt-2">
               {STATS.map((s) => (
