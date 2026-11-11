@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { TipoUsuario } from "@/types/api";
+import { buscarSessao, encerrarSessaoNoCliente } from "@/lib/hooks/sessao";
 
 type SessionUser = {
   id: number;
@@ -55,7 +56,7 @@ function useDarkMode() {
 
   function applyDarkClass(dark: boolean) {
     const html = document.documentElement;
-    dark ? html.classList.add("dark-mode") : html.classList.remove("dark-mode");
+    html.classList.toggle("dark-mode", dark);
   }
 
   useEffect(() => {
@@ -77,21 +78,8 @@ function useSession() {
 
   const refresh = () => {
     setCarregando(true);
-    fetch("/api/auth/me", { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : { usuario: null }))
-      .then((data) => {
-        setUsuario(data.usuario ?? null);
-
-        // ✅ CORREÇÃO: Renovar o token se o usuário está autenticado
-        // Isso sincroniza o JWT com o tipo atual do banco
-        if (data.usuario) {
-          fetch("/api/auth/refresh", {
-            method: "POST",
-            credentials: "include",
-          }).catch((err) => console.error("Erro ao renovar token:", err));
-        }
-      })
-      .catch(() => setUsuario(null))
+    buscarSessao()
+      .then((usuario) => setUsuario(usuario))
       .finally(() => setCarregando(false));
   };
 
@@ -127,7 +115,7 @@ export default function Header() {
   }, []);
 
   async function handleLogout() {
-    await fetch("/api/auth", { method: "DELETE", credentials: "include" });
+    await encerrarSessaoNoCliente();
     refresh();
     setMenuPerfilOpen(false);
     router.push("/");

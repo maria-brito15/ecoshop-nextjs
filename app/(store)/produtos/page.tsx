@@ -24,11 +24,12 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useListarProdutos } from "@/lib/hooks/useProdutos";
+import { useListarProdutos, type OrdemProdutos } from "@/lib/hooks/useProdutos";
 import { useListarCategorias } from "@/lib/hooks/useCategorias";
+import { useListarMarcas } from "@/lib/hooks/useMarcas";
 import type { Produto, ProdutoCertificado } from "@/types/api";
 
 // ----------------------------------------------------------------------------
@@ -246,39 +247,29 @@ export default function ProdutosPage() {
   const [nome, setNome] = useState("");
   const [busca, setBusca] = useState("");
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
+  const [marcaId, setMarcaId] = useState<number | undefined>(undefined);
   const [maxPreco, setMaxPreco] = useState(1000);
   const [precoInput, setPrecoInput] = useState(1000);
-  const [sortBy, setSortBy] = useState("relevancia");
+  const [sortBy, setSortBy] = useState<OrdemProdutos>("relevancia");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Hooks de dados
-  const { data, carregando, erro } = useListarProdutos(
-    page,
-    12,
-    categoriaId,
-    busca,
-  );
+  // Hooks de dados — ordenação, marca e preço máximo são aplicados pelo
+  // servidor ao catálogo inteiro, não só à página atual (REQ-CAT-06/07).
+  const { data, carregando, erro } = useListarProdutos(page, 12, categoriaId, busca, {
+    marcaId,
+    precoMax: maxPreco < 1000 ? maxPreco : undefined,
+    sort: sortBy,
+  });
   const { data: catData } = useListarCategorias();
+  const { data: marcasData } = useListarMarcas();
 
   const produtos = data?.produtos ?? [];
   const total = data?.total ?? 0;
   const totalPaginas = Math.ceil(total / 12);
   const categorias = catData?.categorias ?? [];
-
-  // Ordenação local (cliente-side)
-  const produtosSorted = [...produtos].sort((a, b) => {
-    const precoA = Number(a.preco);
-    const precoB = Number(b.preco);
-    if (sortBy === "preco_asc") return precoA - precoB;
-    if (sortBy === "preco_desc") return precoB - precoA;
-    if (sortBy === "nome_asc") return a.nome.localeCompare(b.nome);
-    if (sortBy === "nome_desc") return b.nome.localeCompare(a.nome);
-    return 0;
-  });
-
-  const produtosFiltrados = produtosSorted.filter(
-    (p) => Number(p.preco) <= maxPreco,
+  const marcas = (marcasData?.marcas ?? []).filter(
+    (m) => m.status === "APROVADA",
   );
 
   // --------------------------------------------------------------------------
@@ -295,13 +286,17 @@ export default function ProdutosPage() {
   function handlePrecoChange(val: number) {
     setPrecoInput(val);
     clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => setMaxPreco(val), 300);
+    debounceRef.current = setTimeout(() => {
+      setMaxPreco(val);
+      setPage(1);
+    }, 300);
   }
 
   function limparFiltros() {
     setNome("");
     setBusca("");
     setCategoriaId(undefined);
+    setMarcaId(undefined);
     setMaxPreco(1000);
     setPrecoInput(1000);
     setSortBy("relevancia");
@@ -350,10 +345,10 @@ export default function ProdutosPage() {
                   {total > 0 ? (
                     <>
                       <span className="font-bold text-[var(--color-primary)]">
-                        {produtosFiltrados.length}
+                        {total}
                       </span>{" "}
-                      produto{produtosFiltrados.length !== 1 ? "s" : ""}{" "}
-                      encontrado{produtosFiltrados.length !== 1 ? "s" : ""}
+                      produto{total !== 1 ? "s" : ""}{" "}
+                      encontrado{total !== 1 ? "s" : ""}
                     </>
                   ) : (
                     "Nenhum produto encontrado"
@@ -504,6 +499,61 @@ export default function ProdutosPage() {
               </ul>
             </div>
 
+            {/* Filtro por marca */}
+            {marcas.length > 0 && (
+              <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3 flex items-center gap-2">
+                  <span>🤝</span> Marcas
+                </p>
+                <ul className="flex flex-col gap-0.5">
+                  <li>
+                    <button
+                      onClick={() => {
+                        setMarcaId(undefined);
+                        setPage(1);
+                      }}
+                      className={`
+                        w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium
+                        transition-all duration-150 flex items-center justify-between
+                        ${
+                          marcaId === undefined
+                            ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold"
+                            : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface-hover)] hover:text-[var(--color-text-primary)]"
+                        }
+                      `}
+                    >
+                      <span>Todas</span>
+                      {marcaId === undefined && (
+                        <span className="text-xs">✓</span>
+                      )}
+                    </button>
+                  </li>
+                  {marcas.map((m) => (
+                    <li key={m.id}>
+                      <button
+                        onClick={() => {
+                          setMarcaId(m.id);
+                          setPage(1);
+                        }}
+                        className={`
+                          w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium
+                          transition-all duration-150 flex items-center justify-between
+                          ${
+                            marcaId === m.id
+                              ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold"
+                              : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface-hover)] hover:text-[var(--color-text-primary)]"
+                          }
+                        `}
+                      >
+                        <span>{m.nome}</span>
+                        {marcaId === m.id && <span className="text-xs">✓</span>}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Filtro por faixa de preço (slider) */}
             <div className="px-4 py-5 border-b border-[var(--color-border)]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-4 flex items-center gap-2">
@@ -589,7 +639,9 @@ export default function ProdutosPage() {
                   `}
                 >
                   ⚙ Filtros
-                  {(categoriaId !== undefined || maxPreco < 1000) && (
+                  {(categoriaId !== undefined ||
+                    marcaId !== undefined ||
+                    maxPreco < 1000) && (
                     <span className="w-2 h-2 rounded-full bg-[var(--color-primary)]" />
                   )}
                 </button>
@@ -602,9 +654,9 @@ export default function ProdutosPage() {
                   ) : (
                     <>
                       <span className="font-extrabold text-[var(--color-primary)]">
-                        {produtosFiltrados.length}
+                        {total}
                       </span>{" "}
-                      produto{produtosFiltrados.length !== 1 ? "s" : ""}
+                      produto{total !== 1 ? "s" : ""}
                     </>
                   )}
                 </p>
@@ -617,7 +669,10 @@ export default function ProdutosPage() {
                 </label>
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e) => {
+                    setSortBy(e.target.value as OrdemProdutos);
+                    setPage(1);
+                  }}
                   className={`
                     text-sm font-medium
                     px-3 py-2 rounded-xl
@@ -681,7 +736,7 @@ export default function ProdutosPage() {
             )}
 
             {/* Nenhum produto encontrado */}
-            {!carregando && !erro && produtosFiltrados.length === 0 && (
+            {!carregando && !erro && produtos.length === 0 && (
               <div
                 className={`
                   flex flex-col items-center justify-center
@@ -706,9 +761,9 @@ export default function ProdutosPage() {
             )}
 
             {/* Grid de produtos */}
-            {!carregando && !erro && produtosFiltrados.length > 0 && (
+            {!carregando && !erro && produtos.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                {produtosFiltrados.map((produto, i) => (
+                {produtos.map((produto, i) => (
                   <ProductCard key={produto.id} produto={produto} index={i} />
                 ))}
               </div>
@@ -858,6 +913,43 @@ export default function ProdutosPage() {
                 ))}
               </ul>
             </div>
+
+            {/* Filtro por marca (mobile) */}
+            {marcas.length > 0 && (
+              <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3">
+                  🤝 Marcas
+                </p>
+                <ul className="flex flex-col gap-0.5">
+                  <li>
+                    <button
+                      onClick={() => {
+                        setMarcaId(undefined);
+                        setPage(1);
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${marcaId === undefined ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
+                    >
+                      Todas
+                    </button>
+                  </li>
+                  {marcas.map((m) => (
+                    <li key={m.id}>
+                      <button
+                        onClick={() => {
+                          setMarcaId(m.id);
+                          setPage(1);
+                          setSidebarOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${marcaId === m.id ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
+                      >
+                        {m.nome}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Slider de preço (mobile) */}
             <div className="px-4 py-5">

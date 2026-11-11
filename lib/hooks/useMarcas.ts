@@ -31,6 +31,7 @@ import type {
   CriarMarcaResponse,
   AtualizarMarcaBody,
   AtualizarMarcaResponse,
+  AprovarMarcaResponse,
   OkResponse,
 } from "@/types/api";
 
@@ -100,6 +101,23 @@ export function useAtualizarMarca() {
 export function useDeletarMarca() {
   return useMutation<OkResponse>({
     method: "DELETE",
+    invalidar: ["/api/marcas"],
+  });
+}
+
+/**
+ * Aprova uma marca pendente.
+ * Requer autenticação ADMIN. REQ-USR-03, ADR-0018.
+ *
+ * @returns Mutation hook para aprovação de marca
+ *
+ * @example
+ * const aprovar = useAprovarMarca();
+ * await aprovar.executar(`/api/marcas/${marca.id}/aprovar`);
+ */
+export function useAprovarMarca() {
+  return useMutation<AprovarMarcaResponse>({
+    method: "POST",
     invalidar: ["/api/marcas"],
   });
 }

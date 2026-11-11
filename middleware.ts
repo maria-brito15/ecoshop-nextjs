@@ -31,6 +31,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
+import { COOKIE_ACESSO, COOKIE_RENOVACAO } from "@/lib/auth/constantes";
 import { REGRAS_ROTAS } from "./config/rotas-protegidas";
 
 /**
@@ -58,7 +59,7 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Tenta extrair e validar o token JWT do cookie
-  const token = req.cookies.get("token")?.value;
+  const token = req.cookies.get(COOKIE_ACESSO)?.value;
   const payload = token ? await verifyToken(token) : null;
 
   // Verifica se a rota atual corresponde a alguma regra de proteção
@@ -72,6 +73,17 @@ export async function middleware(req: NextRequest) {
     // Para rotas de API: retorna JSON 401 (Unauthorized)
     if (regra.tipoResposta === "api") {
       return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
+    }
+
+    // Acesso expirado (15 min) mas com token de renovação: renova e volta para
+    // esta página (ADR-0021). Se a renovação falhar, o próprio endpoint leva ao login.
+    if (req.cookies.get(COOKIE_RENOVACAO)?.value) {
+      return NextResponse.redirect(
+        new URL(
+          `/api/auth/refresh?next=${encodeURIComponent(pathname + req.nextUrl.search)}`,
+          req.url,
+        ),
+      );
     }
 
     // Para rotas de página: redireciona para login

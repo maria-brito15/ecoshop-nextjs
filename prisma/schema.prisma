@@ -12,6 +12,12 @@ enum TipoUsuario {
   MARCA
 }
 
+enum StatusMarca {
+  PENDENTE
+  APROVADA
+  REJEITADA
+}
+
 model Usuario {
   id         Int         @id @default(autoincrement())
   nome       String
@@ -35,11 +41,12 @@ model Categoria {
 }
 
 model Marca {
-  id        Int       @id @default(autoincrement())
-  nome      String    @unique
+  id        Int         @id @default(autoincrement())
+  nome      String      @unique
   descricao String?
-  usuarioId Int       @unique @map("usuario_id")
-  usuario   Usuario   @relation(fields: [usuarioId], references: [id])
+  status    StatusMarca @default(PENDENTE)
+  usuarioId Int         @unique @map("usuario_id")
+  usuario   Usuario     @relation(fields: [usuarioId], references: [id])
   produtos  Produto[]
 
   @@map("marcas")
@@ -68,6 +75,8 @@ model Produto {
   marca        Marca                @relation(fields: [marcaId], references: [id])
   certificados ProdutoCertificado[]
 
+  @@index([categoriaId])
+  @@index([marcaId])
   @@map("produtos")
 }
 
@@ -78,5 +87,6 @@ model ProdutoCertificado {
   certificado   Certificado @relation(fields: [certificadoId], references: [id])
 
   @@id([produtoId, certificadoId])
+  @@index([certificadoId])
   @@map("produto_certificado")
 }

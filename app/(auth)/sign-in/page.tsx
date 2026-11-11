@@ -40,6 +40,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLogin, useRegistro } from "@/lib/hooks/useAuth";
+import { caminhoLocalOuRaiz } from "@/lib/http/next-url";
+import { buscarSessao } from "@/lib/hooks/sessao";
 import type { LoginBody, RegistroBody } from "@/types/api";
 
 type Modo = "login" | "cadastro";
@@ -51,6 +53,7 @@ type Form = {
   senhaConfirm: string;
   telefone: string;
   isLoja: boolean;
+  marcaNome: string;
 };
 
 /**
@@ -117,10 +120,12 @@ export default function AuthPage() {
     senhaConfirm: "",
     telefone: "",
     isLoja: false,
+    marcaNome: "",
   });
 
   const [darkMode, setDarkMode] = useState(false);
   const [senhaErro, setSenhaErro] = useState<string | null>(null);
+  const [marcaPendenteMsg, setMarcaPendenteMsg] = useState(false);
 
   const login = useLogin();
   const registro = useRegistro();
@@ -131,8 +136,8 @@ export default function AuthPage() {
 
   // Redireciona se usuário já estiver logado
   useEffect(() => {
-    fetch("/api/auth/me", { credentials: "include" }).then((res) => {
-      if (res.ok) router.replace("/");
+    buscarSessao().then((usuario) => {
+      if (usuario) router.replace("/");
     });
   }, [router]);
 
@@ -182,8 +187,10 @@ export default function AuthPage() {
       senhaConfirm: "",
       telefone: "",
       isLoja: false,
+      marcaNome: "",
     });
     setSenhaErro(null);
+    setMarcaPendenteMsg(false);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -192,7 +199,9 @@ export default function AuthPage() {
 
     const nextUrl =
       typeof window !== "undefined"
-        ? new URLSearchParams(window.location.search).get("next") || "/"
+        ? caminhoLocalOuRaiz(
+            new URLSearchParams(window.location.search).get("next"),
+          )
         : "/";
 
     if (modo === "login") {
@@ -209,17 +218,28 @@ export default function AuthPage() {
         setSenhaErro("A senha deve ter pelo menos 8 caracteres.");
         return;
       }
+      if (form.isLoja && !form.marcaNome.trim()) {
+        setSenhaErro("Informe o nome da marca.");
+        return;
+      }
 
       const body: RegistroBody = {
         nome: form.nome,
         email: form.email,
         senha: form.senha,
         ...(form.telefone ? { telefone: form.telefone } : {}),
+        ...(form.isLoja
+          ? { tipo: "MARCA" as const, marcaNome: form.marcaNome.trim() }
+          : {}),
       };
 
-      // Define tipo como MARCA se isLoja for true
       const data = await registro.executar("/api/users", body);
-      if (data) router.push("/");
+      if (!data) return;
+      if (data.marcaPendente) {
+        setMarcaPendenteMsg(true);
+        return;
+      }
+      router.push("/");
     }
   }
 
@@ -357,6 +377,20 @@ export default function AuthPage() {
             </div>
           )}
 
+          {marcaPendenteMsg ? (
+            <div
+              className="px-4 py-4 rounded-xl text-sm font-medium"
+              style={{
+                background: "var(--color-primary-light)",
+                color: "var(--color-primary-dark)",
+                animation: "fadeSlide 0.3s ease",
+              }}
+            >
+              Seu cadastro como marca parceira está em análise; por enquanto
+              você tem acesso como cliente. Avisaremos quando um
+              administrador aprovar.
+            </div>
+          ) : (
           <form
             onSubmit={handleSubmit}
             style={{ animation: "fadeSlide 0.35s ease" }}
@@ -598,8 +632,21 @@ export default function AuthPage() {
                     className="text-xs pl-8"
                     style={{ color: "var(--color-text-tertiary)" }}
                   >
-                    Marque se deseja gerenciar e vender produtos.
+                    Marque se deseja gerenciar e vender produtos. O cadastro
+                    como marca fica pendente até um administrador aprovar.
                   </p>
+                  {form.isLoja && (
+                    <input
+                      type="text"
+                      name="marcaNome"
+                      value={form.marcaNome}
+                      onChange={handleChange}
+                      placeholder="Nome da marca"
+                      required
+                      onClick={(e) => e.stopPropagation()}
+                      className={inputCls}
+                    />
+                  )}
                 </div>
               )}
 
@@ -679,6 +726,7 @@ export default function AuthPage() {
               </button>
             </div>
           </form>
+          )}
 
           <div
             className="mt-6 pt-5 text-center"

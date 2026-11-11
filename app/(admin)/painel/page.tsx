@@ -34,7 +34,6 @@ import {
   useDeletarFoto,
 } from "@/lib/hooks/useFotos";
 
-import type { Foto } from "@/types/api";
 
 import {
   useListarProdutos,
@@ -53,6 +52,7 @@ import {
   useCriarMarca,
   useAtualizarMarca,
   useDeletarMarca,
+  useAprovarMarca,
 } from "@/lib/hooks/useMarcas";
 import {
   useListarCertificados,
@@ -490,6 +490,7 @@ function SecaoProdutos() {
     categoriaId: "",
     marcaId: "",
   });
+  const [certificadoIds, setCertificadoIds] = useState<number[]>([]);
 
   const { data: produtosData, carregando, erro } = useListarProdutos(1, 100);
   const listaProdutos = produtosData?.produtos ?? [];
@@ -499,6 +500,9 @@ function SecaoProdutos() {
 
   const { data: marcasData } = useListarMarcas();
   const marcas = marcasData?.marcas ?? [];
+
+  const { data: certificadosData } = useListarCertificados();
+  const certificados = certificadosData?.certificados ?? [];
 
   const criar = useCriarProduto();
   const atualizar = useAtualizarProduto();
@@ -514,6 +518,9 @@ function SecaoProdutos() {
         categoriaId: String(produto.categoriaId),
         marcaId: String(produto.marcaId),
       });
+      setCertificadoIds(
+        (produto.certificados ?? []).map((pc) => pc.certificado.id),
+      );
     } else {
       setEditando(null);
       setForm({
@@ -523,9 +530,16 @@ function SecaoProdutos() {
         categoriaId: "",
         marcaId: "",
       });
+      setCertificadoIds([]);
     }
     setModalAberto(true);
   };
+
+  function alternarCertificado(id: number) {
+    setCertificadoIds((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
+    );
+  }
 
   const handleSalvar = async () => {
     if (!form.nome || !form.preco || !form.categoriaId || !form.marcaId) {
@@ -533,18 +547,23 @@ function SecaoProdutos() {
       return;
     }
 
-    const dados = {
-      nome: form.nome,
-      descricao: form.descricao || undefined,
-      preco: parseFloat(form.preco),
-      categoriaId: parseInt(form.categoriaId),
-      marcaId: parseInt(form.marcaId),
-    };
-
     if (editando) {
-      await atualizar.executar(`/api/produtos/${editando.id}`, dados);
+      await atualizar.executar(`/api/produtos/${editando.id}`, {
+        nome: form.nome,
+        descricao: form.descricao || undefined,
+        preco: parseFloat(form.preco),
+        categoriaId: parseInt(form.categoriaId),
+        marcaId: parseInt(form.marcaId),
+        certificadoIds,
+      });
     } else {
-      await criar.executar("/api/produtos", dados);
+      await criar.executar("/api/produtos", {
+        nome: form.nome,
+        descricao: form.descricao || undefined,
+        preco: parseFloat(form.preco),
+        categoriaId: parseInt(form.categoriaId),
+        marcaId: parseInt(form.marcaId),
+      });
     }
 
     setModalAberto(false);
@@ -692,6 +711,34 @@ function SecaoProdutos() {
               type="select"
               options={marcas.map((m) => ({ id: m.id, nome: m.nome }))}
             />
+            {editando && (
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
+                  Certificados
+                </label>
+                {certificados.length === 0 ? (
+                  <p className="text-sm text-[var(--color-text-tertiary)]">
+                    Nenhum certificado cadastrado ainda.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
+                    {certificados.map((c) => (
+                      <label
+                        key={c.id}
+                        className="flex items-center gap-2 text-sm text-[var(--color-text-primary)] cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={certificadoIds.includes(c.id)}
+                          onChange={() => alternarCertificado(c.id)}
+                        />
+                        {c.nome}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="flex gap-2 pt-4">
               <button
                 onClick={handleSalvar}
@@ -890,6 +937,7 @@ function SecaoMarcas() {
   const criar = useCriarMarca();
   const atualizar = useAtualizarMarca();
   const deletar = useDeletarMarca();
+  const aprovar = useAprovarMarca();
 
   const marcas = data?.marcas ?? [];
 
@@ -945,8 +993,13 @@ function SecaoMarcas() {
     await deletar.executar(`/api/marcas/${id}`);
   }
 
+  async function handleAprovar(id: number) {
+    await aprovar.executar(`/api/marcas/${id}/aprovar`);
+  }
+
   const mutando = criar.carregando || atualizar.carregando;
-  const erroMutacao = criar.erro || atualizar.erro || deletar.erro;
+  const erroMutacao =
+    criar.erro || atualizar.erro || deletar.erro || aprovar.erro;
 
   return (
     <section className="animate-[fadeIn_0.4s_ease]">
@@ -963,16 +1016,17 @@ function SecaoMarcas() {
             <Th>Nome</Th>
             <Th>Descrição</Th>
             <Th>Responsável</Th>
+            <Th>Status</Th>
             <Th>Ações</Th>
           </tr>
         </thead>
         <tbody>
           {carregando ? (
-            <LoadingRow cols={5} />
+            <LoadingRow cols={6} />
           ) : erro ? (
-            <EmptyRow cols={5} message={`Erro ao carregar: ${erro}`} />
+            <EmptyRow cols={6} message={`Erro ao carregar: ${erro}`} />
           ) : marcas.length === 0 ? (
-            <EmptyRow cols={5} message="Nenhuma marca cadastrada ainda." />
+            <EmptyRow cols={6} message="Nenhuma marca cadastrada ainda." />
           ) : (
             marcas.map((m) => (
               <tr
@@ -1001,7 +1055,18 @@ function SecaoMarcas() {
                   </div>
                 </Td>
                 <Td>
+                  <StatusMarcaBadge status={m.status} />
+                </Td>
+                <Td>
                   <div className="flex gap-2">
+                    {m.status === "PENDENTE" && (
+                      <ActionButton
+                        variant="approve"
+                        onClick={() => handleAprovar(m.id)}
+                      >
+                        ✅ Aprovar
+                      </ActionButton>
+                    )}
                     <ActionButton variant="edit" onClick={() => abrirEditar(m)}>
                       ✏️ Editar
                     </ActionButton>
@@ -1317,7 +1382,7 @@ function ActionButton({
   children,
 }: {
   onClick: () => void;
-  variant: "edit" | "delete";
+  variant: "edit" | "delete" | "approve";
   children: React.ReactNode;
 }) {
   return (
@@ -1326,11 +1391,34 @@ function ActionButton({
       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 active:scale-95 ${
         variant === "edit"
           ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white"
-          : "bg-red-50 text-red-600 hover:bg-red-600 hover:text-white"
+          : variant === "approve"
+            ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white"
+            : "bg-red-50 text-red-600 hover:bg-red-600 hover:text-white"
       }`}
     >
       {children}
     </button>
+  );
+}
+
+/** Rótulo visual do status de aprovação de uma marca (ADR-0018). */
+function StatusMarcaBadge({ status }: { status: Marca["status"] }) {
+  const estilos: Record<Marca["status"], string> = {
+    PENDENTE: "bg-amber-50 text-amber-700",
+    APROVADA: "bg-emerald-50 text-emerald-700",
+    REJEITADA: "bg-red-50 text-red-600",
+  };
+  const rotulos: Record<Marca["status"], string> = {
+    PENDENTE: "Pendente",
+    APROVADA: "Aprovada",
+    REJEITADA: "Rejeitada",
+  };
+  return (
+    <span
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${estilos[status]}`}
+    >
+      {rotulos[status]}
+    </span>
   );
 }
 

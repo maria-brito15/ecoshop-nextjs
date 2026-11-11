@@ -21,7 +21,8 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS, mapeiaErroPrisma } from "@/lib/http/responses";
+import { ERROS, mapeiaErro } from "@/lib/http/responses";
+import { idDaRota } from "@/lib/http/params";
 import { atualizarCategoriaSchema } from "@/lib/schemas/categoria";
 import {
   buscarCategoria,
@@ -44,12 +45,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params;
-    const categoria = await buscarCategoria(Number(id));
+    const id = await idDaRota(params);
+    if (id === null) return ERROS.dadosInvalidos("ID inválido");
+    const categoria = await buscarCategoria(id);
     if (!categoria) return ERROS.naoEncontrado("Categoria");
     return NextResponse.json({ categoria });
-  } catch {
-    return ERROS.interno("buscar categoria");
+  } catch (err) {
+    return ERROS.interno("buscar categoria", err);
   }
 }
 
@@ -76,17 +78,18 @@ export async function PUT(
   if (authErro) return authErro;
 
   try {
-    const { id } = await params;
+    const id = await idDaRota(params);
+    if (id === null) return ERROS.dadosInvalidos("ID inválido");
     const body = await req.json();
     const parsed = atualizarCategoriaSchema.safeParse(body);
     if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
 
-    const categoria = await atualizarCategoria(Number(id), parsed.data);
+    const categoria = await atualizarCategoria(id, parsed.data);
     return NextResponse.json({ categoria });
   } catch (err) {
     return (
-      mapeiaErroPrisma(err, "Categoria") ??
-      ERROS.interno("atualizar categoria")
+      mapeiaErro(err, "Categoria") ??
+      ERROS.interno("atualizar categoria", err)
     );
   }
 }
@@ -115,12 +118,13 @@ export async function DELETE(
   if (authErro) return authErro;
 
   try {
-    const { id } = await params;
-    await deletarCategoria(Number(id));
+    const id = await idDaRota(params);
+    if (id === null) return ERROS.dadosInvalidos("ID inválido");
+    await deletarCategoria(id);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return (
-      mapeiaErroPrisma(err, "Categoria") ?? ERROS.interno("deletar categoria")
+      mapeiaErro(err, "Categoria") ?? ERROS.interno("deletar categoria", err)
     );
   }
 }

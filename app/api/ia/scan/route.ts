@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(resultado, {
       status: resultado.sucesso ? 200 : 422,
     });
-  } catch {
-    return ERROS.interno("processar análise");
+  } catch (err) {
+    return ERROS.interno("processar análise", err);
   }
 }

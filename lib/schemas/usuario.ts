@@ -25,6 +25,26 @@
 import { z } from "zod";
 
 /**
+ * E-mail normalizado: sem espaços nas pontas e em minúsculas (REQ-AUTH-15).
+ * A normalização acontece antes da checagem de formato.
+ */
+const emailSchema = z.string().trim().toLowerCase().email("Email inválido");
+
+/**
+ * O bcrypt só usa os primeiros 72 bytes da senha: o resto seria ignorado em
+ * silêncio. Conta bytes (UTF-8), não caracteres, e usa `TextEncoder`, que
+ * existe também no navegador (REQ-AUTH-16).
+ */
+const LIMITE_BYTES_SENHA = 72;
+const senhaSchema = z
+  .string()
+  .min(8, "Senha deve ter pelo menos 8 caracteres")
+  .refine(
+    (senha) => new TextEncoder().encode(senha).length <= LIMITE_BYTES_SENHA,
+    `Senha deve ter no máximo ${LIMITE_BYTES_SENHA} bytes`,
+  );
+
+/**
  * Schema de validação para login.
  *
  * Regras:
@@ -36,7 +56,7 @@ import { z } from "zod";
  * A validação de tamanho é aplicada apenas no cadastro.
  */
 export const loginSchema = z.object({
-  email: z.string().email("Email inválido"),
+  email: emailSchema,
   senha: z.string().min(1, "Senha é obrigatória"),
 });
 
@@ -63,9 +83,9 @@ export const loginSchema = z.object({
  */
 export const cadastroAdminSchema = z.object({
   nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  email: z.string().email("Email inválido"),
+  email: emailSchema,
   telefone: z.string().optional(),
-  senha: z.string().min(8, "Senha deve ter pelo menos 8 caracteres"),
+  senha: senhaSchema,
   tipo: z.enum(["CLIENTE", "MARCA", "ADMIN"]).default("CLIENTE"),
 });
 
@@ -78,18 +98,32 @@ export const cadastroAdminSchema = z.object({
  * - telefone: opcional, string livre
  * - senha: mínimo 8 caracteres
  * - tipo: restrito a CLIENTE ou MARCA (ADMIN não pode ser criado via registro público)
+ * - marcaNome: obrigatório quando tipo é MARCA (REQ-AUTH-14); o pedido de marca
+ *   fica pendente de aprovação de um ADMIN (REQ-AUTH-11, ADR-0018)
  *
  * Por que restringir ADMIN?
  * - Segurança: apenas admins existentes podem criar outros admins
  * - Fluxo: novo usuário se cadastra como CLIENTE ou MARCA
  */
-export const registroPublicoSchema = z.object({
-  nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  email: z.string().email("Email inválido"),
-  telefone: z.string().optional(),
-  senha: z.string().min(8, "Senha deve ter pelo menos 8 caracteres"),
-  tipo: z.enum(["CLIENTE", "MARCA"]).default("CLIENTE"),
-});
+export const registroPublicoSchema = z
+  .object({
+    nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
+    email: emailSchema,
+    telefone: z.string().optional(),
+    senha: senhaSchema,
+    tipo: z.enum(["CLIENTE", "MARCA"]).default("CLIENTE"),
+    marcaNome: z.string().min(1, "Nome da marca é obrigatório").optional(),
+    marcaDescricao: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.tipo === "MARCA" && !data.marcaNome) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Nome da marca é obrigatório ao se cadastrar como MARCA",
+        path: ["marcaNome"],
+      });
+    }
+  });
 
 /**
  * Schema para atualização de perfil de usuário.
@@ -117,7 +151,9 @@ export const registroPublicoSchema = z.object({
  */
 export const atualizarUsuarioSchema = z.object({
   nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres").optional(),
-  email: z.string().email("Email inválido").optional(),
+  email: emailSchema.optional(),
   telefone: z.string().optional(),
-  senha: z.string().min(8, "Senha deve ter pelo menos 8 caracteres").optional(),
+  senha: senhaSchema.optional(),
+  // Obrigatória para trocar a PRÓPRIA senha (REQ-AUTH-21); o service decide.
+  senhaAtual: z.string().min(1, "Senha atual é obrigatória").optional(),
 });

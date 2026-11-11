@@ -20,7 +20,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS } from "@/lib/http/responses";
+import { ERROS, mapeiaErro } from "@/lib/http/responses";
 import { cadastroAdminSchema } from "@/lib/schemas/usuario";
 import { listarUsuarios, criarUsuario } from "@/services/usuario.service";
 import { requireAdmin } from "@/app/_middleware/auth";
@@ -43,8 +43,8 @@ export async function GET(req: NextRequest) {
   try {
     const usuarios = await listarUsuarios();
     return NextResponse.json({ usuarios });
-  } catch {
-    return ERROS.interno("listar usuários");
+  } catch (err) {
+    return ERROS.interno("listar usuários", err);
   }
 }
 
@@ -74,9 +74,6 @@ export async function POST(req: NextRequest) {
     const usuario = await criarUsuario(parsed.data);
     return NextResponse.json({ usuario }, { status: 201 });
   } catch (err) {
-    if (err instanceof Error && err.message === "EMAIL_JA_CADASTRADO") {
-      return ERROS.conflito("Email já cadastrado");
-    }
-    return ERROS.interno("criar usuário");
+    return mapeiaErro(err, "Usuário") ?? ERROS.interno("criar usuário", err);
   }
 }

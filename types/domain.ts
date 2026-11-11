@@ -78,6 +78,14 @@ export interface Categoria {
 }
 
 /**
+ * Status de aprovação de um pedido de marca (ADR-0018).
+ * PENDENTE: cadastro público aguardando aprovação de um ADMIN.
+ * APROVADA: marca liberada (inclui as criadas direto pelo ADMIN no painel).
+ * REJEITADA: reservado para uso futuro; nenhum fluxo o produz ainda.
+ */
+export type StatusMarca = "PENDENTE" | "APROVADA" | "REJEITADA";
+
+/**
  * Marca ou fabricante de produtos sustentáveis.
  * Cada marca está associada a um usuário do tipo "MARCA" ou "ADMIN".
  */
@@ -87,6 +95,8 @@ export interface Marca {
   nome: string;
   /** Descrição da marca, sua história e compromissos sustentáveis */
   descricao?: string;
+  /** Status de aprovação do pedido de marca (ADR-0018) */
+  status: StatusMarca;
   /** ID do usuário responsável pela marca (dono ou administrador) */
   usuarioId: number;
   /** Dados resumidos do usuário responsável (populado via include.usuario) */

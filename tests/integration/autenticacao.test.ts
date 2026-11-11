@@ -176,7 +176,7 @@ test("REQ-AUTH-08: o cadastro público não aceita criar ADMIN", async () => {
 });
 
 test("REQ-AUTH-09: logout remove o cookie de sessão", async () => {
-  const res = await logout();
+  const res = await logout(req("/api/auth", { method: "DELETE" }));
   assert.equal(res.status, 200);
   assert.match(
     setCookie(res),
@@ -193,23 +193,47 @@ test("REQ-AUTH-10: /api/auth/me devolve o usuário da sessão, ou 401 sem sessã
   assert.equal(sem.status, 401);
 });
 
-test(
-  "REQ-AUTH-11: cadastro como MARCA fica pendente de aprovação de um ADMIN",
-  { todo: "ainda não implementado (decisão do dono, 2026-11-10)" },
-  async () => {
-    const mail = email("auth11");
-    const res = await registrar(
-      req("/api/users", {
-        method: "POST",
-        body: { nome: "Marca Teste", email: mail, senha: SENHA, tipo: "MARCA" },
-      }),
-    );
-    assert.equal(res.status, 201);
-    const criado = await prisma.usuario.findUnique({ where: { email: mail } });
-    assert.notEqual(
-      criado?.tipo,
-      "MARCA",
-      "enquanto pendente, não pode ter os direitos de MARCA",
-    );
-  },
-);
+test("REQ-AUTH-11: cadastro como MARCA fica pendente de aprovação de um ADMIN", async () => {
+  const mail = email("auth11");
+  const res = await registrar(
+    req("/api/users", {
+      method: "POST",
+      body: {
+        nome: "Marca Teste",
+        email: mail,
+        senha: SENHA,
+        tipo: "MARCA",
+        marcaNome: `Marca Teste ${mail}`,
+      },
+    }),
+  );
+  assert.equal(res.status, 201);
+  const corpo = await res.json();
+  assert.equal(corpo.usuario.tipo, "CLIENTE");
+  assert.equal(corpo.marcaPendente, true);
+  const criado = await prisma.usuario.findUnique({
+    where: { email: mail },
+    include: { marca: true },
+  });
+  assert.equal(
+    criado?.tipo,
+    "CLIENTE",
+    "enquanto pendente, só tem os direitos de CLIENTE",
+  );
+  assert.equal(criado?.marca?.status, "PENDENTE");
+});
+
+test("REQ-AUTH-14: cadastro como MARCA sem o nome da marca responde 400", async () => {
+  const res = await registrar(
+    req("/api/users", {
+      method: "POST",
+      body: {
+        nome: "Marca Sem Nome",
+        email: email("auth14"),
+        senha: SENHA,
+        tipo: "MARCA",
+      },
+    }),
+  );
+  assert.equal(res.status, 400);
+});

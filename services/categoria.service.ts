@@ -23,6 +23,7 @@
  */
 
 import { prisma } from "@/lib/db";
+import { RecursoNaoEncontrado } from "@/lib/errors/dominio";
 import {
   comCache,
   invalidarCache,
@@ -144,7 +145,7 @@ export async function deletarCategoria(id: number) {
   // Verifica se categoria existe antes de tentar deletar
   const categoria = await prisma.categoria.findUnique({ where: { id } });
   if (!categoria) {
-    throw new Error("P2025");
+    throw new RecursoNaoEncontrado("Categoria");
   }
 
   await prisma.categoria.delete({ where: { id } });

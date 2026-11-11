@@ -19,6 +19,10 @@ import {
   DELETE as deletarFoto,
 } from "@/app/api/produtos/[id]/fotos/route";
 
+/** Bytes que começam com a assinatura de um JPEG (REQ-MIDIA-06 valida o conteúdo, não só a extensão). */
+const JPEG_VALIDO = (texto: string) =>
+  Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.from(texto)]);
+
 after(encerrar);
 
 let produtoId = 0;
@@ -71,7 +75,7 @@ const upload = (arquivo: File | null, nome?: string) => {
 };
 
 test("REQ-MIDIA-01: upload de imagem válida fica acessível por URL", async () => {
-  const arquivo = new File([Buffer.from("conteudo-fake-jpg")], "foto.jpg", {
+  const arquivo = new File([JPEG_VALIDO("conteudo-fake-jpg")], "foto.jpg", {
     type: "image/jpeg",
   });
   const res = await upload(arquivo, `teste_${RUN}`);
@@ -102,7 +106,7 @@ test("REQ-MIDIA-02: arquivo acima do limite de 5MB responde 400", async () => {
 });
 
 test("REQ-MIDIA-03: remover uma foto apaga o arquivo e ela some da listagem", async () => {
-  const arquivo = new File([Buffer.from("outra-foto")], "foto2.jpg", {
+  const arquivo = new File([JPEG_VALIDO("outra-foto")], "foto2.jpg", {
     type: "image/jpeg",
   });
   const enviada = await (await upload(arquivo, `remover_${RUN}`)).json();

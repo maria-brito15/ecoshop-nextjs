@@ -4,64 +4,24 @@
  * ============================================================================
  * HEALTH CHECK API ROUTE
  * ============================================================================
- * Endpoint para verificar a saúde da aplicação e seus serviços dependentes.
+ * GET /api/health - Estado da aplicação e de suas dependências (público).
  *
- * GET /api/health - Verifica conectividade com banco e Redis
+ * Usado pelo healthcheck do Docker e pela verificação do deploy.
  *
- * Usado por:
- * - Docker healthcheck (verifica se container está saudável)
- * - Load balancers (para decidir se container recebe tráfego)
- * - Monitoramento (Prometheus, DataDog, etc.)
+ * @returns { ok, status: "ok" | "degradado" | "indisponivel", timestamp, services: { database, redis } }
+ * @status 200 - O banco responde (Redis fora aparece como "degradado")
+ * @status 503 - O banco não responde
  *
- * Verificações realizadas:
- * - Database: SELECT 1 (prisma.$queryRaw)
- * - Redis: PING (redis.ping())
- *
- * Se qualquer serviço falhar, status = 503.
+ * @see services/saude.service.ts - Regra de composição (REQ-OPS-01)
  * ============================================================================
  */
 
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { redis } from "@/lib/redis";
+import { consultarSaude } from "@/services/saude.service";
 
-/**
- * GET /api/health - Health check
- *
- * @returns {
- *   ok: boolean,
- *   timestamp: string,
- *   services: { database: boolean, redis: boolean }
- * }
- * @status 200 - Todos os serviços estão saudáveis
- * @status 503 - Pelo menos um serviço falhou
- */
 export async function GET() {
-  const health = {
-    ok: true,
-    timestamp: new Date().toISOString(),
-    services: {
-      database: false,
-      redis: false,
-    },
-  };
-
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    health.services.database = true;
-  } catch {
-    health.ok = false;
-  }
-
-  try {
-    await redis.ping();
-    health.services.redis = true;
-  } catch {
-    health.ok = false;
-  }
-
-  const status = health.ok ? 200 : 503;
-  return NextResponse.json(health, { status });
+  const { relatorio, httpStatus } = await consultarSaude();
+  return NextResponse.json(relatorio, { status: httpStatus });
 }

@@ -1,0 +1,193 @@
+// app/components/ChatFlutuante.tsx
+
+/**
+ * ============================================================================
+ * CHAT DE SUSTENTABILIDADE (botão flutuante)
+ * ============================================================================
+ * REQ-CHAT-06: interface de chat para o usuário autenticado conversar com o
+ * assistente de sustentabilidade (Gemini, via POST /api/ia/chat).
+ *
+ * Decisão do dono (2026-11-10): botão flutuante, visível em qualquer página,
+ * em vez de uma rota própria. O histórico da conversa não é persistido no
+ * servidor (REQ-CHAT: "casos-limite"); fica só neste componente e se perde
+ * ao recarregar a página.
+ *
+ * Só aparece para quem está autenticado (a API exige sessão — REQ-CHAT-07).
+ * ============================================================================
+ */
+
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useChat } from "@/lib/hooks/useIA";
+import { buscarSessao } from "@/lib/hooks/sessao";
+
+type Mensagem = { role: "user" | "model"; texto: string };
+
+export default function ChatFlutuante() {
+  const [logado, setLogado] = useState(false);
+  const [aberto, setAberto] = useState(false);
+  const [mensagens, setMensagens] = useState<Mensagem[]>([]);
+  const [texto, setTexto] = useState("");
+  const chat = useChat();
+  const listaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    buscarSessao().then((usuario) => setLogado(usuario !== null));
+  }, []);
+
+  useEffect(() => {
+    listaRef.current?.scrollTo({ top: listaRef.current.scrollHeight });
+  }, [mensagens, chat.carregando]);
+
+  if (!logado) return null;
+
+  async function enviar(e: React.FormEvent) {
+    e.preventDefault();
+    const mensagem = texto.trim();
+    if (!mensagem || chat.carregando) return;
+
+    const historico = mensagens.map((m) => ({
+      role: m.role,
+      parts: [{ text: m.texto }],
+    }));
+
+    setMensagens((prev) => [...prev, { role: "user", texto: mensagem }]);
+    setTexto("");
+
+    const resultado = await chat.executar("/api/ia/chat", {
+      mensagem,
+      historico,
+    });
+    if (resultado) {
+      setMensagens((prev) => [
+        ...prev,
+        { role: "model", texto: resultado.resposta },
+      ]);
+    }
+  }
+
+  return (
+    <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3">
+      {aberto && (
+        <div
+          className="w-80 sm:w-96 h-[28rem] rounded-2xl flex flex-col overflow-hidden"
+          style={{
+            background: "var(--color-bg-surface)",
+            border: "1px solid var(--color-border)",
+            boxShadow: "var(--shadow-lg)",
+          }}
+        >
+          <div
+            className="flex items-center justify-between px-4 py-3"
+            style={{
+              background: "var(--color-primary)",
+              color: "white",
+            }}
+          >
+            <span className="font-semibold text-sm">
+              🌿 Chat de Sustentabilidade
+            </span>
+            <button
+              type="button"
+              onClick={() => setAberto(false)}
+              aria-label="Fechar chat"
+              className="text-white/80 hover:text-white text-lg leading-none"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div
+            ref={listaRef}
+            className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3"
+          >
+            {mensagens.length === 0 && (
+              <p
+                className="text-sm text-center mt-8"
+                style={{ color: "var(--color-text-tertiary)" }}
+              >
+                Pergunte sobre reciclagem, descarte correto ou alternativas
+                sustentáveis.
+              </p>
+            )}
+            {mensagens.map((m, i) => (
+              <div
+                key={i}
+                className={`max-w-[85%] px-3 py-2 rounded-xl text-sm whitespace-pre-wrap ${
+                  m.role === "user" ? "self-end" : "self-start"
+                }`}
+                style={
+                  m.role === "user"
+                    ? { background: "var(--color-primary)", color: "white" }
+                    : {
+                        background: "var(--color-bg-surface-hover)",
+                        color: "var(--color-text-primary)",
+                      }
+                }
+              >
+                {m.texto}
+              </div>
+            ))}
+            {chat.carregando && (
+              <div
+                className="self-start text-sm px-3 py-2"
+                style={{ color: "var(--color-text-tertiary)" }}
+              >
+                Digitando…
+              </div>
+            )}
+            {chat.erro && (
+              <div className="self-stretch text-xs text-center text-red-600">
+                {chat.erro}
+              </div>
+            )}
+          </div>
+
+          <form
+            onSubmit={enviar}
+            className="flex items-center gap-2 px-3 py-3"
+            style={{ borderTop: "1px solid var(--color-border)" }}
+          >
+            <input
+              type="text"
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              placeholder="Digite sua pergunta..."
+              maxLength={2000}
+              disabled={chat.carregando}
+              className="flex-1 px-3 py-2 rounded-full text-sm border focus:outline-none"
+              style={{
+                borderColor: "var(--color-border)",
+                background: "var(--color-bg-surface-hover)",
+                color: "var(--color-text-primary)",
+              }}
+            />
+            <button
+              type="submit"
+              disabled={chat.carregando || !texto.trim()}
+              aria-label="Enviar mensagem"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white disabled:opacity-50"
+              style={{ background: "var(--color-primary)" }}
+            >
+              ↑
+            </button>
+          </form>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setAberto((v) => !v)}
+        aria-label={aberto ? "Fechar chat" : "Abrir chat de sustentabilidade"}
+        className="w-14 h-14 rounded-full flex items-center justify-center text-2xl text-white transition-transform hover:scale-105"
+        style={{
+          background: "var(--color-primary)",
+          boxShadow: "0 8px 24px rgba(45,149,105,0.4)",
+        }}
+      >
+        {aberto ? "✕" : "💬"}
+      </button>
+    </div>
+  );
+}

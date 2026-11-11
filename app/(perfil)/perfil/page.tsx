@@ -28,6 +28,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { buscarSessao, encerrarSessaoNoCliente } from "@/lib/hooks/sessao";
 
 type Usuario = {
   id: number;
@@ -41,6 +42,18 @@ type Usuario = {
 type EditForm = {
   nome: string;
   telefone: string;
+};
+
+/**
+ * Item do histórico local de produtos visitados (REQ-PERF-05).
+ * Mesma forma gravada por app/(store)/produtos/[id]/page.tsx na chave "ecoshop_history".
+ */
+type HistoricoItem = {
+  produtoId: number;
+  nome: string;
+  fotoUrl?: string;
+  preco: number;
+  visitadoEm: string;
 };
 
 // ----------------------------------------------------------------------------
@@ -57,12 +70,15 @@ function ImpactCard({
   value,
   color,
   delay,
+  fonte,
 }: {
   icon: React.ReactNode;
   label: string;
   value: React.ReactNode;
   color: string;
   delay: number;
+  /** Fonte da métrica (REQ-PERF-06); nenhum número sem fonte declarada. */
+  fonte: string;
 }) {
   return (
     <div
@@ -105,6 +121,12 @@ function ImpactCard({
       >
         {value}
       </div>
+      <p
+        className="text-[11px] italic leading-snug"
+        style={{ color: "var(--color-text-tertiary)" }}
+      >
+        {fonte}
+      </p>
     </div>
   );
 }
@@ -460,28 +482,29 @@ export default function PerfilPage() {
     type: "success" | "error";
   } | null>(null);
 
-  // Carrega histórico de produtos visualizados do localStorage
-  const [historyCount] = useState(() => {
-    if (typeof window === "undefined") return 0;
+  // Carrega histórico de produtos visualizados do localStorage (REQ-PERF-05);
+  // gravado em app/(store)/produtos/[id]/page.tsx ao abrir um produto.
+  const [historico] = useState<HistoricoItem[]>(() => {
+    if (typeof window === "undefined") return [];
     try {
       const raw = localStorage.getItem("ecoshop_history");
-      return raw ? JSON.parse(raw).length : 0;
+      return raw ? JSON.parse(raw) : [];
     } catch {
-      return 0;
+      return [];
     }
   });
+  const historyCount = historico.length;
 
   // Busca dados do usuário autenticado
   useEffect(() => {
     async function fetchPerfil() {
       try {
-        const authRes = await fetch("/api/auth/me", { credentials: "include" });
-        if (!authRes.ok) {
+        const sessao = await buscarSessao();
+        if (!sessao) {
           router.push("/sign-in");
           return;
         }
-        const authData = await authRes.json();
-        const id = authData.usuario.id;
+        const id = sessao.id;
 
         const res = await fetch(`/api/usuarios/${id}`, {
           credentials: "include",
@@ -509,7 +532,7 @@ export default function PerfilPage() {
 
   async function handleLogout() {
     if (!confirm("Deseja realmente sair?")) return;
-    await fetch("/api/auth", { method: "DELETE", credentials: "include" });
+    await encerrarSessaoNoCliente();
     router.push("/sign-in");
   }
 
@@ -902,51 +925,110 @@ export default function PerfilPage() {
                   Itens que você visualizou recentemente.
                 </p>
               </div>
-              <div
-                className="flex flex-col items-center justify-center py-20 text-center rounded-2xl"
-                style={{
-                  background: "var(--color-bg-surface)",
-                  border: "2px dashed var(--color-border)",
-                }}
-              >
-                <span className="text-6xl mb-5 opacity-40">👁️</span>
-                <h3
-                  className="text-2xl font-bold mb-3"
-                  style={{ color: "var(--color-text-primary)" }}
-                >
-                  Nada por aqui ainda
-                </h3>
-                <p
-                  className="text-base mb-8"
-                  style={{ color: "var(--color-text-secondary)" }}
-                >
-                  Você ainda não visualizou nenhum produto.
-                </p>
-                <a
-                  href="/produtos"
-                  className="flex items-center gap-2 px-7 py-3.5 rounded-xl text-sm font-bold text-white transition-all duration-200 hover:-translate-y-1"
+              {historico.length === 0 ? (
+                <div
+                  className="flex flex-col items-center justify-center py-20 text-center rounded-2xl"
                   style={{
-                    background:
-                      "linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))",
-                    boxShadow: "0 4px 14px rgba(45,149,105,0.3)",
-                    textDecoration: "none",
+                    background: "var(--color-bg-surface)",
+                    border: "2px dashed var(--color-border)",
                   }}
                 >
-                  Começar a Explorar
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                  <span className="text-6xl mb-5 opacity-40">👁️</span>
+                  <h3
+                    className="text-2xl font-bold mb-3"
+                    style={{ color: "var(--color-text-primary)" }}
                   >
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </a>
-              </div>
+                    Nada por aqui ainda
+                  </h3>
+                  <p
+                    className="text-base mb-8"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
+                    Você ainda não visualizou nenhum produto.
+                  </p>
+                  <a
+                    href="/produtos"
+                    className="flex items-center gap-2 px-7 py-3.5 rounded-xl text-sm font-bold text-white transition-all duration-200 hover:-translate-y-1"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))",
+                      boxShadow: "0 4px 14px rgba(45,149,105,0.3)",
+                      textDecoration: "none",
+                    }}
+                  >
+                    Começar a Explorar
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </a>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {historico.map((item) => (
+                    <a
+                      key={item.produtoId}
+                      href={`/produtos/${item.produtoId}`}
+                      className="flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-0.5"
+                      style={{
+                        background: "var(--color-bg-surface)",
+                        border: "1px solid var(--color-border)",
+                        textDecoration: "none",
+                      }}
+                    >
+                      <div
+                        className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden"
+                        style={{ background: "var(--color-bg-body)" }}
+                      >
+                        {item.fotoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={item.fotoUrl}
+                            alt={item.nome}
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          "🌱"
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className="font-semibold truncate"
+                          style={{ color: "var(--color-text-primary)" }}
+                        >
+                          {item.nome}
+                        </p>
+                        <p
+                          className="text-sm"
+                          style={{ color: "var(--color-text-tertiary)" }}
+                        >
+                          Visitado em{" "}
+                          {new Date(item.visitadoEm).toLocaleDateString(
+                            "pt-BR",
+                          )}
+                        </p>
+                      </div>
+                      <p
+                        className="font-bold flex-shrink-0"
+                        style={{ color: "var(--color-primary)" }}
+                      >
+                        {item.preco.toLocaleString("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        })}
+                      </p>
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -979,6 +1061,7 @@ export default function PerfilPage() {
                   value={historyCount}
                   color="linear-gradient(135deg, var(--color-primary-light), var(--color-primary))"
                   delay={100}
+                  fonte="Contagem real do seu histórico de produtos visitados."
                 />
                 <ImpactCard
                   icon="💧"
@@ -986,6 +1069,7 @@ export default function PerfilPage() {
                   value={`${historyCount * 50}L`}
                   color="linear-gradient(135deg, #bae6fd, #0ea5e9)"
                   delay={200}
+                  fonte="Estimativa ilustrativa: 50L por produto visitado — ainda não há fonte de dado real por produto (REQ-PERF-06)."
                 />
                 <ImpactCard
                   icon="♻️"
@@ -993,6 +1077,7 @@ export default function PerfilPage() {
                   value={Math.floor(historyCount * 0.3)}
                   color="linear-gradient(135deg, #fde68a, #f59e0b)"
                   delay={300}
+                  fonte="Estimativa ilustrativa: 0,3 por produto visitado — ainda não há fonte de dado real por produto (REQ-PERF-06)."
                 />
               </div>
               <div

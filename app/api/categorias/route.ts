@@ -20,7 +20,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS, mapeiaErroPrisma } from "@/lib/http/responses";
+import { ERROS, mapeiaErro } from "@/lib/http/responses";
 import { categoriaSchema } from "@/lib/schemas/categoria";
 import { listarCategorias, criarCategoria } from "@/services/categoria.service";
 import { requireAdmin } from "@/app/_middleware/auth";
@@ -36,8 +36,8 @@ export async function GET() {
   try {
     const categorias = await listarCategorias();
     return NextResponse.json({ categorias });
-  } catch {
-    return ERROS.interno("listar categorias");
+  } catch (err) {
+    return ERROS.interno("listar categorias", err);
   }
 }
 
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ categoria }, { status: 201 });
   } catch (err) {
     return (
-      mapeiaErroPrisma(err, "Categoria") ?? ERROS.interno("criar categoria")
+      mapeiaErro(err, "Categoria") ?? ERROS.interno("criar categoria", err)
     );
   }
 }

@@ -19,6 +19,14 @@ test("REQ-OPS-01: /api/health responde 200 e indica banco e Redis quando ambos e
 });
 
 /**
+ * O seed não tem mais senha embutida (REQ-OPS-09): o teste a fornece. Este valor
+ * é só um dado de teste; é o mesmo que bancos já semeados antes da 008 usam, e o
+ * seed não troca o hash de usuários existentes (upsert com `update: {}`).
+ */
+const SENHA_SEED = "EcoshopDemo@2026";
+const ENV_SEED = { ...process.env, SEED_USER_PASSWORD: SENHA_SEED };
+
+/**
  * REQ-OPS-02 e REQ-OPS-03 rodam o seed real (`npx tsx prisma/seed.ts`) como
  * processo filho, contra o mesmo DATABASE_URL/REDIS_URL deste processo de
  * teste — é o jeito mais fiel de verificar um script que o app não importa
@@ -27,7 +35,7 @@ test("REQ-OPS-01: /api/health responde 200 e indica banco e Redis quando ambos e
 test("REQ-OPS-02: o seed cria usuários com senha utilizável para login (hash bcrypt real)", async () => {
   execFileSync("npx", ["tsx", "prisma/seed.ts"], {
     cwd: process.cwd(),
-    env: process.env,
+    env: ENV_SEED,
     stdio: "pipe",
     shell: true,
   });
@@ -35,8 +43,7 @@ test("REQ-OPS-02: o seed cria usuários com senha utilizável para login (hash b
   const admin = await prisma.usuario.findUniqueOrThrow({
     where: { email: "admin@ecoplace.com" },
   });
-  const senha = process.env.SEED_USER_PASSWORD ?? "EcoshopDemo@2026";
-  assert.equal(await bcrypt.compare(senha, admin.senha), true);
+  assert.equal(await bcrypt.compare(SENHA_SEED, admin.senha), true);
   assert.notEqual(admin.senha, "hash-seguro-aqui");
 });
 
@@ -44,7 +51,7 @@ test("REQ-OPS-03: rodar o seed de novo não duplica nem apaga os produtos existe
   // garante que já existe ao menos 1 produto antes de medir idempotência
   execFileSync("npx", ["tsx", "prisma/seed.ts"], {
     cwd: process.cwd(),
-    env: process.env,
+    env: ENV_SEED,
     stdio: "pipe",
     shell: true,
   });
@@ -53,7 +60,7 @@ test("REQ-OPS-03: rodar o seed de novo não duplica nem apaga os produtos existe
 
   execFileSync("npx", ["tsx", "prisma/seed.ts"], {
     cwd: process.cwd(),
-    env: process.env,
+    env: ENV_SEED,
     stdio: "pipe",
     shell: true,
   });

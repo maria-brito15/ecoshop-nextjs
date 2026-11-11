@@ -18,7 +18,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS, mapeiaErroPrisma } from "@/lib/http/responses";
+import { ERROS, mapeiaErro } from "@/lib/http/responses";
 import { certificadoSchema } from "@/lib/schemas/certificado";
 import {
   listarCertificados,
@@ -37,8 +37,8 @@ export async function GET() {
   try {
     const certificados = await listarCertificados();
     return NextResponse.json({ certificados });
-  } catch {
-    return ERROS.interno("listar certificados");
+  } catch (err) {
+    return ERROS.interno("listar certificados", err);
   }
 }
 
@@ -68,8 +68,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ certificado }, { status: 201 });
   } catch (err) {
     return (
-      mapeiaErroPrisma(err, "Certificado") ??
-      ERROS.interno("criar certificado")
+      mapeiaErro(err, "Certificado") ??
+      ERROS.interno("criar certificado", err)
     );
   }
 }

@@ -27,12 +27,11 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { signToken, setAuthCookie } from "@/lib/auth";
-import { ERROS } from "@/lib/http/responses";
-import { invalidarCache } from "@/lib/cache";
+import { setAuthCookie, setRefreshCookie } from "@/lib/auth";
+import { ERROS, mapeiaErro } from "@/lib/http/responses";
 import { registroPublicoSchema } from "@/lib/schemas/usuario";
 import { criarUsuario } from "@/services/usuario.service";
+import { iniciarSessao } from "@/services/sessao.service";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const LIMITE_REGISTRO = 5;
@@ -69,20 +68,26 @@ export async function POST(req: NextRequest) {
 
     if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
 
-    const { nome, email, telefone, senha, tipo } = parsed.data;
+    const { nome, email, telefone, senha, tipo, marcaNome, marcaDescricao } =
+      parsed.data;
 
-    const existingUser = await prisma.usuario.findUnique({ where: { email } });
-    if (existingUser) return ERROS.conflito("Email já cadastrado");
-
-    const usuario = await criarUsuario({ nome, email, telefone, senha, tipo });
-
-    const token = await signToken({
-      id: usuario.id,
-      email: usuario.email,
-      tipo: usuario.tipo as "CLIENTE" | "MARCA" | "ADMIN",
+    // A duplicidade de e-mail é decidida pelo service (ConflitoDeNegocio → 409).
+    const usuario = await criarUsuario({
+      nome,
+      email,
+      telefone,
+      senha,
+      tipo,
+      marcaNome,
+      marcaDescricao,
     });
 
-    await invalidarCache("USUARIOS");
+    // criarUsuario já invalida o cache de usuários.
+    const sessao = await iniciarSessao({
+      id: usuario.id,
+      email: usuario.email,
+      tipo: usuario.tipo,
+    });
 
     const res = NextResponse.json(
       {
@@ -93,16 +98,15 @@ export async function POST(req: NextRequest) {
           nome: usuario.nome,
           tipo: usuario.tipo,
         },
+        marcaPendente: usuario.marcaPendente,
       },
       { status: 201 },
     );
 
-    setAuthCookie(res, token);
+    setAuthCookie(res, sessao.acesso);
+    if (sessao.renovacao) setRefreshCookie(res, sessao.renovacao);
     return res;
   } catch (err) {
-    if (err instanceof Error && err.message === "EMAIL_JA_CADASTRADO") {
-      return ERROS.conflito("Email já cadastrado");
-    }
-    return ERROS.interno("registrar usuário");
+    return mapeiaErro(err, "Usuário") ?? ERROS.interno("registrar usuário", err);
   }
 }

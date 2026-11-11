@@ -24,8 +24,13 @@
  * ============================================================================
  */
 
+import { fetchComTimeout } from "@/lib/http/fetch-com-timeout";
+
 const AZURE_URL = process.env.AZURE_VISION_ENDPOINT ?? "";
 const AZURE_KEY = process.env.AZURE_VISION_KEY ?? "";
+
+/** Tempo limite padrão (valor inicial, sem medição: ajustar com dados reais; REQ-SCAN-09). */
+const TIMEOUT_AZURE_MS = 10_000;
 
 /**
  * Predição retornada pelo Azure Custom Vision.
@@ -56,20 +61,25 @@ export interface AzurePrediction {
  */
 export async function classificarImagem(
   imageBuffer: Buffer,
+  timeoutMs: number = TIMEOUT_AZURE_MS,
 ): Promise<AzurePrediction[] | null> {
   // Validação básica: se credenciais não existem, retorna null
   // O código chamador deve tratar este caso como falha
   if (!AZURE_URL || !AZURE_KEY || AZURE_KEY.length < 10) return null;
 
   try {
-    const res = await fetch(AZURE_URL, {
-      method: "POST",
-      headers: {
-        "Prediction-Key": AZURE_KEY,
-        "Content-Type": "application/octet-stream", // imagem bruta
+    const res = await fetchComTimeout(
+      AZURE_URL,
+      {
+        method: "POST",
+        headers: {
+          "Prediction-Key": AZURE_KEY,
+          "Content-Type": "application/octet-stream", // imagem bruta
+        },
+        body: new Uint8Array(imageBuffer),
       },
-      body: new Uint8Array(imageBuffer),
-    });
+      timeoutMs,
+    );
 
     if (!res.ok) return null;
 

@@ -36,17 +36,40 @@ import type {
   AtualizarProdutoResponse,
 } from "@/types/api";
 
+/** Ordenações aceitas por `useListarProdutos` (REQ-CAT-06). */
+export type OrdemProdutos =
+  | "relevancia"
+  | "preco_asc"
+  | "preco_desc"
+  | "nome_asc"
+  | "nome_desc";
+
+/** Filtros adicionais de `useListarProdutos` (REQ-CAT-06/07), todos opcionais. */
+export interface FiltrosProdutos {
+  marcaId?: number;
+  precoMax?: number;
+  sort?: OrdemProdutos;
+}
+
 /**
  * Lista produtos com paginação e filtros.
+ *
+ * `marcaId`, `precoMax` e `sort` são aplicados pelo servidor ao catálogo
+ * inteiro (não só à página devolvida) — REQ-CAT-06/07.
  *
  * @param page - Número da página (1-indexado, padrão: 1)
  * @param size - Itens por página (padrão: 12)
  * @param categoriaId - Filtro opcional por categoria
  * @param nome - Busca textual por nome (case-insensitive)
+ * @param filtros - Filtros adicionais: marca, preço máximo, ordenação
  * @returns Hook com dados paginados, loading e erro
  *
  * @example
- * const { data, carregando } = useListarProdutos(1, 12, 5, "camiseta");
+ * const { data, carregando } = useListarProdutos(1, 12, 5, "camiseta", {
+ *   marcaId: 2,
+ *   precoMax: 150,
+ *   sort: "preco_asc",
+ * });
  * // data?.produtos = array de produtos
  * // data?.total = total de produtos que atendem aos filtros
  */
@@ -55,6 +78,7 @@ export function useListarProdutos(
   size = 12,
   categoriaId?: number,
   nome?: string,
+  filtros?: FiltrosProdutos,
 ) {
   const params = new URLSearchParams({
     page: String(page),
@@ -62,6 +86,9 @@ export function useListarProdutos(
   });
   if (categoriaId) params.set("categoriaId", String(categoriaId));
   if (nome) params.set("nome", nome);
+  if (filtros?.marcaId) params.set("marcaId", String(filtros.marcaId));
+  if (filtros?.precoMax) params.set("precoMax", String(filtros.precoMax));
+  if (filtros?.sort) params.set("sort", filtros.sort);
 
   return useFetch<ListaProdutosResponse>(`/api/produtos?${params}`);
 }

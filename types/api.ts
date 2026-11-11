@@ -20,6 +20,7 @@ import type {
   Produto,
   Categoria,
   Marca,
+  StatusMarca,
   Certificado,
   ProdutoCertificado,
   Usuario,
@@ -34,6 +35,7 @@ export type {
   Produto,
   Categoria,
   Marca,
+  StatusMarca,
   Certificado,
   ProdutoCertificado,
   Usuario,
@@ -121,6 +123,8 @@ export interface AtualizarProdutoBody {
   preco?: number;
   categoriaId?: number;
   marcaId?: number;
+  /** Substitui por completo o vínculo com certificados (REQ-PROD-05); `[]` remove todos */
+  certificadoIds?: number[];
 }
 
 /**
@@ -238,6 +242,15 @@ export interface AtualizarMarcaBody {
  * Resposta da atualização de uma marca.
  */
 export interface AtualizarMarcaResponse {
+  marca: Marca;
+}
+
+/**
+ * Resposta da aprovação de uma marca pendente.
+ * POST /api/marcas/{id}/aprovar
+ * Requer autenticação ADMIN. REQ-USR-03, ADR-0018.
+ */
+export interface AprovarMarcaResponse {
   marca: Marca;
 }
 
@@ -387,17 +400,25 @@ export interface LoginResponse {
  * POST /api/users
  * Endpoint público — qualquer pessoa pode criar conta.
  * Por padrão, tipo é "CLIENTE".
+ *
+ * `marcaNome` é obrigatório quando `tipo: "MARCA"` (REQ-AUTH-14): o pedido
+ * fica pendente de aprovação de um ADMIN (REQ-AUTH-11, ADR-0018).
  */
 export interface RegistroBody {
   nome: string;
   email: string;
   telefone?: string;
   senha: string;
+  tipo?: "CLIENTE" | "MARCA";
+  marcaNome?: string;
+  marcaDescricao?: string;
 }
 
 /**
  * Resposta do registro bem-sucedido.
  * O usuário é automaticamente logado (cookie JWT é setado).
+ * `marcaPendente: true` indica que o cadastro como MARCA ainda aguarda
+ * aprovação de um ADMIN — o usuário tem, por ora, direitos de CLIENTE.
  */
 export interface RegistroResponse {
   ok: boolean;
@@ -407,6 +428,7 @@ export interface RegistroResponse {
     nome: string;
     tipo: string;
   };
+  marcaPendente?: boolean;
 }
 
 /**

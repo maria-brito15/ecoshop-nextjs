@@ -19,6 +19,12 @@
 
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
+import {
+  RecursoNaoEncontrado,
+  ConflitoDeNegocio,
+  OperacaoNaoAutorizada,
+} from "@/lib/errors/dominio";
+import { log, serializarErro } from "@/lib/log";
 
 /**
  * Cria uma resposta de erro padrão.
@@ -77,7 +83,17 @@ export const ERROS = {
    * 500 Internal Server Error - Erro não tratado.
    * @param {string} contexto - Ação que estava sendo executada (ex: "buscar usuário")
    */
-  interno: (contexto: string) => erroResponse(`Erro ao ${contexto}`, 500),
+  /**
+   * 500. Registra a causa no log (REQ-OPS-19): antes, a exceção era engolida e um
+   * 500 em produção não deixava rastro. O corpo da resposta continua sem detalhe.
+   *
+   * @param contexto - O que se tentava fazer (vira "Erro ao <contexto>")
+   * @param causa - O erro capturado no `catch`
+   */
+  interno: (contexto: string, causa?: unknown) => {
+    log.error("erro_interno", { contexto, erro: serializarErro(causa) });
+    return erroResponse(`Erro ao ${contexto}`, 500);
+  },
 
   /**
    * 409 Conflict - Conflito com estado atual do recurso.
@@ -88,17 +104,17 @@ export const ERROS = {
 } as const;
 
 /**
- * Mapeia um erro conhecido do Prisma (ou o `Error("P2025")` lançado manualmente
- * pelos services antes de deletar) para a resposta HTTP correta.
+ * Tabela única que converte um erro conhecido em resposta HTTP (Constitution,
+ * Art. VII): erros de domínio tipados (`RecursoNaoEncontrado` → 404,
+ * `ConflitoDeNegocio` → 409, `OperacaoNaoAutorizada` → 403) e erros do Prisma pelo `err.code`.
  *
- * IMPORTANTE: usa `err.code` (campo oficial do Prisma), nunca
- * `err.message.includes("P20..")`. A mensagem de erro do Prisma é texto livre
- * e pode conter a substring de outro código por coincidência — foi exatamente
- * isso que fez uma exclusão bloqueada por FK (P2003) virar 404 em vez de 409
- * (REQ-REF-03, D7).
+ * IMPORTANTE: nunca decide pelo texto de `err.message`. A mensagem do Prisma é
+ * texto livre e pode conter a substring de outro código por coincidência — foi
+ * exatamente isso que fez uma exclusão bloqueada por FK (P2003) virar 404 em vez
+ * de 409 (REQ-REF-03, D7) e que deixava `PUT` de usuário inexistente em 500.
  *
  * @param err - Erro capturado no catch da rota
- * @param recurso - Nome do recurso para a mensagem (ex: "Categoria")
+ * @param recurso - Nome do recurso para as mensagens dos erros do Prisma (ex: "Categoria")
  * @returns A resposta adequada, ou `null` se o erro não é um dos conhecidos
  *          (o chamador deve então cair em `ERROS.interno(...)`)
  *
@@ -106,13 +122,20 @@ export const ERROS = {
  * try {
  *   await atualizarCategoria(id, data);
  * } catch (err) {
- *   return mapeiaErroPrisma(err, "Categoria") ?? ERROS.interno("atualizar categoria");
+ *   return mapeiaErro(err, "Categoria") ?? ERROS.interno("atualizar categoria");
  * }
  */
-export function mapeiaErroPrisma(
-  err: unknown,
-  recurso: string,
-): NextResponse | null {
+export function mapeiaErro(err: unknown, recurso: string): NextResponse | null {
+  if (err instanceof RecursoNaoEncontrado) {
+    return ERROS.naoEncontrado(err.recurso);
+  }
+  if (err instanceof ConflitoDeNegocio) {
+    return ERROS.conflito(err.message);
+  }
+  if (err instanceof OperacaoNaoAutorizada) {
+    return erroResponse(err.message, 403);
+  }
+
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === "P2025") return ERROS.naoEncontrado(recurso);
     if (err.code === "P2002")
@@ -122,14 +145,6 @@ export function mapeiaErroPrisma(
         `${recurso} possui vínculos e não pode ser excluído(a) ou alterado(a) para uma referência inexistente`,
       );
     return null;
-  }
-
-  // Pré-checagem manual nos services (findUnique + throw antes do delete).
-  if (err instanceof Error && err.message === "P2025") {
-    return ERROS.naoEncontrado(recurso);
-  }
-  if (err instanceof Error && err.message === "P2003") {
-    return ERROS.conflito(`${recurso} possui vínculos`);
   }
 
   return null;

@@ -114,17 +114,13 @@ test("REQ-SCAN-04: se o Gemini devolve conteúdo inválido, usa a análise de co
   assert.match(c.analise_sustentabilidade.impacto_ambiental, /papel/);
 });
 
-test(
-  "REQ-SCAN-05: se a rede do Gemini falha, usa a análise de contingência (200)",
-  { todo: "D4: hoje a exceção vira 500" },
-  async () => {
-    restaurar = stubFetch((url) => {
-      if (ehAzure(url)) return azure("metal", 0.9);
-      throw new TypeError("fetch failed");
-    });
-    assert.equal((await enviar(png())).status, 200);
-  },
-);
+test("REQ-SCAN-05: se a rede do Gemini falha, usa a análise de contingência (200)", async () => {
+  restaurar = stubFetch((url) => {
+    if (ehAzure(url)) return azure("metal", 0.9);
+    throw new TypeError("fetch failed");
+  });
+  assert.equal((await enviar(png())).status, 200);
+});
 
 test("REQ-SCAN-06: arquivo ausente, formato inválido ou acima de 10 MB responde 400", async () => {
   restaurar = stubFetch(() => azure("papel", 0.9));

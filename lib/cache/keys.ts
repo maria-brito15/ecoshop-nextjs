@@ -42,15 +42,32 @@ export const PREFIX = {
  * Gera chave de cache para listagem paginada de produtos.
  * A chave inclui todos os parâmetros de query para distinguir diferentes filtros.
  *
- * @param params - URLSearchParams com filtros (page, size, categoriaId, nome)
- * @returns Chave no formato "produtos:page=1&size=12&categoriaId=5"
+ * REQ-CAT-10: a chave sai dos filtros JÁ VALIDADOS, em ordem fixa e só com os
+ * parâmetros conhecidos. Antes usava `params.toString()` da URL crua: qualquer
+ * `?x=...` ou outra ordem de parâmetros criava uma chave nova no Redis, e a
+ * quantidade de chaves era controlada por quem chamava a API (público).
  *
- * @example
- * const params = new URLSearchParams({ page: "1", size: "12", categoriaId: "5" });
- * const chave = chaveProdutos(params); // "produtos:page=1&size=12&categoriaId=5"
+ * @param filtros - Filtros validados (`listarProdutosQuerySchema`)
+ * @returns Chave no formato "produtos:page=1&size=12&categoriaId=5&marcaId=&precoMax=&sort=relevancia&nome="
  */
-export function chaveProdutos(params: URLSearchParams): string {
-  return `${PREFIX.PRODUTOS}${params.toString()}`;
+export interface FiltrosDeProdutos {
+  page: number;
+  size: number;
+  categoriaId?: number;
+  marcaId?: number;
+  precoMax?: number;
+  sort: string;
+  nome?: string;
+}
+
+export function chaveProdutos(filtros: FiltrosDeProdutos): string {
+  // A busca por nome ignora a caixa; a chave também (mesma busca, mesma chave).
+  const nome = encodeURIComponent((filtros.nome ?? "").trim().toLowerCase());
+  return (
+    `${PREFIX.PRODUTOS}page=${filtros.page}&size=${filtros.size}` +
+    `&categoriaId=${filtros.categoriaId ?? ""}&marcaId=${filtros.marcaId ?? ""}` +
+    `&precoMax=${filtros.precoMax ?? ""}&sort=${filtros.sort}&nome=${nome}`
+  );
 }
 
 /**

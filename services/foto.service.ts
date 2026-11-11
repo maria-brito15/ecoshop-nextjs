@@ -29,6 +29,10 @@ import fs from "fs/promises";
 import path from "path";
 import { prisma } from "@/lib/db";
 import { invalidarCache } from "@/lib/cache";
+import {
+  detectarTipoDeImagem,
+  extensaoCombinaComTipo,
+} from "@/lib/media/tipo-de-imagem";
 
 /**
  * Diretório onde as fotos são armazenadas.
@@ -101,17 +105,71 @@ export async function listarFotos(produtoId: number) {
   }
 }
 
+export type MotivoDeFalhaNoUpload =
+  | "PRODUTO_NAO_ENCONTRADO"
+  | "EXTENSAO_NAO_PERMITIDA"
+  | "ARQUIVO_MUITO_GRANDE"
+  | "CONTEUDO_NAO_E_IMAGEM"
+  | "NOME_JA_EXISTE";
+
+export type ResultadoDoUpload =
+  | { ok: true; foto: { nome: string; url: string } }
+  | { ok: false; motivo: MotivoDeFalhaNoUpload };
+
+/**
+ * Valida e grava a foto em `diretorio` (sem acesso ao banco; exportada para teste).
+ *
+ * Fluxo: extensão → tamanho → CONTEÚDO real (assinatura dos bytes, REQ-MIDIA-06)
+ * → nome sanitizado → gravação exclusiva.
+ *
+ * A gravação usa a flag `wx` (falha se o arquivo já existe): decide a corrida
+ * entre dois uploads simultâneos com o mesmo nome, em vez de checar a listagem do
+ * diretório antes e sobrescrever depois (REQ-MIDIA-07).
+ */
+export async function gravarFoto(params: {
+  produtoId: number;
+  arquivo: File;
+  nomeCustomizado?: string | null;
+  diretorio: string;
+}): Promise<ResultadoDoUpload> {
+  const { produtoId, arquivo, nomeCustomizado, diretorio } = params;
+
+  if (!validarExtensao(arquivo.name)) {
+    return { ok: false, motivo: "EXTENSAO_NAO_PERMITIDA" };
+  }
+
+  if (arquivo.size > MAX_FILE_SIZE) {
+    return { ok: false, motivo: "ARQUIVO_MUITO_GRANDE" };
+  }
+
+  const buffer = Buffer.from(await arquivo.arrayBuffer());
+  const tipo = detectarTipoDeImagem(buffer);
+  if (!tipo || !extensaoCombinaComTipo(path.extname(arquivo.name), tipo)) {
+    return { ok: false, motivo: "CONTEUDO_NAO_E_IMAGEM" };
+  }
+
+  const nomeArquivo = sanitizarNome(produtoId, arquivo.name, nomeCustomizado);
+
+  await fs.mkdir(diretorio, { recursive: true });
+  try {
+    await fs.writeFile(path.join(diretorio, nomeArquivo), buffer, { flag: "wx" });
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "EEXIST") {
+      return { ok: false, motivo: "NOME_JA_EXISTE" };
+    }
+    throw err;
+  }
+
+  return {
+    ok: true,
+    foto: { nome: nomeArquivo, url: `/data_fotos/${nomeArquivo}` },
+  };
+}
+
 /**
  * Faz upload de uma nova foto para um produto.
  *
- * Fluxo:
- * 1. Verifica se produto existe
- * 2. Valida extensão do arquivo
- * 3. Valida tamanho do arquivo
- * 4. Sanitiza nome do arquivo
- * 5. Verifica se já existe arquivo com mesmo nome
- * 6. Salva arquivo no sistema de arquivos
- * 7. Invalida cache de fotos
+ * Fluxo: verifica se o produto existe → `gravarFoto` → invalida o cache de fotos.
  *
  * @param params - Parâmetros do upload
  * @returns Resultado da operação (ok com foto ou erro com motivo)
@@ -120,44 +178,16 @@ export async function uploadFoto(params: {
   produtoId: number;
   arquivo: File;
   nomeCustomizado?: string | null;
-}) {
-  const { produtoId, arquivo, nomeCustomizado } = params;
-
-  // Verifica se produto existe
-  const produto = await prisma.produto.findUnique({ where: { id: produtoId } });
+}): Promise<ResultadoDoUpload> {
+  const produto = await prisma.produto.findUnique({
+    where: { id: params.produtoId },
+    select: { id: true },
+  });
   if (!produto) return { ok: false, motivo: "PRODUTO_NAO_ENCONTRADO" };
 
-  // Valida extensão
-  if (!validarExtensao(arquivo.name)) {
-    return { ok: false, motivo: "EXTENSAO_NAO_PERMITIDA" };
-  }
-
-  // Valida tamanho
-  if (arquivo.size > MAX_FILE_SIZE) {
-    return { ok: false, motivo: "ARQUIVO_MUITO_GRANDE" };
-  }
-
-  // Gera nome sanitizado
-  const nomeArquivo = sanitizarNome(produtoId, arquivo.name, nomeCustomizado);
-
-  // Verifica se arquivo já existe
-  const existingFiles = await fs.readdir(FOTOS_DIR).catch(() => [] as string[]);
-  if (existingFiles.includes(nomeArquivo)) {
-    return { ok: false, motivo: "NOME_JA_EXISTE" };
-  }
-
-  // Salva arquivo
-  const buffer = Buffer.from(await arquivo.arrayBuffer());
-  await fs.mkdir(FOTOS_DIR, { recursive: true });
-  await fs.writeFile(path.join(FOTOS_DIR, nomeArquivo), buffer);
-
-  // Invalida cache
-  await invalidarCache("FOTOS");
-
-  return {
-    ok: true,
-    foto: { nome: nomeArquivo, url: `/data_fotos/${nomeArquivo}` },
-  };
+  const resultado = await gravarFoto({ ...params, diretorio: FOTOS_DIR });
+  if (resultado.ok) await invalidarCache("FOTOS");
+  return resultado;
 }
 
 /**
@@ -173,7 +203,10 @@ export async function uploadFoto(params: {
 export async function deletarFoto(params: {
   produtoId: number;
   nomeArquivo: string;
-}) {
+}): Promise<
+  | { ok: true }
+  | { ok: false; motivo: "NOME_INVALIDO" | "ARQUIVO_NAO_ENCONTRADO" }
+> {
   const { produtoId, nomeArquivo } = params;
 
   // Valida se o arquivo pertence ao produto

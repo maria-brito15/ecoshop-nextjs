@@ -4,37 +4,33 @@
  * ============================================================================
  * AUTH API ROUTES - LOGIN E LOGOUT
  * ============================================================================
- * Endpoints de autenticação da aplicação.
- *
- * POST /api/auth - Login de usuário
- * DELETE /api/auth - Logout de usuário (remove cookie)
+ * POST /api/auth - Login
+ * DELETE /api/auth - Logout (revoga a renovação e remove os cookies)
  *
  * Fluxo de login:
  * 1. Rate limiting por IP (10 tentativas/minuto)
- * 2. Validação do corpo da requisição (email + senha)
- * 3. Busca usuário no banco por email
- * 4. Verifica senha com bcrypt.compareSync
- * 5. Gera token JWT com expiração de 7 dias
- * 6. Define cookie httpOnly com o token
- * 7. Retorna dados do usuário (excluindo senha)
+ * 2. Validação do corpo (email + senha)
+ * 3. `verificarCredenciais`: bcrypt SEMPRE executado, com ou sem conta (REQ-AUTH-23)
+ * 4. `iniciarSessao`: JWT de acesso (15 min) + token de renovação no Redis (ADR-0021)
+ * 5. Cookies httpOnly `token` e `refresh`
  *
- * IMPORTANTE: O cookie é httpOnly (inacessível via JavaScript)
- * e secure em produção (apenas HTTPS). Isso mitiga ataques XSS.
+ * Sem Redis o login continua: só não há token de renovação (REQ-AUTH-19).
  *
- * @see lib/auth/jwt.ts - Implementação do JWT
- * @see lib/rate-limit.ts - Rate limiting com Redis
+ * @see services/sessao.service.ts - Sessão
+ * @see lib/rate-limit.ts - Rate limiting
  * ============================================================================
  */
 
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { signToken, setAuthCookie } from "@/lib/auth";
+import { setAuthCookie, setRefreshCookie, clearSessionCookies } from "@/lib/auth";
+import { COOKIE_RENOVACAO } from "@/lib/auth/constantes";
 import { ERROS } from "@/lib/http/responses";
 import { loginSchema } from "@/lib/schemas/usuario";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
-import bcrypt from "bcryptjs";
+import { verificarCredenciais } from "@/services/usuario.service";
+import { iniciarSessao, encerrarSessao } from "@/services/sessao.service";
 
 const LIMITE_TENTATIVAS = 10;
 const JANELA_SEGUNDOS = 60;
@@ -43,7 +39,7 @@ const JANELA_SEGUNDOS = 60;
  * POST /api/auth - Login de usuário
  *
  * @body { email: string, senha: string }
- * @returns { ok: true, usuario: { id, email, tipo } } + cookie httpOnly
+ * @returns { ok: true, usuario: { id, email, tipo } } + cookies httpOnly
  * @status 200 - Login bem-sucedido
  * @status 400 - Dados inválidos (email ou senha faltando)
  * @status 401 - Credenciais inválidas
@@ -70,40 +66,39 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return ERROS.dadosInvalidos();
 
     const { email, senha } = parsed.data;
-    const usuario = await prisma.usuario.findUnique({ where: { email } });
+    const identidade = await verificarCredenciais(email, senha);
+    if (!identidade) return ERROS.naoAutorizado();
 
-    if (!usuario || !(await bcrypt.compare(senha, usuario.senha))) {
-      return ERROS.naoAutorizado();
-    }
-
-    const token = await signToken({
-      id: usuario.id,
-      email: usuario.email,
-      tipo: usuario.tipo as "CLIENTE" | "MARCA" | "ADMIN",
-    });
+    const sessao = await iniciarSessao(identidade);
 
     const res = NextResponse.json({
       ok: true,
-      usuario: { id: usuario.id, email: usuario.email, tipo: usuario.tipo },
+      usuario: {
+        id: identidade.id,
+        email: identidade.email,
+        tipo: identidade.tipo,
+      },
     });
 
-    setAuthCookie(res, token);
+    setAuthCookie(res, sessao.acesso);
+    if (sessao.renovacao) setRefreshCookie(res, sessao.renovacao);
     return res;
-  } catch {
-    return ERROS.interno("processar autenticação");
+  } catch (err) {
+    return ERROS.interno("processar autenticação", err);
   }
 }
 
 /**
  * DELETE /api/auth - Logout de usuário
  *
- * Remove o cookie de autenticação da resposta.
+ * Revoga o token de renovação (REQ-AUTH-20) e remove os dois cookies.
  *
  * @returns { ok: true }
  * @status 200 - Logout bem-sucedido
  */
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
+  await encerrarSessao(req.cookies.get(COOKIE_RENOVACAO)?.value);
   const res = NextResponse.json({ ok: true });
-  res.cookies.delete("token");
+  clearSessionCookies(res);
   return res;
 }

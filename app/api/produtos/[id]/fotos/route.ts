@@ -20,6 +20,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { ERROS } from "@/lib/http/responses";
+import { idDaRota } from "@/lib/http/params";
 import {
   listarFotos,
   uploadFoto,
@@ -41,17 +42,17 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await params;
+  const id = await idDaRota(params);
 
-  if (!id || isNaN(Number(id))) {
+  if (id === null) {
     return ERROS.dadosInvalidos("ID inválido");
   }
 
   try {
-    const resultado = await listarFotos(Number(id));
+    const resultado = await listarFotos(id);
     return NextResponse.json(resultado);
-  } catch {
-    return ERROS.interno("buscar fotos do produto");
+  } catch (err) {
+    return ERROS.interno("buscar fotos do produto", err);
   }
 }
 
@@ -80,8 +81,8 @@ export async function POST(
   const authErro = await requireAdmin(req);
   if (authErro) return authErro;
 
-  const { id } = await params;
-  if (!id || isNaN(Number(id)))
+  const id = await idDaRota(params);
+  if (id === null)
     return ERROS.dadosInvalidos("ID do produto inválido");
 
   try {
@@ -92,7 +93,7 @@ export async function POST(
     if (!arquivo) return ERROS.dadosInvalidos("Nenhum arquivo foi enviado");
 
     const resultado = await uploadFoto({
-      produtoId: Number(id),
+      produtoId: id,
       arquivo,
       nomeCustomizado,
     });
@@ -107,6 +108,10 @@ export async function POST(
           );
         case "ARQUIVO_MUITO_GRANDE":
           return ERROS.dadosInvalidos("Arquivo muito grande. Máximo: 5MB");
+        case "CONTEUDO_NAO_E_IMAGEM":
+          return ERROS.dadosInvalidos(
+            "O conteúdo do arquivo não é uma imagem JPEG, PNG, GIF ou WebP do tipo indicado pela extensão",
+          );
         case "NOME_JA_EXISTE":
           return NextResponse.json(
             { erro: "Um arquivo com este nome já existe" },
@@ -121,8 +126,8 @@ export async function POST(
       { ok: true, foto: resultado.foto, mensagem: "Foto enviada com sucesso" },
       { status: 201 },
     );
-  } catch {
-    return ERROS.interno("fazer upload da foto");
+  } catch (err) {
+    return ERROS.interno("fazer upload da foto", err);
   }
 }
 
@@ -148,18 +153,18 @@ export async function DELETE(
   const authErro = await requireAdmin(req);
   if (authErro) return authErro;
 
-  const { id } = await params;
+  const id = await idDaRota(params);
   const { searchParams } = new URL(req.url);
   const nomeArquivo = searchParams.get("nome");
 
-  if (!id || isNaN(Number(id)))
+  if (id === null)
     return ERROS.dadosInvalidos("ID do produto inválido");
   if (!nomeArquivo)
     return ERROS.dadosInvalidos("Nome do arquivo não fornecido");
 
   try {
     const resultado = await deletarFoto({
-      produtoId: Number(id),
+      produtoId: id,
       nomeArquivo,
     });
 
@@ -178,7 +183,7 @@ export async function DELETE(
       ok: true,
       mensagem: "Foto deletada com sucesso",
     });
-  } catch {
-    return ERROS.interno("deletar foto");
+  } catch (err) {
+    return ERROS.interno("deletar foto", err);
   }
 }

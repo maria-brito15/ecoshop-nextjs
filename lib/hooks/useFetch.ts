@@ -29,7 +29,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 /**
  * Estado interno do hook.
@@ -91,6 +91,15 @@ function setCached<T>(url: string, data: T): void {
  * // Após criar um novo produto, invalida todos os caches de listagem
  * invalidarCacheCliente("/api/produtos");
  */
+/**
+ * Esvazia TODO o cache do cliente. Chamado no logout e ao abrir uma sessão nova:
+ * o cache é por URL (não por usuário), então sem isso a próxima pessoa que usa a
+ * mesma aba veria os dados da anterior por até 30 s.
+ */
+export function limparCacheCliente(): void {
+  memoryCache.clear();
+}
+
 export function invalidarCacheCliente(prefixo: string): void {
   for (const chave of memoryCache.keys()) {
     if (chave.includes(prefixo)) memoryCache.delete(chave);
@@ -121,6 +130,8 @@ export function invalidarCacheCliente(prefixo: string): void {
  */
 export function useFetch<T>(url: string | null, options?: RequestInit) {
   // Tenta obter dados do cache na montagem do hook
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
   const dadoInicial = url ? getCached<T>(url) : null;
   const [estado, setEstado] = useState<Estado<T>>({
     data: dadoInicial,
@@ -144,7 +155,7 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
     try {
       const res = await fetch(urlParaFetch, {
         credentials: "include", // envia cookie httpOnly com token JWT
-        ...options,
+        ...optionsRef.current,
       });
       if (!res.ok) throw new Error(`Erro ${res.status}`);
       const data = (await res.json()) as T;
@@ -168,9 +179,14 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
     // Caso 1: Tem cache válido → exibe e revalida em background
     if (cached !== null) {
       setEstado({ data: cached, carregando: false, erro: null });
+      const controle = new AbortController();
 
       // Revalidação silenciosa: atualiza cache se dados mudaram
-      fetch(url, { credentials: "include", ...options })
+      fetch(url, {
+        credentials: "include",
+        ...optionsRef.current,
+        signal: controle.signal,
+      })
         .then((res) => {
           if (!res.ok) throw new Error(`erro ${res.status}`);
           return res.json() as Promise<T>;
@@ -186,7 +202,10 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
           // Silencia erro na revalidação em background
           // O usuário já vê os dados do cache, então falha não é crítica
         });
-      return;
+      return () => {
+        ativo = false;
+        controle.abort(); // desmontou ou a URL mudou: cancela a revalidação
+      };
     }
 
     // Caso 2: Sem cache → faz requisição normal
@@ -195,6 +214,10 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
     return () => {
       ativo = false;
     };
+    // `executar` e `options` ficam de fora de propósito: `options` costuma ser um
+    // objeto literal novo a cada render (incluí-lo refaria a requisição sem parar);
+    // a versão mais recente dele é lida por `optionsRef`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]); // Re-executa se a URL mudar
 
   return { ...estado, executar };

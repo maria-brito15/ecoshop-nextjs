@@ -34,8 +34,8 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { comCache, chaveUsuarioMe, TTL } from "@/lib/cache";
+import { ERROS } from "@/lib/http/responses";
+import { buscarPerfilDaSessao } from "@/services/usuario.service";
 
 /**
  * GET /api/auth/me - Obtém usuário atual
@@ -51,16 +51,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ usuario: null }, { status: 401 });
   }
 
-  const usuario = await comCache(chaveUsuarioMe(session.id), TTL.USUARIO, () =>
-    prisma.usuario.findUnique({
-      where: { id: session.id },
-      select: { id: true, nome: true, email: true, tipo: true },
-    }),
-  );
+  try {
+    const usuario = await buscarPerfilDaSessao(session.id);
 
-  if (!usuario) {
-    return NextResponse.json({ usuario: null }, { status: 401 });
+    if (!usuario) {
+      return NextResponse.json({ usuario: null }, { status: 401 });
+    }
+
+    return NextResponse.json({ usuario });
+  } catch (err) {
+    return ERROS.interno("buscar o usuário da sessão", err);
   }
-
-  return NextResponse.json({ usuario });
 }

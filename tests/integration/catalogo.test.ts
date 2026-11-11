@@ -93,6 +93,51 @@ test("REQ-CAT-05: page ou size inválidos, ou size acima de 100, respondem 400",
   assert.equal((await listar(req("/api/produtos?size=100"))).status, 200);
 });
 
+test("REQ-CAT-06: ordenar por preço aplica ao catálogo inteiro, não só à página", async () => {
+  // Os 14 produtos do before() têm preço 10..23 (nome em ordem crescente também).
+  const desc = await lista(`nome=${prefixo}&size=5&sort=preco_desc`);
+  assert.equal(desc.total, 14);
+  assert.equal(desc.produtos.length, 5);
+  const precosDesc = desc.produtos.map((p: { preco: number }) => Number(p.preco));
+  assert.deepEqual(precosDesc, [23, 22, 21, 20, 19]);
+
+  const pagina2 = await lista(
+    `nome=${prefixo}&size=5&page=2&sort=preco_desc`,
+  );
+  const precosPagina2 = pagina2.produtos.map((p: { preco: number }) =>
+    Number(p.preco),
+  );
+  assert.deepEqual(precosPagina2, [18, 17, 16, 15, 14]);
+});
+
+test("REQ-CAT-06: precoMax limita o catálogo inteiro, não só a página", async () => {
+  const r = await lista(`nome=${prefixo}&size=3&precoMax=15`);
+  // preços 10..15 => 6 produtos no total, mesmo pedindo só 3 por página
+  assert.equal(r.total, 6);
+  assert.ok(
+    r.produtos.every((p: { preco: number }) => Number(p.preco) <= 15),
+  );
+});
+
+test("REQ-CAT-07: o filtro por marca devolve só produtos dela", async () => {
+  const outroDono = await criarUsuarioDireto(email("cat07-marca"), "MARCA");
+  const outraMarca = await prisma.marca.create({
+    data: { nome: `Outra Marca ${prefixo}`, usuarioId: outroDono.id },
+  });
+  await prisma.produto.create({
+    data: {
+      nome: `Produto outra marca ${prefixo}`,
+      preco: 99,
+      categoriaId,
+      marcaId: outraMarca.id,
+    },
+  });
+
+  const r = await lista(`nome=${prefixo}&marcaId=${outraMarca.id}&size=50`);
+  assert.equal(r.total, 1);
+  assert.equal(r.produtos[0].marca.id, outraMarca.id);
+});
+
 test("REQ-PROD-01: produto criado por ADMIN aparece no catálogo logo depois (cache invalidado)", async () => {
   const nome = `Novo ${prefixo}`;
   assert.equal((await lista(`nome=${encodeURIComponent(nome)}`)).total, 0);
@@ -194,6 +239,80 @@ test("REQ-PROD-03: atualizar produto inexistente responde 404", async () => {
     ctx(99999999),
   );
   assert.equal(res.status, 404);
+});
+
+test("REQ-PROD-05: PUT com certificadoIds atualiza o vínculo produto↔certificado", async () => {
+  const produto = await prisma.produto.create({
+    data: { nome: `PROD05 ${prefixo}`, preco: 10, categoriaId, marcaId },
+  });
+  const cert1 = await prisma.certificado.create({
+    data: { nome: `Certificado A ${prefixo}`, orgaoEmissor: "Órgão A" },
+  });
+  const cert2 = await prisma.certificado.create({
+    data: { nome: `Certificado B ${prefixo}`, orgaoEmissor: "Órgão B" },
+  });
+
+  const res1 = await atualizarProduto(
+    req(`/api/produtos/${produto.id}`, {
+      method: "PUT",
+      cookie: adminCookie,
+      body: { certificadoIds: [cert1.id, cert2.id] },
+    }),
+    ctx(produto.id),
+  );
+  assert.equal(res1.status, 200);
+  const corpo1 = await res1.json();
+  assert.deepEqual(
+    corpo1.produto.certificados
+      .map((pc: { certificadoId: number }) => pc.certificadoId)
+      .sort(),
+    [cert1.id, cert2.id].sort(),
+  );
+
+  // Substitui o vínculo: tira o cert2, mantém só o cert1
+  const res2 = await atualizarProduto(
+    req(`/api/produtos/${produto.id}`, {
+      method: "PUT",
+      cookie: adminCookie,
+      body: { certificadoIds: [cert1.id] },
+    }),
+    ctx(produto.id),
+  );
+  const corpo2 = await res2.json();
+  assert.deepEqual(
+    corpo2.produto.certificados.map(
+      (pc: { certificadoId: number }) => pc.certificadoId,
+    ),
+    [cert1.id],
+  );
+
+  // certificadoIds: [] remove todos
+  const res3 = await atualizarProduto(
+    req(`/api/produtos/${produto.id}`, {
+      method: "PUT",
+      cookie: adminCookie,
+      body: { certificadoIds: [] },
+    }),
+    ctx(produto.id),
+  );
+  const corpo3 = await res3.json();
+  assert.equal(corpo3.produto.certificados.length, 0);
+});
+
+test("REQ-PROD-05: certificadoId inexistente não é 500", async () => {
+  const produto = await prisma.produto.create({
+    data: { nome: `PROD05b ${prefixo}`, preco: 10, categoriaId, marcaId },
+  });
+  const res = await atualizarProduto(
+    req(`/api/produtos/${produto.id}`, {
+      method: "PUT",
+      cookie: adminCookie,
+      body: { certificadoIds: [99999999] },
+    }),
+    ctx(produto.id),
+  );
+  assert.notEqual(res.status, 500);
+  assert.ok([404, 409].includes(res.status));
 });
 
 test("REQ-PROD-04: criar ou atualizar produto com categoria/marca inexistente não é 500", async () => {

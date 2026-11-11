@@ -24,12 +24,15 @@
  */
 
 import { prisma } from "@/lib/db";
+import { RecursoNaoEncontrado, ConflitoDeNegocio } from "@/lib/errors/dominio";
 import {
   comCache,
   invalidarCache,
   invalidarChave,
   chaveMarcas,
   chaveMarca,
+  chaveUsuario,
+  chaveUsuarioMe,
   TTL,
 } from "@/lib/cache";
 
@@ -95,6 +98,11 @@ export async function buscarMarca(id: number) {
  * @throws Error("USUARIO_NAO_ENCONTRADO") se usuarioId não existir
  * @throws Error("USUARIO_TIPO_INVALIDO") se o usuário não for MARCA nem ADMIN
  *   (REQ-REF-04; decisão registrada em docs/capabilities/cadastros-de-referencia/spec.md)
+ *
+ * NOTA (ADR-0018): este caminho é usado pelo ADMIN no painel, com o usuário
+ * já no tipo MARCA/ADMIN — por isso a marca entra direto como APROVADA, ao
+ * contrário do pedido criado pelo cadastro público (`criarUsuario`), que
+ * entra PENDENTE.
  */
 export async function criarMarca(data: {
   nome: string;
@@ -105,18 +113,63 @@ export async function criarMarca(data: {
     where: { id: data.usuarioId },
   });
   if (!usuario) {
-    throw new Error("USUARIO_NAO_ENCONTRADO");
+    throw new RecursoNaoEncontrado("Usuário");
   }
   if (usuario.tipo !== "MARCA" && usuario.tipo !== "ADMIN") {
-    throw new Error("USUARIO_TIPO_INVALIDO");
+    throw new ConflitoDeNegocio(
+      "O usuário responsável por uma marca precisa ser do tipo MARCA ou ADMIN",
+    );
   }
 
   const marca = await prisma.marca.create({
-    data,
+    data: { ...data, status: "APROVADA" },
     include: { usuario: { select: { id: true, nome: true } } },
   });
   await invalidarCache("MARCAS");
   return marca;
+}
+
+/**
+ * Aprova uma marca pendente: muda `Marca.status` para APROVADA e concede
+ * o tipo MARCA ao usuário associado, de forma atômica.
+ *
+ * REQ-USR-03, ADR-0018.
+ *
+ * @param id - ID da marca pendente
+ * @returns Marca aprovada com dados do usuário
+ * @throws Error("MARCA_NAO_ENCONTRADA") se a marca não existir
+ * @throws Error("MARCA_NAO_PENDENTE") se a marca já não estiver PENDENTE
+ */
+export async function aprovarMarca(id: number) {
+  const marca = await prisma.marca.findUnique({ where: { id } });
+  if (!marca) {
+    throw new RecursoNaoEncontrado("Marca");
+  }
+  if (marca.status !== "PENDENTE") {
+    throw new ConflitoDeNegocio("Esta marca já não está pendente de aprovação");
+  }
+
+  const aprovada = await prisma.$transaction(async (tx) => {
+    await tx.usuario.update({
+      where: { id: marca.usuarioId },
+      data: { tipo: "MARCA" },
+    });
+    return tx.marca.update({
+      where: { id },
+      data: { status: "APROVADA" },
+      include: { usuario: { select: { id: true, nome: true, email: true } } },
+    });
+  });
+
+  await Promise.all([
+    invalidarChave(chaveMarca(id)),
+    invalidarCache("MARCAS"),
+    invalidarChave(chaveUsuario(marca.usuarioId)),
+    invalidarChave(chaveUsuarioMe(marca.usuarioId)),
+    invalidarCache("USUARIOS"),
+  ]);
+
+  return aprovada;
 }
 
 /**
@@ -163,7 +216,7 @@ export async function atualizarMarca(
 export async function deletarMarca(id: number) {
   const marca = await prisma.marca.findUnique({ where: { id } });
   if (!marca) {
-    throw new Error("P2025");
+    throw new RecursoNaoEncontrado("Marca");
   }
 
   await prisma.marca.delete({ where: { id } });

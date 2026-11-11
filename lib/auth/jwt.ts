@@ -8,7 +8,7 @@
  *
  * Características:
  * - Tokens assinados com HS256 (HMAC-SHA256)
- * - Expiração padrão de 7 dias
+ * - Token de ACESSO curto (15 min); a renovação usa um token opaco revogável (ADR-0021)
  * - Cookies httpOnly (mais seguros que localStorage)
  * - Singleton pattern: uma instância reutilizada globalmente
  *
@@ -27,6 +27,12 @@ import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
+import {
+  COOKIE_ACESSO,
+  COOKIE_RENOVACAO,
+  TEMPO_DO_ACESSO_SEGUNDOS,
+  TEMPO_DA_RENOVACAO_SEGUNDOS,
+} from "./constantes";
 import type {
   JwtPayload,
   TokenEmissor,
@@ -69,7 +75,7 @@ export class JwtService
    * Gera um novo token JWT.
    *
    * Algoritmo: HS256 (HMAC com SHA-256)
-   * Expiração: 7 dias (604800 segundos)
+   * Expiração: TEMPO_DO_ACESSO_SEGUNDOS (15 minutos)
    *
    * @param payload - Dados a serem codificados no token
    * @returns Token JWT compacto (string)
@@ -80,7 +86,7 @@ export class JwtService
   async sign(payload: JwtPayload): Promise<string> {
     return new SignJWT(payload as unknown as JWTPayload)
       .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("7d")
+      .setExpirationTime(`${TEMPO_DO_ACESSO_SEGUNDOS}s`)
       .sign(getSecret());
   }
 
@@ -131,7 +137,7 @@ export class JwtService
    * @returns Payload do usuário autenticado ou null
    */
   async getSession(req: NextRequest): Promise<JwtPayload | null> {
-    const token = req.cookies.get("token")?.value;
+    const token = req.cookies.get(COOKIE_ACESSO)?.value;
     if (!token) return null;
     return this.verify(token);
   }
@@ -147,7 +153,7 @@ export class JwtService
   async getSessionFromCookies(): Promise<JwtPayload | null> {
     try {
       const cookieStore = await cookies();
-      const token = cookieStore.get("token")?.value;
+      const token = cookieStore.get(COOKIE_ACESSO)?.value;
       if (!token) return null;
       return this.verify(token);
     } catch {
@@ -162,20 +168,41 @@ export class JwtService
    * - httpOnly: true → inacessível via JavaScript (mitiga XSS)
    * - secure: true em produção → só envia via HTTPS
    * - sameSite: "lax" → protege contra CSRF em métodos seguros
-   * - maxAge: 7 dias → sincronizado com expiração do token
+   * - maxAge: igual à duração do token de acesso
    * - path: "/" → cookie disponível em toda aplicação
    *
    * @param res - Resposta Next.js
    * @param token - Token JWT a ser armazenado
    */
   setAuthCookie(res: NextResponse, token: string): void {
-    res.cookies.set("token", token, {
+    res.cookies.set(COOKIE_ACESSO, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 dias em segundos
+      maxAge: TEMPO_DO_ACESSO_SEGUNDOS,
       path: "/",
     });
+  }
+
+  /**
+   * Define o cookie do token de renovação (opaco). Mesmas proteções do cookie de
+   * acesso; `path: "/"` porque o middleware precisa saber que ele existe para
+   * renovar o acesso expirado em navegações de página (ADR-0021).
+   */
+  setRefreshCookie(res: NextResponse, token: string): void {
+    res.cookies.set(COOKIE_RENOVACAO, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: TEMPO_DA_RENOVACAO_SEGUNDOS,
+      path: "/",
+    });
+  }
+
+  /** Remove os dois cookies da sessão (logout, renovação recusada). */
+  clearSessionCookies(res: NextResponse): void {
+    res.cookies.delete(COOKIE_ACESSO);
+    res.cookies.delete(COOKIE_RENOVACAO);
   }
 }
 

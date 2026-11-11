@@ -13,6 +13,9 @@
  * - page: número da página (padrão: 1)
  * - size: itens por página (padrão: 12)
  * - categoriaId: filtrar por categoria
+ * - marcaId: filtrar por marca (REQ-CAT-07)
+ * - precoMax: preço máximo (REQ-CAT-06)
+ * - sort: relevancia (padrão) | preco_asc | preco_desc | nome_asc | nome_desc (REQ-CAT-06)
  * - nome: busca textual por nome
  *
  * @see services/produto.service.ts - Lógica de negócio
@@ -22,7 +25,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS, mapeiaErroPrisma } from "@/lib/http/responses";
+import { ERROS, mapeiaErro } from "@/lib/http/responses";
 import { produtoSchema, listarProdutosQuerySchema } from "@/lib/schemas/produto";
 import { listarProdutos, criarProduto } from "@/services/produto.service";
 import { requireAdmin } from "@/app/_middleware/auth";
@@ -33,6 +36,9 @@ import { requireAdmin } from "@/app/_middleware/auth";
  * @query page - Número da página (default: 1)
  * @query size - Itens por página (default: 12)
  * @query categoriaId - Filtrar por categoria (opcional)
+ * @query marcaId - Filtrar por marca (opcional, REQ-CAT-07)
+ * @query precoMax - Preço máximo (opcional, REQ-CAT-06)
+ * @query sort - relevancia (default) | preco_asc | preco_desc | nome_asc | nome_desc (REQ-CAT-06)
  * @query nome - Busca textual (opcional, case-insensitive)
  * @returns { produtos: Produto[], page: number, size: number, total: number }
  * @status 200 - Lista retornada com sucesso
@@ -46,10 +52,10 @@ export async function GET(req: NextRequest) {
     );
     if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
 
-    const resultado = await listarProdutos(searchParams);
+    const resultado = await listarProdutos(parsed.data);
     return NextResponse.json(resultado);
-  } catch {
-    return ERROS.interno("listar produtos");
+  } catch (err) {
+    return ERROS.interno("listar produtos", err);
   }
 }
 
@@ -78,6 +84,6 @@ export async function POST(req: NextRequest) {
     const produto = await criarProduto(parsed.data);
     return NextResponse.json({ produto }, { status: 201 });
   } catch (err) {
-    return mapeiaErroPrisma(err, "Produto") ?? ERROS.interno("criar produto");
+    return mapeiaErro(err, "Produto") ?? ERROS.interno("criar produto", err);
   }
 }

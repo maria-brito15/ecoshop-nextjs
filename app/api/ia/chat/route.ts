@@ -33,7 +33,10 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { ERROS } from "@/lib/http/responses";
 import { chatSchema } from "@/lib/schemas/ia-chat";
-import { gerarTexto, GEMINI_MODEL } from "@/lib/ai/providers/gemini-chat";
+import {
+  gerarComHistorico,
+  geminiConfigurado,
+} from "@/lib/ai/providers/gemini-chat";
 import { requireAuth } from "@/app/_middleware/auth";
 import { getSession } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
@@ -78,8 +81,7 @@ export async function POST(req: NextRequest) {
 
     const { mensagem, historico } = parsed.data;
 
-    const geminiKey = process.env.GEMINI_KEY ?? "";
-    if (!geminiKey || geminiKey === "sua_chave") {
+    if (!geminiConfigurado()) {
       return NextResponse.json(
         { erro: "Serviço de IA não configurado" },
         { status: 503 },
@@ -100,7 +102,11 @@ export async function POST(req: NextRequest) {
       { role: "user", parts: [{ text: mensagem }] },
     ];
 
-    const resposta = await gerarTextoWithHistory(contents, geminiKey);
+    // Nunca lança: falha, tempo esgotado ou resposta inválida viram `null` (502).
+    const resposta = await gerarComHistorico(contents, {
+      temperature: 0.8,
+      maxOutputTokens: 1024,
+    });
 
     if (!resposta) {
       return NextResponse.json(
@@ -110,32 +116,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ resposta });
-  } catch {
-    return ERROS.interno("processar chat");
+  } catch (err) {
+    return ERROS.interno("processar chat", err);
   }
-}
-
-async function gerarTextoWithHistory(
-  contents: unknown[],
-  apiKey: string,
-): Promise<string | null> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents,
-      generationConfig: {
-        temperature: 0.8,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1024,
-      },
-    }),
-  });
-
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
 }

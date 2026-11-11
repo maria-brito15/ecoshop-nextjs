@@ -17,7 +17,8 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS, mapeiaErroPrisma } from "@/lib/http/responses";
+import { ERROS, mapeiaErro } from "@/lib/http/responses";
+import { idDaRota } from "@/lib/http/params";
 import { atualizarProdutoSchema } from "@/lib/schemas/produto";
 import {
   buscarProduto,
@@ -40,12 +41,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params;
-    const produto = await buscarProduto(Number(id));
+    const id = await idDaRota(params);
+    if (id === null) return ERROS.dadosInvalidos("ID inválido");
+    const produto = await buscarProduto(id);
     if (!produto) return ERROS.naoEncontrado("Produto");
     return NextResponse.json({ produto });
-  } catch {
-    return ERROS.interno("buscar produto");
+  } catch (err) {
+    return ERROS.interno("buscar produto", err);
   }
 }
 
@@ -55,7 +57,7 @@ export async function GET(
  * Requer autenticação ADMIN.
  *
  * @param id - ID do produto na URL
- * @body { nome?: string, descricao?: string, preco?: number, categoriaId?: number, marcaId?: number }
+ * @body { nome?: string, descricao?: string, preco?: number, categoriaId?: number, marcaId?: number, certificadoIds?: number[] }
  * @returns { produto: Produto }
  * @status 200 - Produto atualizado
  * @status 400 - Dados inválidos
@@ -72,16 +74,17 @@ export async function PUT(
   if (authErro) return authErro;
 
   try {
-    const { id } = await params;
+    const id = await idDaRota(params);
+    if (id === null) return ERROS.dadosInvalidos("ID inválido");
     const body = await req.json();
     const parsed = atualizarProdutoSchema.safeParse(body);
     if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
 
-    const produto = await atualizarProduto(Number(id), parsed.data);
+    const produto = await atualizarProduto(id, parsed.data);
     return NextResponse.json({ produto });
   } catch (err) {
     return (
-      mapeiaErroPrisma(err, "Produto") ?? ERROS.interno("atualizar produto")
+      mapeiaErro(err, "Produto") ?? ERROS.interno("atualizar produto", err)
     );
   }
 }
@@ -107,12 +110,13 @@ export async function DELETE(
   if (authErro) return authErro;
 
   try {
-    const { id } = await params;
-    await deletarProduto(Number(id));
+    const id = await idDaRota(params);
+    if (id === null) return ERROS.dadosInvalidos("ID inválido");
+    await deletarProduto(id);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return (
-      mapeiaErroPrisma(err, "Produto") ?? ERROS.interno("deletar produto")
+      mapeiaErro(err, "Produto") ?? ERROS.interno("deletar produto", err)
     );
   }
 }

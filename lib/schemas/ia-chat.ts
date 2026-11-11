@@ -58,19 +58,27 @@ export const chatSchema = z.object({
     .string()
     .min(1, "Mensagem não pode estar vazia")
     .max(2000, "Mensagem muito longa (máximo 2000 caracteres)"),
+  // REQ-CHAT-08: limites do histórico (escolhidos pela spec 009: espelham o
+  // limite de `mensagem`); sem eles um cliente poderia mandar centenas de
+  // turnos enormes e gastar tokens à custa do projeto.
   historico: z
     .array(
       z.object({
         role: z.enum(["user", "model"], {
           message: "role deve ser 'user' ou 'model'",
         }),
-        parts: z.array(
-          z.object({
-            text: z.string(),
-          }),
-        ),
+        parts: z
+          .array(
+            z.object({
+              text: z
+                .string()
+                .max(2000, "Texto do histórico muito longo (máximo 2000 caracteres)"),
+            }),
+          )
+          .max(5, "Item do histórico com partes demais (máximo 5)"),
       }),
     )
+    .max(20, "Histórico muito longo (máximo 20 itens)")
     .optional()
     .default([]),
 });

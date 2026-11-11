@@ -68,6 +68,8 @@ export const produtoSchema = z.object({
  * - preco: positivo (maior que 0)
  * - categoriaId: inteiro positivo
  * - marcaId: inteiro positivo
+ * - certificadoIds: lista completa dos certificados vinculados (REQ-PROD-05);
+ *   substitui o vínculo atual — enviar `[]` remove todos os certificados
  *
  * @example
  * // Aumentar preço em 10%
@@ -78,6 +80,9 @@ export const produtoSchema = z.object({
  *
  * // Mudar categoria do produto
  * const dados = { categoriaId: 3 };
+ *
+ * // Vincular dois certificados (substitui o vínculo anterior)
+ * const dados = { certificadoIds: [1, 2] };
  */
 export const atualizarProdutoSchema = z.object({
   nome: z.string().min(1, "Nome não pode estar vazio").optional(),
@@ -88,6 +93,9 @@ export const atualizarProdutoSchema = z.object({
     .int("ID da categoria deve ser um número inteiro")
     .optional(),
   marcaId: z.number().int("ID da marca deve ser um número inteiro").optional(),
+  certificadoIds: z
+    .array(z.number().int("ID do certificado deve ser um número inteiro"))
+    .optional(),
 });
 
 /**
@@ -96,6 +104,10 @@ export const atualizarProdutoSchema = z.object({
  * REQ-CAT-05: page e size inválidos, ou size acima de 100, respondem 400
  * em vez de serem aceitos silenciosamente (antes, `Number(...)` de um valor
  * inválido virava NaN e seguia para o Prisma sem checagem).
+ *
+ * REQ-CAT-06/07: `marcaId` filtra por marca; `precoMax` limita o preço; `sort`
+ * ordena — todos aplicados pelo banco (Prisma `where`/`orderBy`), por isso
+ * valem para o catálogo inteiro, não só para a página devolvida.
  *
  * Usa `coerce` porque searchParams só entrega strings.
  */
@@ -117,9 +129,31 @@ export const listarProdutosQuerySchema = z.object({
     .number()
     .int()
     .optional(),
-  nome: z.string().optional(),
+  marcaId: z.coerce
+    .number({ message: "marcaId deve ser um número" })
+    .int("marcaId deve ser um número inteiro")
+    .optional(),
+  precoMax: z.coerce
+    .number({ message: "precoMax deve ser um número" })
+    .positive("precoMax deve ser maior que zero")
+    .optional(),
+  sort: z
+    .enum(["relevancia", "preco_asc", "preco_desc", "nome_asc", "nome_desc"], {
+      message: "sort inválido",
+    })
+    .optional()
+    .default("relevancia"),
+  // REQ-CAT-10: limite de tamanho (a busca por nome entra na chave de cache);
+  // texto vazio equivale a "sem filtro por nome".
+  nome: z
+    .string()
+    .trim()
+    .max(100, "nome não pode passar de 100 caracteres")
+    .optional()
+    .transform((valor) => valor || undefined),
 });
 
 // Tipos inferidos para uso nos services
+export type ListarProdutosQuery = z.infer<typeof listarProdutosQuerySchema>;
 export type ProdutoInput = z.infer<typeof produtoSchema>;
 export type AtualizarProdutoInput = z.infer<typeof atualizarProdutoSchema>;

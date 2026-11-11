@@ -17,7 +17,8 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS, mapeiaErroPrisma } from "@/lib/http/responses";
+import { ERROS, mapeiaErro } from "@/lib/http/responses";
+import { idDaRota } from "@/lib/http/params";
 import { atualizarMarcaSchema } from "@/lib/schemas/marca";
 import {
   buscarMarca,
@@ -40,12 +41,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params;
-    const marca = await buscarMarca(Number(id));
+    const id = await idDaRota(params);
+    if (id === null) return ERROS.dadosInvalidos("ID inválido");
+    const marca = await buscarMarca(id);
     if (!marca) return ERROS.naoEncontrado("Marca");
     return NextResponse.json({ marca });
-  } catch {
-    return ERROS.interno("buscar marca");
+  } catch (err) {
+    return ERROS.interno("buscar marca", err);
   }
 }
 
@@ -73,15 +75,16 @@ export async function PUT(
   if (authErro) return authErro;
 
   try {
-    const { id } = await params;
+    const id = await idDaRota(params);
+    if (id === null) return ERROS.dadosInvalidos("ID inválido");
     const body = await req.json();
     const parsed = atualizarMarcaSchema.safeParse(body);
     if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
 
-    const marca = await atualizarMarca(Number(id), parsed.data);
+    const marca = await atualizarMarca(id, parsed.data);
     return NextResponse.json({ marca });
   } catch (err) {
-    return mapeiaErroPrisma(err, "Marca") ?? ERROS.interno("atualizar marca");
+    return mapeiaErro(err, "Marca") ?? ERROS.interno("atualizar marca", err);
   }
 }
 
@@ -108,10 +111,11 @@ export async function DELETE(
   if (authErro) return authErro;
 
   try {
-    const { id } = await params;
-    await deletarMarca(Number(id));
+    const id = await idDaRota(params);
+    if (id === null) return ERROS.dadosInvalidos("ID inválido");
+    await deletarMarca(id);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return mapeiaErroPrisma(err, "Marca") ?? ERROS.interno("deletar marca");
+    return mapeiaErro(err, "Marca") ?? ERROS.interno("deletar marca", err);
   }
 }

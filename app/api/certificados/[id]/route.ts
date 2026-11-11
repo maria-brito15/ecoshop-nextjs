@@ -17,7 +17,8 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS, mapeiaErroPrisma } from "@/lib/http/responses";
+import { ERROS, mapeiaErro } from "@/lib/http/responses";
+import { idDaRota } from "@/lib/http/params";
 import { atualizarCertificadoSchema } from "@/lib/schemas/certificado";
 import {
   buscarCertificado,
@@ -40,12 +41,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params;
-    const certificado = await buscarCertificado(Number(id));
+    const id = await idDaRota(params);
+    if (id === null) return ERROS.dadosInvalidos("ID inválido");
+    const certificado = await buscarCertificado(id);
     if (!certificado) return ERROS.naoEncontrado("Certificado");
     return NextResponse.json({ certificado });
-  } catch {
-    return ERROS.interno("buscar certificado");
+  } catch (err) {
+    return ERROS.interno("buscar certificado", err);
   }
 }
 
@@ -72,17 +74,18 @@ export async function PUT(
   if (authErro) return authErro;
 
   try {
-    const { id } = await params;
+    const id = await idDaRota(params);
+    if (id === null) return ERROS.dadosInvalidos("ID inválido");
     const body = await req.json();
     const parsed = atualizarCertificadoSchema.safeParse(body);
     if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
 
-    const certificado = await atualizarCertificado(Number(id), parsed.data);
+    const certificado = await atualizarCertificado(id, parsed.data);
     return NextResponse.json({ certificado });
   } catch (err) {
     return (
-      mapeiaErroPrisma(err, "Certificado") ??
-      ERROS.interno("atualizar certificado")
+      mapeiaErro(err, "Certificado") ??
+      ERROS.interno("atualizar certificado", err)
     );
   }
 }
@@ -110,13 +113,14 @@ export async function DELETE(
   if (authErro) return authErro;
 
   try {
-    const { id } = await params;
-    await deletarCertificado(Number(id));
+    const id = await idDaRota(params);
+    if (id === null) return ERROS.dadosInvalidos("ID inválido");
+    await deletarCertificado(id);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return (
-      mapeiaErroPrisma(err, "Certificado") ??
-      ERROS.interno("deletar certificado")
+      mapeiaErro(err, "Certificado") ??
+      ERROS.interno("deletar certificado", err)
     );
   }
 }

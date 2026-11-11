@@ -4,165 +4,141 @@
  * ============================================================================
  * REDIS CLIENT
  * ============================================================================
- * Este módulo gerencia a conexão com Redis para cache distribuído e rate limiting.
+ * Cliente Redis compartilhado (cache e rate limit). O Redis é OPCIONAL: sem ele
+ * a aplicação segue funcionando, com cache e rate limit degradados (ADR-0020).
  *
- * Redis é usado para:
- * - Cache de dados (respostas de API)
- * - Rate limiting (contagem de tentativas de login/registro)
- * - Invalidar padrões de chaves (delPattern)
+ * Falha rápida (REQ-OPS-14): o node-redis enfileira comandos enquanto está
+ * desconectado e, sem limite, uma requisição ficaria pendurada até a
+ * reconexão. Por isso:
+ * - todo comando tem tempo limite (`comPrazo`); estourado, vale como falha;
+ * - a fila offline tem tamanho máximo;
+ * - a conexão tem tempo limite e a reconexão recua de 200 ms até 5 s.
  *
- * Singleton pattern para reutilizar a conexão entre hot reloads em desenvolvimento.
- *
- * IMPORTANTE: Redis é opcional para funcionamento básico da aplicação.
- * Se Redis falhar, a aplicação:
- * - Continua funcionando (fallback sem cache)
- * - Rate limiting é ignorado (permite requisições)
- * - Logs de erro são gerados para monitoramento
+ * As funções `redisGet/Set/Del/DelPattern` nunca lançam: falha vira "miss"
+ * (ou no-op) e é registrada no máximo uma vez a cada 30 s.
  * ============================================================================
  */
 
 import { createClient, RedisClientType } from "redis";
+import { log, serializarErro, limitarFrequencia } from "@/lib/log";
 
-/**
- * Referência global para o singleton do RedisClient.
- * Usa globalThis para persistir entre hot reloads em desenvolvimento.
- */
+/** Tempo limite de um comando comum (valor inicial, sem medição). */
+export const TIMEOUT_COMANDO_MS = 300;
+/** Varrer chaves por padrão é mais lento: tem prazo próprio. */
+const TIMEOUT_VARREDURA_MS = 3000;
+const FILA_OFFLINE_MAXIMA = 100;
+
 const globalForRedis = globalThis as unknown as {
   redis: RedisClientType | undefined;
 };
 
-/**
- * Cria e configura um novo cliente Redis.
- *
- * Configurações:
- * - URL via variável de ambiente REDIS_URL (padrão: redis://localhost:6379)
- * - Evento 'error': loga erro mas não derruba a aplicação
- * - Conexão automática: client.connect() é chamado imediatamente
- *
- * @returns {RedisClientType} Cliente Redis configurado
- */
+const podeAvisar = limitarFrequencia(30_000);
+
+/** Registra a falha do Redis, no máximo uma vez a cada 30 s por tipo. */
+export function avisarFalhaDoRedis(evento: string, err: unknown) {
+  if (podeAvisar(evento)) log.warn(evento, { erro: serializarErro(err) });
+}
+
 function createRedisClient(): RedisClientType {
   const url = process.env.REDIS_URL ?? "redis://localhost:6379";
-  const client = createClient({ url }) as RedisClientType;
+  const client = createClient({
+    url,
+    commandsQueueMaxLength: FILA_OFFLINE_MAXIMA,
+    socket: {
+      connectTimeout: 1000,
+      reconnectStrategy: (tentativas: number) => Math.min(tentativas * 200, 5000),
+    },
+  }) as RedisClientType;
 
-  // Event listener para erros de conexão.
-  // Não throw error aqui para não derrubar a aplicação se Redis estiver offline.
-  client.on("error", (err) => {
-    console.warn("[redis] erro de conexão:", err.message);
-  });
+  client.on("error", (err) => avisarFalhaDoRedis("redis.erro_de_conexao", err));
 
-  // Inicia a conexão (não blocking, Promise é ignorada).
-  // Se falhar, o evento 'error' será disparado.
-  client.connect().catch((err) => {
-    console.warn("[redis] falha ao conectar:", err.message);
-  });
+  client
+    .connect()
+    .catch((err) => avisarFalhaDoRedis("redis.falha_ao_conectar", err));
 
   return client;
 }
 
-/**
- * Instância singleton do cliente Redis.
- * Reutiliza conexão existente entre requisições.
- */
 export const redis = globalForRedis.redis ?? createRedisClient();
 
-// Em desenvolvimento, salva a referência para reutilização.
 if (process.env.NODE_ENV !== "production") {
   globalForRedis.redis = redis;
 }
 
 /**
- * Recupera um valor do Redis e faz parse automático do JSON.
- *
- * @template T - Tipo esperado do valor armazenado
- * @param {string} chave - Chave no Redis
- * @returns {Promise<T | null>} Valor parseado ou null se não existir/erro
- *
- * @example
- * const usuario = await redisGet<Usuario>("usuario:1");
+ * Rejeita se `promessa` não terminar em `ms`. A promessa original continua (o
+ * Redis não cancela comandos), mas quem espera é liberado.
+ */
+export function comPrazo<T>(promessa: Promise<T>, ms: number): Promise<T> {
+  let temporizador: ReturnType<typeof setTimeout> | undefined;
+  const limite = new Promise<never>((_, rejeita) => {
+    temporizador = setTimeout(
+      () => rejeita(new Error(`Redis sem resposta em ${ms} ms`)),
+      ms,
+    );
+  });
+  return Promise.race([promessa, limite]).finally(() => clearTimeout(temporizador));
+}
+
+/**
+ * Lê e converte um valor do cache.
+ * @returns o valor, ou `null` se não existe ou se o Redis falhou
  */
 export async function redisGet<T>(chave: string): Promise<T | null> {
   try {
-    const raw = await redis.get(chave);
+    const raw = await comPrazo(redis.get(chave), TIMEOUT_COMANDO_MS);
     if (!raw) return null;
     return JSON.parse(raw) as T;
-  } catch {
-    // Silencia erro: se o parse falhar (JSON inválido), retorna null.
-    // Isso permite que a aplicação continue funcionando sem cache.
+  } catch (err) {
+    avisarFalhaDoRedis("redis.get_falhou", err);
     return null;
   }
 }
 
-/**
- * Armazena um valor no Redis com TTL (time-to-live).
- *
- * @param {string} chave - Chave no Redis
- * @param {unknown} valor - Valor a ser armazenado (serializado automaticamente para JSON)
- * @param {number} ttlSegundos - Tempo de vida em segundos
- * @returns {Promise<void>}
- *
- * @example
- * await redisSet("usuario:1", usuario, 300); // expira em 5 minutos
- */
+/** Grava um valor com TTL. Falha do Redis não propaga. */
 export async function redisSet(
   chave: string,
   valor: unknown,
   ttlSegundos: number,
 ): Promise<void> {
   try {
-    await redis.set(chave, JSON.stringify(valor), { EX: ttlSegundos });
-  } catch {
-    // Silencia erro: cache opcional, aplicação continua sem ele.
+    await comPrazo(
+      redis.set(chave, JSON.stringify(valor), { EX: ttlSegundos }),
+      TIMEOUT_COMANDO_MS,
+    );
+  } catch (err) {
+    avisarFalhaDoRedis("redis.set_falhou", err);
   }
 }
 
-/**
- * Remove uma chave específica do Redis.
- *
- * @param {string} chave - Chave a ser deletada
- * @returns {Promise<void>}
- *
- * @example
- * await redisDel("usuario:1");
- */
+/** Remove uma chave. Falha do Redis não propaga. */
 export async function redisDel(chave: string): Promise<void> {
   try {
-    await redis.del(chave);
-  } catch {
-    // Silencia erro.
+    await comPrazo(redis.del(chave), TIMEOUT_COMANDO_MS);
+  } catch (err) {
+    avisarFalhaDoRedis("redis.del_falhou", err);
   }
 }
 
-/**
- * Remove todas as chaves que correspondem a um padrão (glob pattern).
- *
- * Como funciona:
- * 1. SCAN iterator percorre todas as chaves sem bloquear o Redis
- * 2. MATCH filtra apenas chaves que correspondem ao padrão (ex: "produtos:*")
- * 3. COUNT controla o número de chaves por iteração (performance)
- * 4. DEL remove todas as chaves encontradas em lote
- *
- * Útil para invalidar caches relacionados (ex: todas as listas de produtos).
- *
- * @param {string} padrao - Padrão glob (ex: "produtos:*", "categorias:*")
- * @returns {Promise<void>}
- *
- * @example
- * await redisDelPattern("produtos:*"); // deleta todos os caches de produtos
- */
+/** Remove todas as chaves que casam com o padrão (ex.: `produtos:*`). Falha não propaga. */
 export async function redisDelPattern(padrao: string): Promise<void> {
   try {
-    const chaves: string[] = [];
-    for await (const chave of redis.scanIterator({
-      MATCH: padrao,
-      COUNT: 100,
-    })) {
-      chaves.push(chave);
-    }
-    if (chaves.length > 0) {
-      await redis.del(chaves);
-    }
-  } catch {
-    // Silencia erro.
+    await comPrazo(
+      (async () => {
+        const chaves: string[] = [];
+        for await (const chave of redis.scanIterator({
+          MATCH: padrao,
+          COUNT: 100,
+        })) {
+          chaves.push(chave);
+        }
+        if (chaves.length > 0) {
+          await redis.del(chaves);
+        }
+      })(),
+      TIMEOUT_VARREDURA_MS,
+    );
+  } catch (err) {
+    avisarFalhaDoRedis("redis.del_pattern_falhou", err);
   }
 }

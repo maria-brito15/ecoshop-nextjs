@@ -24,6 +24,7 @@
  */
 
 import { prisma } from "@/lib/db";
+import { RecursoNaoEncontrado } from "@/lib/errors/dominio";
 import {
   comCache,
   invalidarCache,
@@ -123,7 +124,7 @@ export async function atualizarCertificado(
 export async function deletarCertificado(id: number) {
   const certificado = await prisma.certificado.findUnique({ where: { id } });
   if (!certificado) {
-    throw new Error("P2025");
+    throw new RecursoNaoEncontrado("Certificado");
   }
 
   await prisma.certificado.delete({ where: { id } });

@@ -34,36 +34,56 @@ import {
   TTL,
 } from "@/lib/cache";
 import type {
+  ListarProdutosQuery,
   ProdutoInput,
   AtualizarProdutoInput,
 } from "@/lib/schemas/produto";
 
 /**
+ * Ordenações aceitas por `listarProdutos` (REQ-CAT-06).
+ */
+const ORDEM_POR_SORT = {
+  relevancia: { id: "asc" as const },
+  preco_asc: { preco: "asc" as const },
+  preco_desc: { preco: "desc" as const },
+  nome_asc: { nome: "asc" as const },
+  nome_desc: { nome: "desc" as const },
+};
+
+/**
  * Lista produtos com paginação e filtros.
  *
- * Filtros suportados via searchParams:
+ * Recebe os filtros JÁ VALIDADOS (`listarProdutosQuerySchema`; os padrões de
+ * `page`, `size` e `sort` vêm do schema, não daqui):
  * - page: número da página (padrão: 1)
  * - size: itens por página (padrão: 12)
  * - categoriaId: filtrar por categoria
- * - nome: busca textual por nome (case-insensitive)
+ * - marcaId: filtrar por marca (REQ-CAT-07)
+ * - precoMax: preço máximo (REQ-CAT-06)
+ * - sort: relevancia (padrão) | preco_asc | preco_desc | nome_asc | nome_desc (REQ-CAT-06)
+ * - nome: busca textual por nome (case-insensitive, até 100 caracteres)
+ *
+ * `where`/`orderBy` são resolvidos pelo Prisma (banco), não em memória —
+ * por isso a ordenação e o limite de preço valem para o catálogo inteiro,
+ * e não só para os itens da página devolvida (REQ-CAT-06).
  *
  * Cache: LISTA_PRODUTOS (2 minutos)
- * A chave inclui todos os parâmetros para distinguir diferentes filtros.
+ * A chave (REQ-CAT-10) sai dos filtros validados, em ordem fixa.
  *
- * @param searchParams - Parâmetros de query da URL
+ * @param query - Filtros validados
  * @returns Objeto paginado com produtos, total, página atual e tamanho
  */
-export async function listarProdutos(searchParams: URLSearchParams) {
-  const page = Number(searchParams.get("page") ?? 1);
-  const size = Number(searchParams.get("size") ?? 12);
-  const categoriaId = searchParams.get("categoriaId");
-  const nome = searchParams.get("nome");
+export async function listarProdutos(query: ListarProdutosQuery) {
+  const { page, size, categoriaId, marcaId, precoMax, sort, nome } = query;
 
-  const chave = chaveProdutos(searchParams);
+  // A chave sai dos filtros validados (REQ-CAT-10), nunca da URL crua.
+  const chave = chaveProdutos(query);
 
   return comCache(chave, TTL.LISTA_PRODUTOS, async () => {
     const where = {
-      ...(categoriaId && { categoriaId: Number(categoriaId) }),
+      ...(categoriaId !== undefined && { categoriaId }),
+      ...(marcaId !== undefined && { marcaId }),
+      ...(precoMax !== undefined && { preco: { lte: precoMax } }),
       ...(nome && { nome: { contains: nome, mode: "insensitive" as const } }),
     };
 
@@ -77,7 +97,7 @@ export async function listarProdutos(searchParams: URLSearchParams) {
         },
         skip: (page - 1) * size,
         take: size,
-        orderBy: { id: "asc" },
+        orderBy: ORDEM_POR_SORT[sort],
       }),
       prisma.produto.count({ where }),
     ]);
@@ -131,18 +151,50 @@ export async function buscarProduto(id: number) {
  * Atualiza um produto existente.
  * Requer autenticação ADMIN.
  *
+ * REQ-PROD-05: se `certificadoIds` vier no corpo, substitui por completo o
+ * vínculo produto↔certificado (remove os antigos, cria os novos, numa
+ * transação). Omitir o campo não altera o vínculo existente.
+ *
  * @param id - ID do produto a ser atualizado
  * @param data - Dados para atualização (todos opcionais)
  * @returns Produto atualizado com relacionamentos
+ * @throws Error P2025 se o produto não existir
+ * @throws Error P2003 se algum certificadoId não existir
  */
 export async function atualizarProduto(
   id: number,
   data: AtualizarProdutoInput,
 ) {
-  const produto = await prisma.produto.update({
-    where: { id },
-    data,
-    include: { categoria: true, marca: true },
+  const { certificadoIds, ...produtoData } = data;
+
+  const produto = await prisma.$transaction(async (tx) => {
+    if (Object.keys(produtoData).length > 0) {
+      await tx.produto.update({ where: { id }, data: produtoData });
+    } else {
+      await tx.produto.findUniqueOrThrow({ where: { id } });
+    }
+
+    if (certificadoIds !== undefined) {
+      await tx.produtoCertificado.deleteMany({ where: { produtoId: id } });
+      const unicos = [...new Set(certificadoIds)];
+      if (unicos.length > 0) {
+        await tx.produtoCertificado.createMany({
+          data: unicos.map((certificadoId) => ({
+            produtoId: id,
+            certificadoId,
+          })),
+        });
+      }
+    }
+
+    return tx.produto.findUniqueOrThrow({
+      where: { id },
+      include: {
+        categoria: true,
+        marca: true,
+        certificados: { include: { certificado: true } },
+      },
+    });
   });
 
   await Promise.all([
@@ -156,11 +208,14 @@ export async function atualizarProduto(
  * Deleta um produto.
  * Requer autenticação ADMIN.
  *
- * NOTA: A deleção em cascata no schema do Prisma remove automaticamente
- * os registros relacionados em ProdutoCertificado.
+ * REQ-PROD-07: produto com certificados vinculados NÃO pode ser excluído
+ * (decisão do dono, 2026-11-11: bloqueio). A chave estrangeira de
+ * `produto_certificado` é `ON DELETE RESTRICT` (não há cascata); o banco recusa
+ * (P2003) e o handler responde 409. Para excluir, desvincule antes os
+ * certificados (`atualizarProduto` com `certificadoIds: []`).
  *
  * @param id - ID do produto a ser deletado
- * @throws Error P2025 se produto não existir
+ * @throws PrismaClientKnownRequestError P2025 se o produto não existir (404) ou P2003 se houver vínculos (409)
  */
 export async function deletarProduto(id: number) {
   await prisma.produto.delete({ where: { id } });

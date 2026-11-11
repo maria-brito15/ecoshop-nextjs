@@ -32,7 +32,7 @@
  * ============================================================================
  */
 
-import { NextRequest } from "next/server";
+import type { NextRequest, NextResponse } from "next/server";
 import { jwtService } from "./jwt";
 import type { JwtPayload } from "@/types/auth";
 
@@ -45,8 +45,14 @@ export const getSession = (req: NextRequest) => jwtService.getSession(req);
 export const getSessionFromCookies = () => jwtService.getSessionFromCookies();
 
 // Função para definir cookie de autenticação na resposta
-export const setAuthCookie = (res: any, token: string) =>
+export const setAuthCookie = (res: NextResponse, token: string) =>
   jwtService.setAuthCookie(res, token);
 
 // Re-exporta o tipo JwtPayload para conveniência
+export const setRefreshCookie = (res: NextResponse, token: string) =>
+  jwtService.setRefreshCookie(res, token);
+
+export const clearSessionCookies = (res: NextResponse) =>
+  jwtService.clearSessionCookies(res);
+
 export type { JwtPayload } from "@/types/auth";

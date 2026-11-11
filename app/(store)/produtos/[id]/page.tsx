@@ -28,9 +28,10 @@
 
 "use client";
 
-import { use, useState, useEffect, useRef } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { useBuscarProduto } from "@/lib/hooks/useProdutos";
+import { useListarFotos } from "@/lib/hooks/useFotos";
 import type { Certificado } from "@/types/api";
 
 type Props = {
@@ -38,6 +39,18 @@ type Props = {
 };
 
 type Tab = "sobre" | "specs" | "certificados";
+
+/**
+ * Item do histórico local de produtos visitados (REQ-PERF-05).
+ * Mesma forma lida por app/(perfil)/perfil/page.tsx na chave "ecoshop_history".
+ */
+type HistoricoItem = {
+  produtoId: number;
+  nome: string;
+  fotoUrl?: string;
+  preco: number;
+  visitadoEm: string;
+};
 
 // ----------------------------------------------------------------------------
 // COMPONENTES
@@ -173,14 +186,42 @@ function Tabs({
 export default function ProdutoPage({ params }: Props) {
   const { id } = use(params);
   const { data, carregando, erro } = useBuscarProduto(Number(id));
+  const { data: fotosData } = useListarFotos(Number(id));
   const [activeTab, setActiveTab] = useState<Tab>("sobre");
   const [imgLoaded, setImgLoaded] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
+  const [fotoSelecionada, setFotoSelecionada] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setHeroVisible(true), 80);
     return () => clearTimeout(timer);
   }, []);
+
+  // Registra a visita no histórico local (REQ-PERF-05): a aba Histórico do
+  // perfil (app/(perfil)/perfil/page.tsx) lê a mesma chave. Sem backend
+  // porque o histórico é por navegador, não por conta (ADR-0004).
+  useEffect(() => {
+    const produto = data?.produto;
+    if (!produto) return;
+    try {
+      const raw = localStorage.getItem("ecoshop_history");
+      const historico: HistoricoItem[] = raw ? JSON.parse(raw) : [];
+      const semDuplicata = historico.filter((h) => h.produtoId !== produto.id);
+      const atualizado = [
+        {
+          produtoId: produto.id,
+          nome: produto.nome,
+          fotoUrl: produto.fotoUrl,
+          preco: Number(produto.preco),
+          visitadoEm: new Date().toISOString(),
+        },
+        ...semDuplicata,
+      ].slice(0, 50);
+      localStorage.setItem("ecoshop_history", JSON.stringify(atualizado));
+    } catch {
+      // localStorage indisponível (ex.: modo privado); histórico não é crítico
+    }
+  }, [data?.produto]);
 
   // Estado de carregamento
   if (carregando) return <SkeletonDetail />;
@@ -221,6 +262,9 @@ export default function ProdutoPage({ params }: Props) {
     currency: "BRL",
   });
   const hasCerts = !!(produto.certificados && produto.certificados.length > 0);
+  const fotos = fotosData?.fotos ?? [];
+  const imagemPrincipal =
+    fotoSelecionada ?? produto.fotoUrl ?? fotos[0]?.url ?? null;
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)] pb-20">
@@ -254,9 +298,9 @@ export default function ProdutoPage({ params }: Props) {
           {/* IMAGEM DO PRODUTO */}
           <div className="relative">
             <div className="relative bg-[var(--color-bg-surface)] rounded-[2rem] overflow-hidden border border-[var(--color-border)] shadow-[var(--shadow-card)] aspect-square flex items-center justify-center p-8 group">
-              {produto.fotoUrl ? (
+              {imagemPrincipal ? (
                 <img
-                  src={produto.fotoUrl}
+                  src={imagemPrincipal}
                   alt={produto.nome}
                   onLoad={() => setImgLoaded(true)}
                   className={`max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
@@ -280,6 +324,34 @@ export default function ProdutoPage({ params }: Props) {
                 </span>
               </div>
             </div>
+
+            {/* GALERIA DE FOTOS (REQ-MIDIA-04) */}
+            {fotos.length > 0 && (
+              <div className="flex gap-3 mt-4 overflow-x-auto pb-1">
+                {fotos.map((foto) => (
+                  <button
+                    key={foto.nome}
+                    type="button"
+                    onClick={() => {
+                      setImgLoaded(false);
+                      setFotoSelecionada(foto.url);
+                    }}
+                    aria-label={`Ver foto ${foto.nome}`}
+                    className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors ${
+                      imagemPrincipal === foto.url
+                        ? "border-[var(--color-primary)]"
+                        : "border-[var(--color-border)] hover:border-[var(--color-primary-light)]"
+                    }`}
+                  >
+                    <img
+                      src={foto.url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* INFORMAÇÕES DO PRODUTO */}

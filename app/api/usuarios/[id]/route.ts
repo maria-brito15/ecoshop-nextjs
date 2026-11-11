@@ -23,7 +23,8 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { ERROS } from "@/lib/http/responses";
+import { ERROS, mapeiaErro } from "@/lib/http/responses";
+import { idDaRota } from "@/lib/http/params";
 import { atualizarUsuarioSchema } from "@/lib/schemas/usuario";
 import {
   buscarUsuario,
@@ -50,18 +51,19 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await getSession(req);
-  const { id } = await params;
+  const id = await idDaRota(params);
 
-  if (!session || (session.id !== Number(id) && session.tipo !== "ADMIN")) {
+  if (!session || (session.id !== id && session.tipo !== "ADMIN")) {
     return ERROS.acessoNegado();
   }
+  if (id === null) return ERROS.dadosInvalidos("ID inválido");
 
   try {
-    const usuario = await buscarUsuario(Number(id));
+    const usuario = await buscarUsuario(id);
     if (!usuario) return ERROS.naoEncontrado("Usuário");
     return NextResponse.json({ usuario });
-  } catch {
-    return ERROS.interno("buscar usuário");
+  } catch (err) {
+    return ERROS.interno("buscar usuário", err);
   }
 }
 
@@ -78,7 +80,9 @@ export async function GET(
  * @status 400 - Dados inválidos
  * @status 401 - Não autenticado
  * @status 403 - Acesso negado
+ * @status 403 - Acesso negado, ou senha atual incorreta ao trocar a própria senha
  * @status 404 - Usuário não encontrado
+ * @status 409 - E-mail já cadastrado
  * @status 500 - Erro ao atualizar usuário
  */
 export async function PUT(
@@ -86,24 +90,22 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await getSession(req);
-  const { id } = await params;
+  const id = await idDaRota(params);
 
-  if (!session || (session.id !== Number(id) && session.tipo !== "ADMIN")) {
+  if (!session || (session.id !== id && session.tipo !== "ADMIN")) {
     return ERROS.acessoNegado();
   }
+  if (id === null) return ERROS.dadosInvalidos("ID inválido");
 
   try {
     const body = await req.json();
     const parsed = atualizarUsuarioSchema.safeParse(body);
     if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
 
-    const usuario = await atualizarUsuario(Number(id), parsed.data);
+    const usuario = await atualizarUsuario(id, parsed.data, session.id);
     return NextResponse.json({ usuario });
   } catch (err) {
-    if (err instanceof Error && err.message.includes("P2025")) {
-      return ERROS.naoEncontrado("Usuário");
-    }
-    return ERROS.interno("atualizar usuário");
+    return mapeiaErro(err, "Usuário") ?? ERROS.interno("atualizar usuário", err);
   }
 }
 
@@ -118,6 +120,7 @@ export async function PUT(
  * @status 401 - Não autenticado
  * @status 403 - Acesso negado (não é ADMIN)
  * @status 404 - Usuário não encontrado
+ * @status 409 - Conta do próprio ADMIN, ou usuário com vínculos (ex.: marca)
  * @status 500 - Erro ao deletar usuário
  */
 export async function DELETE(
@@ -128,13 +131,11 @@ export async function DELETE(
   if (!session || session.tipo !== "ADMIN") return ERROS.acessoNegado();
 
   try {
-    const { id } = await params;
-    await deletarUsuario(Number(id));
+    const id = await idDaRota(params);
+    if (id === null) return ERROS.dadosInvalidos("ID inválido");
+    await deletarUsuario(id, session.id);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    if (err instanceof Error && err.message.includes("P2025")) {
-      return ERROS.naoEncontrado("Usuário");
-    }
-    return ERROS.interno("deletar usuário");
+    return mapeiaErro(err, "Usuário") ?? ERROS.interno("deletar usuário", err);
   }
 }

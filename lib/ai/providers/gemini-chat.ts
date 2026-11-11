@@ -17,10 +17,27 @@
  *
  * Variável de ambiente necessária:
  * - GEMINI_KEY: Chave de API do Google AI Studio
+ *
+ * Falhas (REQ-CHAT-09, REQ-SCAN-05, REQ-SCAN-09): a chamada tem tempo limite e
+ * qualquer falha (rede, tempo esgotado, resposta de erro ou inválida) devolve
+ * `null`; quem chama decide a contingência.
+ *
+ * A chave vai no cabeçalho `x-goog-api-key`, nunca na URL (URLs acabam em logs
+ * de proxy e de servidor) — REQ-CHAT-08.
  * ============================================================================
  */
 
+import { fetchComTimeout } from "@/lib/http/fetch-com-timeout";
+
 export const GEMINI_MODEL = "gemini-2.0-flash";
+
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
+/** Tempo limite padrão (valor inicial, sem medição: ajustar com dados reais). */
+const TIMEOUT_GEMINI_MS = 20_000;
+
+/** Valor de exemplo que já apareceu em `.env` de desenvolvimento: não é uma chave. */
+const CHAVE_DE_EXEMPLO = "sua_chave";
 
 /**
  * Recupera a chave da API Gemini do ambiente.
@@ -28,6 +45,14 @@ export const GEMINI_MODEL = "gemini-2.0-flash";
  */
 function getGeminiKey(): string {
   return process.env.GEMINI_KEY ?? "";
+}
+
+/**
+ * Indica se há uma chave configurada (ausente ou valor de exemplo = não configurada).
+ */
+export function geminiConfigurado(): boolean {
+  const key = getGeminiKey();
+  return key !== "" && key !== CHAVE_DE_EXEMPLO;
 }
 
 /**
@@ -45,10 +70,52 @@ export interface GeminiConfig {
 }
 
 /**
+ * Chamada comum aos dois usos (texto simples e conversa com histórico).
+ * Nunca lança: qualquer falha vira `null`.
+ */
+async function gerar(
+  contents: unknown[],
+  config: GeminiConfig | undefined,
+  timeoutMs: number,
+): Promise<string | null> {
+  const key = getGeminiKey();
+  if (!key) return null;
+
+  try {
+    const res = await fetchComTimeout(
+      GEMINI_URL,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+        body: JSON.stringify({
+          contents,
+          generationConfig: {
+            temperature: config?.temperature ?? 0.7,
+            topK: config?.topK ?? 40,
+            topP: config?.topP ?? 0.95,
+            maxOutputTokens: config?.maxOutputTokens ?? 2048,
+          },
+        }),
+      },
+      timeoutMs,
+    );
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
+  } catch {
+    // Rede, tempo esgotado ou resposta que não é JSON. Silencioso de propósito:
+    // não expõe detalhes internos (nem a chave) a quem chama.
+    return null;
+  }
+}
+
+/**
  * Gera texto usando o modelo Gemini.
  *
  * @param prompt - Texto de entrada para o modelo
  * @param config - Configurações opcionais (temperature, topK, etc.)
+ * @param timeoutMs - Tempo limite da chamada (padrão: constante do módulo)
  * @returns Texto gerado ou null se falha
  *
  * @example
@@ -64,27 +131,21 @@ export interface GeminiConfig {
 export async function gerarTexto(
   prompt: string,
   config?: GeminiConfig,
+  timeoutMs: number = TIMEOUT_GEMINI_MS,
 ): Promise<string | null> {
-  const key = getGeminiKey();
-  if (!key) return null;
+  return gerar([{ parts: [{ text: prompt }] }], config, timeoutMs);
+}
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: config?.temperature ?? 0.7,
-        topK: config?.topK ?? 40,
-        topP: config?.topP ?? 0.95,
-        maxOutputTokens: config?.maxOutputTokens ?? 2048,
-      },
-    }),
-  });
-
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
+/**
+ * Gera a próxima resposta de uma conversa (formato de `contents` da API Gemini).
+ *
+ * @param contents - Turnos da conversa (`{ role, parts: [{ text }] }`)
+ * @returns Texto gerado ou null se falha
+ */
+export async function gerarComHistorico(
+  contents: unknown[],
+  config?: GeminiConfig,
+  timeoutMs: number = TIMEOUT_GEMINI_MS,
+): Promise<string | null> {
+  return gerar(contents, config, timeoutMs);
 }
