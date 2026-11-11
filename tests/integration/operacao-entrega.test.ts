@@ -5,17 +5,17 @@
  * Não precisa de banco nem de Redis: valida funções puras e lê arquivos versionados
  * (compose, workflow, scripts). O que exige Docker ou build roda no CI (ver ci.yml).
  */
-import { email, encerrar } from "./helpers";
+import { email, closeConnections } from "./helpers";
 import test, { after, mock } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
-import { validarJwtSecret } from "@/lib/config/jwt-secret";
+import { validateJwtSecret } from "@/lib/config/jwt-secret";
 import { register } from "@/instrumentation";
 
-after(encerrar);
+after(closeConnections);
 
 const SEGREDO_VALIDO ="x7Qm2LbR9vTn4KcE8wYpZa3JdHfUg6Nz";
 
@@ -25,17 +25,17 @@ type Ambiente = Record<string, string | undefined>;
 async function comAmbiente(alteracoes: Ambiente, fn: () => Promise<void>) {
   const env = process.env as Ambiente;
   const anteriores: Ambiente = {};
-  for (const chave of Object.keys(alteracoes)) {
-    anteriores[chave] = env[chave];
-    if (alteracoes[chave] === undefined) delete env[chave];
-    else env[chave] = alteracoes[chave];
+  for (const key of Object.keys(alteracoes)) {
+    anteriores[key] = env[key];
+    if (alteracoes[key] === undefined) delete env[key];
+    else env[key] = alteracoes[key];
   }
   try {
     await fn();
   } finally {
-    for (const chave of Object.keys(anteriores)) {
-      if (anteriores[chave] === undefined) delete env[chave];
-      else env[chave] = anteriores[chave];
+    for (const key of Object.keys(anteriores)) {
+      if (anteriores[key] === undefined) delete env[key];
+      else env[key] = anteriores[key];
     }
   }
 }
@@ -48,14 +48,14 @@ const PRODUCAO: Ambiente = {
 };
 
 test("REQ-OPS-06: validarJwtSecret aceita um segredo com 32+ caracteres que não é valor-exemplo", () => {
-  assert.equal(validarJwtSecret(SEGREDO_VALIDO), null);
+  assert.equal(validateJwtSecret(SEGREDO_VALIDO), null);
 });
 
 test("REQ-OPS-06: validarJwtSecret recusa segredo ausente, vazio ou curto", () => {
-  assert.notEqual(validarJwtSecret(undefined), null);
-  assert.notEqual(validarJwtSecret(""), null);
-  assert.notEqual(validarJwtSecret("a".repeat(31)), null);
-  assert.equal(validarJwtSecret("a1B2".repeat(8)), null);
+  assert.notEqual(validateJwtSecret(undefined), null);
+  assert.notEqual(validateJwtSecret(""), null);
+  assert.notEqual(validateJwtSecret("a".repeat(31)), null);
+  assert.equal(validateJwtSecret("a1B2".repeat(8)), null);
 });
 
 test("REQ-OPS-06: validarJwtSecret recusa os valores-exemplo conhecidos, mesmo com 32+ caracteres", () => {
@@ -68,13 +68,13 @@ test("REQ-OPS-06: validarJwtSecret recusa os valores-exemplo conhecidos, mesmo c
   ];
   for (const exemplo of exemplos) {
     assert.ok(exemplo.length >= 32, `precondição: "${exemplo}" tem 32+ caracteres`);
-    assert.notEqual(validarJwtSecret(exemplo), null, exemplo);
+    assert.notEqual(validateJwtSecret(exemplo), null, exemplo);
   }
 });
 
 test("REQ-OPS-06: a mensagem de erro nunca contém o valor do segredo", () => {
   const segredo = "supersecretkeychangeinproduction";
-  const erro = validarJwtSecret(segredo);
+  const erro = validateJwtSecret(segredo);
   assert.ok(erro);
   assert.ok(!erro.includes(segredo));
 });
@@ -178,8 +178,8 @@ test("REQ-OPS-06: durante o build e no runtime edge, register() não valida (bui
  * (mesmo vazias): o dotenv dos seeds carrega `.env.local` sem sobrescrever o que
  * já existe no ambiente, e o teste não pode depender do arquivo de quem o roda.
  */
-function rodarSeed(arquivo: string, ambiente: Ambiente) {
-  return spawnSync("npx", ["tsx", arquivo], {
+function rodarSeed(file: string, ambiente: Ambiente) {
+  return spawnSync("npx", ["tsx", file], {
     cwd: process.cwd(),
     env: {
       ...process.env,
@@ -194,9 +194,9 @@ function rodarSeed(arquivo: string, ambiente: Ambiente) {
 
 test("REQ-OPS-09: seed.ts sem SEED_USER_PASSWORD ou com senha curta falha sem gravar nada", async () => {
   const antes = await prisma.usuario.count();
-  for (const senha of ["", "curta-11chr"]) {
-    const r = rodarSeed("prisma/seed.ts", { SEED_USER_PASSWORD: senha });
-    assert.notEqual(r.status, 0, `senha "${senha}" deveria falhar`);
+  for (const password of ["", "curta-11chr"]) {
+    const r = rodarSeed("prisma/seed.ts", { SEED_USER_PASSWORD: password });
+    assert.notEqual(r.status, 0, `senha "${password}" deveria falhar`);
     assert.match(r.stderr, /SEED_USER_PASSWORD/);
   }
   assert.equal(await prisma.usuario.count(), antes);
@@ -205,12 +205,12 @@ test("REQ-OPS-09: seed.ts sem SEED_USER_PASSWORD ou com senha curta falha sem gr
 test("REQ-OPS-09: seed-admin.ts sem ADMIN_PASSWORD ou com senha curta falha sem gravar nada", async () => {
   const mail = email("seedadmin-falha");
   const antes = await prisma.usuario.count();
-  for (const senha of ["", "curta-11chr"]) {
+  for (const password of ["", "curta-11chr"]) {
     const r = rodarSeed("prisma/seed-admin.ts", {
       ADMIN_EMAIL: mail,
-      ADMIN_PASSWORD: senha,
+      ADMIN_PASSWORD: password,
     });
-    assert.notEqual(r.status, 0, `senha "${senha}" deveria falhar`);
+    assert.notEqual(r.status, 0, `senha "${password}" deveria falhar`);
     assert.match(r.stderr, /ADMIN_PASSWORD/);
   }
   assert.equal(await prisma.usuario.count(), antes);
@@ -219,32 +219,32 @@ test("REQ-OPS-09: seed-admin.ts sem ADMIN_PASSWORD ou com senha curta falha sem 
 
 test("REQ-OPS-09: seed-admin.ts com ADMIN_PASSWORD válida cria o ADMIN com senha utilizável", async () => {
   const mail = email("seedadmin-ok");
-  const senha = "SenhaForte-De-Teste-1";
+  const password = "SenhaForte-De-Teste-1";
   try {
     const r = rodarSeed("prisma/seed-admin.ts", {
       ADMIN_EMAIL: mail,
-      ADMIN_PASSWORD: senha,
+      ADMIN_PASSWORD: password,
     });
     assert.equal(r.status, 0, r.stderr);
     const admin = await prisma.usuario.findUniqueOrThrow({ where: { email: mail } });
     assert.equal(admin.tipo, "ADMIN");
-    assert.equal(await bcrypt.compare(senha, admin.senha), true);
+    assert.equal(await bcrypt.compare(password, admin.senha), true);
   } finally {
     await prisma.usuario.deleteMany({ where: { email: mail } });
   }
 });
 
 test("REQ-OPS-09: nenhum arquivo de seed contém senha embutida", () => {
-  for (const arquivo of ["prisma/seed.ts", "prisma/seed-admin.ts"]) {
-    const texto = readFileSync(arquivo, "utf8");
-    assert.ok(!texto.includes("EcoshopDemo@2026"), `${arquivo} embute a senha de demo`);
-    assert.ok(!texto.includes("Admin@123456"), `${arquivo} embute a senha de admin`);
+  for (const file of ["prisma/seed.ts", "prisma/seed-admin.ts"]) {
+    const text = readFileSync(file, "utf8");
+    assert.ok(!text.includes("EcoshopDemo@2026"), `${file} embute a senha de demo`);
+    assert.ok(!text.includes("Admin@123456"), `${file} embute a senha de admin`);
   }
 });
 
 test("REQ-OPS-09: o seed-admin não imprime a senha do administrador no log", () => {
-  const texto = readFileSync("prisma/seed-admin.ts", "utf8");
+  const text = readFileSync("prisma/seed-admin.ts", "utf8");
   // a linha que mostra a senha MASCARADA (`"•".repeat(...)`) é permitida
-  assert.doesNotMatch(texto, /Senha: \$\{(?!"•")/);
-  assert.doesNotMatch(texto, /console\.(log|error)\(\s*`[^`]*ADMIN_CONFIG\.senha(?!\.length)/);
+  assert.doesNotMatch(text, /Senha: \$\{(?!"•")/);
+  assert.doesNotMatch(text, /console\.(log|error)\(\s*`[^`]*ADMIN_CONFIG\.senha(?!\.length)/);
 });

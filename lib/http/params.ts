@@ -7,7 +7,7 @@ import { parseId } from "@/lib/schemas/id";
  *
  * @returns o id, ou `null` se for inválido (o handler responde 400).
  */
-export async function idDaRota(
+export async function routeId(
   params: Promise<{ id: string }>,
 ): Promise<number | null> {
   const { id } = await params;

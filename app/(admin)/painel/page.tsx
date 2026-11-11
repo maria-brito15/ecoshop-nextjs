@@ -29,36 +29,36 @@
 
 import { useState, useRef, useEffect } from "react";
 import {
-  useListarFotos,
-  useUploadFoto,
-  useDeletarFoto,
+  useListPhotos,
+  useUploadPhoto,
+  useDeletePhoto,
 } from "@/lib/hooks/useFotos";
 
 
 import {
-  useListarProdutos,
-  useCriarProduto,
-  useAtualizarProduto,
-  useDeletarProduto,
+  useListProducts,
+  useCreateProduct,
+  useUpdateProduct,
+  useDeleteProduct,
 } from "@/lib/hooks/useProdutos";
 import {
-  useListarCategorias,
-  useCriarCategoria,
-  useAtualizarCategoria,
-  useDeletarCategoria,
+  useListCategories,
+  useCreateCategory,
+  useUpdateCategory,
+  useDeleteCategory,
 } from "@/lib/hooks/useCategorias";
 import {
-  useListarMarcas,
-  useCriarMarca,
-  useAtualizarMarca,
-  useDeletarMarca,
-  useAprovarMarca,
+  useListBrands,
+  useCreateBrand,
+  useUpdateBrand,
+  useDeleteBrand,
+  useApproveBrand,
 } from "@/lib/hooks/useMarcas";
 import {
-  useListarCertificados,
-  useCriarCertificado,
-  useAtualizarCertificado,
-  useDeletarCertificado,
+  useListCertificates,
+  useCreateCertificate,
+  useUpdateCertificate,
+  useDeleteCertificate,
 } from "@/lib/hooks/useCertificados";
 
 import type { Produto, Categoria, Marca, Certificado } from "@/types/api";
@@ -223,10 +223,10 @@ function PainelPage() {
 
         {/* Conteúdo da aba selecionada */}
         <div className="p-6">
-          {aba === "produtos" && <SecaoProdutos />}
-          {aba === "categorias" && <SecaoCategorias />}
-          {aba === "marcas" && <SecaoMarcas />}
-          {aba === "certificados" && <SecaoCertificados />}
+          {aba === "produtos" && <ProductsSection />}
+          {aba === "categorias" && <CategoriesSection />}
+          {aba === "marcas" && <BrandsSection />}
+          {aba === "certificados" && <CertificatesSection />}
         </div>
       </main>
     </div>
@@ -255,28 +255,28 @@ const inputCls = `
  * Modal para gerenciar fotos de um produto específico.
  * Permite upload, visualização e deleção de imagens.
  */
-interface ModalFotosProps {
+interface PhotosModalProps {
   produto: Produto;
   isOpen: boolean;
   onClose: () => void;
   onFotoAdicionada: () => void;
 }
 
-function ModalFotos({
-  produto,
+function PhotosModal({
+  produto: product,
   isOpen,
   onClose,
   onFotoAdicionada,
-}: ModalFotosProps) {
+}: PhotosModalProps) {
   const {
     data: fotosData,
-    carregando,
-    erro,
-  } = useListarFotos(isOpen ? produto.id : (null as unknown as number));
-  const uploadMutation = useUploadFoto(produto.id);
-  const deletarMutation = useDeletarFoto(produto.id);
+    loading: carregando,
+    error: erro,
+  } = useListPhotos(isOpen ? product.id : (null as unknown as number));
+  const uploadMutation = useUploadPhoto(product.id);
+  const deleteMutation = useDeletePhoto(product.id);
 
-  const fotos = fotosData?.fotos ?? [];
+  const photos = fotosData?.fotos ?? [];
 
   const [erroUpload, setErroUpload] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -287,19 +287,19 @@ function ModalFotos({
   }, [isOpen]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const arquivo = e.target.files?.[0];
-    if (!arquivo) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
 
     setErroUpload(null);
     const formData = new FormData();
-    formData.append("arquivo", arquivo);
+    formData.append("arquivo", file);
 
-    const resultado = await uploadMutation.executar(
-      `/api/produtos/${produto.id}/fotos`,
+    const result = await uploadMutation.executar(
+      `/api/produtos/${product.id}/fotos`,
       formData,
     );
 
-    if (resultado) {
+    if (result) {
       onFotoAdicionada();
       if (fileInputRef.current) fileInputRef.current.value = "";
     } else {
@@ -307,16 +307,16 @@ function ModalFotos({
     }
   };
 
-  const handleDeleteFoto = async (nomeArquivo: string) => {
+  const handleDeletePhoto = async (fileName: string) => {
     if (!confirm("Tem certeza que deseja deletar esta foto?")) return;
 
     setErroUpload(null);
-    const resultado = await deletarMutation.executar(
-      `/api/produtos/${produto.id}/fotos?nome=${encodeURIComponent(nomeArquivo)}`,
+    const result = await deleteMutation.executar(
+      `/api/produtos/${product.id}/fotos?nome=${encodeURIComponent(fileName)}`,
     );
 
-    if (!resultado) {
-      setErroUpload(deletarMutation.erro ?? "Erro ao deletar foto");
+    if (!result) {
+      setErroUpload(deleteMutation.erro ?? "Erro ao deletar foto");
     }
   };
 
@@ -332,7 +332,7 @@ function ModalFotos({
               Fotos do Produto
             </h2>
             <p className="text-sm text-[var(--color-text-secondary)]">
-              {produto.nome}
+              {product.nome}
             </p>
           </div>
           <button
@@ -403,34 +403,34 @@ function ModalFotos({
           {/* Galeria de fotos existentes */}
           <div>
             <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-3">
-              Fotos Existentes ({fotos.length})
+              Fotos Existentes ({photos.length})
             </label>
 
             {carregando ? (
               <div className="flex items-center justify-center py-8">
                 <div className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
               </div>
-            ) : fotos.length === 0 ? (
+            ) : photos.length === 0 ? (
               <p className="text-center py-8 text-[var(--color-text-secondary)]">
                 Nenhuma foto ainda. Adicione uma acima!
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-4">
-                {fotos.map((foto) => (
+                {photos.map((photo) => (
                   <div
-                    key={foto.nome}
+                    key={photo.nome}
                     className="relative group rounded-lg overflow-hidden bg-[var(--color-bg-body)]"
                   >
                     <img
-                      src={foto.url}
-                      alt={foto.nome}
+                      src={photo.url}
+                      alt={photo.nome}
                       className="w-full h-40 object-cover"
                     />
 
                     {/* Overlay com ações ao hover */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center gap-2">
                       <a
-                        href={foto.url}
+                        href={photo.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="hidden group-hover:flex items-center justify-center w-9 h-9 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors"
@@ -439,7 +439,7 @@ function ModalFotos({
                         🔗
                       </a>
                       <button
-                        onClick={() => handleDeleteFoto(foto.nome)}
+                        onClick={() => handleDeletePhoto(photo.nome)}
                         className="hidden group-hover:flex items-center justify-center w-9 h-9 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors"
                         title="Deletar foto"
                       >
@@ -449,7 +449,7 @@ function ModalFotos({
 
                     {/* Nome do arquivo */}
                     <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1">
-                      <p className="text-xs text-white truncate">{foto.nome}</p>
+                      <p className="text-xs text-white truncate">{photo.nome}</p>
                     </div>
                   </div>
                 ))}
@@ -476,7 +476,7 @@ function ModalFotos({
 // SEÇÃO: PRODUTOS
 // ============================================================================
 
-function SecaoProdutos() {
+function ProductsSection() {
   const [modalFotosAberto, setModalFotosAberto] = useState(false);
   const [produtoSelecionado, setProdutoSelecionado] = useState<Produto | null>(
     null,
@@ -490,36 +490,36 @@ function SecaoProdutos() {
     categoriaId: "",
     marcaId: "",
   });
-  const [certificadoIds, setCertificadoIds] = useState<number[]>([]);
+  const [certificateIds, setCertificadoIds] = useState<number[]>([]);
 
-  const { data: produtosData, carregando, erro } = useListarProdutos(1, 100);
-  const listaProdutos = produtosData?.produtos ?? [];
+  const { data: produtosData, loading: carregando, error: erro } = useListProducts(1, 100);
+  const productList = produtosData?.produtos ?? [];
 
-  const { data: categoriasData } = useListarCategorias();
-  const categorias = categoriasData?.categorias ?? [];
+  const { data: categoriasData } = useListCategories();
+  const categories = categoriasData?.categorias ?? [];
 
-  const { data: marcasData } = useListarMarcas();
-  const marcas = marcasData?.marcas ?? [];
+  const { data: marcasData } = useListBrands();
+  const brands = marcasData?.marcas ?? [];
 
-  const { data: certificadosData } = useListarCertificados();
-  const certificados = certificadosData?.certificados ?? [];
+  const { data: certificadosData } = useListCertificates();
+  const certificates = certificadosData?.certificados ?? [];
 
-  const criar = useCriarProduto();
-  const atualizar = useAtualizarProduto();
-  const deletar = useDeletarProduto();
+  const create = useCreateProduct();
+  const atualizar = useUpdateProduct();
+  const deletar = useDeleteProduct();
 
-  const handleAbrirModal = (produto?: Produto) => {
-    if (produto) {
-      setEditando(produto);
+  const handleAbrirModal = (product?: Produto) => {
+    if (product) {
+      setEditando(product);
       setForm({
-        nome: produto.nome,
-        descricao: produto.descricao || "",
-        preco: String(produto.preco),
-        categoriaId: String(produto.categoriaId),
-        marcaId: String(produto.marcaId),
+        nome: product.nome,
+        descricao: product.descricao || "",
+        preco: String(product.preco),
+        categoriaId: String(product.categoriaId),
+        marcaId: String(product.marcaId),
       });
       setCertificadoIds(
-        (produto.certificados ?? []).map((pc) => pc.certificado.id),
+        (product.certificados ?? []).map((pc) => pc.certificado.id),
       );
     } else {
       setEditando(null);
@@ -535,7 +535,7 @@ function SecaoProdutos() {
     setModalAberto(true);
   };
 
-  function alternarCertificado(id: number) {
+  function toggleCertificate(id: number) {
     setCertificadoIds((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
     );
@@ -554,10 +554,10 @@ function SecaoProdutos() {
         preco: parseFloat(form.preco),
         categoriaId: parseInt(form.categoriaId),
         marcaId: parseInt(form.marcaId),
-        certificadoIds,
+        certificadoIds: certificateIds,
       });
     } else {
-      await criar.executar("/api/produtos", {
+      await create.executar("/api/produtos", {
         nome: form.nome,
         descricao: form.descricao || undefined,
         preco: parseFloat(form.preco),
@@ -569,13 +569,13 @@ function SecaoProdutos() {
     setModalAberto(false);
   };
 
-  const handleDeletar = async (id: number) => {
+  const handleDelete = async (id: number) => {
     if (!confirm("Tem certeza?")) return;
     await deletar.executar(`/api/produtos/${id}`);
   };
 
-  const handleAbrirFotos = (produto: Produto) => {
-    setProdutoSelecionado(produto);
+  const handleOpenPhotos = (product: Produto) => {
+    setProdutoSelecionado(product);
     setModalFotosAberto(true);
   };
 
@@ -604,7 +604,7 @@ function SecaoProdutos() {
             <LoadingRow cols={5} />
           </tbody>
         </TableContainer>
-      ) : listaProdutos.length === 0 ? (
+      ) : productList.length === 0 ? (
         <TableContainer>
           <thead>
             <tr>
@@ -631,33 +631,33 @@ function SecaoProdutos() {
             </tr>
           </thead>
           <tbody>
-            {listaProdutos.map((produto) => (
-              <tr key={produto.id}>
-                <Td>{produto.nome}</Td>
+            {productList.map((product) => (
+              <tr key={product.id}>
+                <Td>{product.nome}</Td>
                 <Td>
                   {new Intl.NumberFormat("pt-BR", {
                     style: "currency",
                     currency: "BRL",
-                  }).format(Number(produto.preco))}
+                  }).format(Number(product.preco))}
                 </Td>
-                <Td>{produto.categoria?.nome || "Categoria não definida"}</Td>
-                <Td>{produto.marca?.nome || "Marca não definida"}</Td>
+                <Td>{product.categoria?.nome || "Categoria não definida"}</Td>
+                <Td>{product.marca?.nome || "Marca não definida"}</Td>
                 <Td className="space-x-2">
                   <ActionButton
                     variant="edit"
-                    onClick={() => handleAbrirModal(produto)}
+                    onClick={() => handleAbrirModal(product)}
                   >
                     ✏️ Editar
                   </ActionButton>
                   <ActionButton
                     variant="edit"
-                    onClick={() => handleAbrirFotos(produto)}
+                    onClick={() => handleOpenPhotos(product)}
                   >
                     📸 Fotos
                   </ActionButton>
                   <ActionButton
                     variant="delete"
-                    onClick={() => handleDeletar(produto.id)}
+                    onClick={() => handleDelete(product.id)}
                   >
                     🗑️ Deletar
                   </ActionButton>
@@ -702,35 +702,35 @@ function SecaoProdutos() {
                 setForm({ ...form, categoriaId: e.target.value })
               }
               type="select"
-              options={categorias.map((c) => ({ id: c.id, nome: c.nome }))}
+              options={categories.map((c) => ({ id: c.id, nome: c.nome }))}
             />
             <Field
               label="Marca"
               value={form.marcaId}
               onChange={(e) => setForm({ ...form, marcaId: e.target.value })}
               type="select"
-              options={marcas.map((m) => ({ id: m.id, nome: m.nome }))}
+              options={brands.map((m) => ({ id: m.id, nome: m.nome }))}
             />
             {editando && (
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                   Certificados
                 </label>
-                {certificados.length === 0 ? (
+                {certificates.length === 0 ? (
                   <p className="text-sm text-[var(--color-text-tertiary)]">
                     Nenhum certificado cadastrado ainda.
                   </p>
                 ) : (
                   <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
-                    {certificados.map((c) => (
+                    {certificates.map((c) => (
                       <label
                         key={c.id}
                         className="flex items-center gap-2 text-sm text-[var(--color-text-primary)] cursor-pointer"
                       >
                         <input
                           type="checkbox"
-                          checked={certificadoIds.includes(c.id)}
-                          onChange={() => alternarCertificado(c.id)}
+                          checked={certificateIds.includes(c.id)}
+                          onChange={() => toggleCertificate(c.id)}
                         />
                         {c.nome}
                       </label>
@@ -742,7 +742,7 @@ function SecaoProdutos() {
             <div className="flex gap-2 pt-4">
               <button
                 onClick={handleSalvar}
-                disabled={criar.carregando || atualizar.carregando}
+                disabled={create.carregando || atualizar.carregando}
                 className="flex-1 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-hover)] disabled:opacity-50"
               >
                 {" "}
@@ -762,7 +762,7 @@ function SecaoProdutos() {
 
       {/* Modal de gerenciamento de fotos */}
       {produtoSelecionado && (
-        <ModalFotos
+        <PhotosModal
           produto={produtoSelecionado}
           isOpen={modalFotosAberto}
           onClose={() => {
@@ -780,19 +780,19 @@ function SecaoProdutos() {
 // SEÇÃO: CATEGORIAS
 // ============================================================================
 
-function SecaoCategorias() {
-  const { data, carregando, erro } = useListarCategorias();
-  const criar = useCriarCategoria();
-  const atualizar = useAtualizarCategoria();
-  const deletar = useDeletarCategoria();
+function CategoriesSection() {
+  const { data, loading: carregando, error: erro } = useListCategories();
+  const create = useCreateCategory();
+  const atualizar = useUpdateCategory();
+  const deletar = useDeleteCategory();
 
-  const categorias = data?.categorias ?? [];
+  const categories = data?.categorias ?? [];
 
   const [modalAberto, setModalAberto] = useState(false);
   const [editando, setEditando] = useState<Categoria | null>(null);
   const [form, setForm] = useState({ nome: "", descricao: "" });
 
-  function abrirCriar() {
+  function openCreate() {
     setEditando(null);
     setForm({ nome: "", descricao: "" });
     setModalAberto(true);
@@ -804,7 +804,7 @@ function SecaoCategorias() {
     setModalAberto(true);
   }
 
-  function fechar() {
+  function close() {
     setModalAberto(false);
     setEditando(null);
   }
@@ -822,27 +822,27 @@ function SecaoCategorias() {
         `/api/categorias/${editando.id}`,
         body,
       );
-      if (ok) fechar();
+      if (ok) close();
     } else {
-      const ok = await criar.executar("/api/categorias", body);
-      if (ok) fechar();
+      const ok = await create.executar("/api/categorias", body);
+      if (ok) close();
     }
   }
 
-  async function handleDeletar(id: number) {
+  async function handleDelete(id: number) {
     if (!confirm("Tem certeza que deseja deletar esta categoria?")) return;
     await deletar.executar(`/api/categorias/${id}`);
   }
 
-  const mutando = criar.carregando || atualizar.carregando;
-  const erroMutacao = criar.erro || atualizar.erro || deletar.erro;
+  const mutando = create.carregando || atualizar.carregando;
+  const mutationError = create.erro || atualizar.erro || deletar.erro;
 
   return (
     <section className="animate-[fadeIn_0.4s_ease]">
-      {erroMutacao && <ErrorMessage message={erroMutacao} />}
+      {mutationError && <ErrorMessage message={mutationError} />}
       <SectionHeader
         title="Lista de Categorias"
-        onAdd={abrirCriar}
+        onAdd={openCreate}
         addLabel="Nova Categoria"
       />
       <TableContainer>
@@ -859,10 +859,10 @@ function SecaoCategorias() {
             <LoadingRow cols={4} />
           ) : erro ? (
             <EmptyRow cols={4} message={`Erro ao carregar: ${erro}`} />
-          ) : categorias.length === 0 ? (
+          ) : categories.length === 0 ? (
             <EmptyRow cols={4} message="Nenhuma categoria cadastrada ainda." />
           ) : (
-            categorias.map((c) => (
+            categories.map((c) => (
               <tr
                 key={c.id}
                 className="hover:bg-[var(--color-bg-body)] transition-colors duration-150"
@@ -885,7 +885,7 @@ function SecaoCategorias() {
                     </ActionButton>
                     <ActionButton
                       variant="delete"
-                      onClick={() => handleDeletar(c.id)}
+                      onClick={() => handleDelete(c.id)}
                     >
                       🗑️ Deletar
                     </ActionButton>
@@ -899,10 +899,10 @@ function SecaoCategorias() {
       <Modal
         open={modalAberto}
         title={editando ? "Editar Categoria" : "Nova Categoria"}
-        onClose={fechar}
+        onClose={close}
         onSubmit={handleSubmit}
         loading={mutando}
-        error={erroMutacao}
+        error={mutationError}
       >
         <Field label="Nome">
           <input
@@ -932,20 +932,20 @@ function SecaoCategorias() {
 // SEÇÃO: MARCAS
 // ============================================================================
 
-function SecaoMarcas() {
-  const { data, carregando, erro } = useListarMarcas();
-  const criar = useCriarMarca();
-  const atualizar = useAtualizarMarca();
-  const deletar = useDeletarMarca();
-  const aprovar = useAprovarMarca();
+function BrandsSection() {
+  const { data, loading: carregando, error: erro } = useListBrands();
+  const create = useCreateBrand();
+  const atualizar = useUpdateBrand();
+  const deletar = useDeleteBrand();
+  const aprovar = useApproveBrand();
 
-  const marcas = data?.marcas ?? [];
+  const brands = data?.marcas ?? [];
 
   const [modalAberto, setModalAberto] = useState(false);
   const [editando, setEditando] = useState<Marca | null>(null);
   const [form, setForm] = useState({ nome: "", descricao: "", usuarioId: "" });
 
-  function abrirCriar() {
+  function openCreate() {
     setEditando(null);
     setForm({ nome: "", descricao: "", usuarioId: "" });
     setModalAberto(true);
@@ -961,7 +961,7 @@ function SecaoMarcas() {
     setModalAberto(true);
   }
 
-  function fechar() {
+  function close() {
     setModalAberto(false);
     setEditando(null);
   }
@@ -976,37 +976,37 @@ function SecaoMarcas() {
     if (editando) {
       const body = { nome: form.nome, descricao: form.descricao || undefined };
       const ok = await atualizar.executar(`/api/marcas/${editando.id}`, body);
-      if (ok) fechar();
+      if (ok) close();
     } else {
       const body = {
         nome: form.nome,
         descricao: form.descricao || undefined,
         usuarioId: Number(form.usuarioId),
       };
-      const ok = await criar.executar("/api/marcas", body);
-      if (ok) fechar();
+      const ok = await create.executar("/api/marcas", body);
+      if (ok) close();
     }
   }
 
-  async function handleDeletar(id: number) {
+  async function handleDelete(id: number) {
     if (!confirm("Tem certeza que deseja deletar esta marca?")) return;
     await deletar.executar(`/api/marcas/${id}`);
   }
 
-  async function handleAprovar(id: number) {
+  async function handleApprove(id: number) {
     await aprovar.executar(`/api/marcas/${id}/aprovar`);
   }
 
-  const mutando = criar.carregando || atualizar.carregando;
-  const erroMutacao =
-    criar.erro || atualizar.erro || deletar.erro || aprovar.erro;
+  const mutando = create.carregando || atualizar.carregando;
+  const mutationError =
+    create.erro || atualizar.erro || deletar.erro || aprovar.erro;
 
   return (
     <section className="animate-[fadeIn_0.4s_ease]">
-      {erroMutacao && <ErrorMessage message={erroMutacao} />}
+      {mutationError && <ErrorMessage message={mutationError} />}
       <SectionHeader
         title="Lista de Marcas"
-        onAdd={abrirCriar}
+        onAdd={openCreate}
         addLabel="Nova Marca"
       />
       <TableContainer>
@@ -1025,10 +1025,10 @@ function SecaoMarcas() {
             <LoadingRow cols={6} />
           ) : erro ? (
             <EmptyRow cols={6} message={`Erro ao carregar: ${erro}`} />
-          ) : marcas.length === 0 ? (
+          ) : brands.length === 0 ? (
             <EmptyRow cols={6} message="Nenhuma marca cadastrada ainda." />
           ) : (
-            marcas.map((m) => (
+            brands.map((m) => (
               <tr
                 key={m.id}
                 className="hover:bg-[var(--color-bg-body)] transition-colors duration-150"
@@ -1055,14 +1055,14 @@ function SecaoMarcas() {
                   </div>
                 </Td>
                 <Td>
-                  <StatusMarcaBadge status={m.status} />
+                  <BrandStatusBadge status={m.status} />
                 </Td>
                 <Td>
                   <div className="flex gap-2">
                     {m.status === "PENDENTE" && (
                       <ActionButton
                         variant="approve"
-                        onClick={() => handleAprovar(m.id)}
+                        onClick={() => handleApprove(m.id)}
                       >
                         ✅ Aprovar
                       </ActionButton>
@@ -1072,7 +1072,7 @@ function SecaoMarcas() {
                     </ActionButton>
                     <ActionButton
                       variant="delete"
-                      onClick={() => handleDeletar(m.id)}
+                      onClick={() => handleDelete(m.id)}
                     >
                       🗑️ Deletar
                     </ActionButton>
@@ -1086,10 +1086,10 @@ function SecaoMarcas() {
       <Modal
         open={modalAberto}
         title={editando ? "Editar Marca" : "Nova Marca"}
-        onClose={fechar}
+        onClose={close}
         onSubmit={handleSubmit}
         loading={mutando}
-        error={erroMutacao}
+        error={mutationError}
       >
         <Field label="Nome">
           <input
@@ -1132,13 +1132,13 @@ function SecaoMarcas() {
 // SEÇÃO: CERTIFICADOS
 // ============================================================================
 
-function SecaoCertificados() {
-  const { data, carregando, erro } = useListarCertificados();
-  const criar = useCriarCertificado();
-  const atualizar = useAtualizarCertificado();
-  const deletar = useDeletarCertificado();
+function CertificatesSection() {
+  const { data, loading: carregando, error: erro } = useListCertificates();
+  const create = useCreateCertificate();
+  const atualizar = useUpdateCertificate();
+  const deletar = useDeleteCertificate();
 
-  const certificados = data?.certificados ?? [];
+  const certificates = data?.certificados ?? [];
 
   const [modalAberto, setModalAberto] = useState(false);
   const [editando, setEditando] = useState<Certificado | null>(null);
@@ -1148,7 +1148,7 @@ function SecaoCertificados() {
     orgaoEmissor: "",
   });
 
-  function abrirCriar() {
+  function openCreate() {
     setEditando(null);
     setForm({ nome: "", descricao: "", orgaoEmissor: "" });
     setModalAberto(true);
@@ -1164,7 +1164,7 @@ function SecaoCertificados() {
     setModalAberto(true);
   }
 
-  function fechar() {
+  function close() {
     setModalAberto(false);
     setEditando(null);
   }
@@ -1186,27 +1186,27 @@ function SecaoCertificados() {
         `/api/certificados/${editando.id}`,
         body,
       );
-      if (ok) fechar();
+      if (ok) close();
     } else {
-      const ok = await criar.executar("/api/certificados", body);
-      if (ok) fechar();
+      const ok = await create.executar("/api/certificados", body);
+      if (ok) close();
     }
   }
 
-  async function handleDeletar(id: number) {
+  async function handleDelete(id: number) {
     if (!confirm("Tem certeza que deseja deletar este certificado?")) return;
     await deletar.executar(`/api/certificados/${id}`);
   }
 
-  const mutando = criar.carregando || atualizar.carregando;
-  const erroMutacao = criar.erro || atualizar.erro || deletar.erro;
+  const mutando = create.carregando || atualizar.carregando;
+  const mutationError = create.erro || atualizar.erro || deletar.erro;
 
   return (
     <section className="animate-[fadeIn_0.4s_ease]">
-      {erroMutacao && <ErrorMessage message={erroMutacao} />}
+      {mutationError && <ErrorMessage message={mutationError} />}
       <SectionHeader
         title="Lista de Certificados"
-        onAdd={abrirCriar}
+        onAdd={openCreate}
         addLabel="Novo Certificado"
       />
       <TableContainer>
@@ -1224,10 +1224,10 @@ function SecaoCertificados() {
             <LoadingRow cols={5} />
           ) : erro ? (
             <EmptyRow cols={5} message={`Erro ao carregar: ${erro}`} />
-          ) : certificados.length === 0 ? (
+          ) : certificates.length === 0 ? (
             <EmptyRow cols={5} message="Nenhum certificado cadastrado ainda." />
           ) : (
-            certificados.map((c) => (
+            certificates.map((c) => (
               <tr
                 key={c.id}
                 className="hover:bg-[var(--color-bg-body)] transition-colors duration-150"
@@ -1260,7 +1260,7 @@ function SecaoCertificados() {
                     </ActionButton>
                     <ActionButton
                       variant="delete"
-                      onClick={() => handleDeletar(c.id)}
+                      onClick={() => handleDelete(c.id)}
                     >
                       🗑️ Deletar
                     </ActionButton>
@@ -1274,10 +1274,10 @@ function SecaoCertificados() {
       <Modal
         open={modalAberto}
         title={editando ? "Editar Certificado" : "Novo Certificado"}
-        onClose={fechar}
+        onClose={close}
         onSubmit={handleSubmit}
         loading={mutando}
-        error={erroMutacao}
+        error={mutationError}
       >
         <Field label="Nome">
           <input
@@ -1402,7 +1402,7 @@ function ActionButton({
 }
 
 /** Rótulo visual do status de aprovação de uma marca (ADR-0018). */
-function StatusMarcaBadge({ status }: { status: Marca["status"] }) {
+function BrandStatusBadge({ status }: { status: Marca["status"] }) {
   const estilos: Record<Marca["status"], string> = {
     PENDENTE: "bg-amber-50 text-amber-700",
     APROVADA: "bg-emerald-50 text-emerald-700",

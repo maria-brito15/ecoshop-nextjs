@@ -31,7 +31,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { ERROS } from "@/lib/http/responses";
+import { ERRORS } from "@/lib/http/responses";
 
 /**
  * Middleware que verifica se o usuário está autenticado.
@@ -58,7 +58,7 @@ export async function requireAuth(
   const session = await getSession(req);
 
   if (!session) {
-    return ERROS.naoAutorizado();
+    return ERRORS.unauthorized();
   }
 
   return null;
@@ -93,11 +93,11 @@ export async function requireAdmin(
   const session = await getSession(req);
 
   if (!session) {
-    return ERROS.naoAutorizado();
+    return ERRORS.unauthorized();
   }
 
   if (session.tipo !== "ADMIN") {
-    return ERROS.acessoNegado();
+    return ERRORS.forbidden();
   }
 
   return null;

@@ -25,11 +25,11 @@
 import { prisma } from "@/lib/db";
 import { RecursoNaoEncontrado } from "@/lib/errors/dominio";
 import {
-  comCache,
-  invalidarCache,
-  invalidarChave,
-  chaveCategorias,
-  chaveCategoria,
+  withCache,
+  invalidateCache,
+  invalidateKey,
+  categoriesKey,
+  categoryKey,
   TTL,
 } from "@/lib/cache";
 
@@ -46,8 +46,8 @@ import {
  * const categorias = await listarCategorias();
  * // [{ id: 1, nome: "Alimentos Orgânicos", descricao: "..." }, ...]
  */
-export async function listarCategorias() {
-  return comCache(chaveCategorias(), TTL.LISTA_CURTA, () =>
+export async function listCategories() {
+  return withCache(categoriesKey(), TTL.SHORT_LIST, () =>
     prisma.categoria.findMany({ orderBy: { nome: "asc" } }),
   );
 }
@@ -62,8 +62,8 @@ export async function listarCategorias() {
  * @param id - ID da categoria
  * @returns Categoria encontrada ou null
  */
-export async function buscarCategoria(id: number) {
-  return comCache(chaveCategoria(id), TTL.ITEM, () =>
+export async function getCategory(id: number) {
+  return withCache(categoryKey(id), TTL.ITEM, () =>
     prisma.categoria.findUnique({ where: { id } }),
   );
 }
@@ -85,13 +85,13 @@ export async function buscarCategoria(id: number) {
  *   descricao: "Dispositivos com baixo consumo energético"
  * });
  */
-export async function criarCategoria(data: {
+export async function createCategory(data: {
   nome: string;
   descricao?: string;
 }) {
-  const categoria = await prisma.categoria.create({ data });
-  await invalidarCache("CATEGORIAS");
-  return categoria;
+  const category = await prisma.categoria.create({ data });
+  await invalidateCache("CATEGORIES");
+  return category;
 }
 
 /**
@@ -111,17 +111,17 @@ export async function criarCategoria(data: {
  * pelo mesmo motivo da marca (o nome da categoria aparece embutido nos
  * produtos cacheados).
  */
-export async function atualizarCategoria(
+export async function updateCategory(
   id: number,
   data: { nome?: string; descricao?: string },
 ) {
-  const categoria = await prisma.categoria.update({ where: { id }, data });
+  const category = await prisma.categoria.update({ where: { id }, data });
   await Promise.all([
-    invalidarChave(chaveCategoria(id)),
-    invalidarCache("CATEGORIAS"),
-    invalidarCache("PRODUTOS"),
+    invalidateKey(categoryKey(id)),
+    invalidateCache("CATEGORIES"),
+    invalidateCache("PRODUCTS"),
   ]);
-  return categoria;
+  return category;
 }
 
 /**
@@ -141,17 +141,17 @@ export async function atualizarCategoria(
  * @throws Error P2025 se categoria não existir
  * @throws Error P2003 se categoria possui produtos vinculados
  */
-export async function deletarCategoria(id: number) {
+export async function deleteCategory(id: number) {
   // Verifica se categoria existe antes de tentar deletar
-  const categoria = await prisma.categoria.findUnique({ where: { id } });
-  if (!categoria) {
+  const category = await prisma.categoria.findUnique({ where: { id } });
+  if (!category) {
     throw new RecursoNaoEncontrado("Categoria");
   }
 
   await prisma.categoria.delete({ where: { id } });
   await Promise.all([
-    invalidarChave(chaveCategoria(id)),
-    invalidarCache("CATEGORIAS"),
+    invalidateKey(categoryKey(id)),
+    invalidateCache("CATEGORIES"),
   ]);
   return true;
 }

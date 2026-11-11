@@ -39,9 +39,9 @@ type Estado<T> = {
   /** Dados da requisição (null enquanto carrega ou em erro) */
   data: T | null;
   /** Indica se a requisição está em andamento */
-  carregando: boolean;
+  loading: boolean;
   /** Mensagem de erro (null se não houver erro) */
-  erro: string | null;
+  error: string | null;
 };
 
 /**
@@ -96,13 +96,13 @@ function setCached<T>(url: string, data: T): void {
  * o cache é por URL (não por usuário), então sem isso a próxima pessoa que usa a
  * mesma aba veria os dados da anterior por até 30 s.
  */
-export function limparCacheCliente(): void {
+export function clearClientCache(): void {
   memoryCache.clear();
 }
 
-export function invalidarCacheCliente(prefixo: string): void {
-  for (const chave of memoryCache.keys()) {
-    if (chave.includes(prefixo)) memoryCache.delete(chave);
+export function invalidateClientCache(prefixo: string): void {
+  for (const key of memoryCache.keys()) {
+    if (key.includes(prefixo)) memoryCache.delete(key);
   }
 }
 
@@ -135,8 +135,8 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
   const dadoInicial = url ? getCached<T>(url) : null;
   const [estado, setEstado] = useState<Estado<T>>({
     data: dadoInicial,
-    carregando: !!url && dadoInicial === null, // carrega se não tem cache
-    erro: null,
+    loading: !!url && dadoInicial === null, // carrega se não tem cache
+    error: null,
   });
 
   /**
@@ -146,11 +146,11 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
    * @param customUrl - URL opcional (sobrescreve a URL do hook)
    * @returns Dados da requisição ou null em caso de erro
    */
-  const executar = async (customUrl?: string): Promise<T | null> => {
+  const execute = async (customUrl?: string): Promise<T | null> => {
     const urlParaFetch = customUrl || url;
     if (!urlParaFetch) return null;
 
-    setEstado({ data: null, carregando: true, erro: null });
+    setEstado({ data: null, loading: true, error: null });
 
     try {
       const res = await fetch(urlParaFetch, {
@@ -160,11 +160,11 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
       if (!res.ok) throw new Error(`Erro ${res.status}`);
       const data = (await res.json()) as T;
       setCached(urlParaFetch, data);
-      setEstado({ data, carregando: false, erro: null });
+      setEstado({ data, loading: false, error: null });
       return data;
     } catch (err) {
-      const mensagem = err instanceof Error ? err.message : "Erro desconhecido";
-      setEstado({ data: null, carregando: false, erro: mensagem });
+      const message = err instanceof Error ? err.message : "Erro desconhecido";
+      setEstado({ data: null, loading: false, error: message });
       return null;
     }
   };
@@ -178,7 +178,7 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
 
     // Caso 1: Tem cache válido → exibe e revalida em background
     if (cached !== null) {
-      setEstado({ data: cached, carregando: false, erro: null });
+      setEstado({ data: cached, loading: false, error: null });
       const controle = new AbortController();
 
       // Revalidação silenciosa: atualiza cache se dados mudaram
@@ -195,7 +195,7 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
           setCached(url, fresh);
           // Só atualiza UI se dados realmente mudaram (evita re-render desnecessário)
           if (ativo && JSON.stringify(fresh) !== JSON.stringify(cached)) {
-            setEstado({ data: fresh, carregando: false, erro: null });
+            setEstado({ data: fresh, loading: false, error: null });
           }
         })
         .catch(() => {
@@ -209,7 +209,7 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
     }
 
     // Caso 2: Sem cache → faz requisição normal
-    executar();
+    execute();
 
     return () => {
       ativo = false;
@@ -220,5 +220,5 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]); // Re-executa se a URL mudar
 
-  return { ...estado, executar };
+  return { ...estado, executar: execute };
 }

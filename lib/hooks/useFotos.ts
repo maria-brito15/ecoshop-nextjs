@@ -25,20 +25,20 @@
 
 import { useFetch } from "./useFetch";
 import { useMutation } from "./useMutation";
-import type { Foto, FotosResponse } from "@/types/domain";
+import type { Photo, PhotosResponse } from "@/types/domain";
 
 /**
  * Lista todas as fotos de um produto específico.
  *
- * @param produtoId - ID do produto (se 0 ou null, hook não executa)
+ * @param productId - ID do produto (se 0 ou null, hook não executa)
  * @returns Hook com array de fotos, loading e erro
  *
  * @example
  * const { data, carregando } = useListarFotos(produtoId);
  * const fotos = data?.fotos ?? [];
  */
-export function useListarFotos(produtoId: number) {
-  return useFetch<FotosResponse>(`/api/produtos/${produtoId}/fotos`);
+export function useListPhotos(productId: number) {
+  return useFetch<PhotosResponse>(`/api/produtos/${productId}/fotos`);
 }
 
 /**
@@ -49,7 +49,7 @@ export function useListarFotos(produtoId: number) {
  * - arquivo: File (a imagem)
  * - nome: string (opcional, nome personalizado)
  *
- * @param produtoId - ID do produto ao qual a foto será associada
+ * @param productId - ID do produto ao qual a foto será associada
  * @returns Mutation hook para upload de foto
  *
  * @example
@@ -58,10 +58,10 @@ export function useListarFotos(produtoId: number) {
  * formData.append("arquivo", file);
  * const result = await upload.executar(`/api/produtos/${produtoId}/fotos`, formData);
  */
-export function useUploadFoto(produtoId: number) {
-  return useMutation<{ ok: boolean; foto: Foto; mensagem: string }, FormData>({
+export function useUploadPhoto(productId: number) {
+  return useMutation<{ ok: boolean; foto: Photo; mensagem: string }, FormData>({
     method: "POST",
-    invalidar: [`/api/produtos/${produtoId}/fotos`],
+    invalidate: [`/api/produtos/${productId}/fotos`],
   });
 }
 
@@ -69,16 +69,16 @@ export function useUploadFoto(produtoId: number) {
  * Deleta uma foto específica de um produto.
  * Requer autenticação ADMIN.
  *
- * @param produtoId - ID do produto
+ * @param productId - ID do produto
  * @returns Mutation hook para deleção de foto
  *
  * @example
  * const deletar = useDeletarFoto(produtoId);
  * await deletar.executar(`/api/produtos/${produtoId}/fotos?nome=${nomeArquivo}`);
  */
-export function useDeletarFoto(produtoId: number) {
+export function useDeletePhoto(productId: number) {
   return useMutation<{ ok: boolean; mensagem: string }>({
     method: "DELETE",
-    invalidar: [`/api/produtos/${produtoId}/fotos`],
+    invalidate: [`/api/produtos/${productId}/fotos`],
   });
 }

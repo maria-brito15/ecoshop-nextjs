@@ -22,16 +22,16 @@ export class RecursoNaoEncontrado extends Error {
 
 /** A operação conflita com o estado atual. Vira 409 com a própria mensagem (já pensada para o usuário). */
 export class ConflitoDeNegocio extends Error {
-  constructor(mensagem: string) {
-    super(mensagem);
+  constructor(message: string) {
+    super(message);
     this.name = "ConflitoDeNegocio";
   }
 }
 
 /** A pessoa está autenticada mas não pode fazer ISTO (ex.: senha atual incorreta). Vira 403 com a própria mensagem. */
 export class OperacaoNaoAutorizada extends Error {
-  constructor(mensagem: string) {
-    super(mensagem);
+  constructor(message: string) {
+    super(message);
     this.name = "OperacaoNaoAutorizada";
   }
 }

@@ -28,9 +28,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { buscarSessao, encerrarSessaoNoCliente } from "@/lib/hooks/sessao";
+import { fetchSession, endClientSession } from "@/lib/hooks/sessao";
 
-type Usuario = {
+type User = {
   id: number;
   nome: string;
   email: string;
@@ -230,7 +230,7 @@ function Notification({
  * Permite editar nome e telefone (email não é editável).
  */
 function EditModal({
-  usuario,
+  usuario: user,
   form,
   onChange,
   onSave,
@@ -238,7 +238,7 @@ function EditModal({
   salvando,
   erroEdit,
 }: {
-  usuario: Usuario;
+  usuario: User;
   form: EditForm;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSave: (e: React.FormEvent) => void;
@@ -335,7 +335,7 @@ function EditModal({
               </label>
               <input
                 type="email"
-                value={usuario.email}
+                value={user.email}
                 disabled
                 className={`${inputCls} opacity-50 cursor-not-allowed`}
               />
@@ -467,7 +467,7 @@ function EditModal({
 export default function PerfilPage() {
   const router = useRouter();
 
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [user, setUsuario] = useState<User | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [aba, setAba] = useState<"historico" | "impacto">("historico");
@@ -484,7 +484,7 @@ export default function PerfilPage() {
 
   // Carrega histórico de produtos visualizados do localStorage (REQ-PERF-05);
   // gravado em app/(store)/produtos/[id]/page.tsx ao abrir um produto.
-  const [historico] = useState<HistoricoItem[]>(() => {
+  const [history] = useState<HistoricoItem[]>(() => {
     if (typeof window === "undefined") return [];
     try {
       const raw = localStorage.getItem("ecoshop_history");
@@ -493,18 +493,18 @@ export default function PerfilPage() {
       return [];
     }
   });
-  const historyCount = historico.length;
+  const historyCount = history.length;
 
   // Busca dados do usuário autenticado
   useEffect(() => {
     async function fetchPerfil() {
       try {
-        const sessao = await buscarSessao();
-        if (!sessao) {
+        const session = await fetchSession();
+        if (!session) {
           router.push("/sign-in");
           return;
         }
-        const id = sessao.id;
+        const id = session.id;
 
         const res = await fetch(`/api/usuarios/${id}`, {
           credentials: "include",
@@ -532,7 +532,7 @@ export default function PerfilPage() {
 
   async function handleLogout() {
     if (!confirm("Deseja realmente sair?")) return;
-    await encerrarSessaoNoCliente();
+    await endClientSession();
     router.push("/sign-in");
   }
 
@@ -542,11 +542,11 @@ export default function PerfilPage() {
 
   async function handleSalvar(e: React.FormEvent) {
     e.preventDefault();
-    if (!usuario) return;
+    if (!user) return;
     setSalvando(true);
     setErroEdit(null);
     try {
-      const res = await fetch(`/api/usuarios/${usuario.id}`, {
+      const res = await fetch(`/api/usuarios/${user.id}`, {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -572,8 +572,8 @@ export default function PerfilPage() {
   }
 
   function handleCancelar() {
-    if (!usuario) return;
-    setForm({ nome: usuario.nome, telefone: usuario.telefone ?? "" });
+    if (!user) return;
+    setForm({ nome: user.nome, telefone: user.telefone ?? "" });
     setErroEdit(null);
     setEditando(false);
   }
@@ -609,7 +609,7 @@ export default function PerfilPage() {
     );
   }
 
-  if (erro || !usuario) {
+  if (erro || !user) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -635,7 +635,7 @@ export default function PerfilPage() {
     );
   }
 
-  const memberSince = new Date(usuario.criadoEm).toLocaleDateString("pt-BR", {
+  const memberSince = new Date(user.criadoEm).toLocaleDateString("pt-BR", {
     year: "numeric",
     month: "long",
   });
@@ -656,7 +656,7 @@ export default function PerfilPage() {
       {notif && <Notification message={notif.msg} type={notif.type} />}
       {editando && (
         <EditModal
-          usuario={usuario}
+          usuario={user}
           form={form}
           onChange={handleChange}
           onSave={handleSalvar}
@@ -726,20 +726,20 @@ export default function PerfilPage() {
                   className="text-3xl font-extrabold tracking-tight mb-1.5"
                   style={{ color: "var(--color-text-primary)" }}
                 >
-                  {usuario.nome}
+                  {user.nome}
                 </h1>
                 <p
                   className="text-base mb-1"
                   style={{ color: "var(--color-text-secondary)" }}
                 >
-                  {usuario.email}
+                  {user.email}
                 </p>
-                {usuario.telefone && (
+                {user.telefone && (
                   <p
                     className="text-sm mb-4"
                     style={{ color: "var(--color-text-tertiary)" }}
                   >
-                    {usuario.telefone}
+                    {user.telefone}
                   </p>
                 )}
                 <div className="flex flex-wrap gap-2.5">
@@ -763,7 +763,7 @@ export default function PerfilPage() {
                   >
                     📅 Membro desde {memberSince}
                   </span>
-                  {usuario.tipo !== "CLIENTE" && (
+                  {user.tipo !== "CLIENTE" && (
                     <span
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold"
                       style={{
@@ -773,7 +773,7 @@ export default function PerfilPage() {
                       }}
                     >
                       🏪{" "}
-                      {usuario.tipo === "MARCA"
+                      {user.tipo === "MARCA"
                         ? "Loja Parceira"
                         : "Administrador"}
                     </span>
@@ -925,7 +925,7 @@ export default function PerfilPage() {
                   Itens que você visualizou recentemente.
                 </p>
               </div>
-              {historico.length === 0 ? (
+              {history.length === 0 ? (
                 <div
                   className="flex flex-col items-center justify-center py-20 text-center rounded-2xl"
                   style={{
@@ -973,7 +973,7 @@ export default function PerfilPage() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
-                  {historico.map((item) => (
+                  {history.map((item) => (
                     <a
                       key={item.produtoId}
                       href={`/produtos/${item.produtoId}`}

@@ -35,7 +35,7 @@ import { PrismaClient, TipoUsuario } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 import bcrypt from "bcryptjs";
-import { exigirSenhaDeSeed } from "./senha-seed";
+import { requireSeedPassword } from "./senha-seed";
 
 /**
  * Configurações do administrador.
@@ -43,7 +43,7 @@ import { exigirSenhaDeSeed } from "./senha-seed";
  */
 const ADMIN_CONFIG = {
   email: process.env.ADMIN_EMAIL || "admin@ecoshop.com",
-  senha: exigirSenhaDeSeed("ADMIN_PASSWORD", process.env.ADMIN_PASSWORD),
+  senha: requireSeedPassword("ADMIN_PASSWORD", process.env.ADMIN_PASSWORD),
   nome: process.env.ADMIN_NAME || "Administrador EcoShop",
   telefone: process.env.ADMIN_PHONE || "(11) 99999-8888",
 };
@@ -65,11 +65,11 @@ const prisma = new PrismaClient({ adapter });
 /**
  * Gera um hash bcrypt a partir da senha.
  *
- * @param senha - Senha em texto plano
+ * @param password - Senha em texto plano
  * @returns Hash bcrypt da senha
  */
-async function gerarHashSenha(senha: string): Promise<string> {
-  return bcrypt.hash(senha, SALT_ROUNDS);
+async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, SALT_ROUNDS);
 }
 
 /**
@@ -79,7 +79,7 @@ async function gerarHashSenha(senha: string): Promise<string> {
  * Isso garante que você sempre tenha um admin funcional, mesmo se o seed
  * principal foi executado com placeholders.
  */
-async function criarOuAtualizarAdmin() {
+async function createOrUpdateAdmin() {
   console.log("\n🔧 Configurando administrador...");
   console.log(`   Email: ${ADMIN_CONFIG.email}`);
   console.log(`   Nome: ${ADMIN_CONFIG.nome}`);
@@ -88,31 +88,31 @@ async function criarOuAtualizarAdmin() {
   // A senha já foi validada ao montar ADMIN_CONFIG (REQ-OPS-09).
 
   // Gera hash da senha
-  const senhaHash = await gerarHashSenha(ADMIN_CONFIG.senha);
+  const passwordHash = await hashPassword(ADMIN_CONFIG.senha);
 
   // Verifica se já existe um usuário com este email
-  const usuarioExistente = await prisma.usuario.findUnique({
+  const existingUser = await prisma.usuario.findUnique({
     where: { email: ADMIN_CONFIG.email },
   });
 
-  if (usuarioExistente) {
+  if (existingUser) {
     // Atualiza usuário existente
     console.log("\n📝 Usuário já existe. Atualizando dados...");
 
-    const usuarioAtualizado = await prisma.usuario.update({
+    const updatedUser = await prisma.usuario.update({
       where: { email: ADMIN_CONFIG.email },
       data: {
         nome: ADMIN_CONFIG.nome,
-        senha: senhaHash,
+        senha: passwordHash,
         telefone: ADMIN_CONFIG.telefone,
         tipo: TipoUsuario.ADMIN,
       },
     });
 
     console.log("\n✅ Administrador atualizado com sucesso!");
-    console.log(`   ID: ${usuarioAtualizado.id}`);
-    console.log(`   Email: ${usuarioAtualizado.email}`);
-    console.log(`   Tipo: ${usuarioAtualizado.tipo}`);
+    console.log(`   ID: ${updatedUser.id}`);
+    console.log(`   Email: ${updatedUser.email}`);
+    console.log(`   Tipo: ${updatedUser.tipo}`);
   } else {
     // Cria novo usuário administrador
     console.log("\n📝 Criando novo administrador...");
@@ -121,7 +121,7 @@ async function criarOuAtualizarAdmin() {
       data: {
         nome: ADMIN_CONFIG.nome,
         email: ADMIN_CONFIG.email,
-        senha: senhaHash,
+        senha: passwordHash,
         telefone: ADMIN_CONFIG.telefone,
         tipo: TipoUsuario.ADMIN,
       },
@@ -138,7 +138,7 @@ async function criarOuAtualizarAdmin() {
  * Lista todos os administradores existentes no sistema.
  * Útil para verificar quais contas admin estão disponíveis.
  */
-async function listarAdministradores() {
+async function listAdmins() {
   const admins = await prisma.usuario.findMany({
     where: { tipo: TipoUsuario.ADMIN },
     select: {
@@ -175,13 +175,13 @@ async function main() {
     console.log("✅ Conexão com banco de dados estabelecida.\n");
 
     // Lista admins existentes antes da operação
-    await listarAdministradores();
+    await listAdmins();
 
     // Cria ou atualiza o admin principal
-    await criarOuAtualizarAdmin();
+    await createOrUpdateAdmin();
 
     // Lista admins atualizados
-    await listarAdministradores();
+    await listAdmins();
 
     // A senha NUNCA é impressa: logs de Docker e de CI ficam retidos (REQ-OPS-09).
     console.log("\n🔐 Administrador pronto.");

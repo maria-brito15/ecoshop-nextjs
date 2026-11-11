@@ -25,15 +25,15 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { setAuthCookie, setRefreshCookie, clearSessionCookies } from "@/lib/auth";
-import { COOKIE_RENOVACAO } from "@/lib/auth/constantes";
-import { ERROS } from "@/lib/http/responses";
+import { REFRESH_COOKIE } from "@/lib/auth/constantes";
+import { ERRORS } from "@/lib/http/responses";
 import { loginSchema } from "@/lib/schemas/usuario";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
-import { verificarCredenciais } from "@/services/usuario.service";
-import { iniciarSessao, encerrarSessao } from "@/services/sessao.service";
+import { verifyCredentials } from "@/services/usuario.service";
+import { startSession, endSession } from "@/services/sessao.service";
 
-const LIMITE_TENTATIVAS = 10;
-const JANELA_SEGUNDOS = 60;
+const ATTEMPT_LIMIT = 10;
+const WINDOW_SECONDS = 60;
 
 /**
  * POST /api/auth - Login de usuário
@@ -49,9 +49,9 @@ const JANELA_SEGUNDOS = 60;
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
-    const { bloqueado } = await rateLimit(ip, {
-      limite: LIMITE_TENTATIVAS,
-      janelaSegundos: JANELA_SEGUNDOS,
+    const { blocked: bloqueado } = await rateLimit(ip, {
+      limit: ATTEMPT_LIMIT,
+      windowSeconds: WINDOW_SECONDS,
     });
 
     if (bloqueado) {
@@ -63,13 +63,13 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const parsed = loginSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos();
+    if (!parsed.success) return ERRORS.invalidData();
 
-    const { email, senha } = parsed.data;
-    const identidade = await verificarCredenciais(email, senha);
-    if (!identidade) return ERROS.naoAutorizado();
+    const { email, senha: password } = parsed.data;
+    const identidade = await verifyCredentials(email, password);
+    if (!identidade) return ERRORS.unauthorized();
 
-    const sessao = await iniciarSessao(identidade);
+    const session = await startSession(identidade);
 
     const res = NextResponse.json({
       ok: true,
@@ -80,11 +80,11 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    setAuthCookie(res, sessao.acesso);
-    if (sessao.renovacao) setRefreshCookie(res, sessao.renovacao);
+    setAuthCookie(res, session.access);
+    if (session.refresh) setRefreshCookie(res, session.refresh);
     return res;
   } catch (err) {
-    return ERROS.interno("processar autenticação", err);
+    return ERRORS.internal("processar autenticação", err);
   }
 }
 
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
  * @status 200 - Logout bem-sucedido
  */
 export async function DELETE(req: NextRequest) {
-  await encerrarSessao(req.cookies.get(COOKIE_RENOVACAO)?.value);
+  await endSession(req.cookies.get(REFRESH_COOKIE)?.value);
   const res = NextResponse.json({ ok: true });
   clearSessionCookies(res);
   return res;

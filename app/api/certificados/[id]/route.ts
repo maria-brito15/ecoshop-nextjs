@@ -17,13 +17,13 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS, mapeiaErro } from "@/lib/http/responses";
-import { idDaRota } from "@/lib/http/params";
-import { atualizarCertificadoSchema } from "@/lib/schemas/certificado";
+import { ERRORS, mapError } from "@/lib/http/responses";
+import { routeId } from "@/lib/http/params";
+import { updateCertificateSchema } from "@/lib/schemas/certificado";
 import {
-  buscarCertificado,
-  atualizarCertificado,
-  deletarCertificado,
+  getCertificate,
+  updateCertificate,
+  deleteCertificate,
 } from "@/services/certificado.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
@@ -41,13 +41,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const id = await idDaRota(params);
-    if (id === null) return ERROS.dadosInvalidos("ID inválido");
-    const certificado = await buscarCertificado(id);
-    if (!certificado) return ERROS.naoEncontrado("Certificado");
-    return NextResponse.json({ certificado });
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("ID inválido");
+    const certificate = await getCertificate(id);
+    if (!certificate) return ERRORS.notFound("Certificado");
+    return NextResponse.json({ certificado: certificate });
   } catch (err) {
-    return ERROS.interno("buscar certificado", err);
+    return ERRORS.internal("buscar certificado", err);
   }
 }
 
@@ -70,22 +70,22 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
-    const id = await idDaRota(params);
-    if (id === null) return ERROS.dadosInvalidos("ID inválido");
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("ID inválido");
     const body = await req.json();
-    const parsed = atualizarCertificadoSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    const parsed = updateCertificateSchema.safeParse(body);
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const certificado = await atualizarCertificado(id, parsed.data);
-    return NextResponse.json({ certificado });
+    const certificate = await updateCertificate(id, parsed.data);
+    return NextResponse.json({ certificado: certificate });
   } catch (err) {
     return (
-      mapeiaErro(err, "Certificado") ??
-      ERROS.interno("atualizar certificado", err)
+      mapError(err, "Certificado") ??
+      ERRORS.internal("atualizar certificado", err)
     );
   }
 }
@@ -109,18 +109,18 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
-    const id = await idDaRota(params);
-    if (id === null) return ERROS.dadosInvalidos("ID inválido");
-    await deletarCertificado(id);
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("ID inválido");
+    await deleteCertificate(id);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return (
-      mapeiaErro(err, "Certificado") ??
-      ERROS.interno("deletar certificado", err)
+      mapError(err, "Certificado") ??
+      ERRORS.internal("deletar certificado", err)
     );
   }
 }

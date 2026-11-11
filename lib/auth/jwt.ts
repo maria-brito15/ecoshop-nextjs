@@ -28,16 +28,16 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import {
-  COOKIE_ACESSO,
-  COOKIE_RENOVACAO,
-  TEMPO_DO_ACESSO_SEGUNDOS,
-  TEMPO_DA_RENOVACAO_SEGUNDOS,
+  ACCESS_COOKIE,
+  REFRESH_COOKIE,
+  ACCESS_TOKEN_SECONDS,
+  REFRESH_TOKEN_SECONDS,
 } from "./constantes";
 import type {
   JwtPayload,
-  TokenEmissor,
-  TokenVerificador,
-  LeitorSessao,
+  TokenIssuer,
+  TokenVerifier,
+  SessionReader,
 } from "@/types/auth";
 
 /**
@@ -69,7 +69,7 @@ function getSecret(): Uint8Array {
  * - setAuthCookie: definir cookie de autenticação na resposta
  */
 export class JwtService
-  implements TokenEmissor, TokenVerificador, LeitorSessao
+  implements TokenIssuer, TokenVerifier, SessionReader
 {
   /**
    * Gera um novo token JWT.
@@ -86,7 +86,7 @@ export class JwtService
   async sign(payload: JwtPayload): Promise<string> {
     return new SignJWT(payload as unknown as JWTPayload)
       .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime(`${TEMPO_DO_ACESSO_SEGUNDOS}s`)
+      .setExpirationTime(`${ACCESS_TOKEN_SECONDS}s`)
       .sign(getSecret());
   }
 
@@ -137,7 +137,7 @@ export class JwtService
    * @returns Payload do usuário autenticado ou null
    */
   async getSession(req: NextRequest): Promise<JwtPayload | null> {
-    const token = req.cookies.get(COOKIE_ACESSO)?.value;
+    const token = req.cookies.get(ACCESS_COOKIE)?.value;
     if (!token) return null;
     return this.verify(token);
   }
@@ -153,7 +153,7 @@ export class JwtService
   async getSessionFromCookies(): Promise<JwtPayload | null> {
     try {
       const cookieStore = await cookies();
-      const token = cookieStore.get(COOKIE_ACESSO)?.value;
+      const token = cookieStore.get(ACCESS_COOKIE)?.value;
       if (!token) return null;
       return this.verify(token);
     } catch {
@@ -175,11 +175,11 @@ export class JwtService
    * @param token - Token JWT a ser armazenado
    */
   setAuthCookie(res: NextResponse, token: string): void {
-    res.cookies.set(COOKIE_ACESSO, token, {
+    res.cookies.set(ACCESS_COOKIE, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: TEMPO_DO_ACESSO_SEGUNDOS,
+      maxAge: ACCESS_TOKEN_SECONDS,
       path: "/",
     });
   }
@@ -190,19 +190,19 @@ export class JwtService
    * renovar o acesso expirado em navegações de página (ADR-0021).
    */
   setRefreshCookie(res: NextResponse, token: string): void {
-    res.cookies.set(COOKIE_RENOVACAO, token, {
+    res.cookies.set(REFRESH_COOKIE, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: TEMPO_DA_RENOVACAO_SEGUNDOS,
+      maxAge: REFRESH_TOKEN_SECONDS,
       path: "/",
     });
   }
 
   /** Remove os dois cookies da sessão (logout, renovação recusada). */
   clearSessionCookies(res: NextResponse): void {
-    res.cookies.delete(COOKIE_ACESSO);
-    res.cookies.delete(COOKIE_RENOVACAO);
+    res.cookies.delete(ACCESS_COOKIE);
+    res.cookies.delete(REFRESH_COOKIE);
   }
 }
 

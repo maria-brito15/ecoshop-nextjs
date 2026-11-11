@@ -11,7 +11,7 @@
 export type TipoDeImagem = "jpeg" | "png" | "gif" | "webp";
 
 /** Extensões (em minúsculas, com ponto) que cada tipo aceita. */
-export const EXTENSOES_POR_TIPO: Record<TipoDeImagem, readonly string[]> = {
+export const EXTENSIONS_BY_TYPE: Record<TipoDeImagem, readonly string[]> = {
   jpeg: [".jpg", ".jpeg"],
   png: [".png"],
   gif: [".gif"],
@@ -22,7 +22,7 @@ const comecaCom = (bytes: Uint8Array, assinatura: readonly number[], deslocament
   assinatura.every((byte, i) => bytes[deslocamento + i] === byte);
 
 /** @returns o tipo da imagem, ou `null` se os bytes não são JPEG, PNG, GIF nem WebP. */
-export function detectarTipoDeImagem(bytes: Uint8Array): TipoDeImagem | null {
+export function detectImageType(bytes: Uint8Array): TipoDeImagem | null {
   if (comecaCom(bytes, [0xff, 0xd8, 0xff])) return "jpeg";
   if (comecaCom(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return "png";
   // "GIF87a" ou "GIF89a"
@@ -37,6 +37,6 @@ export function detectarTipoDeImagem(bytes: Uint8Array): TipoDeImagem | null {
 }
 
 /** A extensão do nome é uma das aceitas pelo tipo detectado? */
-export function extensaoCombinaComTipo(extensao: string, tipo: TipoDeImagem): boolean {
-  return EXTENSOES_POR_TIPO[tipo].includes(extensao.toLowerCase());
+export function extensionMatchesType(extensao: string, type: TipoDeImagem): boolean {
+  return EXTENSIONS_BY_TYPE[type].includes(extensao.toLowerCase());
 }

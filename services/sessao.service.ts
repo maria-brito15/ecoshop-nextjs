@@ -19,87 +19,87 @@
 
 import { signToken } from "@/lib/auth";
 import {
-  armazemDeRenovacao,
-  gerarTokenDeRenovacao,
-  type ArmazemDeRenovacao,
+  refreshTokenStore,
+  generateRefreshToken,
+  type RefreshTokenStore,
 } from "@/lib/auth/refresh";
-import { log, serializarErro } from "@/lib/log";
+import { log, serializeError } from "@/lib/log";
 import type { JwtPayload } from "@/types/auth";
 
 /** Quem a sessão representa (o mesmo conteúdo do JWT). */
-export type IdentidadeDaSessao = JwtPayload;
+export type SessionIdentity = JwtPayload;
 
-export interface SessaoEmitida {
+export interface IssuedSession {
   /** JWT de acesso. */
-  acesso: string;
+  access: string;
   /** Token de renovação, ou `null` se o Redis estava indisponível (sessão só de acesso). */
-  renovacao: string | null;
+  refresh: string | null;
 }
 
-export type ResultadoDaRenovacao =
-  | { ok: true; sessao: SessaoEmitida; tipo: IdentidadeDaSessao["tipo"] }
-  | { ok: false; motivo: "SEM_TOKEN" | "INVALIDO" | "INDISPONIVEL" };
+export type RefreshResult =
+  | { ok: true; session: IssuedSession; tipo: SessionIdentity["tipo"] }
+  | { ok: false; reason: "SEM_TOKEN" | "INVALIDO" | "INDISPONIVEL" };
 
 /** Abre uma sessão: sempre emite o acesso; a renovação depende do Redis. */
-export async function iniciarSessao(
-  identidade: IdentidadeDaSessao,
-  armazem: ArmazemDeRenovacao = armazemDeRenovacao,
-): Promise<SessaoEmitida> {
-  const acesso = await signToken({
+export async function startSession(
+  identidade: SessionIdentity,
+  armazem: RefreshTokenStore = refreshTokenStore,
+): Promise<IssuedSession> {
+  const access = await signToken({
     id: identidade.id,
     email: identidade.email,
     tipo: identidade.tipo,
   });
 
-  let renovacao: string | null = null;
+  let refresh: string | null = null;
   try {
-    const token = gerarTokenDeRenovacao();
-    await armazem.criar(token, identidade.id);
-    renovacao = token;
+    const token = generateRefreshToken();
+    await armazem.create(token, identidade.id);
+    refresh = token;
   } catch (err) {
-    log.warn("sessao.renovacao_indisponivel", { erro: serializarErro(err) });
+    log.warn("sessao.renovacao_indisponivel", { erro: serializeError(err) });
   }
-  return { acesso, renovacao };
+  return { access: access, refresh: refresh };
 }
 
 /**
  * Troca um token de renovação por uma sessão nova.
  *
- * @param buscarIdentidade - Relê o usuário no banco (`null` se foi excluído)
+ * @param getIdentity - Relê o usuário no banco (`null` se foi excluído)
  */
-export async function renovarSessao(
-  tokenDeRenovacao: string | undefined,
-  buscarIdentidade: (usuarioId: number) => Promise<IdentidadeDaSessao | null>,
-  armazem: ArmazemDeRenovacao = armazemDeRenovacao,
-): Promise<ResultadoDaRenovacao> {
-  if (!tokenDeRenovacao) return { ok: false, motivo: "SEM_TOKEN" };
+export async function refreshSession(
+  refreshToken: string | undefined,
+  getIdentity: (userId: number) => Promise<SessionIdentity | null>,
+  armazem: RefreshTokenStore = refreshTokenStore,
+): Promise<RefreshResult> {
+  if (!refreshToken) return { ok: false, reason: "SEM_TOKEN" };
 
-  let usuarioId: number | null;
+  let userId: number | null;
   try {
-    usuarioId = await armazem.consumir(tokenDeRenovacao);
+    userId = await armazem.consume(refreshToken);
   } catch (err) {
-    log.warn("sessao.renovacao_negada_redis_indisponivel", { erro: serializarErro(err) });
-    return { ok: false, motivo: "INDISPONIVEL" };
+    log.warn("sessao.renovacao_negada_redis_indisponivel", { erro: serializeError(err) });
+    return { ok: false, reason: "INDISPONIVEL" };
   }
-  if (usuarioId === null) return { ok: false, motivo: "INVALIDO" };
+  if (userId === null) return { ok: false, reason: "INVALIDO" };
 
-  const identidade = await buscarIdentidade(usuarioId);
-  if (!identidade) return { ok: false, motivo: "INVALIDO" };
+  const identidade = await getIdentity(userId);
+  if (!identidade) return { ok: false, reason: "INVALIDO" };
 
-  const sessao = await iniciarSessao(identidade, armazem);
-  return { ok: true, sessao, tipo: identidade.tipo };
+  const session = await startSession(identidade, armazem);
+  return { ok: true, session: session, tipo: identidade.tipo };
 }
 
 /** Logout: revoga o token de renovação (se houver). Nunca lança. */
-export async function encerrarSessao(
-  tokenDeRenovacao: string | undefined,
-  armazem: ArmazemDeRenovacao = armazemDeRenovacao,
+export async function endSession(
+  refreshToken: string | undefined,
+  armazem: RefreshTokenStore = refreshTokenStore,
 ): Promise<void> {
-  if (!tokenDeRenovacao) return;
+  if (!refreshToken) return;
   try {
-    await armazem.revogar(tokenDeRenovacao);
+    await armazem.revoke(refreshToken);
   } catch (err) {
-    log.warn("sessao.revogacao_falhou", { erro: serializarErro(err) });
+    log.warn("sessao.revogacao_falhou", { erro: serializeError(err) });
   }
 }
 
@@ -108,13 +108,13 @@ export async function encerrarSessao(
  * se o Redis estiver fora, o token continua inutilizável enquanto ele estiver fora
  * (a renovação é negada), mas volta a valer se o Redis voltar com os dados ❔.
  */
-export async function revogarSessoesDoUsuario(
-  usuarioId: number,
-  armazem: ArmazemDeRenovacao = armazemDeRenovacao,
+export async function revokeUserSessions(
+  userId: number,
+  armazem: RefreshTokenStore = refreshTokenStore,
 ): Promise<void> {
   try {
-    await armazem.revogarTodos(usuarioId);
+    await armazem.revokeAll(userId);
   } catch (err) {
-    log.warn("sessao.revogacao_total_falhou", { usuarioId, erro: serializarErro(err) });
+    log.warn("sessao.revogacao_total_falhou", { usuarioId: userId, erro: serializeError(err) });
   }
 }

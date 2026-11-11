@@ -25,9 +25,9 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS, mapeiaErro } from "@/lib/http/responses";
-import { produtoSchema, listarProdutosQuerySchema } from "@/lib/schemas/produto";
-import { listarProdutos, criarProduto } from "@/services/produto.service";
+import { ERRORS, mapError } from "@/lib/http/responses";
+import { productSchema, listProductsQuerySchema } from "@/lib/schemas/produto";
+import { listProducts, createProduct } from "@/services/produto.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
@@ -47,15 +47,15 @@ import { requireAdmin } from "@/app/_middleware/auth";
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const parsed = listarProdutosQuerySchema.safeParse(
+    const parsed = listProductsQuerySchema.safeParse(
       Object.fromEntries(searchParams),
     );
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const resultado = await listarProdutos(parsed.data);
-    return NextResponse.json(resultado);
+    const result = await listProducts(parsed.data);
+    return NextResponse.json(result);
   } catch (err) {
-    return ERROS.interno("listar produtos", err);
+    return ERRORS.internal("listar produtos", err);
   }
 }
 
@@ -73,17 +73,17 @@ export async function GET(req: NextRequest) {
  * @status 500 - Erro ao criar produto
  */
 export async function POST(req: NextRequest) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
     const body = await req.json();
-    const parsed = produtoSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    const parsed = productSchema.safeParse(body);
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const produto = await criarProduto(parsed.data);
-    return NextResponse.json({ produto }, { status: 201 });
+    const product = await createProduct(parsed.data);
+    return NextResponse.json({ produto: product }, { status: 201 });
   } catch (err) {
-    return mapeiaErro(err, "Produto") ?? ERROS.interno("criar produto", err);
+    return mapError(err, "Produto") ?? ERRORS.internal("criar produto", err);
   }
 }

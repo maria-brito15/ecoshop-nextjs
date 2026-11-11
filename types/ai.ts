@@ -20,7 +20,7 @@
  * TODOS os campos são strings obrigatórios (mínimo 1 caractere)
  * para garantir que o frontend sempre tenha conteúdo para exibir.
  */
-export interface AnaliseIA {
+export interface AiAnalysis {
   /**
    * Impacto ambiental do material.
    * Inclui consequências para fauna/flora, dados estatísticos sobre produção
@@ -77,7 +77,7 @@ export interface AnaliseIA {
  * - sucesso: true → material, confianca, analise_sustentabilidade presentes
  * - sucesso: false → mensagem, sugestao, confianca_minima_requerida presentes
  */
-export interface ResultadoScan {
+export interface ScanResult {
   /** Indica se a análise foi bem-sucedida (confiança ≥ threshold configurado) */
   sucesso: boolean;
 
@@ -89,7 +89,7 @@ export interface ResultadoScan {
   /** ID único gerado para esta análise (formato: analise_{timestamp}_{random}) */
   imageId?: string;
   /** Análise detalhada de sustentabilidade gerada pelo Gemini */
-  analise_sustentabilidade?: AnaliseIA;
+  analise_sustentabilidade?: AiAnalysis;
 
   // --- CAMPOS PARA FALHA (sucesso = false) ---
   /** Mensagem amigável explicando o motivo da falha */
@@ -146,4 +146,4 @@ export interface ChatResponse {
  * Alias para ResultadoScan mantido para compatibilidade com código legado.
  * ScanResponse é o tipo retornado pelo endpoint POST /api/ia/scan
  */
-export interface ScanResponse extends ResultadoScan {}
+export interface ScanResponse extends ScanResult {}

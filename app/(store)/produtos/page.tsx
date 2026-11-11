@@ -27,9 +27,9 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useListarProdutos, type OrdemProdutos } from "@/lib/hooks/useProdutos";
-import { useListarCategorias } from "@/lib/hooks/useCategorias";
-import { useListarMarcas } from "@/lib/hooks/useMarcas";
+import { useListProducts, type OrdemProdutos } from "@/lib/hooks/useProdutos";
+import { useListCategories } from "@/lib/hooks/useCategorias";
+import { useListBrands } from "@/lib/hooks/useMarcas";
 import type { Produto, ProdutoCertificado } from "@/types/api";
 
 // ----------------------------------------------------------------------------
@@ -61,7 +61,7 @@ function SkeletonCard() {
 // Card individual de produto com lazy loading via Intersection Observer.
 // A animação de entrada só ocorre quando o card entra na viewport.
 
-function ProductCard({ produto, index }: { produto: Produto; index: number }) {
+function ProductCard({ produto: product, index }: { produto: Produto; index: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -81,15 +81,15 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
     return () => obs.disconnect();
   }, []);
 
-  const precoFormatado = Number(produto.preco).toLocaleString("pt-BR", {
+  const formattedPrice = Number(product.preco).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
 
   // Delay escalonado para cada card (0ms, 80ms, 160ms...)
   const delay = Math.min(index % 6, 5) * 80;
-  const categoriaNome = produto.categoria?.nome ?? "Categoria";
-  const marcaNome = produto.marca?.nome ?? "Marca";
+  const categoryName = product.categoria?.nome ?? "Categoria";
+  const brandName = product.marca?.nome ?? "Marca";
 
   return (
     <div
@@ -101,15 +101,15 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
       }}
     >
       <Link
-        href={`/produtos/${produto.id}`}
+        href={`/produtos/${product.id}`}
         className="group block rounded-[var(--radius-card)] overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-surface)] transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-[var(--shadow-xl)] hover:border-[var(--color-primary)] h-full flex flex-col"
       >
         {/* Área da imagem */}
         <div className="relative h-56 bg-[var(--color-bg-body)] flex items-center justify-center overflow-hidden">
-          {produto.fotoUrl ? (
+          {product.fotoUrl ? (
             <Image
-              src={produto.fotoUrl}
-              alt={produto.nome}
+              src={product.fotoUrl}
+              alt={product.nome}
               fill
               className="card-img object-cover"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -134,7 +134,7 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
               border border-[var(--color-primary)]/20
             `}
           >
-            {categoriaNome}
+            {categoryName}
           </span>
 
           {/* Overlay com "Ver detalhes" que aparece no hover */}
@@ -163,7 +163,7 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
         {/* Conteúdo textual do card */}
         <div className="p-5 flex flex-col gap-2 flex-1">
           <span className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-tertiary)]">
-            {marcaNome}
+            {brandName}
           </span>
 
           <h3
@@ -174,24 +174,24 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
               transition-colors duration-200
             `}
           >
-            {produto.nome}
+            {product.nome}
           </h3>
 
           {/* Descrição (limitada a 2 linhas) */}
-          {produto.descricao && (
+          {product.descricao && (
             <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">
-              {produto.descricao}
+              {product.descricao}
             </p>
           )}
 
           {/* Certificados do produto (máximo 2) */}
-          {produto.certificados && produto.certificados.length > 0 && (
+          {product.certificados && product.certificados.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1">
-              {produto.certificados
+              {product.certificados
                 .slice(0, 2)
-                .map(({ certificado }: ProdutoCertificado) => (
+                .map(({ certificado: certificate }: ProdutoCertificado) => (
                   <span
-                    key={certificado.id}
+                    key={certificate.id}
                     className={`
                       text-[10px] font-bold px-2 py-0.5 rounded-full
                       bg-[var(--color-primary-light)]
@@ -199,7 +199,7 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
                       border border-[var(--color-primary)]/20
                     `}
                   >
-                    ✓ {certificado.nome}
+                    ✓ {certificate.nome}
                   </span>
                 ))}
             </div>
@@ -219,7 +219,7 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
                 text-[var(--color-primary)]
               `}
             >
-              {precoFormatado}
+              {formattedPrice}
             </span>
 
             <span
@@ -241,13 +241,13 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
 // PÁGINA PRINCIPAL
 // ----------------------------------------------------------------------------
 
-export default function ProdutosPage() {
+export default function ProductsPage() {
   // Estados de paginação e filtros
   const [page, setPage] = useState(1);
-  const [nome, setNome] = useState("");
+  const [name, setNome] = useState("");
   const [busca, setBusca] = useState("");
-  const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
-  const [marcaId, setMarcaId] = useState<number | undefined>(undefined);
+  const [categoryId, setCategoriaId] = useState<number | undefined>(undefined);
+  const [brandId, setMarcaId] = useState<number | undefined>(undefined);
   const [maxPreco, setMaxPreco] = useState(1000);
   const [precoInput, setPrecoInput] = useState(1000);
   const [sortBy, setSortBy] = useState<OrdemProdutos>("relevancia");
@@ -256,19 +256,19 @@ export default function ProdutosPage() {
 
   // Hooks de dados — ordenação, marca e preço máximo são aplicados pelo
   // servidor ao catálogo inteiro, não só à página atual (REQ-CAT-06/07).
-  const { data, carregando, erro } = useListarProdutos(page, 12, categoriaId, busca, {
-    marcaId,
+  const { data, loading: carregando, error: erro } = useListProducts(page, 12, categoryId, busca, {
+    marcaId: brandId,
     precoMax: maxPreco < 1000 ? maxPreco : undefined,
     sort: sortBy,
   });
-  const { data: catData } = useListarCategorias();
-  const { data: marcasData } = useListarMarcas();
+  const { data: catData } = useListCategories();
+  const { data: marcasData } = useListBrands();
 
-  const produtos = data?.produtos ?? [];
+  const products = data?.produtos ?? [];
   const total = data?.total ?? 0;
-  const totalPaginas = Math.ceil(total / 12);
-  const categorias = catData?.categorias ?? [];
-  const marcas = (marcasData?.marcas ?? []).filter(
+  const totalPages = Math.ceil(total / 12);
+  const categories = catData?.categorias ?? [];
+  const brands = (marcasData?.marcas ?? []).filter(
     (m) => m.status === "APROVADA",
   );
 
@@ -276,14 +276,14 @@ export default function ProdutosPage() {
   // HANDLERS
   // --------------------------------------------------------------------------
 
-  function handleBuscar(e: React.FormEvent) {
+  function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     setPage(1);
-    setBusca(nome);
+    setBusca(name);
   }
 
   // Debounce no filtro de preço para evitar re-renders excessivos
-  function handlePrecoChange(val: number) {
+  function handlePriceChange(val: number) {
     setPrecoInput(val);
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
@@ -292,7 +292,7 @@ export default function ProdutosPage() {
     }, 300);
   }
 
-  function limparFiltros() {
+  function clearFilters() {
     setNome("");
     setBusca("");
     setCategoriaId(undefined);
@@ -359,13 +359,13 @@ export default function ProdutosPage() {
 
             {/* Barra de busca */}
             <form
-              onSubmit={handleBuscar}
+              onSubmit={handleSearch}
               className="flex gap-2 w-full sm:w-auto sm:min-w-[320px]"
             >
               <input
                 type="text"
                 placeholder="Buscar produto..."
-                value={nome}
+                value={name}
                 onChange={(e) => setNome(e.target.value)}
                 className={`
                   flex-1 px-4 py-2.5 rounded-xl text-sm font-medium
@@ -432,7 +432,7 @@ export default function ProdutosPage() {
                 <span>⚙</span> Filtros
               </h2>
               <button
-                onClick={limparFiltros}
+                onClick={clearFilters}
                 className={`
                   text-xs font-semibold text-[var(--color-text-tertiary)]
                   hover:text-[var(--color-error)] transition-colors
@@ -460,19 +460,19 @@ export default function ProdutosPage() {
                       w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium
                       transition-all duration-150 flex items-center justify-between
                       ${
-                        categoriaId === undefined
+                        categoryId === undefined
                           ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold"
                           : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface-hover)] hover:text-[var(--color-text-primary)]"
                       }
                     `}
                   >
                     <span>Todas</span>
-                    {categoriaId === undefined && (
+                    {categoryId === undefined && (
                       <span className="text-xs">✓</span>
                     )}
                   </button>
                 </li>
-                {categorias.map((cat) => (
+                {categories.map((cat) => (
                   <li key={cat.id}>
                     <button
                       onClick={() => {
@@ -483,14 +483,14 @@ export default function ProdutosPage() {
                         w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium
                         transition-all duration-150 flex items-center justify-between
                         ${
-                          categoriaId === cat.id
+                          categoryId === cat.id
                             ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold"
                             : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface-hover)] hover:text-[var(--color-text-primary)]"
                         }
                       `}
                     >
                       <span>{cat.nome}</span>
-                      {categoriaId === cat.id && (
+                      {categoryId === cat.id && (
                         <span className="text-xs">✓</span>
                       )}
                     </button>
@@ -500,7 +500,7 @@ export default function ProdutosPage() {
             </div>
 
             {/* Filtro por marca */}
-            {marcas.length > 0 && (
+            {brands.length > 0 && (
               <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3 flex items-center gap-2">
                   <span>🤝</span> Marcas
@@ -516,19 +516,19 @@ export default function ProdutosPage() {
                         w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium
                         transition-all duration-150 flex items-center justify-between
                         ${
-                          marcaId === undefined
+                          brandId === undefined
                             ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold"
                             : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface-hover)] hover:text-[var(--color-text-primary)]"
                         }
                       `}
                     >
                       <span>Todas</span>
-                      {marcaId === undefined && (
+                      {brandId === undefined && (
                         <span className="text-xs">✓</span>
                       )}
                     </button>
                   </li>
-                  {marcas.map((m) => (
+                  {brands.map((m) => (
                     <li key={m.id}>
                       <button
                         onClick={() => {
@@ -539,14 +539,14 @@ export default function ProdutosPage() {
                           w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium
                           transition-all duration-150 flex items-center justify-between
                           ${
-                            marcaId === m.id
+                            brandId === m.id
                               ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold"
                               : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface-hover)] hover:text-[var(--color-text-primary)]"
                           }
                         `}
                       >
                         <span>{m.nome}</span>
-                        {marcaId === m.id && <span className="text-xs">✓</span>}
+                        {brandId === m.id && <span className="text-xs">✓</span>}
                       </button>
                     </li>
                   ))}
@@ -565,7 +565,7 @@ export default function ProdutosPage() {
                 max={1000}
                 step={10}
                 value={precoInput}
-                onChange={(e) => handlePrecoChange(Number(e.target.value))}
+                onChange={(e) => handlePriceChange(Number(e.target.value))}
                 style={{
                   background: `linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ${pricePercent}%, var(--color-border) ${pricePercent}%, var(--color-border) 100%)`,
                 }}
@@ -596,7 +596,7 @@ export default function ProdutosPage() {
             {/* Botão limpar (mobile) */}
             <div className="px-4 py-4">
               <button
-                onClick={limparFiltros}
+                onClick={clearFilters}
                 className={`
                   w-full py-3 rounded-xl text-sm font-bold
                   border-2 border-dashed border-[var(--color-border)]
@@ -639,8 +639,8 @@ export default function ProdutosPage() {
                   `}
                 >
                   ⚙ Filtros
-                  {(categoriaId !== undefined ||
-                    marcaId !== undefined ||
+                  {(categoryId !== undefined ||
+                    brandId !== undefined ||
                     maxPreco < 1000) && (
                     <span className="w-2 h-2 rounded-full bg-[var(--color-primary)]" />
                   )}
@@ -736,7 +736,7 @@ export default function ProdutosPage() {
             )}
 
             {/* Nenhum produto encontrado */}
-            {!carregando && !erro && produtos.length === 0 && (
+            {!carregando && !erro && products.length === 0 && (
               <div
                 className={`
                   flex flex-col items-center justify-center
@@ -754,23 +754,23 @@ export default function ProdutosPage() {
                   Não encontramos produtos que correspondam aos filtros
                   aplicados.
                 </p>
-                <button onClick={limparFiltros} className="btn-primary">
+                <button onClick={clearFilters} className="btn-primary">
                   🔄 Limpar Filtros
                 </button>
               </div>
             )}
 
             {/* Grid de produtos */}
-            {!carregando && !erro && produtos.length > 0 && (
+            {!carregando && !erro && products.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                {produtos.map((produto, i) => (
-                  <ProductCard key={produto.id} produto={produto} index={i} />
+                {products.map((product, i) => (
+                  <ProductCard key={product.id} produto={product} index={i} />
                 ))}
               </div>
             )}
 
             {/* Paginação */}
-            {totalPaginas > 1 && !carregando && (
+            {totalPages > 1 && !carregando && (
               <div className="flex items-center justify-center gap-3 mt-10">
                 <button
                   onClick={() => setPage((p) => p - 1)}
@@ -788,7 +788,7 @@ export default function ProdutosPage() {
                 </button>
 
                 <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(totalPaginas, 5) }, (_, i) => {
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                     const p = i + 1;
                     return (
                       <button
@@ -807,7 +807,7 @@ export default function ProdutosPage() {
                       </button>
                     );
                   })}
-                  {totalPaginas > 5 && (
+                  {totalPages > 5 && (
                     <span className="text-[var(--color-text-tertiary)] px-2">
                       …
                     </span>
@@ -816,7 +816,7 @@ export default function ProdutosPage() {
 
                 <button
                   onClick={() => setPage((p) => p + 1)}
-                  disabled={page === totalPaginas}
+                  disabled={page === totalPages}
                   className={`
                     flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm
                     border border-[var(--color-border)]
@@ -892,12 +892,12 @@ export default function ProdutosPage() {
                       setPage(1);
                       setSidebarOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${categoriaId === undefined ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
+                    className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${categoryId === undefined ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
                   >
                     Todas
                   </button>
                 </li>
-                {categorias.map((cat) => (
+                {categories.map((cat) => (
                   <li key={cat.id}>
                     <button
                       onClick={() => {
@@ -905,7 +905,7 @@ export default function ProdutosPage() {
                         setPage(1);
                         setSidebarOpen(false);
                       }}
-                      className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${categoriaId === cat.id ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
+                      className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${categoryId === cat.id ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
                     >
                       {cat.nome}
                     </button>
@@ -915,7 +915,7 @@ export default function ProdutosPage() {
             </div>
 
             {/* Filtro por marca (mobile) */}
-            {marcas.length > 0 && (
+            {brands.length > 0 && (
               <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3">
                   🤝 Marcas
@@ -928,12 +928,12 @@ export default function ProdutosPage() {
                         setPage(1);
                         setSidebarOpen(false);
                       }}
-                      className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${marcaId === undefined ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
+                      className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${brandId === undefined ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
                     >
                       Todas
                     </button>
                   </li>
-                  {marcas.map((m) => (
+                  {brands.map((m) => (
                     <li key={m.id}>
                       <button
                         onClick={() => {
@@ -941,7 +941,7 @@ export default function ProdutosPage() {
                           setPage(1);
                           setSidebarOpen(false);
                         }}
-                        className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${marcaId === m.id ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
+                        className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${brandId === m.id ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
                       >
                         {m.nome}
                       </button>
@@ -962,7 +962,7 @@ export default function ProdutosPage() {
                 max={1000}
                 step={10}
                 value={precoInput}
-                onChange={(e) => handlePrecoChange(Number(e.target.value))}
+                onChange={(e) => handlePriceChange(Number(e.target.value))}
                 style={{
                   background: `linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ${pricePercent}%, var(--color-border) ${pricePercent}%, var(--color-border) 100%)`,
                 }}
@@ -982,7 +982,7 @@ export default function ProdutosPage() {
             <div className="px-4 py-4 mt-auto border-t border-[var(--color-border)]">
               <button
                 onClick={() => {
-                  limparFiltros();
+                  clearFilters();
                   setSidebarOpen(false);
                 }}
                 className="w-full py-3 rounded-xl text-sm font-bold border-2 border-dashed border-[var(--color-border)] text-[var(--color-text-tertiary)] hover:border-[var(--color-error)] hover:text-[var(--color-error)] transition-all uppercase tracking-wide"

@@ -17,13 +17,13 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS, mapeiaErro } from "@/lib/http/responses";
-import { idDaRota } from "@/lib/http/params";
-import { atualizarMarcaSchema } from "@/lib/schemas/marca";
+import { ERRORS, mapError } from "@/lib/http/responses";
+import { routeId } from "@/lib/http/params";
+import { updateBrandSchema } from "@/lib/schemas/marca";
 import {
-  buscarMarca,
-  atualizarMarca,
-  deletarMarca,
+  getBrand,
+  updateBrand,
+  deleteBrand,
 } from "@/services/marca.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
@@ -41,13 +41,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const id = await idDaRota(params);
-    if (id === null) return ERROS.dadosInvalidos("ID inválido");
-    const marca = await buscarMarca(id);
-    if (!marca) return ERROS.naoEncontrado("Marca");
-    return NextResponse.json({ marca });
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("ID inválido");
+    const brand = await getBrand(id);
+    if (!brand) return ERRORS.notFound("Marca");
+    return NextResponse.json({ marca: brand });
   } catch (err) {
-    return ERROS.interno("buscar marca", err);
+    return ERRORS.internal("buscar marca", err);
   }
 }
 
@@ -71,20 +71,20 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
-    const id = await idDaRota(params);
-    if (id === null) return ERROS.dadosInvalidos("ID inválido");
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("ID inválido");
     const body = await req.json();
-    const parsed = atualizarMarcaSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    const parsed = updateBrandSchema.safeParse(body);
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const marca = await atualizarMarca(id, parsed.data);
-    return NextResponse.json({ marca });
+    const brand = await updateBrand(id, parsed.data);
+    return NextResponse.json({ marca: brand });
   } catch (err) {
-    return mapeiaErro(err, "Marca") ?? ERROS.interno("atualizar marca", err);
+    return mapError(err, "Marca") ?? ERRORS.internal("atualizar marca", err);
   }
 }
 
@@ -107,15 +107,15 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
-    const id = await idDaRota(params);
-    if (id === null) return ERROS.dadosInvalidos("ID inválido");
-    await deletarMarca(id);
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("ID inválido");
+    await deleteBrand(id);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return mapeiaErro(err, "Marca") ?? ERROS.interno("deletar marca", err);
+    return mapError(err, "Marca") ?? ERRORS.internal("deletar marca", err);
   }
 }

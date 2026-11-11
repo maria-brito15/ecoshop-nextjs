@@ -1,11 +1,11 @@
 // Capacidade USR — docs/capabilities/gestao-de-usuarios/spec.md
 import {
   email,
-  criarUsuarioDireto,
+  createUserDirectly,
   cookieDe,
   req,
   ctx,
-  encerrar,
+  closeConnections,
 } from "./helpers";
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
@@ -14,11 +14,11 @@ import { GET as listar, POST as criar } from "@/app/api/usuarios/route";
 import { GET as listarMarcas } from "@/app/api/marcas/route";
 import { POST as aprovarMarca } from "@/app/api/marcas/[id]/aprovar/route";
 
-after(encerrar);
+after(closeConnections);
 
 test("REQ-USR-01: a listagem de usuários por admin não expõe a senha", async () => {
   const cookie = await cookieDe(
-    await criarUsuarioDireto(email("usr01-admin"), "ADMIN"),
+    await createUserDirectly(email("usr01-admin"), "ADMIN"),
   );
   const res = await listar(req("/api/usuarios?page=1&size=5", { cookie }));
   assert.equal(res.status, 200);
@@ -32,7 +32,7 @@ test("REQ-USR-01: a listagem de usuários por admin não expõe a senha", async 
 
 test("REQ-USR-02: criar usuário por admin guarda hash bcrypt e responde 201", async () => {
   const cookie = await cookieDe(
-    await criarUsuarioDireto(email("usr02-admin"), "ADMIN"),
+    await createUserDirectly(email("usr02-admin"), "ADMIN"),
   );
   const novo = email("usr02-novo");
   const res = await criar(
@@ -51,52 +51,52 @@ test("REQ-USR-02: criar usuário por admin guarda hash bcrypt e responde 201", a
 async function marcaPendente(nomeBase: string) {
   const mail = email(nomeBase);
   await prisma.usuario.deleteMany({ where: { email: mail } });
-  const usuario = await prisma.usuario.create({
+  const user = await prisma.usuario.create({
     data: { nome: "Marca Pendente", email: mail, senha: "hash", tipo: "CLIENTE" },
   });
-  const marca = await prisma.marca.create({
+  const brand = await prisma.marca.create({
     data: {
       nome: `Marca Pendente ${mail}`,
-      usuarioId: usuario.id,
+      usuarioId: user.id,
       status: "PENDENTE",
     },
   });
-  return { usuario, marca };
+  return { usuario: user, marca: brand };
 }
 
 test("REQ-USR-03: ADMIN aprova marca pendente e o usuário associado passa a MARCA", async () => {
   const cookie = await cookieDe(
-    await criarUsuarioDireto(email("usr03-admin"), "ADMIN"),
+    await createUserDirectly(email("usr03-admin"), "ADMIN"),
   );
-  const { usuario, marca } = await marcaPendente("usr03");
+  const { usuario: user, marca: brand } = await marcaPendente("usr03");
 
   const res = await aprovarMarca(
-    req(`/api/marcas/${marca.id}/aprovar`, { method: "POST", cookie }),
-    ctx(marca.id),
+    req(`/api/marcas/${brand.id}/aprovar`, { method: "POST", cookie }),
+    ctx(brand.id),
   );
   assert.equal(res.status, 200);
   const corpo = await res.json();
   assert.equal(corpo.marca.status, "APROVADA");
 
-  const usuarioAtualizado = await prisma.usuario.findUnique({
-    where: { id: usuario.id },
+  const updatedUser = await prisma.usuario.findUnique({
+    where: { id: user.id },
   });
-  assert.equal(usuarioAtualizado?.tipo, "MARCA");
+  assert.equal(updatedUser?.tipo, "MARCA");
 });
 
 test("REQ-USR-03: aprovar uma marca que já não está pendente responde 409", async () => {
   const cookie = await cookieDe(
-    await criarUsuarioDireto(email("usr03b-admin"), "ADMIN"),
+    await createUserDirectly(email("usr03b-admin"), "ADMIN"),
   );
-  const { marca } = await marcaPendente("usr03b");
+  const { marca: brand } = await marcaPendente("usr03b");
 
   await aprovarMarca(
-    req(`/api/marcas/${marca.id}/aprovar`, { method: "POST", cookie }),
-    ctx(marca.id),
+    req(`/api/marcas/${brand.id}/aprovar`, { method: "POST", cookie }),
+    ctx(brand.id),
   );
   const segunda = await aprovarMarca(
-    req(`/api/marcas/${marca.id}/aprovar`, { method: "POST", cookie }),
-    ctx(marca.id),
+    req(`/api/marcas/${brand.id}/aprovar`, { method: "POST", cookie }),
+    ctx(brand.id),
   );
   assert.equal(segunda.status, 409);
 });

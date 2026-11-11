@@ -19,7 +19,7 @@
  * ============================================================================
  */
 
-import type { AnaliseIA } from "@/types/ai";
+import type { AiAnalysis } from "@/types/ai";
 
 /**
  * Gera uma análise genérica para um material.
@@ -31,7 +31,7 @@ import type { AnaliseIA } from "@/types/ai";
  * const analise = analiseBasica("plastico");
  * // Retorna análise sem dados específicos, mas com informações educativas
  */
-export function analiseBasica(material: string): AnaliseIA {
+export function fallbackAnalysis(material: string): AiAnalysis {
   return {
     impacto_ambiental: `Material identificado como ${material}. A produção e descarte inadequado podem causar impactos ambientais significativos. É importante realizar o descarte correto para minimizar danos ao meio ambiente e permitir a reciclagem adequada.`,
 

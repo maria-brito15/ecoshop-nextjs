@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { TipoUsuario } from "@/types/api";
-import { buscarSessao, encerrarSessaoNoCliente } from "@/lib/hooks/sessao";
+import { fetchSession, endClientSession } from "@/lib/hooks/sessao";
 
 type SessionUser = {
   id: number;
@@ -73,13 +73,13 @@ function useDarkMode() {
 }
 
 function useSession() {
-  const [usuario, setUsuario] = useState<SessionUser | null>(null);
+  const [user, setUsuario] = useState<SessionUser | null>(null);
   const [carregando, setCarregando] = useState(true);
 
   const refresh = () => {
     setCarregando(true);
-    buscarSessao()
-      .then((usuario) => setUsuario(usuario))
+    fetchSession()
+      .then((user) => setUsuario(user))
       .finally(() => setCarregando(false));
   };
 
@@ -87,7 +87,7 @@ function useSession() {
     refresh();
   }, []);
 
-  return { usuario, carregando, refresh };
+  return { usuario: user, carregando, refresh };
 }
 
 export default function Header() {
@@ -98,7 +98,7 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuPerfilOpen, setMenuPerfilOpen] = useState(false);
   const perfilRef = useRef<HTMLDivElement>(null);
-  const { usuario, carregando, refresh } = useSession();
+  const { usuario: user, carregando, refresh } = useSession();
 
   useEffect(() => {
     refresh();
@@ -115,7 +115,7 @@ export default function Header() {
   }, []);
 
   async function handleLogout() {
-    await encerrarSessaoNoCliente();
+    await endClientSession();
     refresh();
     setMenuPerfilOpen(false);
     router.push("/");
@@ -135,7 +135,7 @@ export default function Header() {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
-  const inicial = usuario?.nome?.charAt(0).toUpperCase() ?? "?";
+  const inicial = user?.nome?.charAt(0).toUpperCase() ?? "?";
 
   return (
     <>
@@ -183,12 +183,12 @@ export default function Header() {
 
           <div className="flex items-center gap-3">
             {!carregando &&
-              (usuario ? (
+              (user ? (
                 <div ref={perfilRef} className="relative">
                   <button
                     onClick={() => setMenuPerfilOpen((prev) => !prev)}
                     aria-label="Menu do perfil"
-                    title={usuario.nome}
+                    title={user.nome}
                     className="
                       hidden sm:flex items-center gap-2
                       px-3 py-2
@@ -209,7 +209,7 @@ export default function Header() {
                       {inicial}
                     </span>
                     <span className="text-sm font-semibold text-[var(--color-text-primary)] max-w-[100px] truncate">
-                      {usuario.nome.split(" ")[0]}
+                      {user.nome.split(" ")[0]}
                     </span>
                     <svg
                       width="12"
@@ -239,10 +239,10 @@ export default function Header() {
                     >
                       <div className="px-4 py-3 border-b border-[var(--color-border)]">
                         <p className="text-xs font-semibold text-[var(--color-text-primary)] truncate">
-                          {usuario.nome}
+                          {user.nome}
                         </p>
                         <p className="text-xs text-[var(--color-text-tertiary)] truncate">
-                          {usuario.email}
+                          {user.email}
                         </p>
                       </div>
                       <Link
@@ -271,7 +271,7 @@ export default function Header() {
                         </svg>
                         Meu Perfil
                       </Link>
-                      {usuario.tipo === "ADMIN" && (
+                      {user.tipo === "ADMIN" && (
                         <Link
                           href="/painel"
                           onClick={() => setMenuPerfilOpen(false)}
@@ -464,7 +464,7 @@ export default function Header() {
         </nav>
 
         <div className="p-5 border-t border-[var(--color-border)]">
-          {usuario ? (
+          {user ? (
             <button
               onClick={handleLogout}
               className="

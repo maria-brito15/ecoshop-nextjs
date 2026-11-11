@@ -19,13 +19,13 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS } from "@/lib/http/responses";
-import { idDaRota } from "@/lib/http/params";
+import { ERRORS } from "@/lib/http/responses";
+import { routeId } from "@/lib/http/params";
 import {
-  listarFotos,
-  uploadFoto,
-  deletarFoto,
-  EXTENSOES_PERMITIDAS,
+  listPhotos,
+  uploadPhoto,
+  deletePhoto,
+  ALLOWED_EXTENSIONS,
 } from "@/services/foto.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
@@ -42,17 +42,17 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const id = await idDaRota(params);
+  const id = await routeId(params);
 
   if (id === null) {
-    return ERROS.dadosInvalidos("ID inválido");
+    return ERRORS.invalidData("ID inválido");
   }
 
   try {
-    const resultado = await listarFotos(id);
-    return NextResponse.json(resultado);
+    const result = await listPhotos(id);
+    return NextResponse.json(result);
   } catch (err) {
-    return ERROS.interno("buscar fotos do produto", err);
+    return ERRORS.internal("buscar fotos do produto", err);
   }
 }
 
@@ -78,38 +78,38 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
-  const id = await idDaRota(params);
+  const id = await routeId(params);
   if (id === null)
-    return ERROS.dadosInvalidos("ID do produto inválido");
+    return ERRORS.invalidData("ID do produto inválido");
 
   try {
     const formData = await req.formData();
-    const arquivo = formData.get("arquivo") as File | null;
-    const nomeCustomizado = formData.get("nome") as string | null;
+    const file = formData.get("arquivo") as File | null;
+    const customName = formData.get("nome") as string | null;
 
-    if (!arquivo) return ERROS.dadosInvalidos("Nenhum arquivo foi enviado");
+    if (!file) return ERRORS.invalidData("Nenhum arquivo foi enviado");
 
-    const resultado = await uploadFoto({
+    const result = await uploadPhoto({
       produtoId: id,
-      arquivo,
-      nomeCustomizado,
+      arquivo: file,
+      nomeCustomizado: customName,
     });
 
-    if (!resultado.ok) {
-      switch (resultado.motivo) {
+    if (!result.ok) {
+      switch (result.reason) {
         case "PRODUTO_NAO_ENCONTRADO":
-          return ERROS.naoEncontrado("Produto");
+          return ERRORS.notFound("Produto");
         case "EXTENSAO_NAO_PERMITIDA":
-          return ERROS.dadosInvalidos(
-            `Tipo de arquivo não permitido. Use: ${EXTENSOES_PERMITIDAS.join(", ")}`,
+          return ERRORS.invalidData(
+            `Tipo de arquivo não permitido. Use: ${ALLOWED_EXTENSIONS.join(", ")}`,
           );
         case "ARQUIVO_MUITO_GRANDE":
-          return ERROS.dadosInvalidos("Arquivo muito grande. Máximo: 5MB");
+          return ERRORS.invalidData("Arquivo muito grande. Máximo: 5MB");
         case "CONTEUDO_NAO_E_IMAGEM":
-          return ERROS.dadosInvalidos(
+          return ERRORS.invalidData(
             "O conteúdo do arquivo não é uma imagem JPEG, PNG, GIF ou WebP do tipo indicado pela extensão",
           );
         case "NOME_JA_EXISTE":
@@ -118,16 +118,16 @@ export async function POST(
             { status: 409 },
           );
         default:
-          return ERROS.interno("fazer upload da foto");
+          return ERRORS.internal("fazer upload da foto");
       }
     }
 
     return NextResponse.json(
-      { ok: true, foto: resultado.foto, mensagem: "Foto enviada com sucesso" },
+      { ok: true, foto: result.photo, mensagem: "Foto enviada com sucesso" },
       { status: 201 },
     );
   } catch (err) {
-    return ERROS.interno("fazer upload da foto", err);
+    return ERRORS.internal("fazer upload da foto", err);
   }
 }
 
@@ -150,32 +150,32 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
-  const id = await idDaRota(params);
+  const id = await routeId(params);
   const { searchParams } = new URL(req.url);
-  const nomeArquivo = searchParams.get("nome");
+  const fileName = searchParams.get("nome");
 
   if (id === null)
-    return ERROS.dadosInvalidos("ID do produto inválido");
-  if (!nomeArquivo)
-    return ERROS.dadosInvalidos("Nome do arquivo não fornecido");
+    return ERRORS.invalidData("ID do produto inválido");
+  if (!fileName)
+    return ERRORS.invalidData("Nome do arquivo não fornecido");
 
   try {
-    const resultado = await deletarFoto({
+    const result = await deletePhoto({
       produtoId: id,
-      nomeArquivo,
+      nomeArquivo: fileName,
     });
 
-    if (!resultado.ok) {
-      switch (resultado.motivo) {
+    if (!result.ok) {
+      switch (result.reason) {
         case "NOME_INVALIDO":
-          return ERROS.dadosInvalidos("Nome de arquivo inválido");
+          return ERRORS.invalidData("Nome de arquivo inválido");
         case "ARQUIVO_NAO_ENCONTRADO":
-          return ERROS.naoEncontrado("Arquivo");
+          return ERRORS.notFound("Arquivo");
         default:
-          return ERROS.interno("deletar foto");
+          return ERRORS.internal("deletar foto");
       }
     }
 
@@ -184,6 +184,6 @@ export async function DELETE(
       mensagem: "Foto deletada com sucesso",
     });
   } catch (err) {
-    return ERROS.interno("deletar foto", err);
+    return ERRORS.internal("deletar foto", err);
   }
 }

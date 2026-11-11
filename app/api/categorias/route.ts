@@ -20,9 +20,9 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS, mapeiaErro } from "@/lib/http/responses";
-import { categoriaSchema } from "@/lib/schemas/categoria";
-import { listarCategorias, criarCategoria } from "@/services/categoria.service";
+import { ERRORS, mapError } from "@/lib/http/responses";
+import { categorySchema } from "@/lib/schemas/categoria";
+import { listCategories, createCategory } from "@/services/categoria.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
@@ -34,10 +34,10 @@ import { requireAdmin } from "@/app/_middleware/auth";
  */
 export async function GET() {
   try {
-    const categorias = await listarCategorias();
-    return NextResponse.json({ categorias });
+    const categories = await listCategories();
+    return NextResponse.json({ categorias: categories });
   } catch (err) {
-    return ERROS.interno("listar categorias", err);
+    return ERRORS.internal("listar categorias", err);
   }
 }
 
@@ -55,19 +55,19 @@ export async function GET() {
  * @status 500 - Erro ao criar categoria
  */
 export async function POST(req: NextRequest) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
     const body = await req.json();
-    const parsed = categoriaSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    const parsed = categorySchema.safeParse(body);
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const categoria = await criarCategoria(parsed.data);
-    return NextResponse.json({ categoria }, { status: 201 });
+    const category = await createCategory(parsed.data);
+    return NextResponse.json({ categoria: category }, { status: 201 });
   } catch (err) {
     return (
-      mapeiaErro(err, "Categoria") ?? ERROS.interno("criar categoria", err)
+      mapError(err, "Categoria") ?? ERRORS.internal("criar categoria", err)
     );
   }
 }

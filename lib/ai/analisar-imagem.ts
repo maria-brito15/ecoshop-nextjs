@@ -24,12 +24,12 @@
  * ============================================================================
  */
 
-import { classificarImagem } from "./providers/azure-vision";
-import { gerarTexto } from "./providers/gemini-chat";
-import { montarPromptSustentabilidade } from "./prompts/sustentabilidade";
-import { parsearAnalise } from "./parsers/sustentabilidade";
-import { analiseBasica } from "./fallbacks/sustentabilidade";
-import type { ResultadoScan } from "@/types/ai";
+import { classifyImage } from "./providers/azure-vision";
+import { generateText } from "./providers/gemini-chat";
+import { buildSustainabilityPrompt } from "./prompts/sustentabilidade";
+import { parseAnalysis } from "./parsers/sustentabilidade";
+import { fallbackAnalysis } from "./fallbacks/sustentabilidade";
+import type { ScanResult } from "@/types/ai";
 
 /**
  * Confiança mínima exigida para considerar uma predição válida.
@@ -38,7 +38,7 @@ import type { ResultadoScan } from "@/types/ai";
  * Se a melhor predição tiver confiança abaixo deste valor, o scan falha
  * e o usuário recebe uma sugestão para tirar uma foto melhor.
  */
-const CONFIANCA_MINIMA = Number(process.env.AI_CONFIDENCE_THRESHOLD ?? 0.7);
+const MIN_CONFIDENCE = Number(process.env.AI_CONFIDENCE_THRESHOLD ?? 0.7);
 
 /**
  * Analisa uma imagem e retorna informações sobre o material identificado.
@@ -59,12 +59,12 @@ const CONFIANCA_MINIMA = Number(process.env.AI_CONFIDENCE_THRESHOLD ?? 0.7);
  *   console.log(resultado.sugestao);
  * }
  */
-export async function analisarImagem(
+export async function analyzeImage(
   imageBuffer: Buffer,
   imageId: string,
-): Promise<ResultadoScan> {
+): Promise<ScanResult> {
   const timestamp = new Date().toISOString();
-  const predicoes = await classificarImagem(imageBuffer);
+  const predicoes = await classifyImage(imageBuffer);
 
   // Caso 1: Nenhuma predição retornada (Azure falhou)
   if (!predicoes?.length) {
@@ -73,7 +73,7 @@ export async function analisarImagem(
       mensagem:
         "Nenhuma predição retornada pelo serviço de visão computacional.",
       confianca: 0,
-      confianca_minima_requerida: CONFIANCA_MINIMA * 100,
+      confianca_minima_requerida: MIN_CONFIDENCE * 100,
       material_provavel: "N/A",
       imageId,
       timestamp,
@@ -88,13 +88,13 @@ export async function analisarImagem(
   );
 
   // Caso 2: Confiança baixa OU material identificado como "outros"
-  if (melhor.probability < CONFIANCA_MINIMA || melhor.tagName === "outros") {
+  if (melhor.probability < MIN_CONFIDENCE || melhor.tagName === "outros") {
     return {
       sucesso: false,
       mensagem:
         "Não foi possível identificar o objeto com confiança suficiente.",
       confianca: Math.round(melhor.probability * 10000) / 100,
-      confianca_minima_requerida: CONFIANCA_MINIMA * 100,
+      confianca_minima_requerida: MIN_CONFIDENCE * 100,
       material_provavel: melhor.tagName,
       imageId,
       timestamp,
@@ -103,13 +103,13 @@ export async function analisarImagem(
   }
 
   // Caso 3: Identificação bem-sucedida → gera análise com Gemini
-  const prompt = montarPromptSustentabilidade(melhor.tagName);
-  const textoRaw = await gerarTexto(prompt);
+  const prompt = buildSustainabilityPrompt(melhor.tagName);
+  const rawText = await generateText(prompt);
 
   // Tenta parsear JSON do Gemini, se falhar usa fallback genérico
-  const analise = textoRaw
-    ? (parsearAnalise(textoRaw) ?? analiseBasica(melhor.tagName))
-    : analiseBasica(melhor.tagName);
+  const analysis = rawText
+    ? (parseAnalysis(rawText) ?? fallbackAnalysis(melhor.tagName))
+    : fallbackAnalysis(melhor.tagName);
 
   return {
     sucesso: true,
@@ -117,6 +117,6 @@ export async function analisarImagem(
     confianca: Math.round(melhor.probability * 10000) / 100,
     imageId,
     timestamp,
-    analise_sustentabilidade: analise,
+    analise_sustentabilidade: analysis,
   };
 }

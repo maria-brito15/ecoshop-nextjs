@@ -25,13 +25,13 @@
 import { useFetch } from "./useFetch";
 import { useMutation } from "./useMutation";
 import type {
-  ListaMarcasResponse,
-  BuscarMarcaResponse,
-  CriarMarcaBody,
-  CriarMarcaResponse,
-  AtualizarMarcaBody,
-  AtualizarMarcaResponse,
-  AprovarMarcaResponse,
+  ListBrandsResponse,
+  GetBrandResponse,
+  CreateBrandBody,
+  CreateBrandResponse,
+  UpdateBrandBody,
+  UpdateBrandResponse,
+  ApproveBrandResponse,
   OkResponse,
 } from "@/types/api";
 
@@ -41,8 +41,8 @@ import type {
  *
  * @returns Hook com array de marcas, loading e erro
  */
-export function useListarMarcas() {
-  return useFetch<ListaMarcasResponse>("/api/marcas");
+export function useListBrands() {
+  return useFetch<ListBrandsResponse>("/api/marcas");
 }
 
 /**
@@ -51,8 +51,8 @@ export function useListarMarcas() {
  * @param id - ID da marca (se null, hook não executa)
  * @returns Hook com dados da marca
  */
-export function useBuscarMarca(id: number | null) {
-  return useFetch<BuscarMarcaResponse>(id ? `/api/marcas/${id}` : null);
+export function useGetBrand(id: number | null) {
+  return useFetch<GetBrandResponse>(id ? `/api/marcas/${id}` : null);
 }
 
 /**
@@ -69,10 +69,10 @@ export function useBuscarMarca(id: number | null) {
  *   usuarioId: 5 // ID do usuário responsável (tipo MARCA)
  * });
  */
-export function useCriarMarca() {
-  return useMutation<CriarMarcaResponse, CriarMarcaBody>({
+export function useCreateBrand() {
+  return useMutation<CreateBrandResponse, CreateBrandBody>({
     method: "POST",
-    invalidar: ["/api/marcas"],
+    invalidate: ["/api/marcas"],
   });
 }
 
@@ -82,10 +82,10 @@ export function useCriarMarca() {
  *
  * @returns Mutation hook para atualização de marca
  */
-export function useAtualizarMarca() {
-  return useMutation<AtualizarMarcaResponse, AtualizarMarcaBody>({
+export function useUpdateBrand() {
+  return useMutation<UpdateBrandResponse, UpdateBrandBody>({
     method: "PUT",
-    invalidar: ["/api/marcas"],
+    invalidate: ["/api/marcas"],
   });
 }
 
@@ -98,10 +98,10 @@ export function useAtualizarMarca() {
  *
  * @returns Mutation hook para deleção de marca
  */
-export function useDeletarMarca() {
+export function useDeleteBrand() {
   return useMutation<OkResponse>({
     method: "DELETE",
-    invalidar: ["/api/marcas"],
+    invalidate: ["/api/marcas"],
   });
 }
 
@@ -115,9 +115,9 @@ export function useDeletarMarca() {
  * const aprovar = useAprovarMarca();
  * await aprovar.executar(`/api/marcas/${marca.id}/aprovar`);
  */
-export function useAprovarMarca() {
-  return useMutation<AprovarMarcaResponse>({
+export function useApproveBrand() {
+  return useMutation<ApproveBrandResponse>({
     method: "POST",
-    invalidar: ["/api/marcas"],
+    invalidate: ["/api/marcas"],
   });
 }

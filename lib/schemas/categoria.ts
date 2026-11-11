@@ -39,7 +39,7 @@ import { z } from "zod";
  *   descricao: "Dispositivos com baixo consumo energético"
  * };
  */
-export const categoriaSchema = z.object({
+export const categorySchema = z.object({
   nome: z.string().min(1, "Nome da categoria é obrigatório"),
   descricao: z.string().optional(),
 });
@@ -61,11 +61,11 @@ export const categoriaSchema = z.object({
  * // Atualizar apenas descrição
  * const dados = { descricao: "Vestuário ético e ecológico" };
  */
-export const atualizarCategoriaSchema = z.object({
+export const updateCategorySchema = z.object({
   nome: z.string().min(1, "Nome não pode estar vazio").optional(),
   descricao: z.string().optional(),
 });
 
 // Tipos inferidos para uso nos services
-export type CategoriaInput = z.infer<typeof categoriaSchema>;
-export type AtualizarCategoriaInput = z.infer<typeof atualizarCategoriaSchema>;
+export type CategoriaInput = z.infer<typeof categorySchema>;
+export type AtualizarCategoriaInput = z.infer<typeof updateCategorySchema>;

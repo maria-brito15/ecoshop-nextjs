@@ -11,8 +11,6 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
-  const { exigirAmbienteDeProducao } = await import(
-    "@/lib/config/verificar-ambiente"
-  );
-  exigirAmbienteDeProducao();
+  const config = await import("@/lib/config/verificar-ambiente");
+  config.requireProductionEnvironment();
 }

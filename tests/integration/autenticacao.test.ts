@@ -1,13 +1,13 @@
 // Capacidade AUTH — docs/capabilities/autenticacao/spec.md
 import {
   email,
-  criarUsuarioDireto,
+  createUserDirectly,
   cookieDe,
   req,
   ctx,
   ipNovo,
-  encerrar,
-  limparRateLimit,
+  closeConnections,
+  clearRateLimit,
 } from "./helpers";
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
@@ -19,21 +19,21 @@ import { GET as me } from "@/app/api/auth/me/route";
 import { POST as criarUsuarioAdmin } from "@/app/api/usuarios/route";
 import { PUT as atualizarUsuario } from "@/app/api/usuarios/[id]/route";
 
-after(encerrar);
+after(closeConnections);
 
-const SENHA = "Senha@12345";
-async function usuarioComSenha(nome: string) {
-  const mail = email(nome);
-  return criarUsuarioDireto(mail, "CLIENTE", await bcrypt.hash(SENHA, 4));
+const PASSWORD = "Senha@12345";
+async function userWithPassword(name: string) {
+  const mail = email(name);
+  return createUserDirectly(mail, "CLIENTE", await bcrypt.hash(PASSWORD, 4));
 }
 const setCookie = (r: Response) => r.headers.get("set-cookie") ?? "";
 
 test("REQ-AUTH-01: login válido responde 200 e define cookie de sessão httpOnly", async () => {
-  const u = await usuarioComSenha("auth01");
+  const u = await userWithPassword("auth01");
   const res = await login(
     req("/api/auth", {
       method: "POST",
-      body: { email: u.email, senha: SENHA },
+      body: { email: u.email, senha: PASSWORD },
     }),
   );
   assert.equal(res.status, 200);
@@ -45,7 +45,7 @@ test("REQ-AUTH-01: login válido responde 200 e define cookie de sessão httpOnl
 });
 
 test("REQ-AUTH-02: senha errada e e-mail inexistente respondem o mesmo 401", async () => {
-  const u = await usuarioComSenha("auth02");
+  const u = await userWithPassword("auth02");
   const errada = await login(
     req("/api/auth", {
       method: "POST",
@@ -55,7 +55,7 @@ test("REQ-AUTH-02: senha errada e e-mail inexistente respondem o mesmo 401", asy
   const inexistente = await login(
     req("/api/auth", {
       method: "POST",
-      body: { email: email("nao-existe"), senha: SENHA },
+      body: { email: email("nao-existe"), senha: PASSWORD },
     }),
   );
   assert.equal(errada.status, 401);
@@ -74,7 +74,7 @@ test("REQ-AUTH-03: corpo de login inválido responde 400", async () => {
 });
 
 test("REQ-AUTH-04: mais de 10 tentativas de login por minuto no mesmo IP respondem 429", async () => {
-  await limparRateLimit();
+  await clearRateLimit();
   const ip = ipNovo();
   let ultimo = 0;
   for (let i = 0; i < 12; i++) {
@@ -102,7 +102,7 @@ test("REQ-AUTH-05: cadastro público válido cria CLIENTE (padrão) e inicia a s
   const res = await registrar(
     req("/api/users", {
       method: "POST",
-      body: { nome: "Pessoa Teste", email: mail, senha: SENHA },
+      body: { nome: "Pessoa Teste", email: mail, senha: PASSWORD },
     }),
   );
   assert.equal(res.status, 201);
@@ -113,18 +113,18 @@ test("REQ-AUTH-05: cadastro público válido cria CLIENTE (padrão) e inicia a s
 });
 
 test("REQ-AUTH-06: cadastro com e-mail já existente responde 409", async () => {
-  const u = await usuarioComSenha("auth06");
+  const u = await userWithPassword("auth06");
   const res = await registrar(
     req("/api/users", {
       method: "POST",
-      body: { nome: "Outra Pessoa", email: u.email, senha: SENHA },
+      body: { nome: "Outra Pessoa", email: u.email, senha: PASSWORD },
     }),
   );
   assert.equal(res.status, 409);
 });
 
 test("REQ-AUTH-07: nenhuma resposta de usuário expõe a senha (criar e atualizar por admin)", async () => {
-  const admin = await criarUsuarioDireto(email("auth07-admin"), "ADMIN");
+  const admin = await createUserDirectly(email("auth07-admin"), "ADMIN");
   const cookie = await cookieDe(admin);
   const novoMail = email("auth07-novo");
   await prisma.usuario.deleteMany({ where: { email: novoMail } });
@@ -132,7 +132,7 @@ test("REQ-AUTH-07: nenhuma resposta de usuário expõe a senha (criar e atualiza
     req("/api/usuarios", {
       method: "POST",
       cookie,
-      body: { nome: "Novo Usuario", email: novoMail, senha: SENHA },
+      body: { nome: "Novo Usuario", email: novoMail, senha: PASSWORD },
     }),
   );
   assert.equal(criado.status, 201);
@@ -167,7 +167,7 @@ test("REQ-AUTH-08: o cadastro público não aceita criar ADMIN", async () => {
       body: {
         nome: "Pessoa Admin",
         email: email("auth08"),
-        senha: SENHA,
+        senha: PASSWORD,
         tipo: "ADMIN",
       },
     }),
@@ -185,7 +185,7 @@ test("REQ-AUTH-09: logout remove o cookie de sessão", async () => {
 });
 
 test("REQ-AUTH-10: /api/auth/me devolve o usuário da sessão, ou 401 sem sessão", async () => {
-  const u = await usuarioComSenha("auth10");
+  const u = await userWithPassword("auth10");
   const ok = await me(req("/api/auth/me", { cookie: await cookieDe(u) }));
   assert.equal(ok.status, 200);
   assert.equal((await ok.json()).usuario.email, u.email);
@@ -201,7 +201,7 @@ test("REQ-AUTH-11: cadastro como MARCA fica pendente de aprovação de um ADMIN"
       body: {
         nome: "Marca Teste",
         email: mail,
-        senha: SENHA,
+        senha: PASSWORD,
         tipo: "MARCA",
         marcaNome: `Marca Teste ${mail}`,
       },
@@ -230,7 +230,7 @@ test("REQ-AUTH-14: cadastro como MARCA sem o nome da marca responde 400", async 
       body: {
         nome: "Marca Sem Nome",
         email: email("auth14"),
-        senha: SENHA,
+        senha: PASSWORD,
         tipo: "MARCA",
       },
     }),

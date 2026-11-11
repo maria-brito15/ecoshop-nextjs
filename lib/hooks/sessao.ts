@@ -13,26 +13,26 @@
  *   `useFetch`.
  */
 
-import { limparCacheCliente } from "./useFetch";
+import { clearClientCache } from "./useFetch";
 
-export interface UsuarioDaSessao {
+export interface SessionUser {
   id: number;
   nome: string;
   email: string;
   tipo: "CLIENTE" | "MARCA" | "ADMIN";
 }
 
-let emAndamento: Promise<UsuarioDaSessao | null> | null = null;
+let emAndamento: Promise<SessionUser | null> | null = null;
 
 /** @returns o usuário logado, ou `null` se não há sessão (ou se a consulta falhou). */
-export function buscarSessao(): Promise<UsuarioDaSessao | null> {
+export function fetchSession(): Promise<SessionUser | null> {
   if (emAndamento) return emAndamento;
 
   emAndamento = fetch("/api/auth/me", { credentials: "include" })
     .then(async (res) => {
       if (!res.ok) return null;
-      const dados = (await res.json()) as { usuario?: UsuarioDaSessao | null };
-      return dados.usuario ?? null;
+      const data = (await res.json()) as { usuario?: SessionUser | null };
+      return data.usuario ?? null;
     })
     .catch(() => null)
     .finally(() => {
@@ -43,10 +43,10 @@ export function buscarSessao(): Promise<UsuarioDaSessao | null> {
 }
 
 /** Logout: revoga a sessão no servidor e esvazia o cache de dados do cliente. */
-export async function encerrarSessaoNoCliente(): Promise<void> {
+export async function endClientSession(): Promise<void> {
   try {
     await fetch("/api/auth", { method: "DELETE", credentials: "include" });
   } finally {
-    limparCacheCliente();
+    clearClientCache();
   }
 }

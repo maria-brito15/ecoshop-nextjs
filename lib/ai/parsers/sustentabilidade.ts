@@ -20,13 +20,13 @@
  * ============================================================================
  */
 
-import type { AnaliseIA } from "@/types/ai";
+import type { AiAnalysis } from "@/types/ai";
 
 /**
  * Campos obrigatórios que devem estar presentes na análise.
  * Se algum campo estiver faltando ou vazio, a análise é rejeitada.
  */
-const CAMPOS_OBRIGATORIOS: (keyof AnaliseIA)[] = [
+const CAMPOS_OBRIGATORIOS: (keyof AiAnalysis)[] = [
   "impacto_ambiental",
   "tempo_decomposicao",
   "onde_descartar",
@@ -44,7 +44,7 @@ const CAMPOS_OBRIGATORIOS: (keyof AnaliseIA)[] = [
  * 3. Faz parse do JSON entre essas posições
  * 4. Valida se todos os campos obrigatórios são strings não vazias
  *
- * @param textoRaw - Texto bruto retornado pelo Gemini
+ * @param rawText - Texto bruto retornado pelo Gemini
  * @returns Objeto AnaliseIA válido ou null se falha
  *
  * @example
@@ -54,10 +54,10 @@ const CAMPOS_OBRIGATORIOS: (keyof AnaliseIA)[] = [
  *   console.log(analise.impacto_ambiental);
  * }
  */
-export function parsearAnalise(textoRaw: string): AnaliseIA | null {
+export function parseAnalysis(rawText: string): AiAnalysis | null {
   try {
     // Passo 1: Remove blocos de código markdown
-    const limpo = textoRaw
+    const limpo = rawText
       .replace(/```json\s*/g, "")
       .replace(/```\s*/g, "")
       .trim();
@@ -76,11 +76,11 @@ export function parsearAnalise(textoRaw: string): AnaliseIA | null {
         typeof parsed[campo] === "string" && parsed[campo].trim().length > 0,
     );
 
-    return valido ? (parsed as AnaliseIA) : null;
+    return valido ? (parsed as AiAnalysis) : null;
   } catch {
     // JSON inválido (malformado, campos ausentes, tipo incorreto)
     return null;
   }
 }
 
-export type { AnaliseIA };
+export type { AiAnalysis as AnaliseIA };

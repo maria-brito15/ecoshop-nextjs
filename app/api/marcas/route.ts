@@ -19,9 +19,9 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS, mapeiaErro } from "@/lib/http/responses";
-import { marcaSchema } from "@/lib/schemas/marca";
-import { listarMarcas, criarMarca } from "@/services/marca.service";
+import { ERRORS, mapError } from "@/lib/http/responses";
+import { brandSchema } from "@/lib/schemas/marca";
+import { listBrands, createBrand } from "@/services/marca.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
@@ -33,10 +33,10 @@ import { requireAdmin } from "@/app/_middleware/auth";
  */
 export async function GET() {
   try {
-    const marcas = await listarMarcas();
-    return NextResponse.json({ marcas });
+    const brands = await listBrands();
+    return NextResponse.json({ marcas: brands });
   } catch (err) {
-    return ERROS.interno("listar marcas", err);
+    return ERRORS.internal("listar marcas", err);
   }
 }
 
@@ -54,17 +54,17 @@ export async function GET() {
  * @status 500 - Erro ao criar marca
  */
 export async function POST(req: NextRequest) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
     const body = await req.json();
-    const parsed = marcaSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    const parsed = brandSchema.safeParse(body);
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const marca = await criarMarca(parsed.data);
-    return NextResponse.json({ marca }, { status: 201 });
+    const brand = await createBrand(parsed.data);
+    return NextResponse.json({ marca: brand }, { status: 201 });
   } catch (err) {
-    return mapeiaErro(err, "Marca") ?? ERROS.interno("criar marca", err);
+    return mapError(err, "Marca") ?? ERRORS.internal("criar marca", err);
   }
 }

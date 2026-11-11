@@ -30,12 +30,12 @@
  * await redisDelPattern(`${PREFIX.PRODUTOS}*`); // remove todos os caches de produtos
  */
 export const PREFIX = {
-  PRODUTOS: "produtos:",
-  CATEGORIAS: "categorias:",
-  MARCAS: "marcas:",
-  CERTIFICADOS: "certificados:",
-  USUARIOS: "usuarios:",
-  FOTOS: "fotos:",
+  PRODUCTS: "produtos:",
+  CATEGORIES: "categorias:",
+  BRANDS: "marcas:",
+  CERTIFICATES: "certificados:",
+  USERS: "usuarios:",
+  PHOTOS: "fotos:",
 } as const;
 
 /**
@@ -50,7 +50,7 @@ export const PREFIX = {
  * @param filtros - Filtros validados (`listarProdutosQuerySchema`)
  * @returns Chave no formato "produtos:page=1&size=12&categoriaId=5&marcaId=&precoMax=&sort=relevancia&nome="
  */
-export interface FiltrosDeProdutos {
+export interface ProductFilters {
   page: number;
   size: number;
   categoriaId?: number;
@@ -60,13 +60,13 @@ export interface FiltrosDeProdutos {
   nome?: string;
 }
 
-export function chaveProdutos(filtros: FiltrosDeProdutos): string {
+export function productListKey(filters: ProductFilters): string {
   // A busca por nome ignora a caixa; a chave também (mesma busca, mesma chave).
-  const nome = encodeURIComponent((filtros.nome ?? "").trim().toLowerCase());
+  const name = encodeURIComponent((filters.nome ?? "").trim().toLowerCase());
   return (
-    `${PREFIX.PRODUTOS}page=${filtros.page}&size=${filtros.size}` +
-    `&categoriaId=${filtros.categoriaId ?? ""}&marcaId=${filtros.marcaId ?? ""}` +
-    `&precoMax=${filtros.precoMax ?? ""}&sort=${filtros.sort}&nome=${nome}`
+    `${PREFIX.PRODUCTS}page=${filters.page}&size=${filters.size}` +
+    `&categoriaId=${filters.categoriaId ?? ""}&marcaId=${filters.marcaId ?? ""}` +
+    `&precoMax=${filters.precoMax ?? ""}&sort=${filters.sort}&nome=${name}`
   );
 }
 
@@ -76,8 +76,8 @@ export function chaveProdutos(filtros: FiltrosDeProdutos): string {
  * @param id - ID do produto
  * @returns Chave no formato "produtos:123"
  */
-export function chaveProduto(id: number): string {
-  return `${PREFIX.PRODUTOS}${id}`;
+export function productKey(id: number): string {
+  return `${PREFIX.PRODUCTS}${id}`;
 }
 
 /**
@@ -86,8 +86,8 @@ export function chaveProduto(id: number): string {
  *
  * @returns Chave no formato "categorias:lista"
  */
-export function chaveCategorias(): string {
-  return `${PREFIX.CATEGORIAS}lista`;
+export function categoriesKey(): string {
+  return `${PREFIX.CATEGORIES}lista`;
 }
 
 /**
@@ -96,8 +96,8 @@ export function chaveCategorias(): string {
  * @param id - ID da categoria
  * @returns Chave no formato "categorias:123"
  */
-export function chaveCategoria(id: number): string {
-  return `${PREFIX.CATEGORIAS}${id}`;
+export function categoryKey(id: number): string {
+  return `${PREFIX.CATEGORIES}${id}`;
 }
 
 /**
@@ -106,8 +106,8 @@ export function chaveCategoria(id: number): string {
  *
  * @returns Chave no formato "marcas:lista"
  */
-export function chaveMarcas(): string {
-  return `${PREFIX.MARCAS}lista`;
+export function brandsKey(): string {
+  return `${PREFIX.BRANDS}lista`;
 }
 
 /**
@@ -116,8 +116,8 @@ export function chaveMarcas(): string {
  * @param id - ID da marca
  * @returns Chave no formato "marcas:123"
  */
-export function chaveMarca(id: number): string {
-  return `${PREFIX.MARCAS}${id}`;
+export function brandKey(id: number): string {
+  return `${PREFIX.BRANDS}${id}`;
 }
 
 /**
@@ -125,8 +125,8 @@ export function chaveMarca(id: number): string {
  *
  * @returns Chave no formato "certificados:lista"
  */
-export function chaveCertificados(): string {
-  return `${PREFIX.CERTIFICADOS}lista`;
+export function certificatesKey(): string {
+  return `${PREFIX.CERTIFICATES}lista`;
 }
 
 /**
@@ -135,8 +135,8 @@ export function chaveCertificados(): string {
  * @param id - ID do certificado
  * @returns Chave no formato "certificados:123"
  */
-export function chaveCertificado(id: number): string {
-  return `${PREFIX.CERTIFICADOS}${id}`;
+export function certificateKey(id: number): string {
+  return `${PREFIX.CERTIFICATES}${id}`;
 }
 
 /**
@@ -146,8 +146,8 @@ export function chaveCertificado(id: number): string {
  * @param id - ID do usuário
  * @returns Chave no formato "usuarios:me:123"
  */
-export function chaveUsuarioMe(id: number): string {
-  return `${PREFIX.USUARIOS}me:${id}`;
+export function currentUserKey(id: number): string {
+  return `${PREFIX.USERS}me:${id}`;
 }
 
 /**
@@ -156,8 +156,8 @@ export function chaveUsuarioMe(id: number): string {
  * @param id - ID do usuário
  * @returns Chave no formato "usuarios:123"
  */
-export function chaveUsuario(id: number): string {
-  return `${PREFIX.USUARIOS}${id}`;
+export function userKey(id: number): string {
+  return `${PREFIX.USERS}${id}`;
 }
 
 /**
@@ -166,16 +166,16 @@ export function chaveUsuario(id: number): string {
  *
  * @returns Chave no formato "usuarios:lista"
  */
-export function chaveUsuarios(): string {
-  return `${PREFIX.USUARIOS}lista`;
+export function usersKey(): string {
+  return `${PREFIX.USERS}lista`;
 }
 
 /**
  * Gera chave de cache para listagem de fotos de um produto.
  *
- * @param produtoId - ID do produto
+ * @param productId - ID do produto
  * @returns Chave no formato "fotos:produto:123"
  */
-export function chaveFotosProduto(produtoId: number): string {
-  return `${PREFIX.FOTOS}produto:${produtoId}`;
+export function productPhotosKey(productId: number): string {
+  return `${PREFIX.PHOTOS}produto:${productId}`;
 }

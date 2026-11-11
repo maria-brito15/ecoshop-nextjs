@@ -17,11 +17,11 @@
  */
 
 import { prisma } from "@/lib/db";
-import { redis, comPrazo, TIMEOUT_COMANDO_MS } from "@/lib/redis";
+import { redis, withTimeout, TIMEOUT_COMANDO_MS } from "@/lib/redis";
 
 export type StatusDaSaude = "ok" | "degradado" | "indisponivel";
 
-export interface RelatorioDeSaude {
+export interface HealthReport {
   /** A aplicação consegue atender (o banco responde). */
   ok: boolean;
   status: StatusDaSaude;
@@ -30,10 +30,10 @@ export interface RelatorioDeSaude {
 }
 
 /** Monta o relatório e o código HTTP a partir do estado de cada dependência. */
-export function comporRelatorio(
-  services: RelatorioDeSaude["services"],
+export function buildHealthReport(
+  services: HealthReport["services"],
   agora: Date = new Date(),
-): { relatorio: RelatorioDeSaude; httpStatus: 200 | 503 } {
+): { relatorio: HealthReport; httpStatus: 200 | 503 } {
   const status: StatusDaSaude = !services.database
     ? "indisponivel"
     : services.redis
@@ -46,7 +46,7 @@ export function comporRelatorio(
   };
 }
 
-async function verificarBanco(): Promise<boolean> {
+async function checkDatabase(): Promise<boolean> {
   try {
     await prisma.$queryRaw`SELECT 1`;
     return true;
@@ -55,9 +55,9 @@ async function verificarBanco(): Promise<boolean> {
   }
 }
 
-async function verificarRedis(): Promise<boolean> {
+async function checkRedis(): Promise<boolean> {
   try {
-    await comPrazo(redis.ping(), TIMEOUT_COMANDO_MS);
+    await withTimeout(redis.ping(), TIMEOUT_COMANDO_MS);
     return true;
   } catch {
     return false;
@@ -65,10 +65,10 @@ async function verificarRedis(): Promise<boolean> {
 }
 
 /** Consulta as dependências em paralelo e devolve o relatório. */
-export async function consultarSaude() {
+export async function checkHealth() {
   const [database, redisOk] = await Promise.all([
-    verificarBanco(),
-    verificarRedis(),
+    checkDatabase(),
+    checkRedis(),
   ]);
-  return comporRelatorio({ database, redis: redisOk });
+  return buildHealthReport({ database, redis: redisOk });
 }

@@ -30,7 +30,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { analisarImagem } from "@/lib/ai";
-import { ERROS } from "@/lib/http/responses";
+import { ERRORS } from "@/lib/http/responses";
 import { requireAuth } from "@/app/_middleware/auth";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -50,25 +50,25 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
  * @status 500 - Erro interno
  */
 export async function POST(req: NextRequest) {
-  const authErro = await requireAuth(req);
-  if (authErro) return authErro;
+  const authError = await requireAuth(req);
+  if (authError) return authError;
 
   try {
     const formData = await req.formData();
     const file = formData.get("image") as File | null;
 
     if (!file) {
-      return ERROS.dadosInvalidos("Nenhuma imagem enviada");
+      return ERRORS.invalidData("Nenhuma imagem enviada");
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return ERROS.dadosInvalidos(
+      return ERRORS.invalidData(
         "Formato inválido. Use: jpg, jpeg, png, gif ou webp",
       );
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return ERROS.dadosInvalidos("Arquivo muito grande (máx: 10MB)");
+      return ERRORS.invalidData("Arquivo muito grande (máx: 10MB)");
     }
 
     const arrayBuffer = await file.arrayBuffer();
@@ -76,12 +76,12 @@ export async function POST(req: NextRequest) {
 
     const imageId = `analise_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 
-    const resultado = await analisarImagem(buffer, imageId);
+    const result = await analisarImagem(buffer, imageId);
 
-    return NextResponse.json(resultado, {
-      status: resultado.sucesso ? 200 : 422,
+    return NextResponse.json(result, {
+      status: result.sucesso ? 200 : 422,
     });
   } catch (err) {
-    return ERROS.interno("processar análise", err);
+    return ERRORS.internal("processar análise", err);
   }
 }

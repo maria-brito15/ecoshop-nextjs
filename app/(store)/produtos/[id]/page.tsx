@@ -30,8 +30,8 @@
 
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
-import { useBuscarProduto } from "@/lib/hooks/useProdutos";
-import { useListarFotos } from "@/lib/hooks/useFotos";
+import { useGetProduct } from "@/lib/hooks/useProdutos";
+import { useListPhotos } from "@/lib/hooks/useFotos";
 import type { Certificado } from "@/types/api";
 
 type Props = {
@@ -183,10 +183,10 @@ function Tabs({
 // PÁGINA PRINCIPAL
 // ----------------------------------------------------------------------------
 
-export default function ProdutoPage({ params }: Props) {
+export default function ProductPage({ params }: Props) {
   const { id } = use(params);
-  const { data, carregando, erro } = useBuscarProduto(Number(id));
-  const { data: fotosData } = useListarFotos(Number(id));
+  const { data, loading: carregando, error: erro } = useGetProduct(Number(id));
+  const { data: fotosData } = useListPhotos(Number(id));
   const [activeTab, setActiveTab] = useState<Tab>("sobre");
   const [imgLoaded, setImgLoaded] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
@@ -201,18 +201,18 @@ export default function ProdutoPage({ params }: Props) {
   // perfil (app/(perfil)/perfil/page.tsx) lê a mesma chave. Sem backend
   // porque o histórico é por navegador, não por conta (ADR-0004).
   useEffect(() => {
-    const produto = data?.produto;
-    if (!produto) return;
+    const product = data?.produto;
+    if (!product) return;
     try {
       const raw = localStorage.getItem("ecoshop_history");
-      const historico: HistoricoItem[] = raw ? JSON.parse(raw) : [];
-      const semDuplicata = historico.filter((h) => h.produtoId !== produto.id);
+      const history: HistoricoItem[] = raw ? JSON.parse(raw) : [];
+      const semDuplicata = history.filter((h) => h.produtoId !== product.id);
       const atualizado = [
         {
-          produtoId: produto.id,
-          nome: produto.nome,
-          fotoUrl: produto.fotoUrl,
-          preco: Number(produto.preco),
+          produtoId: product.id,
+          nome: product.nome,
+          fotoUrl: product.fotoUrl,
+          preco: Number(product.preco),
           visitadoEm: new Date().toISOString(),
         },
         ...semDuplicata,
@@ -246,25 +246,25 @@ export default function ProdutoPage({ params }: Props) {
 
   if (!data?.produto) return null;
 
-  const produto = data.produto;
-  const categoriaNome = produto.categoria?.nome ?? "Categoria";
-  const categoriaDescricao = produto.categoria?.descricao;
-  const marcaNome = produto.marca?.nome ?? "Marca";
-  const marcaDescricao = produto.marca?.descricao;
-  const precoNumerico = Number(produto.preco);
-  const precoFormatado = precoNumerico.toLocaleString("pt-BR", {
+  const product = data.produto;
+  const categoryName = product.categoria?.nome ?? "Categoria";
+  const categoryDescription = product.categoria?.descricao;
+  const brandName = product.marca?.nome ?? "Marca";
+  const brandDescription = product.marca?.descricao;
+  const numericPrice = Number(product.preco);
+  const formattedPrice = numericPrice.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
   const parcelas = 12;
-  const valorParcela = (precoNumerico / parcelas).toLocaleString("pt-BR", {
+  const valorParcela = (numericPrice / parcelas).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
-  const hasCerts = !!(produto.certificados && produto.certificados.length > 0);
-  const fotos = fotosData?.fotos ?? [];
-  const imagemPrincipal =
-    fotoSelecionada ?? produto.fotoUrl ?? fotos[0]?.url ?? null;
+  const hasCerts = !!(product.certificados && product.certificados.length > 0);
+  const photos = fotosData?.fotos ?? [];
+  const mainImage =
+    fotoSelecionada ?? product.fotoUrl ?? photos[0]?.url ?? null;
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)] pb-20">
@@ -298,10 +298,10 @@ export default function ProdutoPage({ params }: Props) {
           {/* IMAGEM DO PRODUTO */}
           <div className="relative">
             <div className="relative bg-[var(--color-bg-surface)] rounded-[2rem] overflow-hidden border border-[var(--color-border)] shadow-[var(--shadow-card)] aspect-square flex items-center justify-center p-8 group">
-              {imagemPrincipal ? (
+              {mainImage ? (
                 <img
-                  src={imagemPrincipal}
-                  alt={produto.nome}
+                  src={mainImage}
+                  alt={product.nome}
                   onLoad={() => setImgLoaded(true)}
                   className={`max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
                 />
@@ -326,25 +326,25 @@ export default function ProdutoPage({ params }: Props) {
             </div>
 
             {/* GALERIA DE FOTOS (REQ-MIDIA-04) */}
-            {fotos.length > 0 && (
+            {photos.length > 0 && (
               <div className="flex gap-3 mt-4 overflow-x-auto pb-1">
-                {fotos.map((foto) => (
+                {photos.map((photo) => (
                   <button
-                    key={foto.nome}
+                    key={photo.nome}
                     type="button"
                     onClick={() => {
                       setImgLoaded(false);
-                      setFotoSelecionada(foto.url);
+                      setFotoSelecionada(photo.url);
                     }}
-                    aria-label={`Ver foto ${foto.nome}`}
+                    aria-label={`Ver foto ${photo.nome}`}
                     className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors ${
-                      imagemPrincipal === foto.url
+                      mainImage === photo.url
                         ? "border-[var(--color-primary)]"
                         : "border-[var(--color-border)] hover:border-[var(--color-primary-light)]"
                     }`}
                   >
                     <img
-                      src={foto.url}
+                      src={photo.url}
                       alt=""
                       className="w-full h-full object-cover"
                     />
@@ -358,15 +358,15 @@ export default function ProdutoPage({ params }: Props) {
           <div className="flex flex-col gap-5">
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-2">
-                {categoriaNome}
+                {categoryName}
               </p>
               <h1 className="font-display text-3xl md:text-4xl font-extrabold text-[var(--color-text-primary)] leading-tight">
-                {produto.nome}
+                {product.nome}
               </h1>
               <p className="text-sm text-[var(--color-text-tertiary)] mt-1 font-medium">
                 por{" "}
                 <span className="text-[var(--color-text-secondary)]">
-                  {marcaNome}
+                  {brandName}
                 </span>
               </p>
             </div>
@@ -384,7 +384,7 @@ export default function ProdutoPage({ params }: Props) {
             {/* Preço */}
             <div className="py-5 border-t border-b border-[var(--color-border)]">
               <p className="font-display text-4xl font-extrabold text-[var(--color-text-primary)] leading-none mb-1">
-                {precoFormatado}
+                {formattedPrice}
               </p>
               <p className="text-sm text-[var(--color-text-secondary)]">
                 em até{" "}
@@ -414,7 +414,7 @@ export default function ProdutoPage({ params }: Props) {
             </div>
 
             {/* Impacto ambiental */}
-            <ImpactCard preco={produto.preco} />
+            <ImpactCard preco={product.preco} />
           </div>
         </section>
 
@@ -438,9 +438,9 @@ export default function ProdutoPage({ params }: Props) {
             {/* TAB: SOBRE O PRODUTO */}
             {activeTab === "sobre" && (
               <div className="animate-[fadeSlideUp_0.4s_ease_forwards]">
-                {produto.descricao ? (
+                {product.descricao ? (
                   <p className="text-base md:text-lg leading-relaxed text-[var(--color-text-secondary)] mb-8">
-                    {produto.descricao}
+                    {product.descricao}
                   </p>
                 ) : (
                   <p className="text-[var(--color-text-tertiary)] italic mb-8">
@@ -457,8 +457,8 @@ export default function ProdutoPage({ params }: Props) {
                       "Produção ética e responsável",
                       "Material reciclável e sustentável",
                       "Sem componentes prejudiciais ao meio ambiente",
-                      `Categoria: ${categoriaNome}`,
-                      `Marca: ${marcaNome}`,
+                      `Categoria: ${categoryName}`,
+                      `Marca: ${brandName}`,
                     ].map((item) => (
                       <li
                         key={item}
@@ -481,19 +481,19 @@ export default function ProdutoPage({ params }: Props) {
                 <table className="w-full border-collapse">
                   <tbody>
                     {[
-                      ["Nome", produto.nome],
-                      ["Categoria", categoriaNome],
-                      ["Marca", marcaNome],
-                      ...(categoriaDescricao
-                        ? [["Sobre a Categoria", categoriaDescricao]]
+                      ["Nome", product.nome],
+                      ["Categoria", categoryName],
+                      ["Marca", brandName],
+                      ...(categoryDescription
+                        ? [["Sobre a Categoria", categoryDescription]]
                         : []),
-                      ...(marcaDescricao
-                        ? [["Sobre a Marca", marcaDescricao]]
+                      ...(brandDescription
+                        ? [["Sobre a Marca", brandDescription]]
                         : []),
-                      ["Preço", precoFormatado],
+                      ["Preço", formattedPrice],
                       [
                         "Adicionado em",
-                        new Date(produto.criadoEm).toLocaleDateString("pt-BR", {
+                        new Date(product.criadoEm).toLocaleDateString("pt-BR", {
                           year: "numeric",
                           month: "long",
                           day: "numeric",
@@ -520,22 +520,22 @@ export default function ProdutoPage({ params }: Props) {
             {/* TAB: CERTIFICADOS */}
             {activeTab === "certificados" &&
               hasCerts &&
-              produto.certificados && (
+              product.certificados && (
                 <div className="animate-[fadeSlideUp_0.4s_ease_forwards]">
                   <div className="mb-6">
                     <h4 className="font-display font-bold text-[var(--color-text-primary)] text-lg mb-1">
                       Certificações & Selos
                     </h4>
                     <p className="text-sm text-[var(--color-text-secondary)]">
-                      Este produto possui {produto.certificados.length}{" "}
-                      certificado{produto.certificados.length > 1 ? "s" : ""} de
+                      Este produto possui {product.certificados.length}{" "}
+                      certificado{product.certificados.length > 1 ? "s" : ""} de
                       sustentabilidade reconhecido
-                      {produto.certificados.length > 1 ? "s" : ""}.
+                      {product.certificados.length > 1 ? "s" : ""}.
                     </p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {produto.certificados.map(({ certificado }) => (
-                      <CertBadge key={certificado.id} cert={certificado} />
+                    {product.certificados.map(({ certificado: certificate }) => (
+                      <CertBadge key={certificate.id} cert={certificate} />
                     ))}
                   </div>
                   <div className="mt-6 p-5 rounded-2xl border border-dashed border-[var(--color-primary)] bg-[var(--color-primary-light)]">

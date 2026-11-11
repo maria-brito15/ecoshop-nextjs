@@ -27,12 +27,12 @@
 import { useFetch } from "./useFetch";
 import { useMutation } from "./useMutation";
 import type {
-  ListaCategoriasResponse,
-  BuscarCategoriaResponse,
-  CriarCategoriaBody,
-  CriarCategoriaResponse,
-  AtualizarCategoriaBody,
-  AtualizarCategoriaResponse,
+  ListCategoriesResponse,
+  GetCategoryResponse,
+  CreateCategoryBody,
+  CreateCategoryResponse,
+  UpdateCategoryBody,
+  UpdateCategoryResponse,
   OkResponse,
 } from "@/types/api";
 
@@ -46,8 +46,8 @@ import type {
  * const { data } = useListarCategorias();
  * const categorias = data?.categorias ?? [];
  */
-export function useListarCategorias() {
-  return useFetch<ListaCategoriasResponse>("/api/categorias");
+export function useListCategories() {
+  return useFetch<ListCategoriesResponse>("/api/categorias");
 }
 
 /**
@@ -56,8 +56,8 @@ export function useListarCategorias() {
  * @param id - ID da categoria (se null, hook não executa)
  * @returns Hook com dados da categoria
  */
-export function useBuscarCategoria(id: number | null) {
-  return useFetch<BuscarCategoriaResponse>(id ? `/api/categorias/${id}` : null);
+export function useGetCategory(id: number | null) {
+  return useFetch<GetCategoryResponse>(id ? `/api/categorias/${id}` : null);
 }
 
 /**
@@ -73,10 +73,10 @@ export function useBuscarCategoria(id: number | null) {
  *   descricao: "Produtos eletrônicos com baixo consumo energético"
  * });
  */
-export function useCriarCategoria() {
-  return useMutation<CriarCategoriaResponse, CriarCategoriaBody>({
+export function useCreateCategory() {
+  return useMutation<CreateCategoryResponse, CreateCategoryBody>({
     method: "POST",
-    invalidar: ["/api/categorias"],
+    invalidate: ["/api/categorias"],
   });
 }
 
@@ -86,10 +86,10 @@ export function useCriarCategoria() {
  *
  * @returns Mutation hook para atualização de categoria
  */
-export function useAtualizarCategoria() {
-  return useMutation<AtualizarCategoriaResponse, AtualizarCategoriaBody>({
+export function useUpdateCategory() {
+  return useMutation<UpdateCategoryResponse, UpdateCategoryBody>({
     method: "PUT",
-    invalidar: ["/api/categorias"],
+    invalidate: ["/api/categorias"],
   });
 }
 
@@ -102,9 +102,9 @@ export function useAtualizarCategoria() {
  *
  * @returns Mutation hook para deleção de categoria
  */
-export function useDeletarCategoria() {
+export function useDeleteCategory() {
   return useMutation<OkResponse>({
     method: "DELETE",
-    invalidar: ["/api/categorias"],
+    invalidate: ["/api/categorias"],
   });
 }

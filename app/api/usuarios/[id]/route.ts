@@ -23,13 +23,13 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { ERROS, mapeiaErro } from "@/lib/http/responses";
-import { idDaRota } from "@/lib/http/params";
-import { atualizarUsuarioSchema } from "@/lib/schemas/usuario";
+import { ERRORS, mapError } from "@/lib/http/responses";
+import { routeId } from "@/lib/http/params";
+import { updateUserSchema } from "@/lib/schemas/usuario";
 import {
-  buscarUsuario,
-  atualizarUsuario,
-  deletarUsuario,
+  getUser,
+  updateUser,
+  deleteUser,
 } from "@/services/usuario.service";
 
 /**
@@ -51,19 +51,19 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await getSession(req);
-  const id = await idDaRota(params);
+  const id = await routeId(params);
 
   if (!session || (session.id !== id && session.tipo !== "ADMIN")) {
-    return ERROS.acessoNegado();
+    return ERRORS.forbidden();
   }
-  if (id === null) return ERROS.dadosInvalidos("ID inválido");
+  if (id === null) return ERRORS.invalidData("ID inválido");
 
   try {
-    const usuario = await buscarUsuario(id);
-    if (!usuario) return ERROS.naoEncontrado("Usuário");
-    return NextResponse.json({ usuario });
+    const user = await getUser(id);
+    if (!user) return ERRORS.notFound("Usuário");
+    return NextResponse.json({ usuario: user });
   } catch (err) {
-    return ERROS.interno("buscar usuário", err);
+    return ERRORS.internal("buscar usuário", err);
   }
 }
 
@@ -90,22 +90,22 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await getSession(req);
-  const id = await idDaRota(params);
+  const id = await routeId(params);
 
   if (!session || (session.id !== id && session.tipo !== "ADMIN")) {
-    return ERROS.acessoNegado();
+    return ERRORS.forbidden();
   }
-  if (id === null) return ERROS.dadosInvalidos("ID inválido");
+  if (id === null) return ERRORS.invalidData("ID inválido");
 
   try {
     const body = await req.json();
-    const parsed = atualizarUsuarioSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    const parsed = updateUserSchema.safeParse(body);
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const usuario = await atualizarUsuario(id, parsed.data, session.id);
-    return NextResponse.json({ usuario });
+    const user = await updateUser(id, parsed.data, session.id);
+    return NextResponse.json({ usuario: user });
   } catch (err) {
-    return mapeiaErro(err, "Usuário") ?? ERROS.interno("atualizar usuário", err);
+    return mapError(err, "Usuário") ?? ERRORS.internal("atualizar usuário", err);
   }
 }
 
@@ -128,14 +128,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await getSession(req);
-  if (!session || session.tipo !== "ADMIN") return ERROS.acessoNegado();
+  if (!session || session.tipo !== "ADMIN") return ERRORS.forbidden();
 
   try {
-    const id = await idDaRota(params);
-    if (id === null) return ERROS.dadosInvalidos("ID inválido");
-    await deletarUsuario(id, session.id);
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("ID inválido");
+    await deleteUser(id, session.id);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return mapeiaErro(err, "Usuário") ?? ERROS.interno("deletar usuário", err);
+    return mapError(err, "Usuário") ?? ERRORS.internal("deletar usuário", err);
   }
 }

@@ -21,13 +21,13 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS, mapeiaErro } from "@/lib/http/responses";
-import { idDaRota } from "@/lib/http/params";
-import { atualizarCategoriaSchema } from "@/lib/schemas/categoria";
+import { ERRORS, mapError } from "@/lib/http/responses";
+import { routeId } from "@/lib/http/params";
+import { updateCategorySchema } from "@/lib/schemas/categoria";
 import {
-  buscarCategoria,
-  atualizarCategoria,
-  deletarCategoria,
+  getCategory,
+  updateCategory,
+  deleteCategory,
 } from "@/services/categoria.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
@@ -45,13 +45,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const id = await idDaRota(params);
-    if (id === null) return ERROS.dadosInvalidos("ID inválido");
-    const categoria = await buscarCategoria(id);
-    if (!categoria) return ERROS.naoEncontrado("Categoria");
-    return NextResponse.json({ categoria });
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("ID inválido");
+    const category = await getCategory(id);
+    if (!category) return ERRORS.notFound("Categoria");
+    return NextResponse.json({ categoria: category });
   } catch (err) {
-    return ERROS.interno("buscar categoria", err);
+    return ERRORS.internal("buscar categoria", err);
   }
 }
 
@@ -74,22 +74,22 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
-    const id = await idDaRota(params);
-    if (id === null) return ERROS.dadosInvalidos("ID inválido");
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("ID inválido");
     const body = await req.json();
-    const parsed = atualizarCategoriaSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    const parsed = updateCategorySchema.safeParse(body);
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const categoria = await atualizarCategoria(id, parsed.data);
-    return NextResponse.json({ categoria });
+    const category = await updateCategory(id, parsed.data);
+    return NextResponse.json({ categoria: category });
   } catch (err) {
     return (
-      mapeiaErro(err, "Categoria") ??
-      ERROS.interno("atualizar categoria", err)
+      mapError(err, "Categoria") ??
+      ERRORS.internal("atualizar categoria", err)
     );
   }
 }
@@ -114,17 +114,17 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
-    const id = await idDaRota(params);
-    if (id === null) return ERROS.dadosInvalidos("ID inválido");
-    await deletarCategoria(id);
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("ID inválido");
+    await deleteCategory(id);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return (
-      mapeiaErro(err, "Categoria") ?? ERROS.interno("deletar categoria", err)
+      mapError(err, "Categoria") ?? ERRORS.internal("deletar categoria", err)
     );
   }
 }

@@ -24,51 +24,51 @@ const emVoo = new Map<string, Promise<unknown>>();
 /**
  * Cache-aside: devolve do cache; no miss executa `fetcher`, grava e devolve.
  *
- * @param chave - Chave do cache
+ * @param key - Chave do cache
  * @param ttl - Validade em segundos
  * @param fetcher - Busca a fonte de verdade (banco)
  */
-export async function comCache<T>(
-  chave: string,
+export async function withCache<T>(
+  key: string,
   ttl: number,
   fetcher: () => Promise<T>,
 ): Promise<T> {
-  const cached = await provider.get<T>(chave);
+  const cached = await provider.get<T>(key);
   if (cached !== null) return cached;
 
-  const pendente = emVoo.get(chave) as Promise<T> | undefined;
+  const pendente = emVoo.get(key) as Promise<T> | undefined;
   if (pendente) return pendente;
 
   const busca = (async () => {
     const fresh = await fetcher();
-    await provider.set(chave, fresh, ttl);
+    await provider.set(key, fresh, ttl);
     return fresh;
-  })().finally(() => emVoo.delete(chave));
+  })().finally(() => emVoo.delete(key));
 
-  emVoo.set(chave, busca);
+  emVoo.set(key, busca);
   return busca;
 }
 
 /**
  * Invalida todas as chaves de um recurso (ex.: "PRODUTOS" → `produtos:*`).
  */
-export async function invalidarCache(
+export async function invalidateCache(
   recurso: keyof typeof PREFIX,
 ): Promise<void> {
   await provider.delPattern(`${PREFIX[recurso]}*`);
 }
 
 /** Invalida vários recursos em paralelo. */
-export async function invalidarCaches(
+export async function invalidateCaches(
   recursos: (keyof typeof PREFIX)[],
 ): Promise<void> {
-  await Promise.all(recursos.map(invalidarCache));
+  await Promise.all(recursos.map(invalidateCache));
 }
 
 /** Invalida uma chave específica. */
-export const invalidarChave = (chave: string) => provider.del(chave);
+export const invalidateKey = (key: string) => provider.del(key);
 
-export const redisDel = (chave: string) => provider.del(chave);
+export const redisDel = (key: string) => provider.del(key);
 
 export * from "./ttl";
 export * from "./keys";

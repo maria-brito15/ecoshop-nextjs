@@ -9,17 +9,17 @@
  */
 
 /** Cookie com o JWT de acesso. */
-export const COOKIE_ACESSO = "token";
+export const ACCESS_COOKIE = "token";
 
 /** Cookie com o token de renovação (valor opaco; a prova de validade está no Redis). */
-export const COOKIE_RENOVACAO = "refresh";
+export const REFRESH_COOKIE = "refresh";
 
 /**
  * Duração do token de acesso. Curta de propósito: é o intervalo máximo em que um
  * acesso revogado continua valendo, já que o JWT é verificado sem consultar o
  * Redis. Valor inicial escolhido pela spec 010, sem medição de uso ❔.
  */
-export const TEMPO_DO_ACESSO_SEGUNDOS = 15 * 60;
+export const ACCESS_TOKEN_SECONDS = 15 * 60;
 
 /** Duração máxima de uma sessão sem novo login (mantém os 7 dias do ADR-0007). */
-export const TEMPO_DA_RENOVACAO_SEGUNDOS = 7 * 24 * 60 * 60;
+export const REFRESH_TOKEN_SECONDS = 7 * 24 * 60 * 60;

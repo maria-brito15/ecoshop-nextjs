@@ -27,7 +27,7 @@
  * ============================================================================
  */
 
-import { fetchComTimeout } from "@/lib/http/fetch-com-timeout";
+import { fetchWithTimeout } from "@/lib/http/fetch-com-timeout";
 
 export const GEMINI_MODEL = "gemini-2.0-flash";
 
@@ -37,7 +37,7 @@ const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GE
 const TIMEOUT_GEMINI_MS = 20_000;
 
 /** Valor de exemplo que já apareceu em `.env` de desenvolvimento: não é uma chave. */
-const CHAVE_DE_EXEMPLO = "sua_chave";
+const PLACEHOLDER_KEY = "sua_chave";
 
 /**
  * Recupera a chave da API Gemini do ambiente.
@@ -50,9 +50,9 @@ function getGeminiKey(): string {
 /**
  * Indica se há uma chave configurada (ausente ou valor de exemplo = não configurada).
  */
-export function geminiConfigurado(): boolean {
+export function isGeminiConfigured(): boolean {
   const key = getGeminiKey();
-  return key !== "" && key !== CHAVE_DE_EXEMPLO;
+  return key !== "" && key !== PLACEHOLDER_KEY;
 }
 
 /**
@@ -82,7 +82,7 @@ async function gerar(
   if (!key) return null;
 
   try {
-    const res = await fetchComTimeout(
+    const res = await fetchWithTimeout(
       GEMINI_URL,
       {
         method: "POST",
@@ -128,7 +128,7 @@ async function gerar(
  *   maxOutputTokens: 500
  * });
  */
-export async function gerarTexto(
+export async function generateText(
   prompt: string,
   config?: GeminiConfig,
   timeoutMs: number = TIMEOUT_GEMINI_MS,
@@ -142,7 +142,7 @@ export async function gerarTexto(
  * @param contents - Turnos da conversa (`{ role, parts: [{ text }] }`)
  * @returns Texto gerado ou null se falha
  */
-export async function gerarComHistorico(
+export async function generateWithHistory(
   contents: unknown[],
   config?: GeminiConfig,
   timeoutMs: number = TIMEOUT_GEMINI_MS,

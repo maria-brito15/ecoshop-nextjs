@@ -29,12 +29,12 @@
 import { useFetch } from "./useFetch";
 import { useMutation } from "./useMutation";
 import type {
-  ListaCertificadosResponse,
-  BuscarCertificadoResponse,
-  CriarCertificadoBody,
-  CriarCertificadoResponse,
-  AtualizarCertificadoBody,
-  AtualizarCertificadoResponse,
+  ListCertificatesResponse,
+  GetCertificateResponse,
+  CreateCertificateBody,
+  CreateCertificateResponse,
+  UpdateCertificateBody,
+  UpdateCertificateResponse,
   OkResponse,
 } from "@/types/api";
 
@@ -44,8 +44,8 @@ import type {
  *
  * @returns Hook com array de certificados, loading e erro
  */
-export function useListarCertificados() {
-  return useFetch<ListaCertificadosResponse>("/api/certificados");
+export function useListCertificates() {
+  return useFetch<ListCertificatesResponse>("/api/certificados");
 }
 
 /**
@@ -54,8 +54,8 @@ export function useListarCertificados() {
  * @param id - ID do certificado (se null, hook não executa)
  * @returns Hook com dados do certificado
  */
-export function useBuscarCertificado(id: number | null) {
-  return useFetch<BuscarCertificadoResponse>(
+export function useGetCertificate(id: number | null) {
+  return useFetch<GetCertificateResponse>(
     id ? `/api/certificados/${id}` : null,
   );
 }
@@ -74,10 +74,10 @@ export function useBuscarCertificado(id: number | null) {
  *   descricao: "Certifica que o produto é 100% reciclável"
  * });
  */
-export function useCriarCertificado() {
-  return useMutation<CriarCertificadoResponse, CriarCertificadoBody>({
+export function useCreateCertificate() {
+  return useMutation<CreateCertificateResponse, CreateCertificateBody>({
     method: "POST",
-    invalidar: ["/api/certificados"],
+    invalidate: ["/api/certificados"],
   });
 }
 
@@ -87,10 +87,10 @@ export function useCriarCertificado() {
  *
  * @returns Mutation hook para atualização de certificado
  */
-export function useAtualizarCertificado() {
-  return useMutation<AtualizarCertificadoResponse, AtualizarCertificadoBody>({
+export function useUpdateCertificate() {
+  return useMutation<UpdateCertificateResponse, UpdateCertificateBody>({
     method: "PUT",
-    invalidar: ["/api/certificados"],
+    invalidate: ["/api/certificados"],
   });
 }
 
@@ -103,9 +103,9 @@ export function useAtualizarCertificado() {
  *
  * @returns Mutation hook para deleção de certificado
  */
-export function useDeletarCertificado() {
+export function useDeleteCertificate() {
   return useMutation<OkResponse>({
     method: "DELETE",
-    invalidar: ["/api/certificados"],
+    invalidate: ["/api/certificados"],
   });
 }

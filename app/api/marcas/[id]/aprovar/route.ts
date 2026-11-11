@@ -14,9 +14,9 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS, mapeiaErro } from "@/lib/http/responses";
-import { idDaRota } from "@/lib/http/params";
-import { aprovarMarca } from "@/services/marca.service";
+import { ERRORS, mapError } from "@/lib/http/responses";
+import { routeId } from "@/lib/http/params";
+import { approveBrand } from "@/services/marca.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
@@ -38,15 +38,15 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
-    const id = await idDaRota(params);
-    if (id === null) return ERROS.dadosInvalidos("ID inválido");
-    const marca = await aprovarMarca(id);
-    return NextResponse.json({ marca });
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("ID inválido");
+    const brand = await approveBrand(id);
+    return NextResponse.json({ marca: brand });
   } catch (err) {
-    return mapeiaErro(err, "Marca") ?? ERROS.interno("aprovar marca", err);
+    return mapError(err, "Marca") ?? ERRORS.internal("aprovar marca", err);
   }
 }

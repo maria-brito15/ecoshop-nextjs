@@ -29,8 +29,8 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
-import { useListarProdutos } from "@/lib/hooks/useProdutos";
-import { useListarCategorias } from "@/lib/hooks/useCategorias";
+import { useListProducts } from "@/lib/hooks/useProdutos";
+import { useListCategories } from "@/lib/hooks/useCategorias";
 import type { Produto, Categoria } from "@/types/api";
 
 // ----------------------------------------------------------------------------
@@ -41,11 +41,11 @@ import type { Produto, Categoria } from "@/types/api";
  * Retorna um ícone representativo baseado no nome da categoria.
  * Usado para tornar a navegação mais visual.
  *
- * @param nome - Nome da categoria (ex: "Casa e Decoração")
+ * @param name - Nome da categoria (ex: "Casa e Decoração")
  * @returns Emoji correspondente à categoria
  */
-function categoryIcon(nome: string) {
-  const n = nome.toLowerCase();
+function categoryIcon(name: string) {
+  const n = name.toLowerCase();
   if (n.includes("casa") || n.includes("home")) return "🏠";
   if (n.includes("beleza") || n.includes("corpo")) return "🌿";
   if (n.includes("moda") || n.includes("roupa")) return "👕";
@@ -94,8 +94,8 @@ function useScrollReveal() {
  *
  * @param produto - Dados do produto a ser exibido
  */
-function ProductCard({ produto }: { produto: Produto }) {
-  const precoFormatado = Number(produto.preco).toLocaleString("pt-BR", {
+function ProductCard({ produto: product }: { produto: Produto }) {
+  const formattedPrice = Number(product.preco).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
@@ -103,31 +103,31 @@ function ProductCard({ produto }: { produto: Produto }) {
   return (
     <article className="product-card animate-on-scroll cursor-pointer visible">
       <div className="h-48 flex items-center justify-center bg-[var(--color-bg-body)] relative overflow-hidden">
-        {produto.fotoUrl ? (
+        {product.fotoUrl ? (
           <img
-            src={produto.fotoUrl}
-            alt={produto.nome}
+            src={product.fotoUrl}
+            alt={product.nome}
             className="card-img w-full h-full object-cover"
           />
         ) : (
           <span className="card-img text-6xl select-none">🌱</span>
         )}
         <span className="absolute top-3 left-3 text-xs font-bold px-3 py-1 rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary-dark)]">
-          {produto.categoria?.nome}
+          {product.categoria?.nome}
         </span>
       </div>
       <div className="p-5 flex flex-col gap-2 flex-1">
         <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-tertiary)]">
-          {produto.marca?.nome}
+          {product.marca?.nome}
         </span>
         <h3 className="font-bold text-[var(--color-text-primary)] leading-snug line-clamp-2">
-          {produto.nome}
+          {product.nome}
         </h3>
         <Link
-          href={`/produtos/${produto.id}`}
+          href={`/produtos/${product.id}`}
           className="mt-auto pt-3 text-lg font-extrabold text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"
         >
-          {precoFormatado}
+          {formattedPrice}
         </Link>
       </div>
     </article>
@@ -140,10 +140,10 @@ function ProductCard({ produto }: { produto: Produto }) {
  *
  * @param categoria - Dados da categoria
  */
-function CategoryCard({ categoria }: { categoria: Categoria }) {
+function CategoryCard({ categoria: category }: { categoria: Categoria }) {
   return (
     <Link
-      href={`/produtos?categoriaId=${categoria.id}`}
+      href={`/produtos?categoriaId=${category.id}`}
       className="
         animate-on-scroll group w-full visible
         flex flex-col items-center gap-3
@@ -165,10 +165,10 @@ function CategoryCard({ categoria }: { categoria: Categoria }) {
           transition-colors
         "
       >
-        {categoryIcon(categoria.nome)}
+        {categoryIcon(category.nome)}
       </span>
       <span className="font-bold text-[var(--color-text-primary)]">
-        {categoria.nome}
+        {category.nome}
       </span>
     </Link>
   );
@@ -182,16 +182,16 @@ export default function HomePage() {
   // Busca os 4 primeiros produtos para exibir como destaques
   const {
     data: produtosData,
-    carregando: loadingProdutos,
-    erro: erroProdutos,
-  } = useListarProdutos(1, 4);
+    loading: loadingProdutos,
+    error: erroProdutos,
+  } = useListProducts(1, 4);
 
   // Busca todas as categorias para exibir na grade
-  const { data: categoriasData, carregando: loadingCategorias } =
-    useListarCategorias();
+  const { data: categoriasData, loading: loadingCategorias } =
+    useListCategories();
 
-  const produtos = produtosData?.produtos ?? [];
-  const categorias = categoriasData?.categorias ?? [];
+  const products = produtosData?.produtos ?? [];
+  const categories = categoriasData?.categorias ?? [];
   const loading = loadingProdutos || loadingCategorias;
 
   useScrollReveal();
@@ -311,10 +311,10 @@ export default function HomePage() {
                 Tentar novamente
               </button>
             </div>
-          ) : produtos.length > 0 ? (
+          ) : products.length > 0 ? (
             /* Grid de produtos */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {produtos.map((p) => (
+              {products.map((p) => (
                 <ProductCard key={p.id} produto={p} />
               ))}
             </div>
@@ -336,7 +336,7 @@ export default function HomePage() {
         SEÇÃO 3: CATEGORIAS
         Grade com as principais categorias do catálogo
       -------------------------------------------------------------------- */}
-      {categorias.length > 0 && (
+      {categories.length > 0 && (
         <section className="py-20 bg-[var(--color-bg-body)]">
           <div className="container-eco">
             <div className="text-center max-w-xl mx-auto mb-12">
@@ -348,7 +348,7 @@ export default function HomePage() {
               </h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5 justify-items-center mx-auto max-w-5xl">
-              {categorias.slice(0, 6).map((cat) => (
+              {categories.slice(0, 6).map((cat) => (
                 <CategoryCard key={cat.id} categoria={cat} />
               ))}
             </div>

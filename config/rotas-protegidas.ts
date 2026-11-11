@@ -40,7 +40,7 @@ export type NivelAcesso = "admin" | "autenticado";
 /**
  * Regra de proteção para uma rota ou grupo de rotas.
  */
-export interface RegraRota {
+export interface RouteRule {
   /**
    * Prefixo da rota que será protegida.
    * O middleware verifica se a URL atual começa com este prefixo.
@@ -49,21 +49,21 @@ export interface RegraRota {
    * prefixo: "/perfil" → protege /perfil, /perfil/editar, /perfil/configuracoes
    * prefixo: "/api/admin" → protege /api/admin, /api/admin/usuarios, etc.
    */
-  prefixo: string;
+  prefix: string;
 
   /**
    * Nível de acesso mínimo necessário.
    * - "admin": apenas ADMIN pode acessar
    * - "autenticado": qualquer usuário logado pode acessar
    */
-  nivel: NivelAcesso;
+  level: NivelAcesso;
 
   /**
    * Tipo de resposta quando o acesso é negado.
    * - "api": retorna JSON com status 401/403 (para endpoints de API)
    * - "pagina": redireciona para página de login (para rotas de página)
    */
-  tipoResposta: "api" | "pagina";
+  responseType: "api" | "pagina";
 }
 
 /**
@@ -85,30 +85,30 @@ export interface RegraRota {
  *    Ver ADR-0017 e specs/001-perfil-proprio-usuario)
  * 5. /api/admin → admin (endpoints administrativos)
  */
-export const REGRAS_ROTAS: RegraRota[] = [
+export const ROUTE_RULES: RouteRule[] = [
   {
-    prefixo: "/perfil",
-    nivel: "autenticado",
-    tipoResposta: "pagina",
+    prefix: "/perfil",
+    level: "autenticado",
+    responseType: "pagina",
   },
   {
-    prefixo: "/ia-scan",
-    nivel: "autenticado",
-    tipoResposta: "pagina",
+    prefix: "/ia-scan",
+    level: "autenticado",
+    responseType: "pagina",
   },
   {
-    prefixo: "/painel",
-    nivel: "admin",
-    tipoResposta: "pagina",
+    prefix: "/painel",
+    level: "admin",
+    responseType: "pagina",
   },
   {
-    prefixo: "/api/usuarios",
-    nivel: "autenticado", // o handler aplica "ADMIN ou o próprio" (ADR-0017)
-    tipoResposta: "api",
+    prefix: "/api/usuarios",
+    level: "autenticado", // o handler aplica "ADMIN ou o próprio" (ADR-0017)
+    responseType: "api",
   },
   {
-    prefixo: "/api/admin",
-    nivel: "admin",
-    tipoResposta: "api",
+    prefix: "/api/admin",
+    level: "admin",
+    responseType: "api",
   },
 ];

@@ -16,15 +16,15 @@
  * (ver `instrumentation.ts`).
  */
 
-import { validarJwtSecret } from "./jwt-secret";
+import { validateJwtSecret } from "./jwt-secret";
 
 const URL_POSTGRES = /^postgres(ql)?:\/\/\S+$/i;
 
 /** @returns a lista de problemas (vazia se o ambiente de produção está válido). Nunca inclui valores. */
-export function problemasDoAmbienteDeProducao(env: NodeJS.ProcessEnv): string[] {
+export function productionEnvironmentProblems(env: NodeJS.ProcessEnv): string[] {
   const problemas: string[] = [];
 
-  const jwt = validarJwtSecret(env.JWT_SECRET);
+  const jwt = validateJwtSecret(env.JWT_SECRET);
   if (jwt) problemas.push(jwt);
 
   if (!env.DATABASE_URL || !URL_POSTGRES.test(env.DATABASE_URL)) {
@@ -36,13 +36,13 @@ export function problemasDoAmbienteDeProducao(env: NodeJS.ProcessEnv): string[] 
   return problemas;
 }
 
-export function exigirAmbienteDeProducao(
+export function requireProductionEnvironment(
   env: NodeJS.ProcessEnv = process.env,
 ): void {
   if (env.NODE_ENV !== "production") return;
   if (env.NEXT_PHASE === "phase-production-build") return;
 
-  const problemas = problemasDoAmbienteDeProducao(env);
+  const problemas = productionEnvironmentProblems(env);
   if (problemas.length === 0) return;
 
   for (const problema of problemas) console.error(`❌ [config] ${problema}`);

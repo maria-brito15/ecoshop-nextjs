@@ -19,9 +19,9 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { consultarSaude } from "@/services/saude.service";
+import { checkHealth } from "@/services/saude.service";
 
 export async function GET() {
-  const { relatorio, httpStatus } = await consultarSaude();
+  const { relatorio, httpStatus } = await checkHealth();
   return NextResponse.json(relatorio, { status: httpStatus });
 }

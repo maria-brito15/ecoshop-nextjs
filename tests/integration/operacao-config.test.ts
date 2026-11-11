@@ -5,17 +5,17 @@
  * exige Docker ou um servidor (subir de fato, reverter de fato) roda no CI ou é
  * registrado como verificação manual em `docs/capabilities/operacao/status.md`.
  */
-import { encerrar } from "./helpers";
+import { closeConnections } from "./helpers";
 import test, { after } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import nextConfig from "@/next.config";
 
-after(encerrar);
+after(closeConnections);
 
 /** Texto do arquivo sem as linhas de comentário (um comentário pode citar `:-` ou portas de propósito). */
-function semComentarios(arquivo: string): string {
-  return readFileSync(arquivo, "utf8")
+function semComentarios(file: string): string {
+  return readFileSync(file, "utf8")
     .split("\n")
     .filter((linha) => !linha.trim().startsWith("#"))
     .join("\n");
@@ -33,15 +33,15 @@ const DEPLOY = semComentarios("scripts/deploy/deploy.sh");
 
 test("REQ-OPS-07: nenhum compose tem valor padrão (`:-`) para segredo nem senha fixa", () => {
   const segredoComPadrao = /\$\{[A-Z_]*(SECRET|PASSWORD|KEY)[A-Z_]*:-/;
-  for (const [nome, texto] of [
+  for (const [name, text] of [
     ["docker-compose.yml", COMPOSE_BASE],
     ["docker-compose.override.yml", COMPOSE_DEV],
     ["docker-compose.prod.yml", COMPOSE_PROD],
   ]) {
-    assert.doesNotMatch(texto, segredoComPadrao, `${nome} tem segredo com valor padrão`);
-    assert.doesNotMatch(texto, /supersecretkey/i, nome);
-    assert.doesNotMatch(texto, /POSTGRES_PASSWORD:\s*ecoshop/, nome);
-    assert.doesNotMatch(texto, /ecoshop:ecoshop@/, nome);
+    assert.doesNotMatch(text, segredoComPadrao, `${name} tem segredo com valor padrão`);
+    assert.doesNotMatch(text, /supersecretkey/i, name);
+    assert.doesNotMatch(text, /POSTGRES_PASSWORD:\s*ecoshop/, name);
+    assert.doesNotMatch(text, /ecoshop:ecoshop@/, name);
   }
 });
 
@@ -56,8 +56,8 @@ test("REQ-OPS-07: a falta de um segredo obrigatório impede a subida e nomeia a 
 });
 
 test("REQ-OPS-08: o compose base e o de publicação não publicam as portas do Postgres nem do Redis", () => {
-  for (const texto of [COMPOSE_BASE, COMPOSE_PROD]) {
-    assert.doesNotMatch(texto, /(5432|6379):(5432|6379)/);
+  for (const text of [COMPOSE_BASE, COMPOSE_PROD]) {
+    assert.doesNotMatch(text, /(5432|6379):(5432|6379)/);
   }
 });
 
@@ -132,7 +132,7 @@ async function comNodeEnv(valor: string, fn: () => Promise<void>) {
   }
 }
 
-async function cabecalhosDeTodasAsRotas(): Promise<Record<string, string>> {
+async function headersForAllRoutes(): Promise<Record<string, string>> {
   assert.ok(nextConfig.headers, "next.config.ts não define headers()");
   const regras = await nextConfig.headers();
   const regra = regras.find((r) => r.source === "/:path*");
@@ -141,7 +141,7 @@ async function cabecalhosDeTodasAsRotas(): Promise<Record<string, string>> {
 }
 
 test("REQ-OPS-12: toda rota recebe nosniff, X-Frame-Options, Referrer-Policy e Permissions-Policy", async () => {
-  const h = await cabecalhosDeTodasAsRotas();
+  const h = await headersForAllRoutes();
   assert.equal(h["X-Content-Type-Options"], "nosniff");
   assert.equal(h["X-Frame-Options"], "DENY");
   assert.equal(h["Referrer-Policy"], "strict-origin-when-cross-origin");
@@ -150,10 +150,10 @@ test("REQ-OPS-12: toda rota recebe nosniff, X-Frame-Options, Referrer-Policy e P
 
 test("REQ-OPS-12: Strict-Transport-Security só em produção, curto e sem includeSubDomains/preload", async () => {
   await comNodeEnv("development", async () => {
-    assert.equal((await cabecalhosDeTodasAsRotas())["Strict-Transport-Security"], undefined);
+    assert.equal((await headersForAllRoutes())["Strict-Transport-Security"], undefined);
   });
   await comNodeEnv("production", async () => {
-    assert.equal((await cabecalhosDeTodasAsRotas())["Strict-Transport-Security"], "max-age=300");
+    assert.equal((await headersForAllRoutes())["Strict-Transport-Security"], "max-age=300");
   });
 });
 
@@ -166,11 +166,11 @@ test("REQ-OPS-13: toda imagem base (Dockerfile e compose) é fixada por digest",
   assert.ok(froms.length >= 4, "esperava os 4 estágios do Dockerfile");
   for (const from of froms) assert.match(from, /@sha256:[0-9a-f]{64}/, from);
 
-  for (const texto of [COMPOSE_BASE, COMPOSE_PROD]) {
+  for (const text of [COMPOSE_BASE, COMPOSE_PROD]) {
     // A imagem da própria aplicação (variável) é identificada por tag de commit, não por digest.
-    const imagens = (texto.match(/^\s*image:\s*\S+/gm) ?? []).filter((l) => !l.includes("${"));
+    const imagens = (text.match(/^\s*image:\s*\S+/gm) ?? []).filter((l) => !l.includes("${"));
     assert.ok(imagens.length >= 2, "esperava postgres e redis");
-    for (const imagem of imagens) assert.match(imagem, /@sha256:[0-9a-f]{64}/, imagem);
+    for (const image of imagens) assert.match(image, /@sha256:[0-9a-f]{64}/, image);
   }
 });
 

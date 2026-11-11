@@ -17,7 +17,7 @@ async function main() {
   const set = await medir(() => redisSet("chave", { a: 1 }, 10));
   const del = await medir(() => redisDel("chave"));
   const padrao = await medir(() => redisDelPattern("chave:*"));
-  const config = { limite: 1, janelaSegundos: 60 };
+  const config = { limit: 1, windowSeconds: 60 };
   const limite1 = await medir(() => rateLimit("redis-fora", config));
   const limite2 = await medir(() => rateLimit("redis-fora", config));
 

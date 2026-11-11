@@ -31,11 +31,11 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS } from "@/lib/http/responses";
+import { ERRORS } from "@/lib/http/responses";
 import { chatSchema } from "@/lib/schemas/ia-chat";
 import {
-  gerarComHistorico,
-  geminiConfigurado,
+  generateWithHistory,
+  isGeminiConfigured,
 } from "@/lib/ai/providers/gemini-chat";
 import { requireAuth } from "@/app/_middleware/auth";
 import { getSession } from "@/lib/auth";
@@ -55,17 +55,17 @@ const SYSTEM_PROMPT = `Você é um assistente especialista em sustentabilidade e
  * @status 500 - Erro interno no servidor
  */
 // Limite por usuário: o chat consome a cota paga do Gemini (D3).
-const LIMITE_MENSAGENS = 20;
-const JANELA_SEGUNDOS = 60;
+const MESSAGE_LIMIT = 20;
+const WINDOW_SECONDS = 60;
 
 export async function POST(req: NextRequest) {
-  const authErro = await requireAuth(req);
-  if (authErro) return authErro;
+  const authError = await requireAuth(req);
+  if (authError) return authError;
 
   const session = await getSession(req);
-  const { bloqueado } = await rateLimit(`chat:${session!.id}`, {
-    limite: LIMITE_MENSAGENS,
-    janelaSegundos: JANELA_SEGUNDOS,
+  const { blocked: bloqueado } = await rateLimit(`chat:${session!.id}`, {
+    limit: MESSAGE_LIMIT,
+    windowSeconds: WINDOW_SECONDS,
   });
   if (bloqueado) {
     return NextResponse.json(
@@ -77,11 +77,11 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const parsed = chatSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const { mensagem, historico } = parsed.data;
+    const { mensagem: message, historico: history } = parsed.data;
 
-    if (!geminiConfigurado()) {
+    if (!isGeminiConfigured()) {
       return NextResponse.json(
         { erro: "Serviço de IA não configurado" },
         { status: 503 },
@@ -98,25 +98,25 @@ export async function POST(req: NextRequest) {
           },
         ],
       },
-      ...historico,
-      { role: "user", parts: [{ text: mensagem }] },
+      ...history,
+      { role: "user", parts: [{ text: message }] },
     ];
 
     // Nunca lança: falha, tempo esgotado ou resposta inválida viram `null` (502).
-    const resposta = await gerarComHistorico(contents, {
+    const response = await generateWithHistory(contents, {
       temperature: 0.8,
       maxOutputTokens: 1024,
     });
 
-    if (!resposta) {
+    if (!response) {
       return NextResponse.json(
         { erro: "Erro ao gerar resposta da IA" },
         { status: 502 },
       );
     }
 
-    return NextResponse.json({ resposta });
+    return NextResponse.json({ resposta: response });
   } catch (err) {
-    return ERROS.interno("processar chat", err);
+    return ERRORS.internal("processar chat", err);
   }
 }

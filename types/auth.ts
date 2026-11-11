@@ -41,7 +41,7 @@ export interface JwtPayload {
  * Contrato para emissão (assinatura) de tokens JWT.
  * Implementado por JwtService em lib/auth/jwt.ts
  */
-export interface TokenEmissor {
+export interface TokenIssuer {
   /**
    * Gera um novo token JWT assinado com a chave secreta.
    * @param payload - Dados a serem codificados no token (id, email, tipo)
@@ -55,7 +55,7 @@ export interface TokenEmissor {
  * Contrato para verificação de tokens JWT.
  * Implementado por JwtService em lib/auth/jwt.ts
  */
-export interface TokenVerificador {
+export interface TokenVerifier {
   /**
    * Verifica a validade e assinatura de um token JWT.
    * @param token - Token JWT a ser verificado
@@ -74,7 +74,7 @@ export interface TokenVerificador {
  * Contrato para leitura de sessão a partir da requisição Next.js.
  * Utilizado por middlewares e rotas de API que precisam do usuário autenticado.
  */
-export interface LeitorSessao {
+export interface SessionReader {
   /**
    * Extrai o token do cookie 'token' da requisição e o valida.
    * @param req - Objeto NextRequest do App Router contendo os cookies

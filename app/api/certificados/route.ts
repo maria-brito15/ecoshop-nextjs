@@ -18,11 +18,11 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS, mapeiaErro } from "@/lib/http/responses";
-import { certificadoSchema } from "@/lib/schemas/certificado";
+import { ERRORS, mapError } from "@/lib/http/responses";
+import { certificateSchema } from "@/lib/schemas/certificado";
 import {
-  listarCertificados,
-  criarCertificado,
+  listCertificates,
+  createCertificate,
 } from "@/services/certificado.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
@@ -35,10 +35,10 @@ import { requireAdmin } from "@/app/_middleware/auth";
  */
 export async function GET() {
   try {
-    const certificados = await listarCertificados();
-    return NextResponse.json({ certificados });
+    const certificates = await listCertificates();
+    return NextResponse.json({ certificados: certificates });
   } catch (err) {
-    return ERROS.interno("listar certificados", err);
+    return ERRORS.internal("listar certificados", err);
   }
 }
 
@@ -56,20 +56,20 @@ export async function GET() {
  * @status 500 - Erro ao criar certificado
  */
 export async function POST(req: NextRequest) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
     const body = await req.json();
-    const parsed = certificadoSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    const parsed = certificateSchema.safeParse(body);
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const certificado = await criarCertificado(parsed.data);
-    return NextResponse.json({ certificado }, { status: 201 });
+    const certificate = await createCertificate(parsed.data);
+    return NextResponse.json({ certificado: certificate }, { status: 201 });
   } catch (err) {
     return (
-      mapeiaErro(err, "Certificado") ??
-      ERROS.interno("criar certificado", err)
+      mapError(err, "Certificado") ??
+      ERRORS.internal("criar certificado", err)
     );
   }
 }

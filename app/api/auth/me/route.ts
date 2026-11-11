@@ -34,8 +34,8 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { ERROS } from "@/lib/http/responses";
-import { buscarPerfilDaSessao } from "@/services/usuario.service";
+import { ERRORS } from "@/lib/http/responses";
+import { getSessionProfile } from "@/services/usuario.service";
 
 /**
  * GET /api/auth/me - Obtém usuário atual
@@ -52,14 +52,14 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const usuario = await buscarPerfilDaSessao(session.id);
+    const user = await getSessionProfile(session.id);
 
-    if (!usuario) {
+    if (!user) {
       return NextResponse.json({ usuario: null }, { status: 401 });
     }
 
-    return NextResponse.json({ usuario });
+    return NextResponse.json({ usuario: user });
   } catch (err) {
-    return ERROS.interno("buscar o usuário da sessão", err);
+    return ERRORS.internal("buscar o usuário da sessão", err);
   }
 }

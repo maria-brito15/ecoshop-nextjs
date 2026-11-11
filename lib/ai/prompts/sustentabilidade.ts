@@ -32,7 +32,7 @@
  * const resposta = await gerarTexto(prompt);
  * const analise = parsearAnalise(resposta);
  */
-export function montarPromptSustentabilidade(material: string): string {
+export function buildSustainabilityPrompt(material: string): string {
   return `
 Você é um especialista renomado em sustentabilidade ambiental e ecologia, com profundo conhecimento sobre gestão de resíduos e economia circular. Analise detalhadamente o seguinte material de reciclagem: ${material}
 

@@ -26,11 +26,11 @@
 import { prisma } from "@/lib/db";
 import { RecursoNaoEncontrado } from "@/lib/errors/dominio";
 import {
-  comCache,
-  invalidarCache,
-  invalidarChave,
-  chaveCertificados,
-  chaveCertificado,
+  withCache,
+  invalidateCache,
+  invalidateKey,
+  certificatesKey,
+  certificateKey,
   TTL,
 } from "@/lib/cache";
 
@@ -43,8 +43,8 @@ import {
  *
  * @returns Array de certificados ordenados alfabeticamente por nome
  */
-export async function listarCertificados() {
-  return comCache(chaveCertificados(), TTL.LISTA_CURTA, () =>
+export async function listCertificates() {
+  return withCache(certificatesKey(), TTL.SHORT_LIST, () =>
     prisma.certificado.findMany({ orderBy: { nome: "asc" } }),
   );
 }
@@ -55,8 +55,8 @@ export async function listarCertificados() {
  * @param id - ID do certificado
  * @returns Certificado encontrado ou null
  */
-export async function buscarCertificado(id: number) {
-  return comCache(chaveCertificado(id), TTL.ITEM, () =>
+export async function getCertificate(id: number) {
+  return withCache(certificateKey(id), TTL.ITEM, () =>
     prisma.certificado.findUnique({ where: { id } }),
   );
 }
@@ -78,14 +78,14 @@ export async function buscarCertificado(id: number) {
  *   orgaoEmissor: "PETA"
  * });
  */
-export async function criarCertificado(data: {
+export async function createCertificate(data: {
   nome: string;
   descricao?: string;
   orgaoEmissor: string;
 }) {
-  const certificado = await prisma.certificado.create({ data });
-  await invalidarCache("CERTIFICADOS");
-  return certificado;
+  const certificate = await prisma.certificado.create({ data });
+  await invalidateCache("CERTIFICATES");
+  return certificate;
 }
 
 /**
@@ -97,16 +97,16 @@ export async function criarCertificado(data: {
  * @returns Certificado atualizado
  * @throws Error P2025 se certificado não existir
  */
-export async function atualizarCertificado(
+export async function updateCertificate(
   id: number,
   data: { nome?: string; descricao?: string; orgaoEmissor?: string },
 ) {
-  const certificado = await prisma.certificado.update({ where: { id }, data });
+  const certificate = await prisma.certificado.update({ where: { id }, data });
   await Promise.all([
-    invalidarChave(chaveCertificado(id)),
-    invalidarCache("CERTIFICADOS"),
+    invalidateKey(certificateKey(id)),
+    invalidateCache("CERTIFICATES"),
   ]);
-  return certificado;
+  return certificate;
 }
 
 /**
@@ -121,16 +121,16 @@ export async function atualizarCertificado(
  * @throws Error P2025 se certificado não existir
  * @throws Error P2003 se certificado possui produtos vinculados
  */
-export async function deletarCertificado(id: number) {
-  const certificado = await prisma.certificado.findUnique({ where: { id } });
-  if (!certificado) {
+export async function deleteCertificate(id: number) {
+  const certificate = await prisma.certificado.findUnique({ where: { id } });
+  if (!certificate) {
     throw new RecursoNaoEncontrado("Certificado");
   }
 
   await prisma.certificado.delete({ where: { id } });
   await Promise.all([
-    invalidarChave(chaveCertificado(id)),
-    invalidarCache("CERTIFICADOS"),
+    invalidateKey(certificateKey(id)),
+    invalidateCache("CERTIFICATES"),
   ]);
   return true;
 }

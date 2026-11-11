@@ -45,7 +45,7 @@ import { z } from "zod";
  *   marcaId: 2
  * };
  */
-export const produtoSchema = z.object({
+export const productSchema = z.object({
   nome: z.string().min(1, "Nome do produto é obrigatório"),
   descricao: z
     .string()
@@ -84,7 +84,7 @@ export const produtoSchema = z.object({
  * // Vincular dois certificados (substitui o vínculo anterior)
  * const dados = { certificadoIds: [1, 2] };
  */
-export const atualizarProdutoSchema = z.object({
+export const updateProductSchema = z.object({
   nome: z.string().min(1, "Nome não pode estar vazio").optional(),
   descricao: z.string().min(1, "Descrição não pode estar vazia").optional(),
   preco: z.number().positive("Preço deve ser maior que zero").optional(),
@@ -111,7 +111,7 @@ export const atualizarProdutoSchema = z.object({
  *
  * Usa `coerce` porque searchParams só entrega strings.
  */
-export const listarProdutosQuerySchema = z.object({
+export const listProductsQuerySchema = z.object({
   page: z.coerce
     .number({ message: "page deve ser um número" })
     .int("page deve ser um número inteiro")
@@ -154,6 +154,6 @@ export const listarProdutosQuerySchema = z.object({
 });
 
 // Tipos inferidos para uso nos services
-export type ListarProdutosQuery = z.infer<typeof listarProdutosQuerySchema>;
-export type ProdutoInput = z.infer<typeof produtoSchema>;
-export type AtualizarProdutoInput = z.infer<typeof atualizarProdutoSchema>;
+export type ListProductsQuery = z.infer<typeof listProductsQuerySchema>;
+export type ProductInput = z.infer<typeof productSchema>;
+export type UpdateProductInput = z.infer<typeof updateProductSchema>;

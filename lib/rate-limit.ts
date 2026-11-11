@@ -19,47 +19,47 @@
  * ============================================================================
  */
 
-import { redis, comPrazo, TIMEOUT_COMANDO_MS, avisarFalhaDoRedis } from "@/lib/redis";
+import { redis, withTimeout, TIMEOUT_COMANDO_MS, warnRedisFailure } from "@/lib/redis";
 
 export interface RateLimitConfig {
-  limite: number;
-  janelaSegundos: number;
+  limit: number;
+  windowSeconds: number;
 }
 
 /** Conta ocorrências de uma chave dentro de uma janela. */
-export interface ContadorDeJanela {
+export interface WindowCounter {
   /** Soma 1 à chave e devolve o total na janela atual. */
-  incrementar(chave: string, janelaSegundos: number): Promise<number>;
+  increment(key: string, janelaSegundos: number): Promise<number>;
 }
 
-class ContadorRedis implements ContadorDeJanela {
-  async incrementar(chave: string, janelaSegundos: number): Promise<number> {
-    const resposta = (await comPrazo(
+class RedisCounter implements WindowCounter {
+  async increment(key: string, janelaSegundos: number): Promise<number> {
+    const response = (await withTimeout(
       redis
         .multi()
-        .set(chave, 0, { EX: janelaSegundos, NX: true })
-        .incr(chave)
+        .set(key, 0, { EX: janelaSegundos, NX: true })
+        .incr(key)
         .exec(),
       TIMEOUT_COMANDO_MS,
     )) as unknown[];
-    const total = Number(resposta[1]);
+    const total = Number(response[1]);
     if (!Number.isFinite(total)) throw new Error("resposta inesperada do Redis");
     return total;
   }
 }
 
 /** Contador local do processo (reserva quando o Redis falha). */
-export class ContadorEmMemoria implements ContadorDeJanela {
+export class InMemoryCounter implements WindowCounter {
   private readonly entradas = new Map<string, { total: number; expiraEm: number }>();
 
   constructor(private readonly agora: () => number = Date.now) {}
 
-  async incrementar(chave: string, janelaSegundos: number): Promise<number> {
+  async increment(key: string, janelaSegundos: number): Promise<number> {
     const t = this.agora();
-    this.limparExpiradas(t);
-    const atual = this.entradas.get(chave);
+    this.purgeExpired(t);
+    const atual = this.entradas.get(key);
     if (!atual || atual.expiraEm <= t) {
-      this.entradas.set(chave, { total: 1, expiraEm: t + janelaSegundos * 1000 });
+      this.entradas.set(key, { total: 1, expiraEm: t + janelaSegundos * 1000 });
       return 1;
     }
     atual.total += 1;
@@ -67,40 +67,40 @@ export class ContadorEmMemoria implements ContadorDeJanela {
   }
 
   /** Só varre quando o mapa cresce, para não custar nada no caso comum. */
-  private limparExpiradas(t: number) {
+  private purgeExpired(t: number) {
     if (this.entradas.size < 1000) return;
-    for (const [chave, e] of this.entradas) if (e.expiraEm <= t) this.entradas.delete(chave);
+    for (const [key, e] of this.entradas) if (e.expiraEm <= t) this.entradas.delete(key);
   }
 }
 
-const contadorRedis = new ContadorRedis();
-const contadorLocal = new ContadorEmMemoria();
+const redisCounter = new RedisCounter();
+const localCounter = new InMemoryCounter();
 
 /**
  * Registra uma tentativa e informa se o identificador passou do limite.
  *
- * @param contador - Contador principal (padrão: Redis)
+ * @param counter - Contador principal (padrão: Redis)
  * @param reserva - Usado quando o principal falha (padrão: memória local)
  */
 export async function rateLimit(
   identificador: string,
   config: RateLimitConfig,
-  contador: ContadorDeJanela = contadorRedis,
-  reserva: ContadorDeJanela = contadorLocal,
-): Promise<{ bloqueado: boolean; tentativasRestantes: number }> {
-  const chave = `rate_limit:${identificador}`;
+  counter: WindowCounter = redisCounter,
+  reserva: WindowCounter = localCounter,
+): Promise<{ blocked: boolean; remainingAttempts: number }> {
+  const key = `rate_limit:${identificador}`;
 
-  let tentativas: number;
+  let attempts: number;
   try {
-    tentativas = await contador.incrementar(chave, config.janelaSegundos);
+    attempts = await counter.increment(key, config.windowSeconds);
   } catch (err) {
-    avisarFalhaDoRedis("rate_limit.redis_indisponivel_usando_memoria_local", err);
-    tentativas = await reserva.incrementar(chave, config.janelaSegundos);
+    warnRedisFailure("rate_limit.redis_indisponivel_usando_memoria_local", err);
+    attempts = await reserva.increment(key, config.windowSeconds);
   }
 
   return {
-    bloqueado: tentativas > config.limite,
-    tentativasRestantes: Math.max(0, config.limite - tentativas),
+    blocked: attempts > config.limit,
+    remainingAttempts: Math.max(0, config.limit - attempts),
   };
 }
 
@@ -108,7 +108,7 @@ export async function rateLimit(
  * Quantos proxies confiáveis existem à frente da aplicação (variável
  * `TRUST_PROXY_HOPS`; padrão 1: um proxy reverso, como no compose de publicação).
  */
-function saltosDeProxy(): number {
+function proxyHops(): number {
   const valor = Number(process.env.TRUST_PROXY_HOPS ?? 1);
   return Number.isInteger(valor) && valor >= 0 ? valor : 1;
 }
@@ -123,7 +123,7 @@ function saltosDeProxy(): number {
  */
 export function getClientIp(
   req: Request,
-  saltos: number = saltosDeProxy(),
+  saltos: number = proxyHops(),
 ): string {
   if (saltos === 0) return "unknown";
   const entradas = (req.headers.get("x-forwarded-for") ?? "")

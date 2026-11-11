@@ -28,12 +28,12 @@
 import { useFetch } from "./useFetch";
 import { useMutation } from "./useMutation";
 import type {
-  ListaProdutosResponse,
-  BuscarProdutoResponse,
-  CriarProdutoBody,
-  CriarProdutoResponse,
-  AtualizarProdutoBody,
-  AtualizarProdutoResponse,
+  ListProductsResponse,
+  GetProductResponse,
+  CreateProductBody,
+  CreateProductResponse,
+  UpdateProductBody,
+  UpdateProductResponse,
 } from "@/types/api";
 
 /** Ordenações aceitas por `useListarProdutos` (REQ-CAT-06). */
@@ -45,7 +45,7 @@ export type OrdemProdutos =
   | "nome_desc";
 
 /** Filtros adicionais de `useListarProdutos` (REQ-CAT-06/07), todos opcionais. */
-export interface FiltrosProdutos {
+export interface ListProductsFilters {
   marcaId?: number;
   precoMax?: number;
   sort?: OrdemProdutos;
@@ -59,9 +59,9 @@ export interface FiltrosProdutos {
  *
  * @param page - Número da página (1-indexado, padrão: 1)
  * @param size - Itens por página (padrão: 12)
- * @param categoriaId - Filtro opcional por categoria
- * @param nome - Busca textual por nome (case-insensitive)
- * @param filtros - Filtros adicionais: marca, preço máximo, ordenação
+ * @param categoryId - Filtro opcional por categoria
+ * @param name - Busca textual por nome (case-insensitive)
+ * @param filters - Filtros adicionais: marca, preço máximo, ordenação
  * @returns Hook com dados paginados, loading e erro
  *
  * @example
@@ -73,24 +73,24 @@ export interface FiltrosProdutos {
  * // data?.produtos = array de produtos
  * // data?.total = total de produtos que atendem aos filtros
  */
-export function useListarProdutos(
+export function useListProducts(
   page = 1,
   size = 12,
-  categoriaId?: number,
-  nome?: string,
-  filtros?: FiltrosProdutos,
+  categoryId?: number,
+  name?: string,
+  filters?: ListProductsFilters,
 ) {
   const params = new URLSearchParams({
     page: String(page),
     size: String(size),
   });
-  if (categoriaId) params.set("categoriaId", String(categoriaId));
-  if (nome) params.set("nome", nome);
-  if (filtros?.marcaId) params.set("marcaId", String(filtros.marcaId));
-  if (filtros?.precoMax) params.set("precoMax", String(filtros.precoMax));
-  if (filtros?.sort) params.set("sort", filtros.sort);
+  if (categoryId) params.set("categoriaId", String(categoryId));
+  if (name) params.set("nome", name);
+  if (filters?.marcaId) params.set("marcaId", String(filters.marcaId));
+  if (filters?.precoMax) params.set("precoMax", String(filters.precoMax));
+  if (filters?.sort) params.set("sort", filters.sort);
 
-  return useFetch<ListaProdutosResponse>(`/api/produtos?${params}`);
+  return useFetch<ListProductsResponse>(`/api/produtos?${params}`);
 }
 
 /**
@@ -103,8 +103,8 @@ export function useListarProdutos(
  * const { data } = useBuscarProduto(produtoId);
  * const produto = data?.produto;
  */
-export function useBuscarProduto(id: number | null) {
-  return useFetch<BuscarProdutoResponse>(id ? `/api/produtos/${id}` : null);
+export function useGetProduct(id: number | null) {
+  return useFetch<GetProductResponse>(id ? `/api/produtos/${id}` : null);
 }
 
 /**
@@ -122,10 +122,10 @@ export function useBuscarProduto(id: number | null) {
  *   marcaId: 2
  * });
  */
-export function useCriarProduto() {
-  return useMutation<CriarProdutoResponse, CriarProdutoBody>({
+export function useCreateProduct() {
+  return useMutation<CreateProductResponse, CreateProductBody>({
     method: "POST",
-    invalidar: ["/api/produtos"], // Invalida cache de listagens após criar
+    invalidate: ["/api/produtos"], // Invalida cache de listagens após criar
   });
 }
 
@@ -141,10 +141,10 @@ export function useCriarProduto() {
  *   preco: 79.90 // atualização parcial
  * });
  */
-export function useAtualizarProduto() {
-  return useMutation<AtualizarProdutoResponse, AtualizarProdutoBody>({
+export function useUpdateProduct() {
+  return useMutation<UpdateProductResponse, UpdateProductBody>({
     method: "PUT",
-    invalidar: ["/api/produtos"], // Invalida cache de listagens
+    invalidate: ["/api/produtos"], // Invalida cache de listagens
   });
 }
 
@@ -158,9 +158,9 @@ export function useAtualizarProduto() {
  * const deletar = useDeletarProduto();
  * await deletar.executar(`/api/produtos/${id}`);
  */
-export function useDeletarProduto() {
+export function useDeleteProduct() {
   return useMutation<{ ok: boolean }>({
     method: "DELETE",
-    invalidar: ["/api/produtos"],
+    invalidate: ["/api/produtos"],
   });
 }

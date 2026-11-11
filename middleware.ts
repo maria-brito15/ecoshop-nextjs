@@ -31,8 +31,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { COOKIE_ACESSO, COOKIE_RENOVACAO } from "@/lib/auth/constantes";
-import { REGRAS_ROTAS } from "./config/rotas-protegidas";
+import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/auth/constantes";
+import { ROUTE_RULES } from "./config/rotas-protegidas";
 
 /**
  * Middleware principal da aplicação.
@@ -59,11 +59,11 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Tenta extrair e validar o token JWT do cookie
-  const token = req.cookies.get(COOKIE_ACESSO)?.value;
+  const token = req.cookies.get(ACCESS_COOKIE)?.value;
   const payload = token ? await verifyToken(token) : null;
 
   // Verifica se a rota atual corresponde a alguma regra de proteção
-  const regra = REGRAS_ROTAS.find((r) => pathname.startsWith(r.prefixo));
+  const regra = ROUTE_RULES.find((r) => pathname.startsWith(r.prefix));
 
   // Rota pública: nenhuma regra se aplica → acesso liberado
   if (!regra) return NextResponse.next();
@@ -71,13 +71,13 @@ export async function middleware(req: NextRequest) {
   // CASO 1: Usuário NÃO está autenticado
   if (!payload) {
     // Para rotas de API: retorna JSON 401 (Unauthorized)
-    if (regra.tipoResposta === "api") {
+    if (regra.responseType === "api") {
       return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
     }
 
     // Acesso expirado (15 min) mas com token de renovação: renova e volta para
     // esta página (ADR-0021). Se a renovação falhar, o próprio endpoint leva ao login.
-    if (req.cookies.get(COOKIE_RENOVACAO)?.value) {
+    if (req.cookies.get(REFRESH_COOKIE)?.value) {
       return NextResponse.redirect(
         new URL(
           `/api/auth/refresh?next=${encodeURIComponent(pathname + req.nextUrl.search)}`,
@@ -95,9 +95,9 @@ export async function middleware(req: NextRequest) {
 
   // CASO 2: Usuário autenticado mas nível de acesso insuficiente
   // Regra com nivel "admin" e usuário não é ADMIN
-  if (regra.nivel === "admin" && payload.tipo !== "ADMIN") {
+  if (regra.level === "admin" && payload.tipo !== "ADMIN") {
     // Para rotas de API: retorna JSON 403 (Forbidden)
-    if (regra.tipoResposta === "api") {
+    if (regra.responseType === "api") {
       return NextResponse.json({ erro: "Acesso negado" }, { status: 403 });
     }
 

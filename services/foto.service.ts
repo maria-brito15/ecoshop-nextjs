@@ -28,17 +28,17 @@
 import fs from "fs/promises";
 import path from "path";
 import { prisma } from "@/lib/db";
-import { invalidarCache } from "@/lib/cache";
+import { invalidateCache } from "@/lib/cache";
 import {
-  detectarTipoDeImagem,
-  extensaoCombinaComTipo,
+  detectImageType,
+  extensionMatchesType,
 } from "@/lib/media/tipo-de-imagem";
 
 /**
  * Diretório onde as fotos são armazenadas.
  * Caminho absoluto para evitar ambiguidade.
  */
-const FOTOS_DIR = path.join(process.cwd(), "public/data_fotos");
+const PHOTOS_DIR = path.join(process.cwd(), "public/data_fotos");
 
 /**
  * Tamanho máximo do arquivo: 5MB.
@@ -50,7 +50,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
  * Extensões de arquivo permitidas (whitelist).
  * Todas são formatos comuns em câmeras de smartphones.
  */
-export const EXTENSOES_PERMITIDAS = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
+export const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
 
 /**
  * Valida se a extensão do arquivo está na whitelist.
@@ -58,9 +58,9 @@ export const EXTENSOES_PERMITIDAS = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
  * @param filename - Nome do arquivo (ex: "foto.jpg")
  * @returns true se extensão é permitida
  */
-function validarExtensao(filename: string): boolean {
+function hasAllowedExtension(filename: string): boolean {
   const ext = path.extname(filename).toLowerCase();
-  return EXTENSOES_PERMITIDAS.includes(ext);
+  return ALLOWED_EXTENSIONS.includes(ext);
 }
 
 /**
@@ -69,13 +69,13 @@ function validarExtensao(filename: string): boolean {
  * Formato: {produtoId}_{customizado ou timestamp_random}.{ext}
  * Exemplo: "123_meu_produto_foto.jpg" ou "123_1702900000_abc123.jpg"
  *
- * @param produtoId - ID do produto associado
+ * @param productId - ID do produto associado
  * @param nomeOriginal - Nome original do arquivo (para extrair extensão)
  * @param customizado - Nome personalizado opcional (sanitizado)
  * @returns Nome sanitizado e único
  */
-function sanitizarNome(
-  produtoId: number,
+function buildFileName(
+  productId: number,
   nomeOriginal: string,
   customizado?: string | null,
 ): string {
@@ -83,25 +83,25 @@ function sanitizarNome(
   const base = customizado
     ? customizado.replace(/[^a-zA-Z0-9]/g, "_")
     : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
-  return `${produtoId}_${base}${ext}`;
+  return `${productId}_${base}${ext}`;
 }
 
 /**
  * Lista todas as fotos de um produto.
  *
- * @param produtoId - ID do produto
+ * @param productId - ID do produto
  * @returns Objeto com array de fotos, total e produtoId
  */
-export async function listarFotos(produtoId: number) {
+export async function listPhotos(productId: number) {
   try {
-    const files = await fs.readdir(FOTOS_DIR);
-    const fotos = files
-      .filter((file) => file.startsWith(`${produtoId}_`))
-      .map((nome) => ({ nome, url: `/data_fotos/${nome}` }));
-    return { fotos, total: fotos.length, produtoId };
+    const files = await fs.readdir(PHOTOS_DIR);
+    const photos = files
+      .filter((file) => file.startsWith(`${productId}_`))
+      .map((name) => ({ nome: name, url: `/data_fotos/${name}` }));
+    return { fotos: photos, total: photos.length, produtoId: productId };
   } catch {
     // Diretório não existe ou erro de leitura
-    return { fotos: [], total: 0, produtoId };
+    return { fotos: [], total: 0, produtoId: productId };
   }
 }
 
@@ -113,8 +113,8 @@ export type MotivoDeFalhaNoUpload =
   | "NOME_JA_EXISTE";
 
 export type ResultadoDoUpload =
-  | { ok: true; foto: { nome: string; url: string } }
-  | { ok: false; motivo: MotivoDeFalhaNoUpload };
+  | { ok: true; photo: { nome: string; url: string } }
+  | { ok: false; reason: MotivoDeFalhaNoUpload };
 
 /**
  * Valida e grava a foto em `diretorio` (sem acesso ao banco; exportada para teste).
@@ -126,43 +126,43 @@ export type ResultadoDoUpload =
  * entre dois uploads simultâneos com o mesmo nome, em vez de checar a listagem do
  * diretório antes e sobrescrever depois (REQ-MIDIA-07).
  */
-export async function gravarFoto(params: {
+export async function savePhoto(params: {
   produtoId: number;
   arquivo: File;
   nomeCustomizado?: string | null;
-  diretorio: string;
+  directory: string;
 }): Promise<ResultadoDoUpload> {
-  const { produtoId, arquivo, nomeCustomizado, diretorio } = params;
+  const { produtoId: productId, arquivo: file, nomeCustomizado: customName, directory: diretorio } = params;
 
-  if (!validarExtensao(arquivo.name)) {
-    return { ok: false, motivo: "EXTENSAO_NAO_PERMITIDA" };
+  if (!hasAllowedExtension(file.name)) {
+    return { ok: false, reason: "EXTENSAO_NAO_PERMITIDA" };
   }
 
-  if (arquivo.size > MAX_FILE_SIZE) {
-    return { ok: false, motivo: "ARQUIVO_MUITO_GRANDE" };
+  if (file.size > MAX_FILE_SIZE) {
+    return { ok: false, reason: "ARQUIVO_MUITO_GRANDE" };
   }
 
-  const buffer = Buffer.from(await arquivo.arrayBuffer());
-  const tipo = detectarTipoDeImagem(buffer);
-  if (!tipo || !extensaoCombinaComTipo(path.extname(arquivo.name), tipo)) {
-    return { ok: false, motivo: "CONTEUDO_NAO_E_IMAGEM" };
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const type = detectImageType(buffer);
+  if (!type || !extensionMatchesType(path.extname(file.name), type)) {
+    return { ok: false, reason: "CONTEUDO_NAO_E_IMAGEM" };
   }
 
-  const nomeArquivo = sanitizarNome(produtoId, arquivo.name, nomeCustomizado);
+  const fileName = buildFileName(productId, file.name, customName);
 
   await fs.mkdir(diretorio, { recursive: true });
   try {
-    await fs.writeFile(path.join(diretorio, nomeArquivo), buffer, { flag: "wx" });
+    await fs.writeFile(path.join(diretorio, fileName), buffer, { flag: "wx" });
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "EEXIST") {
-      return { ok: false, motivo: "NOME_JA_EXISTE" };
+      return { ok: false, reason: "NOME_JA_EXISTE" };
     }
     throw err;
   }
 
   return {
     ok: true,
-    foto: { nome: nomeArquivo, url: `/data_fotos/${nomeArquivo}` },
+    photo: { nome: fileName, url: `/data_fotos/${fileName}` },
   };
 }
 
@@ -174,20 +174,20 @@ export async function gravarFoto(params: {
  * @param params - Parâmetros do upload
  * @returns Resultado da operação (ok com foto ou erro com motivo)
  */
-export async function uploadFoto(params: {
+export async function uploadPhoto(params: {
   produtoId: number;
   arquivo: File;
   nomeCustomizado?: string | null;
 }): Promise<ResultadoDoUpload> {
-  const produto = await prisma.produto.findUnique({
+  const product = await prisma.produto.findUnique({
     where: { id: params.produtoId },
     select: { id: true },
   });
-  if (!produto) return { ok: false, motivo: "PRODUTO_NAO_ENCONTRADO" };
+  if (!product) return { ok: false, reason: "PRODUTO_NAO_ENCONTRADO" };
 
-  const resultado = await gravarFoto({ ...params, diretorio: FOTOS_DIR });
-  if (resultado.ok) await invalidarCache("FOTOS");
-  return resultado;
+  const result = await savePhoto({ ...params, directory: PHOTOS_DIR });
+  if (result.ok) await invalidateCache("PHOTOS");
+  return result;
 }
 
 /**
@@ -200,42 +200,42 @@ export async function uploadFoto(params: {
  * @param params - Parâmetros da deleção
  * @returns Resultado da operação (ok ou erro com motivo)
  */
-export async function deletarFoto(params: {
+export async function deletePhoto(params: {
   produtoId: number;
   nomeArquivo: string;
 }): Promise<
   | { ok: true }
-  | { ok: false; motivo: "NOME_INVALIDO" | "ARQUIVO_NAO_ENCONTRADO" }
+  | { ok: false; reason: "NOME_INVALIDO" | "ARQUIVO_NAO_ENCONTRADO" }
 > {
-  const { produtoId, nomeArquivo } = params;
+  const { produtoId: productId, nomeArquivo: fileName } = params;
 
   // Valida se o arquivo pertence ao produto
-  if (!nomeArquivo.startsWith(`${produtoId}_`)) {
-    return { ok: false, motivo: "NOME_INVALIDO" };
+  if (!fileName.startsWith(`${productId}_`)) {
+    return { ok: false, reason: "NOME_INVALIDO" };
   }
 
   // Proteção contra path traversal
-  const nomeSanitizado = path.basename(nomeArquivo);
+  const sanitizedName = path.basename(fileName);
   if (
-    nomeSanitizado !== nomeArquivo ||
-    nomeSanitizado === "." ||
-    nomeSanitizado === ".."
+    sanitizedName !== fileName ||
+    sanitizedName === "." ||
+    sanitizedName === ".."
   ) {
-    return { ok: false, motivo: "NOME_INVALIDO" };
+    return { ok: false, reason: "NOME_INVALIDO" };
   }
 
-  const filePath = path.join(FOTOS_DIR, nomeSanitizado);
+  const filePath = path.join(PHOTOS_DIR, sanitizedName);
 
   // Verifica se arquivo existe
   try {
     await fs.access(filePath);
   } catch {
-    return { ok: false, motivo: "ARQUIVO_NAO_ENCONTRADO" };
+    return { ok: false, reason: "ARQUIVO_NAO_ENCONTRADO" };
   }
 
   // Deleta arquivo
   await fs.unlink(filePath);
-  await invalidarCache("FOTOS");
+  await invalidateCache("PHOTOS");
 
   return { ok: true };
 }

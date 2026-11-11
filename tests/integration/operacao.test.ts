@@ -1,5 +1,5 @@
 // Capacidade OPS — docs/capabilities/operacao/spec.md
-import { encerrar, req } from "./helpers";
+import { closeConnections, req } from "./helpers";
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { GET as health } from "@/app/api/health/route";
 
-after(encerrar);
+after(closeConnections);
 
 test("REQ-OPS-01: /api/health responde 200 e indica banco e Redis quando ambos estão disponíveis", async () => {
   void req;
@@ -23,8 +23,8 @@ test("REQ-OPS-01: /api/health responde 200 e indica banco e Redis quando ambos e
  * é só um dado de teste; é o mesmo que bancos já semeados antes da 008 usam, e o
  * seed não troca o hash de usuários existentes (upsert com `update: {}`).
  */
-const SENHA_SEED = "EcoshopDemo@2026";
-const ENV_SEED = { ...process.env, SEED_USER_PASSWORD: SENHA_SEED };
+const SEED_PASSWORD = "EcoshopDemo@2026";
+const ENV_SEED = { ...process.env, SEED_USER_PASSWORD: SEED_PASSWORD };
 
 /**
  * REQ-OPS-02 e REQ-OPS-03 rodam o seed real (`npx tsx prisma/seed.ts`) como
@@ -43,7 +43,7 @@ test("REQ-OPS-02: o seed cria usuários com senha utilizável para login (hash b
   const admin = await prisma.usuario.findUniqueOrThrow({
     where: { email: "admin@ecoplace.com" },
   });
-  assert.equal(await bcrypt.compare(SENHA_SEED, admin.senha), true);
+  assert.equal(await bcrypt.compare(SEED_PASSWORD, admin.senha), true);
   assert.notEqual(admin.senha, "hash-seguro-aqui");
 });
 

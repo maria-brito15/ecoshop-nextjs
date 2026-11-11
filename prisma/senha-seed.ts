@@ -14,7 +14,7 @@ const TAMANHO_MINIMO = 12;
  * @param valor - valor lido do ambiente
  * @returns a senha, se válida; caso contrário encerra o processo com código 1
  */
-export function exigirSenhaDeSeed(
+export function requireSeedPassword(
   variavel: string,
   valor: string | undefined,
 ): string {

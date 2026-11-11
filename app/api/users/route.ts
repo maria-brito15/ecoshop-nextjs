@@ -28,14 +28,14 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { setAuthCookie, setRefreshCookie } from "@/lib/auth";
-import { ERROS, mapeiaErro } from "@/lib/http/responses";
-import { registroPublicoSchema } from "@/lib/schemas/usuario";
-import { criarUsuario } from "@/services/usuario.service";
-import { iniciarSessao } from "@/services/sessao.service";
+import { ERRORS, mapError } from "@/lib/http/responses";
+import { publicRegistrationSchema } from "@/lib/schemas/usuario";
+import { createUser } from "@/services/usuario.service";
+import { startSession } from "@/services/sessao.service";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
-const LIMITE_REGISTRO = 5;
-const JANELA_REGISTRO = 3600;
+const REGISTRATION_LIMIT = 5;
+const REGISTRATION_WINDOW = 3600;
 
 /**
  * POST /api/users - Registro público de usuário
@@ -51,9 +51,9 @@ const JANELA_REGISTRO = 3600;
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
-    const { bloqueado } = await rateLimit(`${ip}:register`, {
-      limite: LIMITE_REGISTRO,
-      janelaSegundos: JANELA_REGISTRO,
+    const { blocked: bloqueado } = await rateLimit(`${ip}:register`, {
+      limit: REGISTRATION_LIMIT,
+      windowSeconds: REGISTRATION_WINDOW,
     });
 
     if (bloqueado) {
@@ -64,49 +64,49 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const parsed = registroPublicoSchema.safeParse(body);
+    const parsed = publicRegistrationSchema.safeParse(body);
 
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const { nome, email, telefone, senha, tipo, marcaNome, marcaDescricao } =
+    const { nome: name, email, telefone, senha: password, tipo: type, marcaNome: brandName, marcaDescricao: brandDescription } =
       parsed.data;
 
     // A duplicidade de e-mail é decidida pelo service (ConflitoDeNegocio → 409).
-    const usuario = await criarUsuario({
-      nome,
+    const user = await createUser({
+      nome: name,
       email,
       telefone,
-      senha,
-      tipo,
-      marcaNome,
-      marcaDescricao,
+      senha: password,
+      tipo: type,
+      marcaNome: brandName,
+      marcaDescricao: brandDescription,
     });
 
     // criarUsuario já invalida o cache de usuários.
-    const sessao = await iniciarSessao({
-      id: usuario.id,
-      email: usuario.email,
-      tipo: usuario.tipo,
+    const session = await startSession({
+      id: user.id,
+      email: user.email,
+      tipo: user.tipo,
     });
 
     const res = NextResponse.json(
       {
         ok: true,
         usuario: {
-          id: usuario.id,
-          email: usuario.email,
-          nome: usuario.nome,
-          tipo: usuario.tipo,
+          id: user.id,
+          email: user.email,
+          nome: user.nome,
+          tipo: user.tipo,
         },
-        marcaPendente: usuario.marcaPendente,
+        marcaPendente: user.marcaPendente,
       },
       { status: 201 },
     );
 
-    setAuthCookie(res, sessao.acesso);
-    if (sessao.renovacao) setRefreshCookie(res, sessao.renovacao);
+    setAuthCookie(res, session.access);
+    if (session.refresh) setRefreshCookie(res, session.refresh);
     return res;
   } catch (err) {
-    return mapeiaErro(err, "Usuário") ?? ERROS.interno("registrar usuário", err);
+    return mapError(err, "Usuário") ?? ERRORS.internal("registrar usuário", err);
   }
 }

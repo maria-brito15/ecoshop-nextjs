@@ -12,25 +12,25 @@
 
 type Nivel = "info" | "warn" | "error";
 
-const CHAVE_SENSIVEL =
+const SENSITIVE_KEY =
   /senha|password|passwd|token|secret|key|authorization|cookie|prediction/i;
 const CREDENCIAL_EM_URL = /([a-z][a-z0-9+.-]*:\/\/)[^@\s/]*@/gi;
 const PROFUNDIDADE_MAXIMA = 4;
 
-function mascararTexto(texto: string): string {
-  return texto.replace(CREDENCIAL_EM_URL, "$1[REDIGIDO]@");
+function maskText(text: string): string {
+  return text.replace(CREDENCIAL_EM_URL, "$1[REDIGIDO]@");
 }
 
 function redigir(valor: unknown, profundidade = 0): unknown {
-  if (typeof valor === "string") return mascararTexto(valor);
+  if (typeof valor === "string") return maskText(valor);
   if (valor === null || typeof valor !== "object") return valor;
   if (profundidade >= PROFUNDIDADE_MAXIMA) return "[PROFUNDO]";
-  if (valor instanceof Error) return serializarErro(valor);
+  if (valor instanceof Error) return serializeError(valor);
   if (Array.isArray(valor)) return valor.map((v) => redigir(v, profundidade + 1));
 
   const saida: Record<string, unknown> = {};
-  for (const [chave, v] of Object.entries(valor)) {
-    saida[chave] = CHAVE_SENSIVEL.test(chave)
+  for (const [key, v] of Object.entries(valor)) {
+    saida[key] = SENSITIVE_KEY.test(key)
       ? "[REDIGIDO]"
       : redigir(v, profundidade + 1);
   }
@@ -38,27 +38,27 @@ function redigir(valor: unknown, profundidade = 0): unknown {
 }
 
 /** Erro → objeto serializável, sem segredos (a pilha é cortada em 6 linhas). */
-export function serializarErro(err: unknown): Record<string, unknown> {
+export function serializeError(err: unknown): Record<string, unknown> {
   if (err instanceof Error) {
     const codigo = (err as { code?: unknown }).code;
     return {
       nome: err.name,
-      mensagem: mascararTexto(err.message),
+      mensagem: maskText(err.message),
       ...(typeof codigo === "string" ? { codigo } : {}),
       ...(err.stack
-        ? { pilha: mascararTexto(err.stack.split("\n").slice(0, 6).join("\n")) }
+        ? { pilha: maskText(err.stack.split("\n").slice(0, 6).join("\n")) }
         : {}),
     };
   }
-  return { valor: mascararTexto(String(err)) };
+  return { valor: maskText(String(err)) };
 }
 
-function registrar(nivel: Nivel, evento: string, contexto: Record<string, unknown> = {}) {
+function writeLog(nivel: Nivel, evento: string, context: Record<string, unknown> = {}) {
   const linha = JSON.stringify({
     ts: new Date().toISOString(),
     nivel,
     evento,
-    ...(redigir(contexto) as Record<string, unknown>),
+    ...(redigir(context) as Record<string, unknown>),
   });
   if (nivel === "error") console.error(linha);
   else if (nivel === "warn") console.warn(linha);
@@ -66,24 +66,24 @@ function registrar(nivel: Nivel, evento: string, contexto: Record<string, unknow
 }
 
 export const log = {
-  info: (evento: string, contexto?: Record<string, unknown>) =>
-    registrar("info", evento, contexto),
-  warn: (evento: string, contexto?: Record<string, unknown>) =>
-    registrar("warn", evento, contexto),
-  error: (evento: string, contexto?: Record<string, unknown>) =>
-    registrar("error", evento, contexto),
+  info: (evento: string, context?: Record<string, unknown>) =>
+    writeLog("info", evento, context),
+  warn: (evento: string, context?: Record<string, unknown>) =>
+    writeLog("warn", evento, context),
+  error: (evento: string, context?: Record<string, unknown>) =>
+    writeLog("error", evento, context),
 };
 
 /**
  * Cria uma função que só deixa passar uma chamada a cada `intervaloMs` por
  * `chave`: evita inundar o log quando uma dependência fica fora do ar.
  */
-export function limitarFrequencia(intervaloMs: number) {
+export function throttle(intervaloMs: number) {
   const ultimo = new Map<string, number>();
-  return (chave: string, agora: number = Date.now()): boolean => {
-    const anterior = ultimo.get(chave);
+  return (key: string, agora: number = Date.now()): boolean => {
+    const anterior = ultimo.get(key);
     if (anterior !== undefined && agora - anterior < intervaloMs) return false;
-    ultimo.set(chave, agora);
+    ultimo.set(key, agora);
     return true;
   };
 }

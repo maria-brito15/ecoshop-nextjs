@@ -26,13 +26,13 @@
 import { prisma } from "@/lib/db";
 import { RecursoNaoEncontrado, ConflitoDeNegocio } from "@/lib/errors/dominio";
 import {
-  comCache,
-  invalidarCache,
-  invalidarChave,
-  chaveMarcas,
-  chaveMarca,
-  chaveUsuario,
-  chaveUsuarioMe,
+  withCache,
+  invalidateCache,
+  invalidateKey,
+  brandsKey,
+  brandKey,
+  userKey,
+  currentUserKey,
   TTL,
 } from "@/lib/cache";
 
@@ -47,8 +47,8 @@ import {
  *
  * @returns Array de marcas com dados do usuário associado
  */
-export async function listarMarcas() {
-  return comCache(chaveMarcas(), TTL.LISTA_CURTA, () =>
+export async function listBrands() {
+  return withCache(brandsKey(), TTL.SHORT_LIST, () =>
     prisma.marca.findMany({
       orderBy: { nome: "asc" },
       include: { usuario: { select: { id: true, nome: true, email: true } } },
@@ -66,8 +66,8 @@ export async function listarMarcas() {
  * @param id - ID da marca
  * @returns Marca encontrada com relacionamentos ou null
  */
-export async function buscarMarca(id: number) {
-  return comCache(chaveMarca(id), TTL.ITEM, () =>
+export async function getBrand(id: number) {
+  return withCache(brandKey(id), TTL.ITEM, () =>
     prisma.marca.findUnique({
       where: { id },
       include: {
@@ -104,29 +104,29 @@ export async function buscarMarca(id: number) {
  * contrário do pedido criado pelo cadastro público (`criarUsuario`), que
  * entra PENDENTE.
  */
-export async function criarMarca(data: {
+export async function createBrand(data: {
   nome: string;
   descricao?: string;
   usuarioId: number;
 }) {
-  const usuario = await prisma.usuario.findUnique({
+  const user = await prisma.usuario.findUnique({
     where: { id: data.usuarioId },
   });
-  if (!usuario) {
+  if (!user) {
     throw new RecursoNaoEncontrado("Usuário");
   }
-  if (usuario.tipo !== "MARCA" && usuario.tipo !== "ADMIN") {
+  if (user.tipo !== "MARCA" && user.tipo !== "ADMIN") {
     throw new ConflitoDeNegocio(
       "O usuário responsável por uma marca precisa ser do tipo MARCA ou ADMIN",
     );
   }
 
-  const marca = await prisma.marca.create({
+  const brand = await prisma.marca.create({
     data: { ...data, status: "APROVADA" },
     include: { usuario: { select: { id: true, nome: true } } },
   });
-  await invalidarCache("MARCAS");
-  return marca;
+  await invalidateCache("BRANDS");
+  return brand;
 }
 
 /**
@@ -140,18 +140,18 @@ export async function criarMarca(data: {
  * @throws Error("MARCA_NAO_ENCONTRADA") se a marca não existir
  * @throws Error("MARCA_NAO_PENDENTE") se a marca já não estiver PENDENTE
  */
-export async function aprovarMarca(id: number) {
-  const marca = await prisma.marca.findUnique({ where: { id } });
-  if (!marca) {
+export async function approveBrand(id: number) {
+  const brand = await prisma.marca.findUnique({ where: { id } });
+  if (!brand) {
     throw new RecursoNaoEncontrado("Marca");
   }
-  if (marca.status !== "PENDENTE") {
+  if (brand.status !== "PENDENTE") {
     throw new ConflitoDeNegocio("Esta marca já não está pendente de aprovação");
   }
 
   const aprovada = await prisma.$transaction(async (tx) => {
     await tx.usuario.update({
-      where: { id: marca.usuarioId },
+      where: { id: brand.usuarioId },
       data: { tipo: "MARCA" },
     });
     return tx.marca.update({
@@ -162,11 +162,11 @@ export async function aprovarMarca(id: number) {
   });
 
   await Promise.all([
-    invalidarChave(chaveMarca(id)),
-    invalidarCache("MARCAS"),
-    invalidarChave(chaveUsuario(marca.usuarioId)),
-    invalidarChave(chaveUsuarioMe(marca.usuarioId)),
-    invalidarCache("USUARIOS"),
+    invalidateKey(brandKey(id)),
+    invalidateCache("BRANDS"),
+    invalidateKey(userKey(brand.usuarioId)),
+    invalidateKey(currentUserKey(brand.usuarioId)),
+    invalidateCache("USERS"),
   ]);
 
   return aprovada;
@@ -188,17 +188,17 @@ export async function aprovarMarca(id: number) {
  * porque a listagem e o detalhe de produto embutem o nome da marca.
  * Sem isso, renomear a marca só refletia nos produtos após o TTL de 2–3 min.
  */
-export async function atualizarMarca(
+export async function updateBrand(
   id: number,
   data: { nome?: string; descricao?: string },
 ) {
-  const marca = await prisma.marca.update({ where: { id }, data });
+  const brand = await prisma.marca.update({ where: { id }, data });
   await Promise.all([
-    invalidarChave(chaveMarca(id)),
-    invalidarCache("MARCAS"),
-    invalidarCache("PRODUTOS"),
+    invalidateKey(brandKey(id)),
+    invalidateCache("BRANDS"),
+    invalidateCache("PRODUCTS"),
   ]);
-  return marca;
+  return brand;
 }
 
 /**
@@ -213,13 +213,13 @@ export async function atualizarMarca(
  * @throws Error P2025 se marca não existir
  * @throws Error P2003 se marca possui produtos vinculados
  */
-export async function deletarMarca(id: number) {
-  const marca = await prisma.marca.findUnique({ where: { id } });
-  if (!marca) {
+export async function deleteBrand(id: number) {
+  const brand = await prisma.marca.findUnique({ where: { id } });
+  if (!brand) {
     throw new RecursoNaoEncontrado("Marca");
   }
 
   await prisma.marca.delete({ where: { id } });
-  await Promise.all([invalidarChave(chaveMarca(id)), invalidarCache("MARCAS")]);
+  await Promise.all([invalidateKey(brandKey(id)), invalidateCache("BRANDS")]);
   return true;
 }

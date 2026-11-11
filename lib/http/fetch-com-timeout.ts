@@ -6,7 +6,7 @@
  * Estourado o prazo, a promessa rejeita (TimeoutError); o chamador trata como
  * falha da dependência externa.
  */
-export function fetchComTimeout(
+export function fetchWithTimeout(
   url: string,
   init: RequestInit,
   timeoutMs: number,

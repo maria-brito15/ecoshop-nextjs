@@ -48,14 +48,14 @@ import { PrismaClient, TipoUsuario } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 import bcrypt from "bcryptjs";
-import { exigirSenhaDeSeed } from "./senha-seed";
+import { requireSeedPassword } from "./senha-seed";
 
 /**
  * Senha em texto plano dos usuários de demonstração (todos compartilham a
  * mesma, por simplicidade). Mesmo custo de hashing usado no resto do app
  * (services/usuario.service.ts, prisma/seed-admin.ts).
  */
-const SEED_USER_PASSWORD = exigirSenhaDeSeed(
+const SEED_USER_PASSWORD = requireSeedPassword(
   "SEED_USER_PASSWORD",
   process.env.SEED_USER_PASSWORD,
 );
@@ -95,7 +95,7 @@ async function main() {
   // Categorias organizam produtos por tipo.
   // Usa upsert para não duplicar se já existirem (idempotência).
   console.log("Criando categorias...");
-  const categoriasInput = [
+  const categoriesInput = [
     {
       nome: "Roupas Sustentáveis",
       descricao:
@@ -123,14 +123,14 @@ async function main() {
     },
   ];
 
-  const categorias = {} as Record<string, number>;
-  for (const cat of categoriasInput) {
+  const categories = {} as Record<string, number>;
+  for (const cat of categoriesInput) {
     const registro = await prisma.categoria.upsert({
       where: { nome: cat.nome },
       update: {},
       create: cat,
     });
-    categorias[registro.nome] = registro.id;
+    categories[registro.nome] = registro.id;
   }
 
   // ---------------------------------------------------------------------------
@@ -138,7 +138,7 @@ async function main() {
   // ---------------------------------------------------------------------------
   // Certificados atestam práticas sustentáveis dos produtos.
   console.log("Criando certificados...");
-  const certificadosInput = [
+  const certificatesInput = [
     {
       nome: "Cruelty Free",
       orgaoEmissor: "PETA",
@@ -168,14 +168,14 @@ async function main() {
     },
   ];
 
-  const certificados = {} as Record<string, number>;
-  for (const cert of certificadosInput) {
+  const certificates = {} as Record<string, number>;
+  for (const cert of certificatesInput) {
     const registro = await prisma.certificado.upsert({
       where: { nome: cert.nome },
       update: {},
       create: cert,
     });
-    certificados[registro.nome] = registro.id;
+    certificates[registro.nome] = registro.id;
   }
 
   // ---------------------------------------------------------------------------
@@ -186,56 +186,56 @@ async function main() {
   // real — antes, a senha era o placeholder "hash-seguro-aqui" e ninguém
   // conseguia logar com nenhum desses usuários (REQ-OPS-02).
   console.log("Criando usuários...");
-  const senhaHash = await bcrypt.hash(SEED_USER_PASSWORD, SALT_ROUNDS);
-  const usuariosInput = [
+  const passwordHash = await bcrypt.hash(SEED_USER_PASSWORD, SALT_ROUNDS);
+  const usersInput = [
     {
       email: "admin@ecoplace.com",
       nome: "Admin Principal",
-      senha: senhaHash,
+      senha: passwordHash,
       tipo: TipoUsuario.ADMIN,
     },
     {
       email: "joao@cliente.com",
       nome: "João Silva",
-      senha: senhaHash,
+      senha: passwordHash,
       telefone: "11999998888",
       tipo: TipoUsuario.CLIENTE,
     },
     {
       email: "maria@cliente.com",
       nome: "Maria Souza",
-      senha: senhaHash,
+      senha: passwordHash,
       telefone: "21988887777",
       tipo: TipoUsuario.CLIENTE,
     },
     {
       email: "contato@ecobrand.com",
       nome: "Lucas (EcoBrand)",
-      senha: senhaHash,
+      senha: passwordHash,
       tipo: TipoUsuario.MARCA,
     },
     {
       email: "falecom@pureza.com",
       nome: "Ana (Pureza Naturais)",
-      senha: senhaHash,
+      senha: passwordHash,
       tipo: TipoUsuario.MARCA,
     },
     {
       email: "vendas@bambuhome.com",
       nome: "Carlos (Bambu Home)",
-      senha: senhaHash,
+      senha: passwordHash,
       tipo: TipoUsuario.MARCA,
     },
   ];
 
-  const usuarios = {} as Record<string, number>;
-  for (const user of usuariosInput) {
+  const users = {} as Record<string, number>;
+  for (const user of usersInput) {
     const registro = await prisma.usuario.upsert({
       where: { email: user.email },
       update: {},
       create: user,
     });
-    usuarios[registro.email] = registro.id;
+    users[registro.email] = registro.id;
   }
 
   // ---------------------------------------------------------------------------
@@ -243,32 +243,32 @@ async function main() {
   // ---------------------------------------------------------------------------
   // Cada marca está associada a um usuário (relacionamento 1:1).
   console.log("Criando marcas...");
-  const marcasInput = [
+  const brandsInput = [
     {
       nome: "EcoBrand",
       descricao: "A melhor marca sustentável de roupas do mercado nacional.",
-      usuarioId: usuarios["contato@ecobrand.com"],
+      usuarioId: users["contato@ecobrand.com"],
     },
     {
       nome: "Pureza Naturais",
       descricao: "Cosméticos e alimentos 100% orgânicos e saudáveis.",
-      usuarioId: usuarios["falecom@pureza.com"],
+      usuarioId: users["falecom@pureza.com"],
     },
     {
       nome: "Bambu Home",
       descricao: "Decore sua casa sem destruir o planeta.",
-      usuarioId: usuarios["vendas@bambuhome.com"],
+      usuarioId: users["vendas@bambuhome.com"],
     },
   ];
 
-  const marcas = {} as Record<string, number>;
-  for (const marca of marcasInput) {
+  const brands = {} as Record<string, number>;
+  for (const brand of brandsInput) {
     const registro = await prisma.marca.upsert({
-      where: { nome: marca.nome },
+      where: { nome: brand.nome },
       update: {},
-      create: { ...marca, status: "APROVADA" },
+      create: { ...brand, status: "APROVADA" },
     });
-    marcas[registro.nome] = registro.id;
+    brands[registro.nome] = registro.id;
   }
 
   // ---------------------------------------------------------------------------
@@ -276,7 +276,7 @@ async function main() {
   // ---------------------------------------------------------------------------
   // Catálogo de produtos sustentáveis com certificações associadas.
   console.log("Criando catálogo de produtos...");
-  const produtosInput = [
+  const productsInput = [
     // EcoBrand - Roupas Sustentáveis
     {
       nome: "Camiseta Básica Orgânica",
@@ -364,26 +364,26 @@ async function main() {
     },
   ];
 
-  const totalProdutosExistentes = await prisma.produto.count();
-  if (totalProdutosExistentes > 0) {
+  const existingProductsTotal = await prisma.produto.count();
+  if (existingProductsTotal > 0) {
     console.log(
-      `Catálogo já tem ${totalProdutosExistentes} produto(s); pulando a criação ` +
+      `Catálogo já tem ${existingProductsTotal} produto(s); pulando a criação ` +
         "(seed idempotente, REQ-OPS-03 — produtos existentes nunca são apagados).",
     );
   } else {
-    for (const prod of produtosInput) {
-      const nomeCorrigido = prod.nome || (prod as any).row;
+    for (const prod of productsInput) {
+      const fixedName = prod.nome || (prod as any).row;
 
       await prisma.produto.create({
         data: {
-          nome: nomeCorrigido as string,
+          nome: fixedName as string,
           descricao: prod.descricao,
           preco: prod.preco,
-          categoriaId: categorias[prod.categoria],
-          marcaId: marcas[prod.marca],
+          categoriaId: categories[prod.categoria],
+          marcaId: brands[prod.marca],
           certificados: {
             create: prod.certs.map((nomeCertificado) => ({
-              certificadoId: certificados[nomeCertificado],
+              certificadoId: certificates[nomeCertificado],
             })),
           },
         },

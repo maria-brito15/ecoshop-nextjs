@@ -1,11 +1,11 @@
 // Capacidade AUTZ — docs/capabilities/autorizacao/spec.md  (ADR-0017)
 import {
   email,
-  criarUsuarioDireto,
+  createUserDirectly,
   cookieDe,
   req,
   ctx,
-  encerrar,
+  closeConnections,
 } from "./helpers";
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
@@ -32,10 +32,10 @@ import { POST as chat } from "@/app/api/ia/chat/route";
 import fs from "node:fs";
 import path from "node:path";
 
-after(encerrar);
+after(closeConnections);
 
 test("REQ-AUTZ-01: escrita no catálogo exige ADMIN (401 sem login, 403 para CLIENTE)", async () => {
-  const cliente = await criarUsuarioDireto(email("authz01"), "CLIENTE");
+  const cliente = await createUserDirectly(email("authz01"), "CLIENTE");
   const cookie = await cookieDe(cliente);
   const rotas: [
     string,
@@ -58,16 +58,16 @@ test("REQ-AUTZ-01: escrita no catálogo exige ADMIN (401 sem login, 403 para CLI
       { nome: "x", preco: 1, categoriaId: 1, marcaId: 1 },
     ],
   ];
-  for (const [nome, handler, method, body] of rotas) {
+  for (const [name, handler, method, body] of rotas) {
     assert.equal(
-      (await handler(req(`/api/${nome}`, { method, body }))).status,
+      (await handler(req(`/api/${name}`, { method, body }))).status,
       401,
-      `${nome} sem login`,
+      `${name} sem login`,
     );
     assert.equal(
-      (await handler(req(`/api/${nome}`, { method, cookie, body }))).status,
+      (await handler(req(`/api/${name}`, { method, cookie, body }))).status,
       403,
-      `${nome} CLIENTE`,
+      `${name} CLIENTE`,
     );
   }
   const del = (c?: string) =>
@@ -77,7 +77,7 @@ test("REQ-AUTZ-01: escrita no catálogo exige ADMIN (401 sem login, 403 para CLI
     );
   assert.equal((await del()).status, 401);
   assert.equal((await del(cookie)).status, 403);
-  const foto = (c?: string) =>
+  const photo = (c?: string) =>
     uploadFoto(
       req("/api/produtos/1/fotos", {
         method: "POST",
@@ -86,8 +86,8 @@ test("REQ-AUTZ-01: escrita no catálogo exige ADMIN (401 sem login, 403 para CLI
       }),
       ctx(1),
     );
-  assert.equal((await foto()).status, 401);
-  assert.equal((await foto(cookie)).status, 403);
+  assert.equal((await photo()).status, 401);
+  assert.equal((await photo(cookie)).status, 403);
 });
 
 test("REQ-AUTZ-02: a leitura do catálogo (produtos e categorias) é pública", async () => {
@@ -112,7 +112,7 @@ test("REQ-AUTZ-03: scan e chat de IA exigem usuário autenticado", async () => {
 });
 
 test("REQ-AUTZ-04: listar e criar usuários é exclusivo de ADMIN", async () => {
-  const cliente = await criarUsuarioDireto(email("authz04"), "CLIENTE");
+  const cliente = await createUserDirectly(email("authz04"), "CLIENTE");
   assert.equal((await listarUsuarios(req("/api/usuarios"))).status, 401);
   assert.equal(
     (
@@ -125,9 +125,9 @@ test("REQ-AUTZ-04: listar e criar usuários é exclusivo de ADMIN", async () => 
 });
 
 test("REQ-AUTZ-05: /api/usuarios/[id]: o próprio usuário ou ADMIN; excluir só ADMIN", async () => {
-  const a = await criarUsuarioDireto(email("authz05a"), "CLIENTE");
-  const b = await criarUsuarioDireto(email("authz05b"), "CLIENTE");
-  const admin = await criarUsuarioDireto(email("authz05admin"), "ADMIN");
+  const a = await createUserDirectly(email("authz05a"), "CLIENTE");
+  const b = await createUserDirectly(email("authz05b"), "CLIENTE");
+  const admin = await createUserDirectly(email("authz05admin"), "ADMIN");
   const ca = await cookieDe(a);
   assert.equal(
     (
@@ -216,17 +216,17 @@ test("REQ-AUTZ-07: toda rota de API declara sua política de acesso (autenticaç
   const GUARDS = ["requireAuth(", "requireAdmin(", "getSession("];
   const METODOS = ["GET", "POST", "PUT", "DELETE", "PATCH"];
 
-  function listarArquivosRoute(dir: string): string[] {
-    const resultado: string[] = [];
-    for (const nome of fs.readdirSync(dir)) {
-      const caminho = path.join(dir, nome);
+  function listFilesRoute(dir: string): string[] {
+    const result: string[] = [];
+    for (const name of fs.readdirSync(dir)) {
+      const caminho = path.join(dir, name);
       if (fs.statSync(caminho).isDirectory()) {
-        resultado.push(...listarArquivosRoute(caminho));
-      } else if (nome === "route.ts") {
-        resultado.push(caminho);
+        result.push(...listFilesRoute(caminho));
+      } else if (name === "route.ts") {
+        result.push(caminho);
       }
     }
-    return resultado;
+    return result;
   }
 
   /** Extrai o corpo (entre chaves balanceadas) de uma função a partir do índice do seu "{" inicial. */
@@ -265,10 +265,10 @@ test("REQ-AUTZ-07: toda rota de API declara sua política de acesso (autenticaç
 
   const semPolitica: string[] = [];
 
-  for (const arquivo of listarArquivosRoute(API_DIR)) {
-    const fonte = fs.readFileSync(arquivo, "utf8");
-    const chaveArquivo = path
-      .relative(API_DIR, arquivo)
+  for (const file of listFilesRoute(API_DIR)) {
+    const fonte = fs.readFileSync(file, "utf8");
+    const fileKey = path
+      .relative(API_DIR, file)
       .split(path.sep)
       .join("/");
 
@@ -277,12 +277,12 @@ test("REQ-AUTZ-07: toda rota de API declara sua política de acesso (autenticaç
       const m = re.exec(fonte);
       if (!m) continue;
 
-      const chave = `${chaveArquivo}:${metodo}`;
-      if (PUBLICAS.has(chave)) continue;
+      const key = `${fileKey}:${metodo}`;
+      if (PUBLICAS.has(key)) continue;
 
       const corpo = corpoDoHandler(fonte, m.index);
       const declaraGuard = GUARDS.some((g) => corpo.includes(g));
-      if (!declaraGuard) semPolitica.push(chave);
+      if (!declaraGuard) semPolitica.push(key);
     }
   }
 

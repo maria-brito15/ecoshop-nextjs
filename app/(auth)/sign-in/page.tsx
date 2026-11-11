@@ -40,8 +40,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLogin, useRegistro } from "@/lib/hooks/useAuth";
-import { caminhoLocalOuRaiz } from "@/lib/http/next-url";
-import { buscarSessao } from "@/lib/hooks/sessao";
+import { localPathOrRoot } from "@/lib/http/next-url";
+import { fetchSession } from "@/lib/hooks/sessao";
 import type { LoginBody, RegistroBody } from "@/types/api";
 
 type Modo = "login" | "cadastro";
@@ -136,8 +136,8 @@ export default function AuthPage() {
 
   // Redireciona se usuário já estiver logado
   useEffect(() => {
-    buscarSessao().then((usuario) => {
-      if (usuario) router.replace("/");
+    fetchSession().then((user) => {
+      if (user) router.replace("/");
     });
   }, [router]);
 
@@ -199,7 +199,7 @@ export default function AuthPage() {
 
     const nextUrl =
       typeof window !== "undefined"
-        ? caminhoLocalOuRaiz(
+        ? localPathOrRoot(
             new URLSearchParams(window.location.search).get("next"),
           )
         : "/";

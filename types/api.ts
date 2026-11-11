@@ -13,44 +13,44 @@
  * ============================================================================
  */
 
-import type { ResultadoScan } from "./ai";
+import type { ScanResult } from "./ai";
 import type {
-  Foto,
-  FotosResponse,
-  Produto,
-  Categoria,
-  Marca,
-  StatusMarca,
-  Certificado,
-  ProdutoCertificado,
-  Usuario,
-  UsuarioResumido,
-  TipoUsuario,
+  Photo,
+  PhotosResponse,
+  Product,
+  Category,
+  Brand,
+  BrandStatus,
+  Certificate,
+  ProductCertificate,
+  User,
+  UserSummary,
+  UserType,
 } from "./domain";
 
 // Re-exporta tipos de domínio para conveniência
 export type {
-  Foto,
-  FotosResponse,
-  Produto,
-  Categoria,
-  Marca,
-  StatusMarca,
-  Certificado,
-  ProdutoCertificado,
-  Usuario,
-  UsuarioResumido,
-  TipoUsuario,
+  Photo as Foto,
+  PhotosResponse as FotosResponse,
+  Product as Produto,
+  Category as Categoria,
+  Brand as Marca,
+  BrandStatus as StatusMarca,
+  Certificate as Certificado,
+  ProductCertificate as ProdutoCertificado,
+  User as Usuario,
+  UserSummary as UsuarioResumido,
+  UserType as TipoUsuario,
 };
 
 // Re-exporta tipos de IA
-export type { ResultadoScan, ChatResponse } from "./ai";
+export type { ScanResult as ResultadoScan, ChatResponse } from "./ai";
 
 /**
  * ScanResponse é o tipo retornado pelo endpoint POST /api/ia/scan.
  * É idêntico a ResultadoScan — mantido para compatibilidade.
  */
-export type ScanResponse = ResultadoScan;
+export type ScanResponse = ScanResult;
 
 // --- TIPOS DE PRODUTO ---
 
@@ -70,9 +70,9 @@ export interface ChatBody {
  * Resposta paginada da listagem de produtos.
  * GET /api/produtos?page=1&size=12&categoriaId=5&nome=camiseta
  */
-export interface ListaProdutosResponse {
+export interface ListProductsResponse {
   /** Array de produtos da página atual (ordenados por id ascendente) */
-  produtos: Produto[];
+  produtos: Product[];
   /** Número da página atual (1-indexado) */
   page: number;
   /** Quantidade de itens por página (padrão: 12) */
@@ -85,8 +85,8 @@ export interface ListaProdutosResponse {
  * Resposta da busca de um produto específico.
  * GET /api/produtos/{id}
  */
-export interface BuscarProdutoResponse {
-  produto: Produto;
+export interface GetProductResponse {
+  produto: Product;
 }
 
 /**
@@ -94,7 +94,7 @@ export interface BuscarProdutoResponse {
  * POST /api/produtos
  * Requer autenticação ADMIN.
  */
-export interface CriarProdutoBody {
+export interface CreateProductBody {
   nome: string;
   descricao?: string;
   preco: number;
@@ -107,8 +107,8 @@ export interface CriarProdutoBody {
  * Retorna o produto recém-criado com ID gerado.
  * Status: 201 Created
  */
-export interface CriarProdutoResponse {
-  produto: Produto;
+export interface CreateProductResponse {
+  produto: Product;
 }
 
 /**
@@ -117,7 +117,7 @@ export interface CriarProdutoResponse {
  * Todos os campos são opcionais — atualização parcial permitida.
  * Requer autenticação ADMIN.
  */
-export interface AtualizarProdutoBody {
+export interface UpdateProductBody {
   nome?: string;
   descricao?: string;
   preco?: number;
@@ -131,8 +131,8 @@ export interface AtualizarProdutoBody {
  * Resposta da atualização de um produto.
  * Retorna o produto com os dados atualizados.
  */
-export interface AtualizarProdutoResponse {
-  produto: Produto;
+export interface UpdateProductResponse {
+  produto: Product;
 }
 
 // --- TIPOS DE CATEGORIA ---
@@ -142,16 +142,16 @@ export interface AtualizarProdutoResponse {
  * GET /api/categorias
  * Endpoint público (não requer autenticação).
  */
-export interface ListaCategoriasResponse {
-  categorias: Categoria[];
+export interface ListCategoriesResponse {
+  categorias: Category[];
 }
 
 /**
  * Resposta da busca de uma categoria específica.
  * GET /api/categorias/{id}
  */
-export interface BuscarCategoriaResponse {
-  categoria: Categoria;
+export interface GetCategoryResponse {
+  categoria: Category;
 }
 
 /**
@@ -159,7 +159,7 @@ export interface BuscarCategoriaResponse {
  * POST /api/categorias
  * Requer autenticação ADMIN.
  */
-export interface CriarCategoriaBody {
+export interface CreateCategoryBody {
   nome: string;
   descricao?: string;
 }
@@ -168,8 +168,8 @@ export interface CriarCategoriaBody {
  * Resposta da criação de uma categoria.
  * Status: 201 Created
  */
-export interface CriarCategoriaResponse {
-  categoria: Categoria;
+export interface CreateCategoryResponse {
+  categoria: Category;
 }
 
 /**
@@ -178,7 +178,7 @@ export interface CriarCategoriaResponse {
  * Atualização parcial (apenas campos enviados são alterados).
  * Requer autenticação ADMIN.
  */
-export interface AtualizarCategoriaBody {
+export interface UpdateCategoryBody {
   nome?: string;
   descricao?: string;
 }
@@ -186,8 +186,8 @@ export interface AtualizarCategoriaBody {
 /**
  * Resposta da atualização de uma categoria.
  */
-export interface AtualizarCategoriaResponse {
-  categoria: Categoria;
+export interface UpdateCategoryResponse {
+  categoria: Category;
 }
 
 // --- TIPOS DE MARCA ---
@@ -197,16 +197,16 @@ export interface AtualizarCategoriaResponse {
  * GET /api/marcas
  * Endpoint público (usuários podem visualizar marcas antes de comprar).
  */
-export interface ListaMarcasResponse {
-  marcas: Marca[];
+export interface ListBrandsResponse {
+  marcas: Brand[];
 }
 
 /**
  * Resposta da busca de uma marca específica.
  * GET /api/marcas/{id}
  */
-export interface BuscarMarcaResponse {
-  marca: Marca;
+export interface GetBrandResponse {
+  marca: Brand;
 }
 
 /**
@@ -214,7 +214,7 @@ export interface BuscarMarcaResponse {
  * POST /api/marcas
  * Requer autenticação ADMIN.
  */
-export interface CriarMarcaBody {
+export interface CreateBrandBody {
   nome: string;
   descricao?: string;
   usuarioId: number;
@@ -224,8 +224,8 @@ export interface CriarMarcaBody {
  * Resposta da criação de uma marca.
  * Status: 201 Created
  */
-export interface CriarMarcaResponse {
-  marca: Marca;
+export interface CreateBrandResponse {
+  marca: Brand;
 }
 
 /**
@@ -233,7 +233,7 @@ export interface CriarMarcaResponse {
  * PUT /api/marcas/{id}
  * Requer autenticação ADMIN.
  */
-export interface AtualizarMarcaBody {
+export interface UpdateBrandBody {
   nome?: string;
   descricao?: string;
 }
@@ -241,8 +241,8 @@ export interface AtualizarMarcaBody {
 /**
  * Resposta da atualização de uma marca.
  */
-export interface AtualizarMarcaResponse {
-  marca: Marca;
+export interface UpdateBrandResponse {
+  marca: Brand;
 }
 
 /**
@@ -250,8 +250,8 @@ export interface AtualizarMarcaResponse {
  * POST /api/marcas/{id}/aprovar
  * Requer autenticação ADMIN. REQ-USR-03, ADR-0018.
  */
-export interface AprovarMarcaResponse {
-  marca: Marca;
+export interface ApproveBrandResponse {
+  marca: Brand;
 }
 
 // --- TIPOS DE CERTIFICADO ---
@@ -261,16 +261,16 @@ export interface AprovarMarcaResponse {
  * GET /api/certificados
  * Endpoint público (certificações são exibidas nos produtos).
  */
-export interface ListaCertificadosResponse {
-  certificados: Certificado[];
+export interface ListCertificatesResponse {
+  certificados: Certificate[];
 }
 
 /**
  * Resposta da busca de um certificado específico.
  * GET /api/certificados/{id}
  */
-export interface BuscarCertificadoResponse {
-  certificado: Certificado;
+export interface GetCertificateResponse {
+  certificado: Certificate;
 }
 
 /**
@@ -278,7 +278,7 @@ export interface BuscarCertificadoResponse {
  * POST /api/certificados
  * Requer autenticação ADMIN.
  */
-export interface CriarCertificadoBody {
+export interface CreateCertificateBody {
   nome: string;
   descricao?: string;
   orgaoEmissor: string;
@@ -288,8 +288,8 @@ export interface CriarCertificadoBody {
  * Resposta da criação de um certificado.
  * Status: 201 Created
  */
-export interface CriarCertificadoResponse {
-  certificado: Certificado;
+export interface CreateCertificateResponse {
+  certificado: Certificate;
 }
 
 /**
@@ -297,7 +297,7 @@ export interface CriarCertificadoResponse {
  * PUT /api/certificados/{id}
  * Requer autenticação ADMIN.
  */
-export interface AtualizarCertificadoBody {
+export interface UpdateCertificateBody {
   nome?: string;
   descricao?: string;
   orgaoEmissor?: string;
@@ -306,8 +306,8 @@ export interface AtualizarCertificadoBody {
 /**
  * Resposta da atualização de um certificado.
  */
-export interface AtualizarCertificadoResponse {
-  certificado: Certificado;
+export interface UpdateCertificateResponse {
+  certificado: Certificate;
 }
 
 // --- TIPOS DE USUÁRIO ---
@@ -317,8 +317,8 @@ export interface AtualizarCertificadoResponse {
  * GET /api/usuarios
  * Requer autenticação ADMIN.
  */
-export interface ListaUsuariosResponse {
-  usuarios: Usuario[];
+export interface ListUsersResponse {
+  usuarios: User[];
 }
 
 /**
@@ -327,8 +327,8 @@ export interface ListaUsuariosResponse {
  * Usuários comuns só podem ver o próprio perfil.
  * Admin pode ver qualquer usuário.
  */
-export interface BuscarUsuarioResponse {
-  usuario: Usuario;
+export interface GetUserResponse {
+  usuario: User;
 }
 
 /**
@@ -337,7 +337,7 @@ export interface BuscarUsuarioResponse {
  * Requer autenticação ADMIN.
  * Permite criar usuários de qualquer tipo (inclusive ADMIN).
  */
-export interface CriarUsuarioBody {
+export interface CreateUserBody {
   nome: string;
   email: string;
   telefone?: string;
@@ -348,15 +348,15 @@ export interface CriarUsuarioBody {
 /**
  * Resposta da criação de um usuário (admin).
  */
-export interface CriarUsuarioResponse {
-  usuario: Usuario;
+export interface CreateUserResponse {
+  usuario: User;
 }
 
 /**
  * Corpo da requisição para atualizar um usuário.
  * PUT /api/usuarios/{id}
  */
-export interface AtualizarUsuarioBody {
+export interface UpdateUserBody {
   nome?: string;
   email?: string;
   telefone?: string;
@@ -366,8 +366,8 @@ export interface AtualizarUsuarioBody {
 /**
  * Resposta da atualização de um usuário.
  */
-export interface AtualizarUsuarioResponse {
-  usuario: Usuario;
+export interface UpdateUserResponse {
+  usuario: User;
 }
 
 // --- TIPOS DE AUTENTICAÇÃO ---
@@ -444,5 +444,5 @@ export interface OkResponse {
  * Retorna os dados do usuário atualmente autenticado (ou null).
  */
 export interface AuthMeResponse {
-  usuario: UsuarioResumido | null;
+  usuario: UserSummary | null;
 }

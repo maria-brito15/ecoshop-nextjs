@@ -20,9 +20,9 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS, mapeiaErro } from "@/lib/http/responses";
-import { cadastroAdminSchema } from "@/lib/schemas/usuario";
-import { listarUsuarios, criarUsuario } from "@/services/usuario.service";
+import { ERRORS, mapError } from "@/lib/http/responses";
+import { adminRegistrationSchema } from "@/lib/schemas/usuario";
+import { listUsers, createUser } from "@/services/usuario.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
@@ -37,14 +37,14 @@ import { requireAdmin } from "@/app/_middleware/auth";
  * @status 500 - Erro ao listar usuários
  */
 export async function GET(req: NextRequest) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
-    const usuarios = await listarUsuarios();
-    return NextResponse.json({ usuarios });
+    const users = await listUsers();
+    return NextResponse.json({ usuarios: users });
   } catch (err) {
-    return ERROS.interno("listar usuários", err);
+    return ERRORS.internal("listar usuários", err);
   }
 }
 
@@ -63,17 +63,17 @@ export async function GET(req: NextRequest) {
  * @status 500 - Erro ao criar usuário
  */
 export async function POST(req: NextRequest) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
     const body = await req.json();
-    const parsed = cadastroAdminSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    const parsed = adminRegistrationSchema.safeParse(body);
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const usuario = await criarUsuario(parsed.data);
-    return NextResponse.json({ usuario }, { status: 201 });
+    const user = await createUser(parsed.data);
+    return NextResponse.json({ usuario: user }, { status: 201 });
   } catch (err) {
-    return mapeiaErro(err, "Usuário") ?? ERROS.interno("criar usuário", err);
+    return mapError(err, "Usuário") ?? ERRORS.internal("criar usuário", err);
   }
 }

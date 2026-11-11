@@ -18,16 +18,16 @@ export type Tipo = "CLIENTE" | "MARCA" | "ADMIN";
 
 /** Sufixo único por execução: evita colisão entre arquivos e execuções. */
 export const RUN = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-export const email = (nome: string) => `${nome}-${RUN}@test.local`;
+export const email = (name: string) => `${name}-${RUN}@test.local`;
 
-export async function criarUsuarioDireto(
+export async function createUserDirectly(
   mail: string,
-  tipo: Tipo = "CLIENTE",
-  senhaHash = "hash-qualquer",
+  type: Tipo = "CLIENTE",
+  passwordHash = "hash-qualquer",
 ) {
   await prisma.usuario.deleteMany({ where: { email: mail } });
   return prisma.usuario.create({
-    data: { nome: "Teste " + tipo, email: mail, senha: senhaHash, tipo },
+    data: { nome: "Teste " + type, email: mail, senha: passwordHash, tipo: type },
   });
 }
 
@@ -87,7 +87,7 @@ export const json = (corpo: unknown, status = 200) =>
     headers: { "content-type": "application/json" },
   });
 
-export async function limparRateLimit() {
+export async function clearRateLimit() {
   for await (const k of redis.scanIterator({
     MATCH: "rate_limit:*",
     COUNT: 100,
@@ -95,7 +95,7 @@ export async function limparRateLimit() {
     await redis.del(k);
 }
 
-export async function encerrar() {
+export async function closeConnections() {
   await prisma.$disconnect();
   await redis.quit().catch(() => {});
 }

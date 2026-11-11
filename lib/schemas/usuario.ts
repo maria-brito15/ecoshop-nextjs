@@ -35,13 +35,13 @@ const emailSchema = z.string().trim().toLowerCase().email("Email inválido");
  * silêncio. Conta bytes (UTF-8), não caracteres, e usa `TextEncoder`, que
  * existe também no navegador (REQ-AUTH-16).
  */
-const LIMITE_BYTES_SENHA = 72;
-const senhaSchema = z
+const PASSWORD_MAX_BYTES = 72;
+const passwordSchema = z
   .string()
   .min(8, "Senha deve ter pelo menos 8 caracteres")
   .refine(
-    (senha) => new TextEncoder().encode(senha).length <= LIMITE_BYTES_SENHA,
-    `Senha deve ter no máximo ${LIMITE_BYTES_SENHA} bytes`,
+    (password) => new TextEncoder().encode(password).length <= PASSWORD_MAX_BYTES,
+    `Senha deve ter no máximo ${PASSWORD_MAX_BYTES} bytes`,
   );
 
 /**
@@ -81,11 +81,11 @@ export const loginSchema = z.object({
  *   tipo: "ADMIN"
  * };
  */
-export const cadastroAdminSchema = z.object({
+export const adminRegistrationSchema = z.object({
   nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
   email: emailSchema,
   telefone: z.string().optional(),
-  senha: senhaSchema,
+  senha: passwordSchema,
   tipo: z.enum(["CLIENTE", "MARCA", "ADMIN"]).default("CLIENTE"),
 });
 
@@ -105,12 +105,12 @@ export const cadastroAdminSchema = z.object({
  * - Segurança: apenas admins existentes podem criar outros admins
  * - Fluxo: novo usuário se cadastra como CLIENTE ou MARCA
  */
-export const registroPublicoSchema = z
+export const publicRegistrationSchema = z
   .object({
     nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
     email: emailSchema,
     telefone: z.string().optional(),
-    senha: senhaSchema,
+    senha: passwordSchema,
     tipo: z.enum(["CLIENTE", "MARCA"]).default("CLIENTE"),
     marcaNome: z.string().min(1, "Nome da marca é obrigatório").optional(),
     marcaDescricao: z.string().optional(),
@@ -149,11 +149,11 @@ export const registroPublicoSchema = z
  * // Atualizar senha
  * const dados = { senha: "nova_senha_segura_123" };
  */
-export const atualizarUsuarioSchema = z.object({
+export const updateUserSchema = z.object({
   nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres").optional(),
   email: emailSchema.optional(),
   telefone: z.string().optional(),
-  senha: senhaSchema.optional(),
+  senha: passwordSchema.optional(),
   // Obrigatória para trocar a PRÓPRIA senha (REQ-AUTH-21); o service decide.
   senhaAtual: z.string().min(1, "Senha atual é obrigatória").optional(),
 });

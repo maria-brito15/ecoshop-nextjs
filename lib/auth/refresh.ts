@@ -16,73 +16,73 @@
  */
 
 import { createHash, randomBytes } from "node:crypto";
-import { redis, comPrazo, TIMEOUT_COMANDO_MS } from "@/lib/redis";
-import { TEMPO_DA_RENOVACAO_SEGUNDOS } from "./constantes";
+import { redis, withTimeout, TIMEOUT_COMANDO_MS } from "@/lib/redis";
+import { REFRESH_TOKEN_SECONDS } from "./constantes";
 
 /** Onde os tokens de renovação ficam. Lança se o armazenamento está indisponível. */
-export interface ArmazemDeRenovacao {
-  criar(token: string, usuarioId: number): Promise<void>;
+export interface RefreshTokenStore {
+  create(token: string, userId: number): Promise<void>;
   /** Remove o token e devolve o dono; `null` se não existe (inválido, expirado ou já usado). */
-  consumir(token: string): Promise<number | null>;
+  consume(token: string): Promise<number | null>;
   /** Remove um token (logout). */
-  revogar(token: string): Promise<void>;
+  revoke(token: string): Promise<void>;
   /** Remove todos os tokens do usuário (troca de senha, exclusão). */
-  revogarTodos(usuarioId: number): Promise<void>;
+  revokeAll(userId: number): Promise<void>;
 }
 
 /** 32 bytes aleatórios (256 bits) em base64url. */
-export function gerarTokenDeRenovacao(): string {
+export function generateRefreshToken(): string {
   return randomBytes(32).toString("base64url");
 }
 
 const hashDoToken = (token: string) =>
   createHash("sha256").update(token).digest("hex");
-const chaveDoToken = (hash: string) => `refresh:${hash}`;
-const chaveDoUsuario = (usuarioId: number) => `refresh_usuario:${usuarioId}`;
+const tokenKey = (hash: string) => `refresh:${hash}`;
+const refreshUserKey = (userId: number) => `refresh_usuario:${userId}`;
 
-const comPrazoCurto = <T>(promessa: Promise<T>) =>
-  comPrazo(promessa, TIMEOUT_COMANDO_MS);
+const withShortTimeout = <T>(promessa: Promise<T>) =>
+  withTimeout(promessa, TIMEOUT_COMANDO_MS);
 
-class ArmazemRedis implements ArmazemDeRenovacao {
-  async criar(token: string, usuarioId: number): Promise<void> {
+class RedisRefreshTokenStore implements RefreshTokenStore {
+  async create(token: string, userId: number): Promise<void> {
     const hash = hashDoToken(token);
-    const conjunto = chaveDoUsuario(usuarioId);
-    await comPrazoCurto(
+    const conjunto = refreshUserKey(userId);
+    await withShortTimeout(
       redis
         .multi()
-        .set(chaveDoToken(hash), String(usuarioId), {
-          EX: TEMPO_DA_RENOVACAO_SEGUNDOS,
+        .set(tokenKey(hash), String(userId), {
+          EX: REFRESH_TOKEN_SECONDS,
         })
         .sAdd(conjunto, hash)
-        .expire(conjunto, TEMPO_DA_RENOVACAO_SEGUNDOS)
+        .expire(conjunto, REFRESH_TOKEN_SECONDS)
         .exec(),
     );
   }
 
-  async consumir(token: string): Promise<number | null> {
+  async consume(token: string): Promise<number | null> {
     const hash = hashDoToken(token);
-    const dono = await comPrazoCurto(redis.getDel(chaveDoToken(hash)));
+    const dono = await withShortTimeout(redis.getDel(tokenKey(hash)));
     if (dono === null) return null;
 
-    const usuarioId = Number(dono);
-    if (!Number.isInteger(usuarioId)) return null;
+    const userId = Number(dono);
+    if (!Number.isInteger(userId)) return null;
     // Limpeza do conjunto: se falhar, o hash vira lixo até o conjunto expirar.
-    await comPrazoCurto(redis.sRem(chaveDoUsuario(usuarioId), hash)).catch(() => undefined);
-    return usuarioId;
+    await withShortTimeout(redis.sRem(refreshUserKey(userId), hash)).catch(() => undefined);
+    return userId;
   }
 
-  async revogar(token: string): Promise<void> {
-    await this.consumir(token);
+  async revoke(token: string): Promise<void> {
+    await this.consume(token);
   }
 
-  async revogarTodos(usuarioId: number): Promise<void> {
-    const conjunto = chaveDoUsuario(usuarioId);
-    const hashes = await comPrazoCurto(redis.sMembers(conjunto));
-    await comPrazoCurto(
-      redis.del([...hashes.map(chaveDoToken), conjunto]),
+  async revokeAll(userId: number): Promise<void> {
+    const conjunto = refreshUserKey(userId);
+    const hashes = await withShortTimeout(redis.sMembers(conjunto));
+    await withShortTimeout(
+      redis.del([...hashes.map(tokenKey), conjunto]),
     );
   }
 }
 
 /** Armazém usado pela aplicação (Redis). */
-export const armazemDeRenovacao: ArmazemDeRenovacao = new ArmazemRedis();
+export const refreshTokenStore: RefreshTokenStore = new RedisRefreshTokenStore();

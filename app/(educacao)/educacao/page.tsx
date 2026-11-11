@@ -301,7 +301,7 @@ function SecaoArtigos({
     onArtigoChange?.(true);
   }
 
-  function fecharArtigo() {
+  function closeArticle() {
     setAberto(null);
     onArtigoChange?.(false);
   }
@@ -311,7 +311,7 @@ function SecaoArtigos({
     return (
       <div className="animate-[fadeSlideUp_0.4s_ease]">
         <button
-          onClick={fecharArtigo}
+          onClick={closeArticle}
           className="inline-flex items-center gap-2 mb-8 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
         >
           ← Voltar para artigos
@@ -474,7 +474,7 @@ function SecaoQuiz() {
     }
   }
 
-  function reiniciar() {
+  function reset() {
     setIndice(0);
     setScore(0);
     setEscolha(null);
@@ -535,7 +535,7 @@ function SecaoQuiz() {
           </div>
 
           <button
-            onClick={reiniciar}
+            onClick={reset}
             className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-sm font-bold bg-[var(--color-primary)] text-white shadow-[var(--shadow-btn)] hover:bg-[var(--color-primary-hover)] hover:-translate-y-0.5 transition-all"
           >
             🔄 Tentar novamente

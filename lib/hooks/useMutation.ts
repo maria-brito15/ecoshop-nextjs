@@ -34,7 +34,7 @@
 "use client";
 
 import { useState } from "react";
-import { invalidarCacheCliente } from "./useFetch";
+import { invalidateClientCache } from "./useFetch";
 
 /**
  * Opções de configuração do mutation hook.
@@ -45,7 +45,7 @@ type Opcoes = {
   /** Modo de credenciais (padrão: "include" para enviar cookies) */
   credentials?: RequestCredentials;
   /** URLs a invalidar no cache cliente após sucesso */
-  invalidar?: string[];
+  invalidate?: string[];
 };
 
 /**
@@ -76,7 +76,7 @@ type ApiErroResponse = { erro?: string; error?: string };
  */
 export function useMutation<TResponse, TBody = unknown>(opcoes?: Opcoes) {
   const [data, setData] = useState<TResponse | null>(null);
-  const [carregando, setCarregando] = useState(false);
+  const [loading, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   /**
@@ -86,7 +86,7 @@ export function useMutation<TResponse, TBody = unknown>(opcoes?: Opcoes) {
    * @param body - Corpo da requisição (opcional para DELETE)
    * @returns Dados da resposta ou null em caso de erro
    */
-  async function executar(
+  async function execute(
     url: string,
     body?: TBody,
   ): Promise<TResponse | null> {
@@ -112,8 +112,8 @@ export function useMutation<TResponse, TBody = unknown>(opcoes?: Opcoes) {
 
       if (!res.ok) {
         const errData = responseData as ApiErroResponse;
-        const mensagem = errData.erro ?? errData.error ?? "Erro desconhecido";
-        setErro(mensagem);
+        const message = errData.erro ?? errData.error ?? "Erro desconhecido";
+        setErro(message);
         setCarregando(false);
         return null;
       }
@@ -123,8 +123,8 @@ export function useMutation<TResponse, TBody = unknown>(opcoes?: Opcoes) {
 
       // Invalida caches do cliente para forçar refetch nos próximos useFetch
       // Isso garante que a UI mostre dados atualizados após a mutação
-      if (opcoes?.invalidar) {
-        opcoes.invalidar.forEach(invalidarCacheCliente);
+      if (opcoes?.invalidate) {
+        opcoes.invalidate.forEach(invalidateClientCache);
       }
 
       return responseData;
@@ -135,5 +135,5 @@ export function useMutation<TResponse, TBody = unknown>(opcoes?: Opcoes) {
     }
   }
 
-  return { data, carregando, erro, executar };
+  return { data, carregando: loading, erro, executar: execute };
 }

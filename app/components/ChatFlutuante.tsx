@@ -20,7 +20,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useChat } from "@/lib/hooks/useIA";
-import { buscarSessao } from "@/lib/hooks/sessao";
+import { fetchSession } from "@/lib/hooks/sessao";
 
 type Mensagem = { role: "user" | "model"; texto: string };
 
@@ -28,41 +28,41 @@ export default function ChatFlutuante() {
   const [logado, setLogado] = useState(false);
   const [aberto, setAberto] = useState(false);
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
-  const [texto, setTexto] = useState("");
+  const [text, setTexto] = useState("");
   const chat = useChat();
-  const listaRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    buscarSessao().then((usuario) => setLogado(usuario !== null));
+    fetchSession().then((user) => setLogado(user !== null));
   }, []);
 
   useEffect(() => {
-    listaRef.current?.scrollTo({ top: listaRef.current.scrollHeight });
+    listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [mensagens, chat.carregando]);
 
   if (!logado) return null;
 
-  async function enviar(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const mensagem = texto.trim();
-    if (!mensagem || chat.carregando) return;
+    const message = text.trim();
+    if (!message || chat.carregando) return;
 
-    const historico = mensagens.map((m) => ({
+    const history = mensagens.map((m) => ({
       role: m.role,
       parts: [{ text: m.texto }],
     }));
 
-    setMensagens((prev) => [...prev, { role: "user", texto: mensagem }]);
+    setMensagens((prev) => [...prev, { role: "user", texto: message }]);
     setTexto("");
 
-    const resultado = await chat.executar("/api/ia/chat", {
-      mensagem,
-      historico,
+    const result = await chat.executar("/api/ia/chat", {
+      mensagem: message,
+      historico: history,
     });
-    if (resultado) {
+    if (result) {
       setMensagens((prev) => [
         ...prev,
-        { role: "model", texto: resultado.resposta },
+        { role: "model", texto: result.resposta },
       ]);
     }
   }
@@ -99,7 +99,7 @@ export default function ChatFlutuante() {
           </div>
 
           <div
-            ref={listaRef}
+            ref={listRef}
             className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3"
           >
             {mensagens.length === 0 && (
@@ -145,13 +145,13 @@ export default function ChatFlutuante() {
           </div>
 
           <form
-            onSubmit={enviar}
+            onSubmit={submit}
             className="flex items-center gap-2 px-3 py-3"
             style={{ borderTop: "1px solid var(--color-border)" }}
           >
             <input
               type="text"
-              value={texto}
+              value={text}
               onChange={(e) => setTexto(e.target.value)}
               placeholder="Digite sua pergunta..."
               maxLength={2000}
@@ -165,7 +165,7 @@ export default function ChatFlutuante() {
             />
             <button
               type="submit"
-              disabled={chat.carregando || !texto.trim()}
+              disabled={chat.carregando || !text.trim()}
               aria-label="Enviar mensagem"
               className="w-9 h-9 rounded-full flex items-center justify-center text-white disabled:opacity-50"
               style={{ background: "var(--color-primary)" }}

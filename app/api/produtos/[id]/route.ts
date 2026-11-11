@@ -17,13 +17,13 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS, mapeiaErro } from "@/lib/http/responses";
-import { idDaRota } from "@/lib/http/params";
-import { atualizarProdutoSchema } from "@/lib/schemas/produto";
+import { ERRORS, mapError } from "@/lib/http/responses";
+import { routeId } from "@/lib/http/params";
+import { updateProductSchema } from "@/lib/schemas/produto";
 import {
-  buscarProduto,
-  atualizarProduto,
-  deletarProduto,
+  getProduct,
+  updateProduct,
+  deleteProduct,
 } from "@/services/produto.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
@@ -41,13 +41,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const id = await idDaRota(params);
-    if (id === null) return ERROS.dadosInvalidos("ID inválido");
-    const produto = await buscarProduto(id);
-    if (!produto) return ERROS.naoEncontrado("Produto");
-    return NextResponse.json({ produto });
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("ID inválido");
+    const product = await getProduct(id);
+    if (!product) return ERRORS.notFound("Produto");
+    return NextResponse.json({ produto: product });
   } catch (err) {
-    return ERROS.interno("buscar produto", err);
+    return ERRORS.internal("buscar produto", err);
   }
 }
 
@@ -70,21 +70,21 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
-    const id = await idDaRota(params);
-    if (id === null) return ERROS.dadosInvalidos("ID inválido");
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("ID inválido");
     const body = await req.json();
-    const parsed = atualizarProdutoSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    const parsed = updateProductSchema.safeParse(body);
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const produto = await atualizarProduto(id, parsed.data);
-    return NextResponse.json({ produto });
+    const product = await updateProduct(id, parsed.data);
+    return NextResponse.json({ produto: product });
   } catch (err) {
     return (
-      mapeiaErro(err, "Produto") ?? ERROS.interno("atualizar produto", err)
+      mapError(err, "Produto") ?? ERRORS.internal("atualizar produto", err)
     );
   }
 }
@@ -106,17 +106,17 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
-    const id = await idDaRota(params);
-    if (id === null) return ERROS.dadosInvalidos("ID inválido");
-    await deletarProduto(id);
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("ID inválido");
+    await deleteProduct(id);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return (
-      mapeiaErro(err, "Produto") ?? ERROS.interno("deletar produto", err)
+      mapError(err, "Produto") ?? ERRORS.internal("deletar produto", err)
     );
   }
 }

@@ -8,11 +8,11 @@
  */
 import {
   email,
-  criarUsuarioDireto,
+  createUserDirectly,
   cookieDe,
   req,
   ctx,
-  encerrar,
+  closeConnections,
   stubFetch,
   json,
 } from "./helpers";
@@ -22,19 +22,19 @@ import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { RecursoNaoEncontrado, ConflitoDeNegocio } from "@/lib/errors/dominio";
-import { mapeiaErro } from "@/lib/http/responses";
+import { mapError } from "@/lib/http/responses";
 import { parseId } from "@/lib/schemas/id";
 import {
   loginSchema,
-  cadastroAdminSchema,
-  registroPublicoSchema,
-  atualizarUsuarioSchema,
+  adminRegistrationSchema,
+  publicRegistrationSchema,
+  updateUserSchema,
 } from "@/lib/schemas/usuario";
 import { chatSchema } from "@/lib/schemas/ia-chat";
-import { caminhoLocalOuRaiz } from "@/lib/http/next-url";
-import { fetchComTimeout } from "@/lib/http/fetch-com-timeout";
-import { classificarImagem } from "@/lib/ai/providers/azure-vision";
-import { gerarTexto } from "@/lib/ai/providers/gemini-chat";
+import { localPathOrRoot } from "@/lib/http/next-url";
+import { fetchWithTimeout } from "@/lib/http/fetch-com-timeout";
+import { classifyImage } from "@/lib/ai/providers/azure-vision";
+import { generateText } from "@/lib/ai/providers/gemini-chat";
 import { analisarImagem } from "@/lib/ai";
 import {
   GET as produtoGet,
@@ -70,7 +70,7 @@ import { POST as chat } from "@/app/api/ia/chat/route";
 import { POST as cadastrar } from "@/app/api/users/route";
 import { POST as login } from "@/app/api/auth/route";
 
-after(encerrar);
+after(closeConnections);
 
 const IDS_INVALIDOS = ["abc", "0", "-1", "1.5", "1e3", " 7", "2147483648", ""];
 
@@ -80,35 +80,35 @@ const admin = () => cookieDe({ id: 987654, email: "adm@test.local", tipo: "ADMIN
 // Mapeador de erros (Art. VII) — REQ-USR-07
 // ---------------------------------------------------------------------------
 
-const erroPrisma = (code: string) =>
+const prismaError = (code: string) =>
   new Prisma.PrismaClientKnownRequestError("falha", {
     code,
     clientVersion: "teste",
   });
 
 test("REQ-USR-07: erro de domínio vira a resposta HTTP certa (404 e 409), com a mensagem original", async () => {
-  const naoEncontrado = mapeiaErro(new RecursoNaoEncontrado("Usuário"), "Qualquer");
+  const naoEncontrado = mapError(new RecursoNaoEncontrado("Usuário"), "Qualquer");
   assert.equal(naoEncontrado?.status, 404);
   assert.deepEqual(await naoEncontrado?.json(), { erro: "Usuário não encontrado" });
 
-  const conflito = mapeiaErro(new ConflitoDeNegocio("Email já cadastrado"), "Qualquer");
+  const conflito = mapError(new ConflitoDeNegocio("Email já cadastrado"), "Qualquer");
   assert.equal(conflito?.status, 409);
   assert.deepEqual(await conflito?.json(), { erro: "Email já cadastrado" });
 });
 
 test("REQ-USR-07: código do Prisma vira 404 (P2025) e 409 (P2002, P2003); desconhecido não vira resposta", () => {
-  assert.equal(mapeiaErro(erroPrisma("P2025"), "Usuário")?.status, 404);
-  assert.equal(mapeiaErro(erroPrisma("P2002"), "Usuário")?.status, 409);
-  assert.equal(mapeiaErro(erroPrisma("P2003"), "Usuário")?.status, 409);
-  assert.equal(mapeiaErro(erroPrisma("P2999"), "Usuário"), null);
+  assert.equal(mapError(prismaError("P2025"), "Usuário")?.status, 404);
+  assert.equal(mapError(prismaError("P2002"), "Usuário")?.status, 409);
+  assert.equal(mapError(prismaError("P2003"), "Usuário")?.status, 409);
+  assert.equal(mapError(prismaError("P2999"), "Usuário"), null);
 });
 
 test("REQ-USR-07: o mapeador nunca decide pelo texto da mensagem (Art. VII.2)", () => {
-  for (const texto of ["P2025", "P2003", "EMAIL_JA_CADASTRADO", "MARCA_NAO_PENDENTE"]) {
-    assert.equal(mapeiaErro(new Error(texto), "Usuário"), null, texto);
+  for (const text of ["P2025", "P2003", "EMAIL_JA_CADASTRADO", "MARCA_NAO_PENDENTE"]) {
+    assert.equal(mapError(new Error(text), "Usuário"), null, text);
   }
   assert.equal(
-    mapeiaErro(new Error("mensagem com P2025 no meio"), "Usuário"),
+    mapError(new Error("mensagem com P2025 no meio"), "Usuário"),
     null,
   );
 });
@@ -156,19 +156,19 @@ test("REQ-REF-05: categorias, marcas e certificados com id inválido respondem 4
     ["marcas", marcaGet, marcaPut, marcaDelete],
     ["certificados", certificadoGet, certificadoPut, certificadoDelete],
   ] as const;
-  for (const [nome, get, put, del] of recursos) {
+  for (const [name, get, put, del] of recursos) {
     for (const id of ["abc", "0", "1.5"]) {
-      const url = `/api/${nome}/${id}`;
-      assert.equal((await get(req(url), ctx(id))).status, 400, `GET ${nome} ${id}`);
+      const url = `/api/${name}/${id}`;
+      assert.equal((await get(req(url), ctx(id))).status, 400, `GET ${name} ${id}`);
       assert.equal(
         (await put(req(url, { method: "PUT", cookie, body: { nome: "Nome válido" } }), ctx(id))).status,
         400,
-        `PUT ${nome} ${id}`,
+        `PUT ${name} ${id}`,
       );
       assert.equal(
         (await del(req(url, { method: "DELETE", cookie }), ctx(id))).status,
         400,
-        `DELETE ${nome} ${id}`,
+        `DELETE ${name} ${id}`,
       );
     }
   }
@@ -237,25 +237,25 @@ test("REQ-AUTH-15: os schemas normalizam o e-mail (espaços e caixa) no login, c
   const limpo = "foo.bar@exemplo.com";
   assert.equal(loginSchema.parse({ email: sujo, senha: "x" }).email, limpo);
   assert.equal(
-    cadastroAdminSchema.parse({ nome: "Fulano", email: sujo, senha: "Senha12345" }).email,
+    adminRegistrationSchema.parse({ nome: "Fulano", email: sujo, senha: "Senha12345" }).email,
     limpo,
   );
   assert.equal(
-    registroPublicoSchema.parse({ nome: "Fulano", email: sujo, senha: "Senha12345" }).email,
+    publicRegistrationSchema.parse({ nome: "Fulano", email: sujo, senha: "Senha12345" }).email,
     limpo,
   );
-  assert.equal(atualizarUsuarioSchema.parse({ email: sujo }).email, limpo);
+  assert.equal(updateUserSchema.parse({ email: sujo }).email, limpo);
 });
 
 test("REQ-AUTH-16: senha acima de 72 bytes é recusada; 72 bytes é aceita (conta bytes, não caracteres)", () => {
   const base = { nome: "Fulano", email: "a@b.com" };
-  assert.ok(registroPublicoSchema.safeParse({ ...base, senha: "a".repeat(72) }).success);
-  assert.ok(!registroPublicoSchema.safeParse({ ...base, senha: "a".repeat(73) }).success);
+  assert.ok(publicRegistrationSchema.safeParse({ ...base, senha: "a".repeat(72) }).success);
+  assert.ok(!publicRegistrationSchema.safeParse({ ...base, senha: "a".repeat(73) }).success);
   // "ç" ocupa 2 bytes em UTF-8: 37 × 2 = 74 bytes, mas só 37 caracteres
-  assert.ok(!registroPublicoSchema.safeParse({ ...base, senha: "ç".repeat(37) }).success);
-  assert.ok(registroPublicoSchema.safeParse({ ...base, senha: "ç".repeat(36) }).success);
-  assert.ok(!cadastroAdminSchema.safeParse({ ...base, senha: "a".repeat(73) }).success);
-  assert.ok(!atualizarUsuarioSchema.safeParse({ senha: "a".repeat(73) }).success);
+  assert.ok(!publicRegistrationSchema.safeParse({ ...base, senha: "ç".repeat(37) }).success);
+  assert.ok(publicRegistrationSchema.safeParse({ ...base, senha: "ç".repeat(36) }).success);
+  assert.ok(!adminRegistrationSchema.safeParse({ ...base, senha: "a".repeat(73) }).success);
+  assert.ok(!updateUserSchema.safeParse({ senha: "a".repeat(73) }).success);
 });
 
 // ---------------------------------------------------------------------------
@@ -263,9 +263,9 @@ test("REQ-AUTH-16: senha acima de 72 bytes é recusada; 72 bytes é aceita (cont
 // ---------------------------------------------------------------------------
 
 test("REQ-AUTH-17: caminhoLocalOuRaiz aceita caminho local e manda todo o resto para /", () => {
-  assert.equal(caminhoLocalOuRaiz("/perfil"), "/perfil");
-  assert.equal(caminhoLocalOuRaiz("/produtos?categoria=2#topo"), "/produtos?categoria=2#topo");
-  assert.equal(caminhoLocalOuRaiz("/"), "/");
+  assert.equal(localPathOrRoot("/perfil"), "/perfil");
+  assert.equal(localPathOrRoot("/produtos?categoria=2#topo"), "/produtos?categoria=2#topo");
+  assert.equal(localPathOrRoot("/"), "/");
   for (const perigoso of [
     null,
     "",
@@ -282,7 +282,7 @@ test("REQ-AUTH-17: caminhoLocalOuRaiz aceita caminho local e manda todo o resto 
     " /perfil",
     "data:text/html,x",
   ]) {
-    assert.equal(caminhoLocalOuRaiz(perigoso), "/", JSON.stringify(perigoso));
+    assert.equal(localPathOrRoot(perigoso), "/", JSON.stringify(perigoso));
   }
 });
 
@@ -290,10 +290,10 @@ test("REQ-AUTH-17: caminhoLocalOuRaiz aceita caminho local e manda todo o resto 
 // Chat — REQ-CHAT-08 e REQ-CHAT-09
 // ---------------------------------------------------------------------------
 
-const item = (texto: string) => ({ role: "user" as const, parts: [{ text: texto }] });
+const item = (text: string) => ({ role: "user" as const, parts: [{ text: text }] });
 
 test("REQ-CHAT-08: o schema recusa historico com mais de 20 itens, texto acima de 2000 caracteres ou mais de 5 partes", () => {
-  const ok = (historico: unknown[]) => chatSchema.safeParse({ mensagem: "oi", historico }).success;
+  const ok = (history: unknown[]) => chatSchema.safeParse({ mensagem: "oi", historico: history }).success;
   assert.ok(ok(Array.from({ length: 20 }, () => item("oi"))));
   assert.ok(!ok(Array.from({ length: 21 }, () => item("oi"))));
   assert.ok(ok([item("a".repeat(2000))]));
@@ -320,7 +320,7 @@ test("REQ-CHAT-08: a chave do Gemini vai no cabeçalho x-goog-api-key, nunca na 
     // o mesmo vale para o provedor usado pelo EcoScan
     urlUsada = "";
     cabecalhos = {};
-    await gerarTexto("prompt");
+    await generateText("prompt");
     assert.ok(!urlUsada.includes("key="));
     assert.equal(cabecalhos["x-goog-api-key"], "chave-gemini-de-teste-123");
   } finally {
@@ -367,7 +367,7 @@ const fetchPenduradoAteAbortar = (_url: string, init?: RequestInit) =>
   });
 
 /** Falha claramente (em vez de travar o teste) se a promessa não terminar. */
-const comPrazo = <T,>(promessa: Promise<T>, ms = 2000) =>
+const withTimeout = <T,>(promessa: Promise<T>, ms = 2000) =>
   Promise.race([
     promessa,
     new Promise<never>((_, rejeita) => setTimeout(() => rejeita(new Error("sem timeout: a chamada ficou pendurada")), ms)),
@@ -376,7 +376,7 @@ const comPrazo = <T,>(promessa: Promise<T>, ms = 2000) =>
 test("REQ-SCAN-09: fetchComTimeout aborta a chamada que não responde", async () => {
   const restaurar = stubFetch(fetchPenduradoAteAbortar);
   try {
-    await assert.rejects(() => comPrazo(fetchComTimeout("http://exemplo.test", {}, 20)), (e: Error) => !/sem timeout/.test(e.message));
+    await assert.rejects(() => withTimeout(fetchWithTimeout("http://exemplo.test", {}, 20)), (e: Error) => !/sem timeout/.test(e.message));
   } finally {
     restaurar();
   }
@@ -385,7 +385,7 @@ test("REQ-SCAN-09: fetchComTimeout aborta a chamada que não responde", async ()
 test("REQ-SCAN-09: o Azure que não responde no tempo limite vira falha tratada (null), não exceção", async () => {
   const restaurar = stubFetch(fetchPenduradoAteAbortar);
   try {
-    assert.equal(await comPrazo(classificarImagem(Buffer.from("x"), 20)), null);
+    assert.equal(await withTimeout(classifyImage(Buffer.from("x"), 20)), null);
   } finally {
     restaurar();
   }
@@ -395,7 +395,7 @@ test("REQ-SCAN-09: o Gemini que não responde, ou lança erro, vira null (o scan
   process.env.GEMINI_KEY = "chave-gemini-de-teste-123";
   let restaurar = stubFetch(fetchPenduradoAteAbortar);
   try {
-    assert.equal(await comPrazo(gerarTexto("prompt", undefined, 20)), null);
+    assert.equal(await withTimeout(generateText("prompt", undefined, 20)), null);
   } finally {
     restaurar();
   }
@@ -403,7 +403,7 @@ test("REQ-SCAN-09: o Gemini que não responde, ou lança erro, vira null (o scan
     throw new TypeError("fetch failed");
   });
   try {
-    assert.equal(await gerarTexto("prompt"), null);
+    assert.equal(await generateText("prompt"), null);
   } finally {
     restaurar();
   }
@@ -430,7 +430,7 @@ test("REQ-SCAN-05: se a rede do Gemini falha, o scan devolve a análise de conti
 // ===========================================================================
 
 test("REQ-USR-07: PUT de usuário inexistente por ADMIN responde 404", async () => {
-  const cookie = await cookieDe(await criarUsuarioDireto(email("e404-admin"), "ADMIN"));
+  const cookie = await cookieDe(await createUserDirectly(email("e404-admin"), "ADMIN"));
   const res = await usuarioPut(
     req("/api/usuarios/2147000000", { method: "PUT", cookie, body: { nome: "Nome válido" } }),
     ctx(2147000000),
@@ -439,9 +439,9 @@ test("REQ-USR-07: PUT de usuário inexistente por ADMIN responde 404", async () 
 });
 
 test("REQ-USR-07: PUT com e-mail de outro usuário responde 409", async () => {
-  const cookie = await cookieDe(await criarUsuarioDireto(email("e409-admin"), "ADMIN"));
-  const outro = await criarUsuarioDireto(email("e409-outro"));
-  const alvo = await criarUsuarioDireto(email("e409-alvo"));
+  const cookie = await cookieDe(await createUserDirectly(email("e409-admin"), "ADMIN"));
+  const outro = await createUserDirectly(email("e409-outro"));
+  const alvo = await createUserDirectly(email("e409-alvo"));
   const res = await usuarioPut(
     req(`/api/usuarios/${alvo.id}`, { method: "PUT", cookie, body: { email: outro.email } }),
     ctx(alvo.id),
@@ -450,8 +450,8 @@ test("REQ-USR-07: PUT com e-mail de outro usuário responde 409", async () => {
 });
 
 test("REQ-USR-07: DELETE de usuário que tem marca responde 409 e mantém o usuário", async () => {
-  const cookie = await cookieDe(await criarUsuarioDireto(email("fk-admin"), "ADMIN"));
-  const dono = await criarUsuarioDireto(email("fk-dono"), "MARCA");
+  const cookie = await cookieDe(await createUserDirectly(email("fk-admin"), "ADMIN"));
+  const dono = await createUserDirectly(email("fk-dono"), "MARCA");
   await prisma.marca.create({ data: { nome: `Marca FK ${dono.email}`, usuarioId: dono.id, status: "APROVADA" } });
   const res = await usuarioDelete(req(`/api/usuarios/${dono.id}`, { method: "DELETE", cookie }), ctx(dono.id));
   assert.equal(res.status, 409);

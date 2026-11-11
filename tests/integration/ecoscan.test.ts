@@ -1,18 +1,18 @@
 // Capacidade SCAN — docs/capabilities/ecoscan/spec.md
 import {
   email,
-  criarUsuarioDireto,
+  createUserDirectly,
   cookieDe,
   req,
   stubFetch,
   json,
-  encerrar,
+  closeConnections,
 } from "./helpers";
 import { test, after, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { POST as scan } from "@/app/api/ia/scan/route";
 
-after(encerrar);
+after(closeConnections);
 
 let restaurar: (() => void) | undefined;
 beforeEach(() => {
@@ -28,7 +28,7 @@ const CAMPOS = [
   "dicas_sustentaveis",
   "beneficios_reciclagem",
 ];
-const analiseGemini = () =>
+const geminiAnalysis = () =>
   json({
     candidates: [
       {
@@ -53,10 +53,10 @@ const azure = (tag: string, p: number) =>
   });
 const ehAzure = (url: string) => url.startsWith("https://azure.test");
 
-async function enviar(arquivo: File | null) {
-  const u = await criarUsuarioDireto(email("scan"), "CLIENTE");
+async function submit(file: File | null) {
+  const u = await createUserDirectly(email("scan"), "CLIENTE");
   const form = new FormData();
-  if (arquivo) form.set("image", arquivo);
+  if (file) form.set("image", file);
   return scan(
     req("/api/ia/scan", { method: "POST", cookie: await cookieDe(u), form }),
   );
@@ -68,9 +68,9 @@ const png = () =>
 
 test("REQ-SCAN-01: material identificado com confiança suficiente devolve a análise de 6 campos", async () => {
   restaurar = stubFetch((url) =>
-    ehAzure(url) ? azure("plastico", 0.93) : analiseGemini(),
+    ehAzure(url) ? azure("plastico", 0.93) : geminiAnalysis(),
   );
-  const res = await enviar(png());
+  const res = await submit(png());
   assert.equal(res.status, 200);
   const c = await res.json();
   assert.equal(c.sucesso, true);
@@ -86,7 +86,7 @@ test("REQ-SCAN-02: confiança abaixo do limiar responde 422 sem chamar o Gemini"
     if (!ehAzure(url)) chamouGemini = true;
     return json({ predictions: [{ tagName: "vidro", probability: 0.4 }] });
   });
-  const res = await enviar(png());
+  const res = await submit(png());
   assert.equal(res.status, 422);
   const c = await res.json();
   assert.equal(c.sucesso, false);
@@ -96,7 +96,7 @@ test("REQ-SCAN-02: confiança abaixo do limiar responde 422 sem chamar o Gemini"
 
 test("REQ-SCAN-03: a tag 'outros' nunca é considerada identificação, mesmo com confiança alta", async () => {
   restaurar = stubFetch(() => azure("outros", 0.99));
-  assert.equal((await enviar(png())).status, 422);
+  assert.equal((await submit(png())).status, 422);
 });
 
 test("REQ-SCAN-04: se o Gemini devolve conteúdo inválido, usa a análise de contingência (200)", async () => {
@@ -107,7 +107,7 @@ test("REQ-SCAN-04: se o Gemini devolve conteúdo inválido, usa a análise de co
           candidates: [{ content: { parts: [{ text: "isto não é JSON" }] } }],
         }),
   );
-  const res = await enviar(png());
+  const res = await submit(png());
   assert.equal(res.status, 200);
   const c = await res.json();
   assert.equal(c.sucesso, true);
@@ -119,19 +119,19 @@ test("REQ-SCAN-05: se a rede do Gemini falha, usa a análise de contingência (2
     if (ehAzure(url)) return azure("metal", 0.9);
     throw new TypeError("fetch failed");
   });
-  assert.equal((await enviar(png())).status, 200);
+  assert.equal((await submit(png())).status, 200);
 });
 
 test("REQ-SCAN-06: arquivo ausente, formato inválido ou acima de 10 MB responde 400", async () => {
   restaurar = stubFetch(() => azure("papel", 0.9));
-  assert.equal((await enviar(null)).status, 400);
+  assert.equal((await submit(null)).status, 400);
   assert.equal(
-    (await enviar(new File(["x"], "a.txt", { type: "text/plain" }))).status,
+    (await submit(new File(["x"], "a.txt", { type: "text/plain" }))).status,
     400,
   );
   assert.equal(
     (
-      await enviar(
+      await submit(
         new File([new Uint8Array(10 * 1024 * 1024 + 1)], "g.png", {
           type: "image/png",
         }),
@@ -143,7 +143,7 @@ test("REQ-SCAN-06: arquivo ausente, formato inválido ou acima de 10 MB responde
 
 test("REQ-SCAN-07: se o Azure não responde, a resposta é 422 com sugestão (não 500)", async () => {
   restaurar = stubFetch(() => json({}, 500));
-  const res = await enviar(png());
+  const res = await submit(png());
   assert.equal(res.status, 422);
   assert.equal((await res.json()).sucesso, false);
 });

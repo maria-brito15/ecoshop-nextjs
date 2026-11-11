@@ -26,23 +26,23 @@
 
 import { prisma } from "@/lib/db";
 import {
-  comCache,
-  invalidarCache,
-  invalidarChave,
-  chaveProdutos,
-  chaveProduto,
+  withCache,
+  invalidateCache,
+  invalidateKey,
+  productListKey,
+  productKey,
   TTL,
 } from "@/lib/cache";
 import type {
-  ListarProdutosQuery,
-  ProdutoInput,
-  AtualizarProdutoInput,
+  ListProductsQuery,
+  ProductInput,
+  UpdateProductInput,
 } from "@/lib/schemas/produto";
 
 /**
  * Ordenações aceitas por `listarProdutos` (REQ-CAT-06).
  */
-const ORDEM_POR_SORT = {
+const ORDER_BY_SORT = {
   relevancia: { id: "asc" as const },
   preco_asc: { preco: "asc" as const },
   preco_desc: { preco: "desc" as const },
@@ -73,21 +73,21 @@ const ORDEM_POR_SORT = {
  * @param query - Filtros validados
  * @returns Objeto paginado com produtos, total, página atual e tamanho
  */
-export async function listarProdutos(query: ListarProdutosQuery) {
-  const { page, size, categoriaId, marcaId, precoMax, sort, nome } = query;
+export async function listProducts(query: ListProductsQuery) {
+  const { page, size, categoriaId: categoryId, marcaId: brandId, precoMax, sort, nome: name } = query;
 
   // A chave sai dos filtros validados (REQ-CAT-10), nunca da URL crua.
-  const chave = chaveProdutos(query);
+  const key = productListKey(query);
 
-  return comCache(chave, TTL.LISTA_PRODUTOS, async () => {
+  return withCache(key, TTL.PRODUCT_LIST, async () => {
     const where = {
-      ...(categoriaId !== undefined && { categoriaId }),
-      ...(marcaId !== undefined && { marcaId }),
+      ...(categoryId !== undefined && { categoriaId: categoryId }),
+      ...(brandId !== undefined && { marcaId: brandId }),
       ...(precoMax !== undefined && { preco: { lte: precoMax } }),
-      ...(nome && { nome: { contains: nome, mode: "insensitive" as const } }),
+      ...(name && { nome: { contains: name, mode: "insensitive" as const } }),
     };
 
-    const [produtos, total] = await Promise.all([
+    const [products, total] = await Promise.all([
       prisma.produto.findMany({
         where,
         include: {
@@ -97,12 +97,12 @@ export async function listarProdutos(query: ListarProdutosQuery) {
         },
         skip: (page - 1) * size,
         take: size,
-        orderBy: ORDEM_POR_SORT[sort],
+        orderBy: ORDER_BY_SORT[sort],
       }),
       prisma.produto.count({ where }),
     ]);
 
-    return { produtos, page, size, total };
+    return { produtos: products, page, size, total };
   });
 }
 
@@ -113,14 +113,14 @@ export async function listarProdutos(query: ListarProdutosQuery) {
  * @param data - Dados do produto (nome, preco, categoriaId, marcaId, descricao opcional)
  * @returns Produto recém-criado com categorias e marca incluídas
  */
-export async function criarProduto(data: ProdutoInput) {
-  const produto = await prisma.produto.create({
+export async function createProduct(data: ProductInput) {
+  const product = await prisma.produto.create({
     data,
     include: { categoria: true, marca: true },
   });
 
-  await invalidarCache("PRODUTOS");
-  return produto;
+  await invalidateCache("PRODUCTS");
+  return product;
 }
 
 /**
@@ -134,8 +134,8 @@ export async function criarProduto(data: ProdutoInput) {
  * @param id - ID do produto
  * @returns Produto encontrado com relacionamentos ou null
  */
-export async function buscarProduto(id: number) {
-  return comCache(chaveProduto(id), TTL.ITEM, () =>
+export async function getProduct(id: number) {
+  return withCache(productKey(id), TTL.ITEM, () =>
     prisma.produto.findUnique({
       where: { id },
       include: {
@@ -161,27 +161,27 @@ export async function buscarProduto(id: number) {
  * @throws Error P2025 se o produto não existir
  * @throws Error P2003 se algum certificadoId não existir
  */
-export async function atualizarProduto(
+export async function updateProduct(
   id: number,
-  data: AtualizarProdutoInput,
+  data: UpdateProductInput,
 ) {
-  const { certificadoIds, ...produtoData } = data;
+  const { certificadoIds: certificateIds, ...produtoData } = data;
 
-  const produto = await prisma.$transaction(async (tx) => {
+  const product = await prisma.$transaction(async (tx) => {
     if (Object.keys(produtoData).length > 0) {
       await tx.produto.update({ where: { id }, data: produtoData });
     } else {
       await tx.produto.findUniqueOrThrow({ where: { id } });
     }
 
-    if (certificadoIds !== undefined) {
+    if (certificateIds !== undefined) {
       await tx.produtoCertificado.deleteMany({ where: { produtoId: id } });
-      const unicos = [...new Set(certificadoIds)];
+      const unicos = [...new Set(certificateIds)];
       if (unicos.length > 0) {
         await tx.produtoCertificado.createMany({
-          data: unicos.map((certificadoId) => ({
+          data: unicos.map((certificateId) => ({
             produtoId: id,
-            certificadoId,
+            certificadoId: certificateId,
           })),
         });
       }
@@ -198,10 +198,10 @@ export async function atualizarProduto(
   });
 
   await Promise.all([
-    invalidarChave(chaveProduto(id)),
-    invalidarCache("PRODUTOS"),
+    invalidateKey(productKey(id)),
+    invalidateCache("PRODUCTS"),
   ]);
-  return produto;
+  return product;
 }
 
 /**
@@ -217,10 +217,10 @@ export async function atualizarProduto(
  * @param id - ID do produto a ser deletado
  * @throws PrismaClientKnownRequestError P2025 se o produto não existir (404) ou P2003 se houver vínculos (409)
  */
-export async function deletarProduto(id: number) {
+export async function deleteProduct(id: number) {
   await prisma.produto.delete({ where: { id } });
   await Promise.all([
-    invalidarChave(chaveProduto(id)),
-    invalidarCache("PRODUTOS"),
+    invalidateKey(productKey(id)),
+    invalidateCache("PRODUCTS"),
   ]);
 }

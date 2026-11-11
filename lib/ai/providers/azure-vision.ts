@@ -24,7 +24,7 @@
  * ============================================================================
  */
 
-import { fetchComTimeout } from "@/lib/http/fetch-com-timeout";
+import { fetchWithTimeout } from "@/lib/http/fetch-com-timeout";
 
 const AZURE_URL = process.env.AZURE_VISION_ENDPOINT ?? "";
 const AZURE_KEY = process.env.AZURE_VISION_KEY ?? "";
@@ -59,7 +59,7 @@ export interface AzurePrediction {
  * const predicoes = await classificarImagem(Buffer.from(buffer));
  * const melhor = predicoes?.[0]; // maior probabilidade
  */
-export async function classificarImagem(
+export async function classifyImage(
   imageBuffer: Buffer,
   timeoutMs: number = TIMEOUT_AZURE_MS,
 ): Promise<AzurePrediction[] | null> {
@@ -68,7 +68,7 @@ export async function classificarImagem(
   if (!AZURE_URL || !AZURE_KEY || AZURE_KEY.length < 10) return null;
 
   try {
-    const res = await fetchComTimeout(
+    const res = await fetchWithTimeout(
       AZURE_URL,
       {
         method: "POST",

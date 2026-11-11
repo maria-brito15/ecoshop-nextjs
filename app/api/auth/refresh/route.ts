@@ -32,20 +32,20 @@ import {
   setRefreshCookie,
   clearSessionCookies,
 } from "@/lib/auth";
-import { COOKIE_RENOVACAO } from "@/lib/auth/constantes";
-import { invalidarChave, chaveUsuarioMe } from "@/lib/cache";
-import { ERROS } from "@/lib/http/responses";
-import { caminhoLocalOuRaiz } from "@/lib/http/next-url";
-import { buscarIdentidade } from "@/services/usuario.service";
-import { renovarSessao } from "@/services/sessao.service";
+import { REFRESH_COOKIE } from "@/lib/auth/constantes";
+import { invalidateKey, currentUserKey } from "@/lib/cache";
+import { ERRORS } from "@/lib/http/responses";
+import { localPathOrRoot } from "@/lib/http/next-url";
+import { getIdentity } from "@/services/usuario.service";
+import { refreshSession, type IssuedSession } from "@/services/sessao.service";
 
 /** Cookies da renovação concluída. */
-function aplicarSessao(
+function applySession(
   res: NextResponse,
-  sessao: { acesso: string; renovacao: string | null },
+  session: IssuedSession,
 ) {
-  setAuthCookie(res, sessao.acesso);
-  if (sessao.renovacao) setRefreshCookie(res, sessao.renovacao);
+  setAuthCookie(res, session.access);
+  if (session.refresh) setRefreshCookie(res, session.refresh);
 }
 
 /**
@@ -59,43 +59,43 @@ function aplicarSessao(
  */
 export async function POST(req: NextRequest) {
   try {
-    const tokenDeRenovacao = req.cookies.get(COOKIE_RENOVACAO)?.value;
+    const refreshToken = req.cookies.get(REFRESH_COOKIE)?.value;
 
-    if (tokenDeRenovacao) {
-      const r = await renovarSessao(tokenDeRenovacao, buscarIdentidade);
+    if (refreshToken) {
+      const r = await refreshSession(refreshToken, getIdentity);
       if (!r.ok) {
         const res =
-          r.motivo === "INDISPONIVEL"
+          r.reason === "INDISPONIVEL"
             ? NextResponse.json(
                 { erro: "Não foi possível renovar a sessão agora. Entre novamente." },
                 { status: 503 },
               )
-            : ERROS.naoAutorizado();
+            : ERRORS.unauthorized();
         clearSessionCookies(res);
         return res;
       }
       const res = NextResponse.json({ ok: true, tipo: r.tipo });
-      aplicarSessao(res, r.sessao);
+      applySession(res, r.session);
       return res;
     }
 
     // Modo antigo: sem token de renovação.
     const session = await getSession(req);
-    if (!session) return ERROS.naoAutorizado();
+    if (!session) return ERRORS.unauthorized();
 
-    const usuario = await buscarIdentidade(session.id);
-    if (!usuario) return ERROS.naoEncontrado("Usuário");
+    const user = await getIdentity(session.id);
+    if (!user) return ERRORS.notFound("Usuário");
 
-    if (usuario.tipo !== session.tipo) {
-      const novoToken = await signToken(usuario);
-      const res = NextResponse.json({ ok: true, tipo: usuario.tipo });
+    if (user.tipo !== session.tipo) {
+      const novoToken = await signToken(user);
+      const res = NextResponse.json({ ok: true, tipo: user.tipo });
       setAuthCookie(res, novoToken);
-      await invalidarChave(chaveUsuarioMe(usuario.id));
+      await invalidateKey(currentUserKey(user.id));
       return res;
     }
-    return NextResponse.json({ ok: true, tipo: usuario.tipo });
+    return NextResponse.json({ ok: true, tipo: user.tipo });
   } catch (err) {
-    return ERROS.interno("renovar sessão", err);
+    return ERRORS.internal("renovar sessão", err);
   }
 }
 
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
  * falha, remove os cookies e leva ao login, com `next` preservado.
  */
 export async function GET(req: NextRequest) {
-  const destino = caminhoLocalOuRaiz(req.nextUrl.searchParams.get("next"));
+  const destino = localPathOrRoot(req.nextUrl.searchParams.get("next"));
   const paraLogin = () => {
     const res = NextResponse.redirect(
       new URL(`/sign-in?next=${encodeURIComponent(destino)}`, req.url),
@@ -116,14 +116,14 @@ export async function GET(req: NextRequest) {
   };
 
   try {
-    const r = await renovarSessao(
-      req.cookies.get(COOKIE_RENOVACAO)?.value,
-      buscarIdentidade,
+    const r = await refreshSession(
+      req.cookies.get(REFRESH_COOKIE)?.value,
+      getIdentity,
     );
     if (!r.ok) return paraLogin();
 
     const res = NextResponse.redirect(new URL(destino, req.url));
-    aplicarSessao(res, r.sessao);
+    applySession(res, r.session);
     return res;
   } catch {
     return paraLogin();

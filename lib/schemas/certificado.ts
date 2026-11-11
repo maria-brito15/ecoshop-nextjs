@@ -41,7 +41,7 @@ import { z } from "zod";
  *   orgaoEmissor: "PETA"
  * };
  */
-export const certificadoSchema = z.object({
+export const certificateSchema = z.object({
   nome: z.string().min(1, "Nome do certificado é obrigatório"),
   descricao: z.string().optional(),
   orgaoEmissor: z.string().min(1, "Órgão emissor é obrigatório"),
@@ -65,7 +65,7 @@ export const certificadoSchema = z.object({
  * // Atualizar apenas descrição
  * const dados = { descricao: "Certificação internacional de produtos orgânicos" };
  */
-export const atualizarCertificadoSchema = z.object({
+export const updateCertificateSchema = z.object({
   nome: z.string().min(1, "Nome não pode estar vazio").optional(),
   descricao: z.string().optional(),
   orgaoEmissor: z
@@ -75,7 +75,7 @@ export const atualizarCertificadoSchema = z.object({
 });
 
 // Tipos inferidos para uso nos services
-export type CertificadoInput = z.infer<typeof certificadoSchema>;
+export type CertificadoInput = z.infer<typeof certificateSchema>;
 export type AtualizarCertificadoInput = z.infer<
-  typeof atualizarCertificadoSchema
+  typeof updateCertificateSchema
 >;

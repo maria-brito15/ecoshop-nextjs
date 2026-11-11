@@ -42,7 +42,7 @@ import { z } from "zod";
  *   usuarioId: 5
  * };
  */
-export const marcaSchema = z.object({
+export const brandSchema = z.object({
   nome: z.string().min(1, "Nome da marca é obrigatório"),
   descricao: z.string().optional(),
   usuarioId: z.number().int("ID do usuário deve ser um número inteiro"),
@@ -66,11 +66,11 @@ export const marcaSchema = z.object({
  * // Atualizar apenas descrição
  * const dados = { descricao: "Nova coleção 2026 com tecidos reciclados" };
  */
-export const atualizarMarcaSchema = z.object({
+export const updateBrandSchema = z.object({
   nome: z.string().min(1, "Nome não pode estar vazio").optional(),
   descricao: z.string().optional(),
 });
 
 // Tipos inferidos para uso nos services
-export type MarcaInput = z.infer<typeof marcaSchema>;
-export type AtualizarMarcaInput = z.infer<typeof atualizarMarcaSchema>;
+export type MarcaInput = z.infer<typeof brandSchema>;
+export type AtualizarMarcaInput = z.infer<typeof updateBrandSchema>;

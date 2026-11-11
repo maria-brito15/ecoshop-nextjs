@@ -24,7 +24,7 @@ const TRECHOS_DE_EXEMPLO = [
 /**
  * @returns a mensagem do problema (sem nunca incluir o valor), ou `null` se o segredo é aceitável.
  */
-export function validarJwtSecret(valor: string | undefined): string | null {
+export function validateJwtSecret(valor: string | undefined): string | null {
   if (!valor) {
     return "JWT_SECRET não definido. Gere um valor aleatório com 32+ caracteres.";
   }
