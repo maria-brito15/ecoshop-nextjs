@@ -1,89 +1,87 @@
 // config/protected-routes.ts
 
 /**
- * ============================================================================
- * ROTAS PROTEGIDAS - CONFIGURAÇÃO
- * ============================================================================
- * Este arquivo define as regras de proteção de rotas da aplicação.
+ * PROTECTED ROUTES - CONFIGURATION
  *
- * As regras são consumidas pelo middleware (middleware.ts) para:
- * - Redirecionar usuários não autenticados para /sign-in
- * - Bloquear acesso de usuários sem permissão (admin vs. autenticado comum)
- * - Diferenciar entre respostas API (JSON) e páginas (redirect)
+ * This file defines the application's route protection rules.
  *
- * Por que centralizar aqui?
- * - Manter as regras de segurança em um único local
- * - Facilitar manutenção e auditoria
- * - Evitar regras espalhadas pelo código
+ * The rules are consumed by the middleware (middleware.ts) to:
+ * - Redirect unauthenticated users to /sign-in
+ * - Block access for users without permission (admin vs. regular authenticated)
+ * - Distinguish API responses (JSON) from pages (redirect)
  *
- * Tipos de proteção:
- * - "admin": apenas usuários com tipo "ADMIN" podem acessar
- * - "autenticado": qualquer usuário logado (CLIENTE, MARCA, ADMIN) pode acessar
+ * Why centralize here?
+ * - Keep the security rules in a single place
+ * - Easier maintenance and auditing
+ * - Avoid rules scattered across the code
  *
- * Tipos de resposta:
- * - "api": retorna JSON com erro (ex: { erro: "Não autorizado" })
- * - "pagina": redireciona para /sign-in com parâmetro next
- * ============================================================================
+ * Protection types:
+ * - "admin": only users of type "ADMIN" can access
+ * - "authenticated": any signed-in user (CLIENTE, MARCA, ADMIN) can access
+ *
+ * Response types:
+ * - "api": returns JSON with an error (e.g. { erro: "Not authorized" })
+ * - "page": redirects to /sign-in with the next parameter
  */
 
 /**
- * Níveis de acesso disponíveis para proteção de rotas.
+ * Access levels available for route protection.
  *
- * - admin: Apenas usuários com tipo "ADMIN" têm permissão.
- *          Usado para rotas administrativas (painel, gerenciamento de usuários).
+ * - admin: Only users of type "ADMIN" have permission.
+ *          Used for administrative routes (panel, user management).
  *
- * - autenticado: Qualquer usuário logado (CLIENTE, MARCA ou ADMIN) tem permissão.
- *                Usado para rotas de perfil e funcionalidades pessoais.
+ * - authenticated: Any signed-in user (CLIENTE, MARCA or ADMIN) has permission.
+ *                  Used for profile routes and personal features.
  */
 export type AccessLevel = "admin" | "autenticado";
 
 /**
- * Regra de proteção para uma rota ou grupo de rotas.
+ * Protection rule for a route or group of routes.
  */
 export interface RouteRule {
   /**
-   * Prefixo da rota que será protegida.
-   * O middleware verifica se a URL atual começa com este prefixo.
+   * Prefix of the route to protect.
+   * The middleware checks whether the current URL starts with this prefix.
    *
    * @example
-   * prefixo: "/perfil" → protege /perfil, /perfil/editar, /perfil/configuracoes
-   * prefixo: "/api/admin" → protege /api/admin, /api/admin/usuarios, etc.
+   * prefix: "/perfil" → protects /perfil, /perfil/editar, /perfil/configuracoes
+   * prefix: "/api/admin" → protects /api/admin, /api/admin/usuarios, etc.
    */
   prefix: string;
 
   /**
-   * Nível de acesso mínimo necessário.
-   * - "admin": apenas ADMIN pode acessar
-   * - "autenticado": qualquer usuário logado pode acessar
+   * Minimum required access level.
+   * - "admin": only ADMIN can access
+   * - "authenticated": any signed-in user can access
    */
   level: AccessLevel;
 
   /**
-   * Tipo de resposta quando o acesso é negado.
-   * - "api": retorna JSON com status 401/403 (para endpoints de API)
-   * - "pagina": redireciona para página de login (para rotas de página)
+   * Response type when access is denied.
+   * - "api": returns JSON with status 401/403 (for API endpoints)
+   * - "page": redirects to the login page (for page routes)
    */
   responseType: "api" | "pagina";
 }
 
 /**
- * Lista de regras de proteção de rotas.
- * A ordem das regras NÃO importa porque o middleware verifica
- * se a URL COMEÇA com o prefixo (startsWith).
+ * List of route protection rules.
+ * The order of the rules does NOT matter because the middleware checks
+ * whether the URL STARTS WITH the prefix (startsWith).
  *
- * IMPORTANTE: Regras mais específicas devem vir antes de regras genéricas
- * se houver sobreposição. Exemplo:
- * - "/api/admin/usuarios" antes de "/api/admin"
+ * IMPORTANT: More specific rules must come before generic rules
+ * if they overlap. Example:
+ * - "/api/admin/usuarios" before "/api/admin"
  *
- * Regras atuais:
- * 1. /perfil → autenticado (qualquer usuário logado pode ver seu perfil)
- * 2. /ia-scan → autenticado (REQ-AUTZ-08; a API /api/ia/scan já exigia login,
- *    mas a página abria para qualquer visitante antes de tentar enviar a foto)
- * 3. /painel → admin (apenas administradores acessam o painel)
- * 4. /api/usuarios → autenticado (o middleware só exige sessão; quem pode ler/editar cada
- *    registro é decidido no handler: o próprio usuário ou ADMIN, e só ADMIN lista, cria e exclui.
- *    Ver ADR-0017 e specs/001-perfil-proprio-usuario)
- * 5. /api/admin → admin (endpoints administrativos)
+ * Current rules:
+ * 1. /perfil → authenticated (any signed-in user can see their profile)
+ * 2. /ia-scan → authenticated (REQ-AUTZ-08; the /api/ia/scan API already required login,
+ *    but the page opened for any visitor before they tried to upload the photo)
+ * 3. /painel → admin (only administrators access the panel)
+ * 4. /api/usuarios → authenticated (the middleware only requires a session; who may read/edit each
+ *    record is decided in the handler: the user themselves or ADMIN, and only ADMIN lists, creates and deletes.
+ *    See ADR-0017 and specs/001-perfil-proprio-usuario)
+ * 5. /api/admin → admin (administrative endpoints)
  */
 export const ROUTE_RULES: RouteRule[] = [
   {

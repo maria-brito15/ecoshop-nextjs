@@ -1,92 +1,90 @@
 // types/auth.ts
 
 /**
- * ============================================================================
  * AUTHENTICATION TYPES
- * ============================================================================
- * Este arquivo contém os tipos relacionados à autenticação e autorização
- * do EcoShop. Utiliza JWT (JSON Web Tokens) para gerenciar sessões
- * stateless com cookies httpOnly.
  *
- * Os tipos seguem o princípio de segregação de interfaces (ISP):
- * cada interface representa uma responsabilidade única do sistema de auth.
- * ============================================================================
+ * This file contains the types related to EcoShop's authentication and
+ * authorization. It uses JWT (JSON Web Tokens) to manage stateless
+ * sessions with httpOnly cookies.
+ *
+ * The types follow the interface segregation principle (ISP):
+ * each interface represents a single responsibility of the auth system.
  */
 
 /**
- * Payload armazenado no JWT.
- * Este é o dado que será codificado no token e verificado em cada requisição.
+ * Payload stored in the JWT.
+ * This is the data that is encoded in the token and verified on every request.
  *
- * ATENÇÃO: Não incluir dados sensíveis ou muito volumosos no payload,
- * pois o token é transmitido em cada requisição HTTP.
+ * ATTENTION: Do not include sensitive or bulky data in the payload,
+ * because the token is transmitted on every HTTP request.
  *
- * O token é configurado para expirar em 7 dias.
+ * The access token is configured to expire in 15 minutes (ADR-0021).
  */
 export interface JwtPayload {
-  /** ID único do usuário no banco de dados (chave primária auto-increment) */
+  /** Unique user ID in the database (auto-increment primary key) */
   id: number;
-  /** Email do usuário (único) — usado para identificar e exibir no frontend */
+  /** User email (unique) — used to identify and display in the frontend */
   email: string;
   /**
-   * Tipo/permissão do usuário.
-   * Determinante para o middleware de autorização:
-   * - ADMIN → acesso liberado a rotas /api/admin e /painel
-   * - MARCA → acesso restrito aos próprios produtos
-   * - CLIENTE → acesso apenas a rotas públicas e perfil
+   * User type/permission.
+   * Decisive for the authorization middleware:
+   * - ADMIN → access granted to /api/admin and /painel routes
+   * - MARCA → access restricted to their own products
+   * - CLIENTE → access only to public routes and the profile
    */
   tipo: "CLIENTE" | "MARCA" | "ADMIN";
 }
 
 /**
- * Contrato para emissão (assinatura) de tokens JWT.
- * Implementado por JwtService em lib/auth/jwt.ts
+ * Contract for issuing (signing) JWTs.
+ * Implemented by JwtService in lib/auth/jwt.ts
  */
 export interface TokenIssuer {
   /**
-   * Gera um novo token JWT assinado com a chave secreta.
-   * @param payload - Dados a serem codificados no token (id, email, tipo)
-   * @returns Promise com o token string no formato JWT compacto
-   * @throws Erro se JWT_SECRET não estiver configurado
+   * Generates a new JWT signed with the secret key.
+   * @param payload - Data to encode in the token (id, email, tipo)
+   * @returns Promise with the token string in compact JWT format
+   * @throws Error if JWT_SECRET is not configured
    */
   sign(payload: JwtPayload): Promise<string>;
 }
 
 /**
- * Contrato para verificação de tokens JWT.
- * Implementado por JwtService em lib/auth/jwt.ts
+ * Contract for verifying JWTs.
+ * Implemented by JwtService in lib/auth/jwt.ts
  */
 export interface TokenVerifier {
   /**
-   * Verifica a validade e assinatura de um token JWT.
-   * @param token - Token JWT a ser verificado
-   * @returns Payload decodificado se token for válido, null caso contrário
+   * Verifies the validity and signature of a JWT.
+   * @param token - JWT to verify
+   * @returns Decoded payload if the token is valid, null otherwise
    *
-   * Motivos de falha:
-   * - Token expirado (expiração padrão: 7 dias)
-   * - Assinatura inválida (token adulterado)
-   * - Token malformado
-   * - Chave secreta incorreta
+   * Failure reasons:
+   * - Expired token (default expiration: 15 minutes)
+   * - Invalid signature (tampered token)
+   * - Malformed token
+   * - Wrong secret key
    */
   verify(token: string): Promise<JwtPayload | null>;
 }
 
 /**
- * Contrato para leitura de sessão a partir da requisição Next.js.
- * Utilizado por middlewares e rotas de API que precisam do usuário autenticado.
+ * Contract for reading the session from the Next.js request.
+ * Used by middlewares and API routes that need the authenticated user.
  */
 export interface SessionReader {
   /**
-   * Extrai o token do cookie 'token' da requisição e o valida.
-   * @param req - Objeto NextRequest do App Router contendo os cookies
-   * @returns Payload do usuário autenticado, ou null se:
-   *          - Cookie não existe
-   *          - Token é inválido
-   *          - Token está expirado
+   * Extracts the token from the request's 'token' cookie and validates it.
+   * @param req - App Router NextRequest object containing the cookies
+   * @returns Authenticated user's payload, or null if:
+   *          - The cookie does not exist
+   *          - The token is invalid
+   *          - The token is expired
    *
    * @example
    * const session = await getSession(req);
-   * if (!session) return ERROS.naoAutorizado();
-   * console.log(`Usuário ${session.email} está autenticado`);
+   * if (!session) return ERRORS.unauthorized();
+   * console.log(`User ${session.email} is authenticated`);
    */
   getSession(
     req: import("next/server").NextRequest,
