@@ -181,18 +181,18 @@ function CategoryCard({ categoria: category }: { categoria: Categoria }) {
 export default function HomePage() {
   // Busca os 4 primeiros produtos para exibir como destaques
   const {
-    data: produtosData,
-    loading: loadingProdutos,
-    error: erroProdutos,
+    data: productsData,
+    loading: loadingProducts,
+    error: productsError,
   } = useListProducts(1, 4);
 
   // Busca todas as categorias para exibir na grade
-  const { data: categoriasData, loading: loadingCategorias } =
+  const { data: categoriesData, loading: loadingCategories } =
     useListCategories();
 
-  const products = produtosData?.produtos ?? [];
-  const categories = categoriasData?.categorias ?? [];
-  const loading = loadingProdutos || loadingCategorias;
+  const products = productsData?.produtos ?? [];
+  const categories = categoriesData?.categorias ?? [];
+  const loading = loadingProducts || loadingCategories;
 
   useScrollReveal();
 
@@ -295,14 +295,14 @@ export default function HomePage() {
                 />
               ))}
             </div>
-          ) : erroProdutos ? (
+          ) : productsError ? (
             /* Estado de erro */
             <div className="text-center py-12">
               <p className="text-[var(--color-error)] font-semibold mb-2">
                 Ops! Algo deu errado.
               </p>
               <p className="text-[var(--color-text-tertiary)] text-sm">
-                {erroProdutos}
+                {productsError}
               </p>
               <button
                 onClick={() => window.location.reload()}

@@ -39,7 +39,7 @@ import { invalidateClientCache } from "./useFetch";
 /**
  * Opções de configuração do mutation hook.
  */
-type Opcoes = {
+type Options = {
   /** Método HTTP da requisição (padrão: POST) */
   method?: "POST" | "PUT" | "DELETE" | "PATCH";
   /** Modo de credenciais (padrão: "include" para enviar cookies) */
@@ -52,14 +52,14 @@ type Opcoes = {
  * Formato de resposta de erro esperado da API.
  * A API pode retornar "erro" (português) ou "error" (inglês) conforme rota.
  */
-type ApiErroResponse = { erro?: string; error?: string };
+type ApiErrorResponse = { erro?: string; error?: string };
 
 /**
  * Hook para operações de mutação na API.
  *
  * @template TResponse - Tipo dos dados de resposta (sucesso)
  * @template TBody - Tipo do corpo da requisição (pode ser objeto ou FormData)
- * @param opcoes - Configuração do mutation (method, invalidar, etc.)
+ * @param options - Configuração do mutation (method, invalidar, etc.)
  * @returns Estado da mutação + função executar
  *
  * @example
@@ -74,10 +74,10 @@ type ApiErroResponse = { erro?: string; error?: string };
  * formData.append("imagem", file);
  * await upload.executar("/api/fotos", formData);
  */
-export function useMutation<TResponse, TBody = unknown>(opcoes?: Opcoes) {
+export function useMutation<TResponse, TBody = unknown>(options?: Options) {
   const [data, setData] = useState<TResponse | null>(null);
-  const [loading, setCarregando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   /**
    * Executa a mutação.
@@ -91,8 +91,8 @@ export function useMutation<TResponse, TBody = unknown>(opcoes?: Opcoes) {
     body?: TBody,
   ): Promise<TResponse | null> {
     setData(null);
-    setCarregando(true);
-    setErro(null);
+    setLoading(true);
+    setError(null);
 
     try {
       // Detecta se body é FormData (upload de arquivo)
@@ -100,8 +100,8 @@ export function useMutation<TResponse, TBody = unknown>(opcoes?: Opcoes) {
       const isFormData = body instanceof FormData;
 
       const res = await fetch(url, {
-        method: opcoes?.method ?? "POST",
-        credentials: opcoes?.credentials ?? "include",
+        method: options?.method ?? "POST",
+        credentials: options?.credentials ?? "include",
         headers: isFormData
           ? undefined
           : { "Content-Type": "application/json" },
@@ -111,29 +111,29 @@ export function useMutation<TResponse, TBody = unknown>(opcoes?: Opcoes) {
       const responseData = (await res.json()) as TResponse;
 
       if (!res.ok) {
-        const errData = responseData as ApiErroResponse;
+        const errData = responseData as ApiErrorResponse;
         const message = errData.erro ?? errData.error ?? "Erro desconhecido";
-        setErro(message);
-        setCarregando(false);
+        setError(message);
+        setLoading(false);
         return null;
       }
 
       setData(responseData);
-      setCarregando(false);
+      setLoading(false);
 
       // Invalida caches do cliente para forçar refetch nos próximos useFetch
       // Isso garante que a UI mostre dados atualizados após a mutação
-      if (opcoes?.invalidate) {
-        opcoes.invalidate.forEach(invalidateClientCache);
+      if (options?.invalidate) {
+        options.invalidate.forEach(invalidateClientCache);
       }
 
       return responseData;
     } catch {
-      setErro("Falha de conexão");
-      setCarregando(false);
+      setError("Falha de conexão");
+      setLoading(false);
       return null;
     }
   }
 
-  return { data, carregando: loading, erro, executar: execute };
+  return { data, carregando: loading, erro: error, executar: execute };
 }

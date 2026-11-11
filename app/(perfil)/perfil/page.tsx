@@ -48,7 +48,7 @@ type EditForm = {
  * Item do histórico local de produtos visitados (REQ-PERF-05).
  * Mesma forma gravada por app/(store)/produtos/[id]/page.tsx na chave "ecoshop_history".
  */
-type HistoricoItem = {
+type HistoryItem = {
   produtoId: number;
   nome: string;
   fotoUrl?: string;
@@ -70,7 +70,7 @@ function ImpactCard({
   value,
   color,
   delay,
-  fonte,
+  fonte: source,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -125,7 +125,7 @@ function ImpactCard({
         className="text-[11px] italic leading-snug"
         style={{ color: "var(--color-text-tertiary)" }}
       >
-        {fonte}
+        {source}
       </p>
     </div>
   );
@@ -235,8 +235,8 @@ function EditModal({
   onChange,
   onSave,
   onCancel,
-  salvando,
-  erroEdit,
+  salvando: saving,
+  erroEdit: editError,
 }: {
   usuario: User;
   form: EditForm;
@@ -362,7 +362,7 @@ function EditModal({
                 placeholder="(00) 00000-0000"
               />
             </div>
-            {erroEdit && (
+            {editError && (
               <div
                 className="px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2"
                 style={{
@@ -384,7 +384,7 @@ function EditModal({
                   <line x1="12" y1="8" x2="12" y2="12" />
                   <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
-                {erroEdit}
+                {editError}
               </div>
             )}
           </div>
@@ -395,7 +395,7 @@ function EditModal({
             <button
               type="button"
               onClick={onCancel}
-              disabled={salvando}
+              disabled={saving}
               className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200"
               style={{
                 background: "transparent",
@@ -407,7 +407,7 @@ function EditModal({
             </button>
             <button
               type="submit"
-              disabled={salvando}
+              disabled={saving}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all duration-200 disabled:opacity-60"
               style={{
                 background:
@@ -415,7 +415,7 @@ function EditModal({
                 boxShadow: "0 4px 12px rgba(45,149,105,0.3)",
               }}
             >
-              {salvando ? (
+              {saving ? (
                 <svg
                   className="animate-spin"
                   width="15"
@@ -444,7 +444,7 @@ function EditModal({
                   <polyline points="7 3 7 8 15 8" />
                 </svg>
               )}
-              {salvando ? "Salvando..." : "Salvar Alterações"}
+              {saving ? "Salvando..." : "Salvar Alterações"}
             </button>
           </div>
         </form>
@@ -464,27 +464,27 @@ function EditModal({
 // PÁGINA PRINCIPAL
 // ----------------------------------------------------------------------------
 
-export default function PerfilPage() {
+export default function ProfilePage() {
   const router = useRouter();
 
-  const [user, setUsuario] = useState<User | null>(null);
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState<string | null>(null);
-  const [aba, setAba] = useState<"historico" | "impacto">("historico");
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<"historico" | "impacto">("historico");
 
-  const [editando, setEditando] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<EditForm>({ nome: "", telefone: "" });
-  const [salvando, setSalvando] = useState(false);
-  const [erroEdit, setErroEdit] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
-  const [notif, setNotif] = useState<{
+  const [notification, setNotification] = useState<{
     msg: string;
     type: "success" | "error";
   } | null>(null);
 
   // Carrega histórico de produtos visualizados do localStorage (REQ-PERF-05);
   // gravado em app/(store)/produtos/[id]/page.tsx ao abrir um produto.
-  const [history] = useState<HistoricoItem[]>(() => {
+  const [history] = useState<HistoryItem[]>(() => {
     if (typeof window === "undefined") return [];
     try {
       const raw = localStorage.getItem("ecoshop_history");
@@ -497,7 +497,7 @@ export default function PerfilPage() {
 
   // Busca dados do usuário autenticado
   useEffect(() => {
-    async function fetchPerfil() {
+    async function fetchProfile() {
       try {
         const session = await fetchSession();
         if (!session) {
@@ -511,23 +511,23 @@ export default function PerfilPage() {
         });
         if (!res.ok) throw new Error("Erro ao buscar perfil");
         const data = await res.json();
-        setUsuario(data.usuario);
+        setUser(data.usuario);
         setForm({
           nome: data.usuario.nome,
           telefone: data.usuario.telefone ?? "",
         });
       } catch {
-        setErro("Não foi possível carregar o perfil.");
+        setError("Não foi possível carregar o perfil.");
       } finally {
-        setCarregando(false);
+        setLoading(false);
       }
     }
-    fetchPerfil();
+    fetchProfile();
   }, [router]);
 
-  function showNotif(msg: string, type: "success" | "error") {
-    setNotif({ msg, type });
-    setTimeout(() => setNotif(null), 3500);
+  function showNotification(msg: string, type: "success" | "error") {
+    setNotification({ msg, type });
+    setTimeout(() => setNotification(null), 3500);
   }
 
   async function handleLogout() {
@@ -540,11 +540,11 @@ export default function PerfilPage() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
-  async function handleSalvar(e: React.FormEvent) {
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
-    setSalvando(true);
-    setErroEdit(null);
+    setSaving(true);
+    setEditError(null);
     try {
       const res = await fetch(`/api/usuarios/${user.id}`, {
         method: "PUT",
@@ -557,29 +557,29 @@ export default function PerfilPage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        setErroEdit(data.erro ?? "Erro ao salvar.");
+        setEditError(data.erro ?? "Erro ao salvar.");
         return;
       }
       const data = await res.json();
-      setUsuario((prev) => (prev ? { ...prev, ...data.usuario } : prev));
-      setEditando(false);
-      showNotif("Perfil atualizado com sucesso!", "success");
+      setUser((prev) => (prev ? { ...prev, ...data.usuario } : prev));
+      setEditing(false);
+      showNotification("Perfil atualizado com sucesso!", "success");
     } catch {
-      setErroEdit("Erro de conexão. Tente novamente.");
+      setEditError("Erro de conexão. Tente novamente.");
     } finally {
-      setSalvando(false);
+      setSaving(false);
     }
   }
 
-  function handleCancelar() {
+  function handleCancel() {
     if (!user) return;
     setForm({ nome: user.nome, telefone: user.telefone ?? "" });
-    setErroEdit(null);
-    setEditando(false);
+    setEditError(null);
+    setEditing(false);
   }
 
   // Estados de carregamento e erro
-  if (carregando) {
+  if (loading) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -609,7 +609,7 @@ export default function PerfilPage() {
     );
   }
 
-  if (erro || !user) {
+  if (error || !user) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -621,7 +621,7 @@ export default function PerfilPage() {
             className="font-semibold"
             style={{ color: "var(--color-text-primary)" }}
           >
-            {erro ?? "Perfil não encontrado."}
+            {error ?? "Perfil não encontrado."}
           </p>
           <a
             href="/sign-in"
@@ -653,16 +653,16 @@ export default function PerfilPage() {
         }
       `}</style>
 
-      {notif && <Notification message={notif.msg} type={notif.type} />}
-      {editando && (
+      {notification && <Notification message={notification.msg} type={notification.type} />}
+      {editing && (
         <EditModal
           usuario={user}
           form={form}
           onChange={handleChange}
-          onSave={handleSalvar}
-          onCancel={handleCancelar}
-          salvando={salvando}
-          erroEdit={erroEdit}
+          onSave={handleSave}
+          onCancel={handleCancel}
+          salvando={saving}
+          erroEdit={editError}
         />
       )}
 
@@ -785,7 +785,7 @@ export default function PerfilPage() {
               <div className="flex flex-col gap-3 ml-auto">
                 <button
                   type="button"
-                  onClick={() => setEditando(true)}
+                  onClick={() => setEditing(true)}
                   className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5"
                   style={{
                     background: "transparent",
@@ -864,8 +864,8 @@ export default function PerfilPage() {
             style={{ borderBottom: "2px solid var(--color-border)" }}
           >
             <TabBtn
-              active={aba === "historico"}
-              onClick={() => setAba("historico")}
+              active={tab === "historico"}
+              onClick={() => setTab("historico")}
               icon={
                 <svg
                   width="17"
@@ -885,8 +885,8 @@ export default function PerfilPage() {
               Vistos Recentemente
             </TabBtn>
             <TabBtn
-              active={aba === "impacto"}
-              onClick={() => setAba("impacto")}
+              active={tab === "impacto"}
+              onClick={() => setTab("impacto")}
               icon={
                 <svg
                   width="17"
@@ -909,7 +909,7 @@ export default function PerfilPage() {
           </div>
 
           {/* HISTÓRICO (produtos visitados) */}
-          {aba === "historico" && (
+          {tab === "historico" && (
             <div style={{ animation: "fadeInUp 0.4s ease both" }}>
               <div className="mb-8">
                 <h2
@@ -1033,7 +1033,7 @@ export default function PerfilPage() {
           )}
 
           {/* IMPACTO AMBIENTAL (métricas) */}
-          {aba === "impacto" && (
+          {tab === "impacto" && (
             <div style={{ animation: "fadeInUp 0.4s ease both" }}>
               <div className="mb-8">
                 <h2

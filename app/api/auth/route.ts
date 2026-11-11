@@ -49,12 +49,12 @@ const WINDOW_SECONDS = 60;
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
-    const { blocked: bloqueado } = await rateLimit(ip, {
+    const { blocked: blocked } = await rateLimit(ip, {
       limit: ATTEMPT_LIMIT,
       windowSeconds: WINDOW_SECONDS,
     });
 
-    if (bloqueado) {
+    if (blocked) {
       return NextResponse.json(
         { erro: "Muitas tentativas. Aguarde 1 minuto e tente novamente." },
         { status: 429 },
@@ -66,17 +66,17 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return ERRORS.invalidData();
 
     const { email, senha: password } = parsed.data;
-    const identidade = await verifyCredentials(email, password);
-    if (!identidade) return ERRORS.unauthorized();
+    const identity = await verifyCredentials(email, password);
+    if (!identity) return ERRORS.unauthorized();
 
-    const session = await startSession(identidade);
+    const session = await startSession(identity);
 
     const res = NextResponse.json({
       ok: true,
       usuario: {
-        id: identidade.id,
-        email: identidade.email,
-        tipo: identidade.tipo,
+        id: identity.id,
+        email: identity.email,
+        tipo: identity.tipo,
       },
     });
 

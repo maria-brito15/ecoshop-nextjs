@@ -64,10 +64,10 @@ export async function analyzeImage(
   imageId: string,
 ): Promise<ScanResult> {
   const timestamp = new Date().toISOString();
-  const predicoes = await classifyImage(imageBuffer);
+  const predictions = await classifyImage(imageBuffer);
 
   // Caso 1: Nenhuma predição retornada (Azure falhou)
-  if (!predicoes?.length) {
+  if (!predictions?.length) {
     return {
       sucesso: false,
       mensagem:
@@ -83,19 +83,19 @@ export async function analyzeImage(
   }
 
   // Encontra a predição com maior probabilidade
-  const melhor = predicoes.reduce((a, b) =>
+  const best = predictions.reduce((a, b) =>
     a.probability > b.probability ? a : b,
   );
 
   // Caso 2: Confiança baixa OU material identificado como "outros"
-  if (melhor.probability < MIN_CONFIDENCE || melhor.tagName === "outros") {
+  if (best.probability < MIN_CONFIDENCE || best.tagName === "outros") {
     return {
       sucesso: false,
       mensagem:
         "Não foi possível identificar o objeto com confiança suficiente.",
-      confianca: Math.round(melhor.probability * 10000) / 100,
+      confianca: Math.round(best.probability * 10000) / 100,
       confianca_minima_requerida: MIN_CONFIDENCE * 100,
-      material_provavel: melhor.tagName,
+      material_provavel: best.tagName,
       imageId,
       timestamp,
       sugestao: "Tente tirar uma foto mais próxima e com melhor iluminação.",
@@ -103,18 +103,18 @@ export async function analyzeImage(
   }
 
   // Caso 3: Identificação bem-sucedida → gera análise com Gemini
-  const prompt = buildSustainabilityPrompt(melhor.tagName);
+  const prompt = buildSustainabilityPrompt(best.tagName);
   const rawText = await generateText(prompt);
 
   // Tenta parsear JSON do Gemini, se falhar usa fallback genérico
   const analysis = rawText
-    ? (parseAnalysis(rawText) ?? fallbackAnalysis(melhor.tagName))
-    : fallbackAnalysis(melhor.tagName);
+    ? (parseAnalysis(rawText) ?? fallbackAnalysis(best.tagName))
+    : fallbackAnalysis(best.tagName);
 
   return {
     sucesso: true,
-    material: melhor.tagName,
-    confianca: Math.round(melhor.probability * 10000) / 100,
+    material: best.tagName,
+    confianca: Math.round(best.probability * 10000) / 100,
     imageId,
     timestamp,
     analise_sustentabilidade: analysis,

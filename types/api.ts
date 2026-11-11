@@ -404,7 +404,7 @@ export interface LoginResponse {
  * `marcaNome` é obrigatório quando `tipo: "MARCA"` (REQ-AUTH-14): o pedido
  * fica pendente de aprovação de um ADMIN (REQ-AUTH-11, ADR-0018).
  */
-export interface RegistroBody {
+export interface RegistrationBody {
   nome: string;
   email: string;
   telefone?: string;
@@ -420,7 +420,7 @@ export interface RegistroBody {
  * `marcaPendente: true` indica que o cadastro como MARCA ainda aguarda
  * aprovação de um ADMIN — o usuário tem, por ora, direitos de CLIENTE.
  */
-export interface RegistroResponse {
+export interface RegistrationResponse {
   ok: boolean;
   usuario: {
     id: number;

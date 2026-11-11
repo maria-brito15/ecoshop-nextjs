@@ -37,7 +37,7 @@ import type {
 } from "@/types/api";
 
 /** Ordenações aceitas por `useListarProdutos` (REQ-CAT-06). */
-export type OrdemProdutos =
+export type ProductOrder =
   | "relevancia"
   | "preco_asc"
   | "preco_desc"
@@ -48,7 +48,7 @@ export type OrdemProdutos =
 export interface ListProductsFilters {
   marcaId?: number;
   precoMax?: number;
-  sort?: OrdemProdutos;
+  sort?: ProductOrder;
 }
 
 /**

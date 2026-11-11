@@ -26,7 +26,7 @@ import type { Metadata } from "next";
 import { Syne, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Header from "./components/Header";
-import ChatFlutuante from "./components/ChatFlutuante";
+import FloatingChat from "./components/ChatFlutuante";
 
 /**
  * Fonte Syne - usada para títulos e elementos de destaque.
@@ -91,7 +91,7 @@ export default function RootLayout({
       <body className="antialiased">
         <Header />
         {children}
-        <ChatFlutuante />
+        <FloatingChat />
       </body>
     </html>
   );

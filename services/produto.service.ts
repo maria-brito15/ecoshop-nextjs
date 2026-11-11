@@ -74,7 +74,7 @@ const ORDER_BY_SORT = {
  * @returns Objeto paginado com produtos, total, página atual e tamanho
  */
 export async function listProducts(query: ListProductsQuery) {
-  const { page, size, categoriaId: categoryId, marcaId: brandId, precoMax, sort, nome: name } = query;
+  const { page, size, categoriaId: categoryId, marcaId: brandId, precoMax: maxPrice, sort, nome: name } = query;
 
   // A chave sai dos filtros validados (REQ-CAT-10), nunca da URL crua.
   const key = productListKey(query);
@@ -83,7 +83,7 @@ export async function listProducts(query: ListProductsQuery) {
     const where = {
       ...(categoryId !== undefined && { categoriaId: categoryId }),
       ...(brandId !== undefined && { marcaId: brandId }),
-      ...(precoMax !== undefined && { preco: { lte: precoMax } }),
+      ...(maxPrice !== undefined && { preco: { lte: maxPrice } }),
       ...(name && { nome: { contains: name, mode: "insensitive" as const } }),
     };
 
@@ -165,21 +165,21 @@ export async function updateProduct(
   id: number,
   data: UpdateProductInput,
 ) {
-  const { certificadoIds: certificateIds, ...produtoData } = data;
+  const { certificadoIds: certificateIds, ...productData } = data;
 
   const product = await prisma.$transaction(async (tx) => {
-    if (Object.keys(produtoData).length > 0) {
-      await tx.produto.update({ where: { id }, data: produtoData });
+    if (Object.keys(productData).length > 0) {
+      await tx.produto.update({ where: { id }, data: productData });
     } else {
       await tx.produto.findUniqueOrThrow({ where: { id } });
     }
 
     if (certificateIds !== undefined) {
       await tx.produtoCertificado.deleteMany({ where: { produtoId: id } });
-      const unicos = [...new Set(certificateIds)];
-      if (unicos.length > 0) {
+      const unique = [...new Set(certificateIds)];
+      if (unique.length > 0) {
         await tx.produtoCertificado.createMany({
-          data: unicos.map((certificateId) => ({
+          data: unique.map((certificateId) => ({
             produtoId: id,
             certificadoId: certificateId,
           })),

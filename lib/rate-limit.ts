@@ -19,7 +19,7 @@
  * ============================================================================
  */
 
-import { redis, withTimeout, TIMEOUT_COMANDO_MS, warnRedisFailure } from "@/lib/redis";
+import { redis, withTimeout, COMMAND_TIMEOUT_MS, warnRedisFailure } from "@/lib/redis";
 
 export interface RateLimitConfig {
   limit: number;
@@ -29,18 +29,18 @@ export interface RateLimitConfig {
 /** Conta ocorrências de uma chave dentro de uma janela. */
 export interface WindowCounter {
   /** Soma 1 à chave e devolve o total na janela atual. */
-  increment(key: string, janelaSegundos: number): Promise<number>;
+  increment(key: string, windowSeconds: number): Promise<number>;
 }
 
 class RedisCounter implements WindowCounter {
-  async increment(key: string, janelaSegundos: number): Promise<number> {
+  async increment(key: string, windowSeconds: number): Promise<number> {
     const response = (await withTimeout(
       redis
         .multi()
-        .set(key, 0, { EX: janelaSegundos, NX: true })
+        .set(key, 0, { EX: windowSeconds, NX: true })
         .incr(key)
         .exec(),
-      TIMEOUT_COMANDO_MS,
+      COMMAND_TIMEOUT_MS,
     )) as unknown[];
     const total = Number(response[1]);
     if (!Number.isFinite(total)) throw new Error("resposta inesperada do Redis");
@@ -52,18 +52,18 @@ class RedisCounter implements WindowCounter {
 export class InMemoryCounter implements WindowCounter {
   private readonly entradas = new Map<string, { total: number; expiraEm: number }>();
 
-  constructor(private readonly agora: () => number = Date.now) {}
+  constructor(private readonly now: () => number = Date.now) {}
 
-  async increment(key: string, janelaSegundos: number): Promise<number> {
-    const t = this.agora();
+  async increment(key: string, windowSeconds: number): Promise<number> {
+    const t = this.now();
     this.purgeExpired(t);
-    const atual = this.entradas.get(key);
-    if (!atual || atual.expiraEm <= t) {
-      this.entradas.set(key, { total: 1, expiraEm: t + janelaSegundos * 1000 });
+    const current = this.entradas.get(key);
+    if (!current || current.expiraEm <= t) {
+      this.entradas.set(key, { total: 1, expiraEm: t + windowSeconds * 1000 });
       return 1;
     }
-    atual.total += 1;
-    return atual.total;
+    current.total += 1;
+    return current.total;
   }
 
   /** Só varre quando o mapa cresce, para não custar nada no caso comum. */
@@ -80,22 +80,22 @@ const localCounter = new InMemoryCounter();
  * Registra uma tentativa e informa se o identificador passou do limite.
  *
  * @param counter - Contador principal (padrão: Redis)
- * @param reserva - Usado quando o principal falha (padrão: memória local)
+ * @param fallback - Usado quando o principal falha (padrão: memória local)
  */
 export async function rateLimit(
-  identificador: string,
+  identifier: string,
   config: RateLimitConfig,
   counter: WindowCounter = redisCounter,
-  reserva: WindowCounter = localCounter,
+  fallback: WindowCounter = localCounter,
 ): Promise<{ blocked: boolean; remainingAttempts: number }> {
-  const key = `rate_limit:${identificador}`;
+  const key = `rate_limit:${identifier}`;
 
   let attempts: number;
   try {
     attempts = await counter.increment(key, config.windowSeconds);
   } catch (err) {
     warnRedisFailure("rate_limit.redis_indisponivel_usando_memoria_local", err);
-    attempts = await reserva.increment(key, config.windowSeconds);
+    attempts = await fallback.increment(key, config.windowSeconds);
   }
 
   return {
@@ -109,8 +109,8 @@ export async function rateLimit(
  * `TRUST_PROXY_HOPS`; padrão 1: um proxy reverso, como no compose de publicação).
  */
 function proxyHops(): number {
-  const valor = Number(process.env.TRUST_PROXY_HOPS ?? 1);
-  return Number.isInteger(valor) && valor >= 0 ? valor : 1;
+  const value = Number(process.env.TRUST_PROXY_HOPS ?? 1);
+  return Number.isInteger(value) && value >= 0 ? value : 1;
 }
 
 /**
@@ -123,15 +123,15 @@ function proxyHops(): number {
  */
 export function getClientIp(
   req: Request,
-  saltos: number = proxyHops(),
+  hops: number = proxyHops(),
 ): string {
-  if (saltos === 0) return "unknown";
-  const entradas = (req.headers.get("x-forwarded-for") ?? "")
+  if (hops === 0) return "unknown";
+  const entries = (req.headers.get("x-forwarded-for") ?? "")
     .split(",")
     .map((e) => e.trim())
     .filter(Boolean);
-  if (entradas.length > 0) {
-    return entradas[Math.max(0, entradas.length - saltos)];
+  if (entries.length > 0) {
+    return entries[Math.max(0, entries.length - hops)];
   }
   return req.headers.get("x-real-ip") ?? "unknown";
 }

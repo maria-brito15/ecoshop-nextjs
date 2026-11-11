@@ -13,15 +13,15 @@
  */
 
 /** O recurso pedido não existe. Vira 404 com a mensagem `<recurso> não encontrado`. */
-export class RecursoNaoEncontrado extends Error {
-  constructor(readonly recurso: string) {
-    super(`${recurso} não encontrado`);
+export class ResourceNotFound extends Error {
+  constructor(readonly resource: string) {
+    super(`${resource} não encontrado`);
     this.name = "RecursoNaoEncontrado";
   }
 }
 
 /** A operação conflita com o estado atual. Vira 409 com a própria mensagem (já pensada para o usuário). */
-export class ConflitoDeNegocio extends Error {
+export class BusinessConflict extends Error {
   constructor(message: string) {
     super(message);
     this.name = "ConflitoDeNegocio";
@@ -29,7 +29,7 @@ export class ConflitoDeNegocio extends Error {
 }
 
 /** A pessoa está autenticada mas não pode fazer ISTO (ex.: senha atual incorreta). Vira 403 com a própria mensagem. */
-export class OperacaoNaoAutorizada extends Error {
+export class OperationNotAllowed extends Error {
   constructor(message: string) {
     super(message);
     this.name = "OperacaoNaoAutorizada";

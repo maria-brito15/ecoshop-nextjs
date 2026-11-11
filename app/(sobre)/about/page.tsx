@@ -101,7 +101,7 @@ const SPRINTS = [
   },
 ] as const;
 
-const MELHORIAS = [
+const IMPROVEMENTS = [
   {
     icon: "⚡",
     titulo: "Performance",
@@ -521,7 +521,7 @@ export default function AboutPage() {
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {MELHORIAS.map((m, i) => (
+            {IMPROVEMENTS.map((m, i) => (
               <div
                 key={m.titulo}
                 className="card-eco animate-on-scroll p-6 flex flex-col gap-3"
@@ -554,31 +554,31 @@ export default function AboutPage() {
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-            {TEAM.map((membro, i) => (
+            {TEAM.map((member, i) => (
               <div
-                key={membro.nome}
+                key={member.nome}
                 className="animate-on-scroll flex flex-col items-center text-center gap-4 p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-body)] hover:border-[var(--color-primary)] hover:shadow-[var(--shadow-card)] hover:-translate-y-1 transition-all duration-300"
                 style={{ transitionDelay: `${i * 80}ms` }}
               >
                 <span className="w-12 h-12 flex items-center justify-center rounded-full text-lg font-extrabold font-display bg-[var(--color-primary-light)] text-[var(--color-primary)]">
-                  {membro.nome.charAt(0)}
+                  {member.nome.charAt(0)}
                 </span>
                 <div>
                   <p className="font-bold text-sm text-[var(--color-text-primary)] leading-snug">
-                    {membro.nome}
+                    {member.nome}
                   </p>
                   <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                    {membro.papel}
+                    {member.papel}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  {membro.linkedin && (
+                  {member.linkedin && (
                     <a
-                      href={membro.linkedin}
+                      href={member.linkedin}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[var(--color-text-tertiary)] hover:text-[var(--color-primary)] transition-colors"
-                      aria-label={`LinkedIn de ${membro.nome}`}
+                      aria-label={`LinkedIn de ${member.nome}`}
                     >
                       <svg
                         className="w-5 h-5"
@@ -590,13 +590,13 @@ export default function AboutPage() {
                       </svg>
                     </a>
                   )}
-                  {membro.github && (
+                  {member.github && (
                     <a
-                      href={membro.github}
+                      href={member.github}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[var(--color-text-tertiary)] hover:text-[var(--color-primary)] transition-colors"
-                      aria-label={`GitHub de ${membro.nome}`}
+                      aria-label={`GitHub de ${member.nome}`}
                     >
                       <svg
                         className="w-5 h-5"

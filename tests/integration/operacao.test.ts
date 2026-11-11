@@ -55,8 +55,8 @@ test("REQ-OPS-03: rodar o seed de novo não duplica nem apaga os produtos existe
     stdio: "pipe",
     shell: true,
   });
-  const antes = await prisma.produto.count();
-  assert.ok(antes > 0, "esperava produtos após o primeiro seed");
+  const countBefore = await prisma.produto.count();
+  assert.ok(countBefore > 0, "esperava produtos após o primeiro seed");
 
   execFileSync("npx", ["tsx", "prisma/seed.ts"], {
     cwd: process.cwd(),
@@ -64,6 +64,6 @@ test("REQ-OPS-03: rodar o seed de novo não duplica nem apaga os produtos existe
     stdio: "pipe",
     shell: true,
   });
-  const depois = await prisma.produto.count();
-  assert.equal(depois, antes);
+  const countAfter = await prisma.produto.count();
+  assert.equal(countAfter, countBefore);
 });

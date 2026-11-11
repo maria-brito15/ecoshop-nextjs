@@ -73,21 +73,21 @@ function useDarkMode() {
 }
 
 function useSession() {
-  const [user, setUsuario] = useState<SessionUser | null>(null);
-  const [carregando, setCarregando] = useState(true);
+  const [user, setUser] = useState<SessionUser | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const refresh = () => {
-    setCarregando(true);
+    setLoading(true);
     fetchSession()
-      .then((user) => setUsuario(user))
-      .finally(() => setCarregando(false));
+      .then((user) => setUser(user))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     refresh();
   }, []);
 
-  return { usuario: user, carregando, refresh };
+  return { usuario: user, carregando: loading, refresh };
 }
 
 export default function Header() {
@@ -96,9 +96,9 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [menuPerfilOpen, setMenuPerfilOpen] = useState(false);
-  const perfilRef = useRef<HTMLDivElement>(null);
-  const { usuario: user, carregando, refresh } = useSession();
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+  const { usuario: user, carregando: loading, refresh } = useSession();
 
   useEffect(() => {
     refresh();
@@ -106,8 +106,8 @@ export default function Header() {
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (perfilRef.current && !perfilRef.current.contains(e.target as Node)) {
-        setMenuPerfilOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileMenuOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClick);
@@ -117,7 +117,7 @@ export default function Header() {
   async function handleLogout() {
     await endClientSession();
     refresh();
-    setMenuPerfilOpen(false);
+    setProfileMenuOpen(false);
     router.push("/");
   }
 
@@ -135,7 +135,7 @@ export default function Header() {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
-  const inicial = user?.nome?.charAt(0).toUpperCase() ?? "?";
+  const initial = user?.nome?.charAt(0).toUpperCase() ?? "?";
 
   return (
     <>
@@ -182,11 +182,11 @@ export default function Header() {
           </nav>
 
           <div className="flex items-center gap-3">
-            {!carregando &&
+            {!loading &&
               (user ? (
-                <div ref={perfilRef} className="relative">
+                <div ref={profileRef} className="relative">
                   <button
-                    onClick={() => setMenuPerfilOpen((prev) => !prev)}
+                    onClick={() => setProfileMenuOpen((prev) => !prev)}
                     aria-label="Menu do perfil"
                     title={user.nome}
                     className="
@@ -206,7 +206,7 @@ export default function Header() {
                         bg-[var(--color-primary)]
                       "
                     >
-                      {inicial}
+                      {initial}
                     </span>
                     <span className="text-sm font-semibold text-[var(--color-text-primary)] max-w-[100px] truncate">
                       {user.nome.split(" ")[0]}
@@ -226,7 +226,7 @@ export default function Header() {
                     </svg>
                   </button>
 
-                  {menuPerfilOpen && (
+                  {profileMenuOpen && (
                     <div
                       className="
                         absolute right-0 top-full mt-2 z-[9997]
@@ -247,7 +247,7 @@ export default function Header() {
                       </div>
                       <Link
                         href="/perfil"
-                        onClick={() => setMenuPerfilOpen(false)}
+                        onClick={() => setProfileMenuOpen(false)}
                         className="
                           flex items-center gap-2.5 px-4 py-3
                           text-sm text-[var(--color-text-secondary)]
@@ -274,7 +274,7 @@ export default function Header() {
                       {user.tipo === "ADMIN" && (
                         <Link
                           href="/painel"
-                          onClick={() => setMenuPerfilOpen(false)}
+                          onClick={() => setProfileMenuOpen(false)}
                           className="
                             flex items-center gap-2.5 px-4 py-3
                             text-sm text-[var(--color-text-secondary)]

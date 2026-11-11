@@ -19,7 +19,7 @@ import {
 
 after(closeConnections);
 
-const passa = (r: Response) => r.headers.get("x-middleware-next") === "1";
+const passes = (r: Response) => r.headers.get("x-middleware-next") === "1";
 const viaMiddleware = (path: string, cookie?: string) =>
   middleware(
     new NextRequest(`http://localhost${path}`, {
@@ -32,7 +32,7 @@ test("REQ-PERF-01: o usuário autenticado acessa o próprio perfil (middleware e
   const cookie = await cookieDe(u);
   const mw = await viaMiddleware(`/api/usuarios/${u.id}`, cookie);
   assert.equal(
-    passa(mw),
+    passes(mw),
     true,
     `o middleware bloqueou o próprio usuário (status ${mw.status})`,
   );
@@ -41,9 +41,9 @@ test("REQ-PERF-01: o usuário autenticado acessa o próprio perfil (middleware e
     ctx(u.id),
   );
   assert.equal(res.status, 200);
-  const corpo = await res.json();
-  assert.equal(corpo.usuario.email, u.email);
-  assert.equal("senha" in corpo.usuario, false);
+  const body = await res.json();
+  assert.equal(body.usuario.email, u.email);
+  assert.equal("senha" in body.usuario, false);
 });
 
 test("REQ-PERF-02: o usuário edita nome e telefone do próprio perfil", async () => {
@@ -57,9 +57,9 @@ test("REQ-PERF-02: o usuário edita nome e telefone do próprio perfil", async (
     ctx(u.id),
   );
   assert.equal(res.status, 200);
-  const gravado = await prisma.usuario.findUnique({ where: { id: u.id } });
-  assert.equal(gravado?.nome, "Nome Novo Teste");
-  assert.equal(gravado?.telefone, "11999990000");
+  const saved = await prisma.usuario.findUnique({ where: { id: u.id } });
+  assert.equal(saved?.nome, "Nome Novo Teste");
+  assert.equal(saved?.telefone, "11999990000");
 });
 
 test("REQ-PERF-03: o usuário não consegue alterar o próprio tipo", async () => {
@@ -72,48 +72,48 @@ test("REQ-PERF-03: o usuário não consegue alterar o próprio tipo", async () =
     }),
     ctx(u.id),
   );
-  const gravado = await prisma.usuario.findUnique({ where: { id: u.id } });
-  assert.equal(gravado?.tipo, "CLIENTE");
+  const saved = await prisma.usuario.findUnique({ where: { id: u.id } });
+  assert.equal(saved?.tipo, "CLIENTE");
 });
 
 test("REQ-AUTZ-06: o middleware exige sessão em /perfil e /api/usuarios, e ADMIN em /painel", async () => {
-  const cliente = await createUserDirectly(email("authz06c"), "CLIENTE");
+  const client = await createUserDirectly(email("authz06c"), "CLIENTE");
   const admin = await createUserDirectly(email("authz06a"), "ADMIN");
-  const cc = await cookieDe(cliente);
+  const cc = await cookieDe(client);
   const ca = await cookieDe(admin);
 
-  const semPerfil = await viaMiddleware("/perfil");
-  assert.equal(semPerfil.status, 307);
+  const withoutProfile = await viaMiddleware("/perfil");
+  assert.equal(withoutProfile.status, 307);
   assert.match(
-    semPerfil.headers.get("location") ?? "",
+    withoutProfile.headers.get("location") ?? "",
     /\/sign-in\?next=%2Fperfil/,
   );
-  assert.equal(passa(await viaMiddleware("/perfil", cc)), true);
+  assert.equal(passes(await viaMiddleware("/perfil", cc)), true);
 
-  const semApi = await viaMiddleware("/api/usuarios/1");
-  assert.equal(semApi.status, 401);
+  const withoutApi = await viaMiddleware("/api/usuarios/1");
+  assert.equal(withoutApi.status, 401);
 
-  const painelCliente = await viaMiddleware("/painel", cc);
-  assert.equal(painelCliente.status, 307);
+  const clientDashboard = await viaMiddleware("/painel", cc);
+  assert.equal(clientDashboard.status, 307);
   assert.equal(
-    new URL(painelCliente.headers.get("location") ?? "").pathname,
+    new URL(clientDashboard.headers.get("location") ?? "").pathname,
     "/",
   );
-  assert.equal(passa(await viaMiddleware("/painel", ca)), true);
+  assert.equal(passes(await viaMiddleware("/painel", ca)), true);
 });
 
 test("REQ-AUTZ-08: /ia-scan exige login (redireciona visitante, libera usuário logado)", async () => {
-  const cliente = await createUserDirectly(email("authz08"), "CLIENTE");
-  const cc = await cookieDe(cliente);
+  const client = await createUserDirectly(email("authz08"), "CLIENTE");
+  const cc = await cookieDe(client);
 
-  const semSessao = await viaMiddleware("/ia-scan");
-  assert.equal(semSessao.status, 307);
+  const withoutSession = await viaMiddleware("/ia-scan");
+  assert.equal(withoutSession.status, 307);
   assert.match(
-    semSessao.headers.get("location") ?? "",
+    withoutSession.headers.get("location") ?? "",
     /\/sign-in\?next=%2Fia-scan/,
   );
 
-  assert.equal(passa(await viaMiddleware("/ia-scan", cc)), true);
+  assert.equal(passes(await viaMiddleware("/ia-scan", cc)), true);
 });
 
 test(

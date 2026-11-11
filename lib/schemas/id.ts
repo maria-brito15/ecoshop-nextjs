@@ -9,12 +9,12 @@
  * feita no texto, antes de converter.
  */
 
-const ID_MAXIMO = 2_147_483_647;
-const FORMATO_ID = /^[1-9][0-9]{0,9}$/;
+const MAX_ID = 2_147_483_647;
+const ID_FORMAT = /^[1-9][0-9]{0,9}$/;
 
 /** @returns o id como número, ou `null` se o texto não for um id válido. */
-export function parseId(valor: string): number | null {
-  if (!FORMATO_ID.test(valor)) return null;
-  const numero = Number(valor);
-  return numero <= ID_MAXIMO ? numero : null;
+export function parseId(value: string): number | null {
+  if (!ID_FORMAT.test(value)) return null;
+  const number = Number(value);
+  return number <= MAX_ID ? number : null;
 }

@@ -26,7 +26,7 @@ import type { AiAnalysis } from "@/types/ai";
  * Campos obrigatórios que devem estar presentes na análise.
  * Se algum campo estiver faltando ou vazio, a análise é rejeitada.
  */
-const CAMPOS_OBRIGATORIOS: (keyof AiAnalysis)[] = [
+const REQUIRED_FIELDS: (keyof AiAnalysis)[] = [
   "impacto_ambiental",
   "tempo_decomposicao",
   "onde_descartar",
@@ -57,26 +57,26 @@ const CAMPOS_OBRIGATORIOS: (keyof AiAnalysis)[] = [
 export function parseAnalysis(rawText: string): AiAnalysis | null {
   try {
     // Passo 1: Remove blocos de código markdown
-    const limpo = rawText
+    const clean = rawText
       .replace(/```json\s*/g, "")
       .replace(/```\s*/g, "")
       .trim();
 
     // Passo 2: Encontra o primeiro '{' e último '}'
-    const inicio = limpo.indexOf("{");
-    const fim = limpo.lastIndexOf("}");
-    if (inicio === -1 || fim === -1) return null;
+    const start = clean.indexOf("{");
+    const end = clean.lastIndexOf("}");
+    if (start === -1 || end === -1) return null;
 
     // Passo 3: Parse do JSON
-    const parsed = JSON.parse(limpo.slice(inicio, fim + 1));
+    const parsed = JSON.parse(clean.slice(start, end + 1));
 
     // Passo 4: Validação dos campos obrigatórios
-    const valido = CAMPOS_OBRIGATORIOS.every(
-      (campo) =>
-        typeof parsed[campo] === "string" && parsed[campo].trim().length > 0,
+    const valid = REQUIRED_FIELDS.every(
+      (field) =>
+        typeof parsed[field] === "string" && parsed[field].trim().length > 0,
     );
 
-    return valido ? (parsed as AiAnalysis) : null;
+    return valid ? (parsed as AiAnalysis) : null;
   } catch {
     // JSON inválido (malformado, campos ausentes, tipo incorreto)
     return null;

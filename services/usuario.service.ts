@@ -36,9 +36,9 @@ import {
   TTL,
 } from "@/lib/cache";
 import {
-  ConflitoDeNegocio,
-  OperacaoNaoAutorizada,
-  RecursoNaoEncontrado,
+  BusinessConflict,
+  OperationNotAllowed,
+  ResourceNotFound,
 } from "@/lib/errors/dominio";
 import { revokeUserSessions } from "./sessao.service";
 import type { SessionIdentity } from "./sessao.service";
@@ -85,7 +85,7 @@ interface UpdateUserData {
   senhaAtual?: string;
 }
 
-const eViolacaoDeUnicidade = (err: unknown) =>
+const isUniquenessViolation = (err: unknown) =>
   err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
 
 /**
@@ -94,14 +94,14 @@ const eViolacaoDeUnicidade = (err: unknown) =>
  * uma violação de unicidade detectada pelo banco.
  */
 async function ensureNoRegistrationConflict(
-  emailDoUsuario: string,
+  userEmail: string,
   brandName?: string,
 ) {
-  const emailEmUso = await prisma.usuario.findFirst({
-    where: { email: { equals: emailDoUsuario, mode: "insensitive" } },
+  const emailInUse = await prisma.usuario.findFirst({
+    where: { email: { equals: userEmail, mode: "insensitive" } },
     select: { id: true },
   });
-  if (emailEmUso) throw new ConflitoDeNegocio("Email já cadastrado");
+  if (emailInUse) throw new BusinessConflict("Email já cadastrado");
 
   if (brandName) {
     const brandInUse = await prisma.marca.findUnique({
@@ -109,7 +109,7 @@ async function ensureNoRegistrationConflict(
       select: { id: true },
     });
     if (brandInUse) {
-      throw new ConflitoDeNegocio("Já existe uma marca com esse nome");
+      throw new BusinessConflict("Já existe uma marca com esse nome");
     }
   }
 }
@@ -149,7 +149,7 @@ export async function createUser(data: CreateUserData) {
   let user;
   try {
     user = await prisma.$transaction(async (tx) => {
-      const criado = await tx.usuario.create({
+      const created = await tx.usuario.create({
         data: {
           nome: data.nome,
           email: data.email,
@@ -166,16 +166,16 @@ export async function createUser(data: CreateUserData) {
             nome: data.marcaNome!,
             descricao: data.marcaDescricao,
             status: "PENDENTE",
-            usuarioId: criado.id,
+            usuarioId: created.id,
           },
         });
       }
 
-      return criado;
+      return created;
     });
   } catch (err) {
     // Corrida entre duas requisições: o banco recusou; explica qual valor conflitou.
-    if (eViolacaoDeUnicidade(err)) {
+    if (isUniquenessViolation(err)) {
       await ensureNoRegistrationConflict(data.email, requestedBrand);
     }
     throw err;
@@ -228,7 +228,7 @@ export async function getUser(id: number) {
  *
  * @param id - ID do usuário a ser atualizado
  * @param data - Dados para atualização (todos opcionais)
- * @param solicitanteId - Quem pede a atualização (a sessão); define se a senha atual é exigida
+ * @param requesterId - Quem pede a atualização (a sessão); define se a senha atual é exigida
  * @returns Usuário atualizado
  * @throws ConflitoDeNegocio se o novo e-mail já pertence a outro usuário
  * @throws OperacaoNaoAutorizada (403) se trocar a própria senha sem a senha atual correta
@@ -237,20 +237,20 @@ export async function getUser(id: number) {
 export async function updateUser(
   id: number,
   data: UpdateUserData,
-  solicitanteId?: number,
+  requesterId?: number,
 ) {
-  const { senhaAtual, ...campos } = data;
+  const { senhaAtual: currentPassword, ...fields } = data;
 
   // REQ-AUTH-21: quem troca a PRÓPRIA senha prova que a conhece (uma sessão
   // sequestrada não basta para tomar a conta). ADMIN alterando outro usuário não precisa.
-  if (campos.senha && solicitanteId === id) {
-    await requireCurrentPassword(id, senhaAtual);
+  if (fields.senha && requesterId === id) {
+    await requireCurrentPassword(id, currentPassword);
   }
 
-  const updateData: Prisma.UsuarioUpdateInput = { ...campos };
+  const updateData: Prisma.UsuarioUpdateInput = { ...fields };
 
-  if (campos.senha) {
-    updateData.senha = await bcrypt.hash(campos.senha, SALT_ROUNDS);
+  if (fields.senha) {
+    updateData.senha = await bcrypt.hash(fields.senha, SALT_ROUNDS);
   }
 
   let user;
@@ -262,8 +262,8 @@ export async function updateUser(
     });
   } catch (err) {
     // `email` é a única coluna única de Usuario que esta atualização altera.
-    if (eViolacaoDeUnicidade(err)) {
-      throw new ConflitoDeNegocio("Email já cadastrado");
+    if (isUniquenessViolation(err)) {
+      throw new BusinessConflict("Email já cadastrado");
     }
     throw err;
   }
@@ -276,7 +276,7 @@ export async function updateUser(
   ]);
 
   // REQ-AUTH-20: trocar a senha encerra as outras sessões (tokens de renovação).
-  if (campos.senha) await revokeUserSessions(id);
+  if (fields.senha) await revokeUserSessions(id);
 
   return user;
 }
@@ -288,21 +288,21 @@ export async function updateUser(
  * REQ-USR-08: ninguém exclui a própria conta por aqui (evita ficar sem ADMIN).
  *
  * @param id - ID do usuário a ser deletado
- * @param solicitanteId - ID de quem pede a exclusão (a sessão)
+ * @param requesterId - ID de quem pede a exclusão (a sessão)
  * @returns true se deletado com sucesso
  * @throws ConflitoDeNegocio se for a própria conta
  * @throws RecursoNaoEncontrado se o usuário não existir
  * @throws PrismaClientKnownRequestError P2003 se tiver dependências (ex.: marca); o handler mapeia para 409
  */
-export async function deleteUser(id: number, solicitanteId: number) {
-  if (id === solicitanteId) {
-    throw new ConflitoDeNegocio("Você não pode excluir a própria conta");
+export async function deleteUser(id: number, requesterId: number) {
+  if (id === requesterId) {
+    throw new BusinessConflict("Você não pode excluir a própria conta");
   }
 
   const user = await prisma.usuario.findUnique({ where: { id } });
 
   if (!user) {
-    throw new RecursoNaoEncontrado("Usuário");
+    throw new ResourceNotFound("Usuário");
   }
 
   await prisma.usuario.delete({ where: { id } });
@@ -321,14 +321,14 @@ export async function deleteUser(id: number, solicitanteId: number) {
  * @throws RecursoNaoEncontrado se o usuário não existe
  * @throws OperacaoNaoAutorizada se a senha atual falta ou não confere
  */
-async function requireCurrentPassword(id: number, senhaAtual: string | undefined) {
+async function requireCurrentPassword(id: number, currentPassword: string | undefined) {
   const user = await prisma.usuario.findUnique({
     where: { id },
     select: { senha: true },
   });
-  if (!user) throw new RecursoNaoEncontrado("Usuário");
-  if (!senhaAtual || !(await bcrypt.compare(senhaAtual, user.senha))) {
-    throw new OperacaoNaoAutorizada("Senha atual incorreta");
+  if (!user) throw new ResourceNotFound("Usuário");
+  if (!currentPassword || !(await bcrypt.compare(currentPassword, user.senha))) {
+    throw new OperationNotAllowed("Senha atual incorreta");
   }
 }
 
@@ -336,9 +336,9 @@ async function requireCurrentPassword(id: number, senhaAtual: string | undefined
  * Hash de uma senha que ninguém conhece, calculado uma vez. Serve para gastar o
  * mesmo tempo de bcrypt quando o e-mail não existe (REQ-AUTH-23).
  */
-let hashDeComparacao: Promise<string> | undefined;
+let dummyHash: Promise<string> | undefined;
 const getDummyHash = () =>
-  (hashDeComparacao ??= bcrypt.hash(
+  (dummyHash ??= bcrypt.hash(
     randomBytes(16).toString("hex"),
     SALT_ROUNDS,
   ));
@@ -353,15 +353,15 @@ const getDummyHash = () =>
  * @returns a identidade da sessão, ou `null` se as credenciais não conferem
  */
 export async function verifyCredentials(
-  emailInformado: string,
+  providedEmail: string,
   password: string,
 ): Promise<SessionIdentity | null> {
   const user = await prisma.usuario.findFirst({
-    where: { email: { equals: emailInformado, mode: "insensitive" } },
+    where: { email: { equals: providedEmail, mode: "insensitive" } },
   });
   const hash = user?.senha ?? (await getDummyHash());
-  const confere = await bcrypt.compare(password, hash);
-  if (!user || !confere) return null;
+  const matches = await bcrypt.compare(password, hash);
+  if (!user || !matches) return null;
   return { id: user.id, email: user.email, tipo: user.tipo };
 }
 

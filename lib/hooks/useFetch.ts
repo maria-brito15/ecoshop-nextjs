@@ -35,7 +35,7 @@ import { useState, useEffect, useRef } from "react";
  * Estado interno do hook.
  * @template T - Tipo dos dados retornados pela API
  */
-type Estado<T> = {
+type State<T> = {
   /** Dados da requisição (null enquanto carrega ou em erro) */
   data: T | null;
   /** Indica se a requisição está em andamento */
@@ -53,7 +53,7 @@ type Estado<T> = {
  * Para dados que mudam com frequência, use TTL menor ou desabilite cache.
  */
 const memoryCache = new Map<string, { data: unknown; expiraEm: number }>();
-const TTL_CLIENTE_MS = 30_000; // 30 segundos (menor que cache do Redis no servidor)
+const CLIENT_TTL_MS = 30_000; // 30 segundos (menor que cache do Redis no servidor)
 
 /**
  * Recupera dados do cache se ainda não expiraram.
@@ -62,13 +62,13 @@ const TTL_CLIENTE_MS = 30_000; // 30 segundos (menor que cache do Redis no servi
  * @returns Dados cacheados ou null
  */
 function getCached<T>(url: string): T | null {
-  const entrada = memoryCache.get(url);
-  if (!entrada) return null;
-  if (Date.now() > entrada.expiraEm) {
+  const entry = memoryCache.get(url);
+  if (!entry) return null;
+  if (Date.now() > entry.expiraEm) {
     memoryCache.delete(url);
     return null;
   }
-  return entrada.data as T;
+  return entry.data as T;
 }
 
 /**
@@ -78,7 +78,7 @@ function getCached<T>(url: string): T | null {
  * @param data - Dados a serem armazenados
  */
 function setCached<T>(url: string, data: T): void {
-  memoryCache.set(url, { data, expiraEm: Date.now() + TTL_CLIENTE_MS });
+  memoryCache.set(url, { data, expiraEm: Date.now() + CLIENT_TTL_MS });
 }
 
 /**
@@ -100,9 +100,9 @@ export function clearClientCache(): void {
   memoryCache.clear();
 }
 
-export function invalidateClientCache(prefixo: string): void {
+export function invalidateClientCache(prefix: string): void {
   for (const key of memoryCache.keys()) {
-    if (key.includes(prefixo)) memoryCache.delete(key);
+    if (key.includes(prefix)) memoryCache.delete(key);
   }
 }
 
@@ -132,10 +132,10 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
   // Tenta obter dados do cache na montagem do hook
   const optionsRef = useRef(options);
   optionsRef.current = options;
-  const dadoInicial = url ? getCached<T>(url) : null;
-  const [estado, setEstado] = useState<Estado<T>>({
-    data: dadoInicial,
-    loading: !!url && dadoInicial === null, // carrega se não tem cache
+  const initialData = url ? getCached<T>(url) : null;
+  const [state, setState] = useState<State<T>>({
+    data: initialData,
+    loading: !!url && initialData === null, // carrega se não tem cache
     error: null,
   });
 
@@ -147,45 +147,45 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
    * @returns Dados da requisição ou null em caso de erro
    */
   const execute = async (customUrl?: string): Promise<T | null> => {
-    const urlParaFetch = customUrl || url;
-    if (!urlParaFetch) return null;
+    const urlToFetch = customUrl || url;
+    if (!urlToFetch) return null;
 
-    setEstado({ data: null, loading: true, error: null });
+    setState({ data: null, loading: true, error: null });
 
     try {
-      const res = await fetch(urlParaFetch, {
+      const res = await fetch(urlToFetch, {
         credentials: "include", // envia cookie httpOnly com token JWT
         ...optionsRef.current,
       });
       if (!res.ok) throw new Error(`Erro ${res.status}`);
       const data = (await res.json()) as T;
-      setCached(urlParaFetch, data);
-      setEstado({ data, loading: false, error: null });
+      setCached(urlToFetch, data);
+      setState({ data, loading: false, error: null });
       return data;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro desconhecido";
-      setEstado({ data: null, loading: false, error: message });
+      setState({ data: null, loading: false, error: message });
       return null;
     }
   };
 
   // Efeito para execução automática quando a URL muda
   useEffect(() => {
-    let ativo = true;
+    let active = true;
     if (!url) return;
 
     const cached = getCached<T>(url);
 
     // Caso 1: Tem cache válido → exibe e revalida em background
     if (cached !== null) {
-      setEstado({ data: cached, loading: false, error: null });
-      const controle = new AbortController();
+      setState({ data: cached, loading: false, error: null });
+      const controller = new AbortController();
 
       // Revalidação silenciosa: atualiza cache se dados mudaram
       fetch(url, {
         credentials: "include",
         ...optionsRef.current,
-        signal: controle.signal,
+        signal: controller.signal,
       })
         .then((res) => {
           if (!res.ok) throw new Error(`erro ${res.status}`);
@@ -194,8 +194,8 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
         .then((fresh) => {
           setCached(url, fresh);
           // Só atualiza UI se dados realmente mudaram (evita re-render desnecessário)
-          if (ativo && JSON.stringify(fresh) !== JSON.stringify(cached)) {
-            setEstado({ data: fresh, loading: false, error: null });
+          if (active && JSON.stringify(fresh) !== JSON.stringify(cached)) {
+            setState({ data: fresh, loading: false, error: null });
           }
         })
         .catch(() => {
@@ -203,8 +203,8 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
           // O usuário já vê os dados do cache, então falha não é crítica
         });
       return () => {
-        ativo = false;
-        controle.abort(); // desmontou ou a URL mudou: cancela a revalidação
+        active = false;
+        controller.abort(); // desmontou ou a URL mudou: cancela a revalidação
       };
     }
 
@@ -212,7 +212,7 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
     execute();
 
     return () => {
-      ativo = false;
+      active = false;
     };
     // `executar` e `options` ficam de fora de propósito: `options` costuma ser um
     // objeto literal novo a cada render (incluí-lo refaria a requisição sem parar);
@@ -220,5 +220,5 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]); // Re-executa se a URL mudar
 
-  return { ...estado, executar: execute };
+  return { ...state, executar: execute };
 }

@@ -14,31 +14,31 @@ import nextConfig from "@/next.config";
 after(closeConnections);
 
 /** Texto do arquivo sem as linhas de comentário (um comentário pode citar `:-` ou portas de propósito). */
-function semComentarios(file: string): string {
+function withoutComments(file: string): string {
   return readFileSync(file, "utf8")
     .split("\n")
-    .filter((linha) => !linha.trim().startsWith("#"))
+    .filter((line) => !line.trim().startsWith("#"))
     .join("\n");
 }
 
-const COMPOSE_BASE = semComentarios("docker-compose.yml");
-const COMPOSE_DEV = semComentarios("docker-compose.override.yml");
-const COMPOSE_PROD = semComentarios("docker-compose.prod.yml");
-const CI = semComentarios(".github/workflows/ci.yml");
-const DEPLOY = semComentarios("scripts/deploy/deploy.sh");
+const COMPOSE_BASE = withoutComments("docker-compose.yml");
+const COMPOSE_DEV = withoutComments("docker-compose.override.yml");
+const COMPOSE_PROD = withoutComments("docker-compose.prod.yml");
+const CI = withoutComments(".github/workflows/ci.yml");
+const DEPLOY = withoutComments("scripts/deploy/deploy.sh");
 
 // ---------------------------------------------------------------------------
 // REQ-OPS-07, 08, 11: compose
 // ---------------------------------------------------------------------------
 
 test("REQ-OPS-07: nenhum compose tem valor padrão (`:-`) para segredo nem senha fixa", () => {
-  const segredoComPadrao = /\$\{[A-Z_]*(SECRET|PASSWORD|KEY)[A-Z_]*:-/;
+  const secretWithDefault = /\$\{[A-Z_]*(SECRET|PASSWORD|KEY)[A-Z_]*:-/;
   for (const [name, text] of [
     ["docker-compose.yml", COMPOSE_BASE],
     ["docker-compose.override.yml", COMPOSE_DEV],
     ["docker-compose.prod.yml", COMPOSE_PROD],
   ]) {
-    assert.doesNotMatch(text, segredoComPadrao, `${name} tem segredo com valor padrão`);
+    assert.doesNotMatch(text, secretWithDefault, `${name} tem segredo com valor padrão`);
     assert.doesNotMatch(text, /supersecretkey/i, name);
     assert.doesNotMatch(text, /POSTGRES_PASSWORD:\s*ecoshop/, name);
     assert.doesNotMatch(text, /ecoshop:ecoshop@/, name);
@@ -46,11 +46,11 @@ test("REQ-OPS-07: nenhum compose tem valor padrão (`:-`) para segredo nem senha
 });
 
 test("REQ-OPS-07: a falta de um segredo obrigatório impede a subida e nomeia a variável", () => {
-  const obrigatorias = ["JWT_SECRET", "POSTGRES_PASSWORD", "REDIS_PASSWORD", "ADMIN_PASSWORD"];
-  for (const variavel of obrigatorias) {
-    const exige = new RegExp(`\\$\\{${variavel}:\\?[^}]+\\}`);
-    assert.match(COMPOSE_BASE, exige, `docker-compose.yml: ${variavel}`);
-    assert.match(COMPOSE_PROD, exige, `docker-compose.prod.yml: ${variavel}`);
+  const required = ["JWT_SECRET", "POSTGRES_PASSWORD", "REDIS_PASSWORD", "ADMIN_PASSWORD"];
+  for (const variable of required) {
+    const requires = new RegExp(`\\$\\{${variable}:\\?[^}]+\\}`);
+    assert.match(COMPOSE_BASE, requires, `docker-compose.yml: ${variable}`);
+    assert.match(COMPOSE_PROD, requires, `docker-compose.prod.yml: ${variable}`);
   }
   assert.match(COMPOSE_DEV, /\$\{SEED_USER_PASSWORD:\?[^}]+\}/);
 });
@@ -95,15 +95,15 @@ test("REQ-OPS-10: o script de deploy aborta em qualquer falha e exige a tag", ()
 });
 
 test("REQ-OPS-10: o script aplica as migrations antes de subir a app, verifica a saúde e só então reverte", () => {
-  const migrar = DEPLOY.indexOf("run --rm migrate");
-  const subir = DEPLOY.indexOf("up -d --no-deps app");
-  const saude = DEPLOY.indexOf("curl ");
-  const reverter = DEPLOY.lastIndexOf("up -d --no-deps app");
+  const migrate = DEPLOY.indexOf("run --rm migrate");
+  const start = DEPLOY.indexOf("up -d --no-deps app");
+  const health = DEPLOY.indexOf("curl ");
+  const revert = DEPLOY.lastIndexOf("up -d --no-deps app");
   assert.match(DEPLOY, /URL_SAUDE=http:\/\/127\.0\.0\.1:3000\/api\/health/);
-  assert.ok(migrar >= 0 && subir >= 0 && saude >= 0, "faltam etapas no script");
-  assert.ok(migrar < subir, "as migrations precisam rodar antes de subir a app");
-  assert.ok(subir < saude, "a saúde é verificada depois de subir a app");
-  assert.ok(reverter > saude, "a reversão vem depois da verificação de saúde");
+  assert.ok(migrate >= 0 && start >= 0 && health >= 0, "faltam etapas no script");
+  assert.ok(migrate < start, "as migrations precisam rodar antes de subir a app");
+  assert.ok(start < health, "a saúde é verificada depois de subir a app");
+  assert.ok(revert > health, "a reversão vem depois da verificação de saúde");
   assert.match(DEPLOY, /APP_TAG="\$TAG_ANTERIOR"/);
   assert.match(DEPLOY, /exit 1/);
 });
@@ -120,24 +120,24 @@ test("REQ-OPS-10: o job de deploy usa ssh/scp nativos com host verificado, sem a
 // ---------------------------------------------------------------------------
 
 /** Executa `fn` com `NODE_ENV` alterado e restaura no final. */
-async function comNodeEnv(valor: string, fn: () => Promise<void>) {
+async function comNodeEnv(value: string, fn: () => Promise<void>) {
   const env = process.env as Record<string, string | undefined>;
-  const anterior = env.NODE_ENV;
-  env.NODE_ENV = valor;
+  const previous = env.NODE_ENV;
+  env.NODE_ENV = value;
   try {
     await fn();
   } finally {
-    if (anterior === undefined) delete env.NODE_ENV;
-    else env.NODE_ENV = anterior;
+    if (previous === undefined) delete env.NODE_ENV;
+    else env.NODE_ENV = previous;
   }
 }
 
 async function headersForAllRoutes(): Promise<Record<string, string>> {
   assert.ok(nextConfig.headers, "next.config.ts não define headers()");
-  const regras = await nextConfig.headers();
-  const regra = regras.find((r) => r.source === "/:path*");
-  assert.ok(regra, "falta uma regra de cabeçalhos para /:path*");
-  return Object.fromEntries(regra.headers.map((h) => [h.key, h.value]));
+  const rules = await nextConfig.headers();
+  const rule = rules.find((r) => r.source === "/:path*");
+  assert.ok(rule, "falta uma regra de cabeçalhos para /:path*");
+  return Object.fromEntries(rule.headers.map((h) => [h.key, h.value]));
 }
 
 test("REQ-OPS-12: toda rota recebe nosniff, X-Frame-Options, Referrer-Policy e Permissions-Policy", async () => {
@@ -162,21 +162,21 @@ test("REQ-OPS-12: Strict-Transport-Security só em produção, curto e sem inclu
 // ---------------------------------------------------------------------------
 
 test("REQ-OPS-13: toda imagem base (Dockerfile e compose) é fixada por digest", () => {
-  const froms = semComentarios("Dockerfile").match(/^FROM\s+\S+/gm) ?? [];
+  const froms = withoutComments("Dockerfile").match(/^FROM\s+\S+/gm) ?? [];
   assert.ok(froms.length >= 4, "esperava os 4 estágios do Dockerfile");
   for (const from of froms) assert.match(from, /@sha256:[0-9a-f]{64}/, from);
 
   for (const text of [COMPOSE_BASE, COMPOSE_PROD]) {
     // A imagem da própria aplicação (variável) é identificada por tag de commit, não por digest.
-    const imagens = (text.match(/^\s*image:\s*\S+/gm) ?? []).filter((l) => !l.includes("${"));
-    assert.ok(imagens.length >= 2, "esperava postgres e redis");
-    for (const image of imagens) assert.match(image, /@sha256:[0-9a-f]{64}/, image);
+    const images = (text.match(/^\s*image:\s*\S+/gm) ?? []).filter((l) => !l.includes("${"));
+    assert.ok(images.length >= 2, "esperava postgres e redis");
+    for (const image of images) assert.match(image, /@sha256:[0-9a-f]{64}/, image);
   }
 });
 
 test("REQ-OPS-13: o Dependabot atualiza imagens Docker, compose e actions", () => {
   const dependabot = readFileSync(".github/dependabot.yml", "utf8");
-  for (const ecossistema of ["docker", "docker-compose", "github-actions"]) {
-    assert.match(dependabot, new RegExp(`package-ecosystem:\\s*"?${ecossistema}"?`), ecossistema);
+  for (const ecosystem of ["docker", "docker-compose", "github-actions"]) {
+    assert.match(dependabot, new RegExp(`package-ecosystem:\\s*"?${ecosystem}"?`), ecosystem);
   }
 });

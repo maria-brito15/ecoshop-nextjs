@@ -21,7 +21,7 @@ import assert from "node:assert/strict";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { RecursoNaoEncontrado, ConflitoDeNegocio } from "@/lib/errors/dominio";
+import { ResourceNotFound, BusinessConflict } from "@/lib/errors/dominio";
 import { mapError } from "@/lib/http/responses";
 import { parseId } from "@/lib/schemas/id";
 import {
@@ -72,7 +72,7 @@ import { POST as login } from "@/app/api/auth/route";
 
 after(closeConnections);
 
-const IDS_INVALIDOS = ["abc", "0", "-1", "1.5", "1e3", " 7", "2147483648", ""];
+const INVALID_IDS = ["abc", "0", "-1", "1.5", "1e3", " 7", "2147483648", ""];
 
 const admin = () => cookieDe({ id: 987654, email: "adm@test.local", tipo: "ADMIN" });
 
@@ -87,13 +87,13 @@ const prismaError = (code: string) =>
   });
 
 test("REQ-USR-07: erro de domínio vira a resposta HTTP certa (404 e 409), com a mensagem original", async () => {
-  const naoEncontrado = mapError(new RecursoNaoEncontrado("Usuário"), "Qualquer");
-  assert.equal(naoEncontrado?.status, 404);
-  assert.deepEqual(await naoEncontrado?.json(), { erro: "Usuário não encontrado" });
+  const notFound = mapError(new ResourceNotFound("Usuário"), "Qualquer");
+  assert.equal(notFound?.status, 404);
+  assert.deepEqual(await notFound?.json(), { erro: "Usuário não encontrado" });
 
-  const conflito = mapError(new ConflitoDeNegocio("Email já cadastrado"), "Qualquer");
-  assert.equal(conflito?.status, 409);
-  assert.deepEqual(await conflito?.json(), { erro: "Email já cadastrado" });
+  const conflict = mapError(new BusinessConflict("Email já cadastrado"), "Qualquer");
+  assert.equal(conflict?.status, 409);
+  assert.deepEqual(await conflict?.json(), { erro: "Email já cadastrado" });
 });
 
 test("REQ-USR-07: código do Prisma vira 404 (P2025) e 409 (P2002, P2003); desconhecido não vira resposta", () => {
@@ -121,13 +121,13 @@ test("REQ-REF-05: parseId aceita só inteiro positivo de até 4 bytes, sem sinal
   assert.equal(parseId("1"), 1);
   assert.equal(parseId("42"), 42);
   assert.equal(parseId("2147483647"), 2147483647);
-  for (const invalido of [...IDS_INVALIDOS, "007", "7abc", "+7", "١٢"]) {
-    assert.equal(parseId(invalido), null, JSON.stringify(invalido));
+  for (const invalid of [...INVALID_IDS, "007", "7abc", "+7", "١٢"]) {
+    assert.equal(parseId(invalid), null, JSON.stringify(invalid));
   }
 });
 
 test("REQ-CAT-09: GET /api/produtos/[id] com id inválido responde 400", async () => {
-  for (const id of IDS_INVALIDOS.filter((i) => i !== "")) {
+  for (const id of INVALID_IDS.filter((i) => i !== "")) {
     const res = await produtoGet(req(`/api/produtos/${id}`), ctx(id));
     assert.equal(res.status, 400, `id=${JSON.stringify(id)}`);
   }
@@ -151,12 +151,12 @@ test("REQ-PROD-06: PUT e DELETE /api/produtos/[id] com id inválido respondem 40
 
 test("REQ-REF-05: categorias, marcas e certificados com id inválido respondem 400 em GET, PUT e DELETE", async () => {
   const cookie = await admin();
-  const recursos = [
+  const resources = [
     ["categorias", categoriaGet, categoriaPut, categoriaDelete],
     ["marcas", marcaGet, marcaPut, marcaDelete],
     ["certificados", certificadoGet, certificadoPut, certificadoDelete],
   ] as const;
-  for (const [name, get, put, del] of recursos) {
+  for (const [name, get, put, del] of resources) {
     for (const id of ["abc", "0", "1.5"]) {
       const url = `/api/${name}/${id}`;
       assert.equal((await get(req(url), ctx(id))).status, 400, `GET ${name} ${id}`);
@@ -213,11 +213,11 @@ test("REQ-USR-06: /api/usuarios/[id] e aprovar marca com id inválido respondem 
 });
 
 test("REQ-USR-08: ADMIN que tenta excluir a própria conta recebe 409 (a regra vale antes de qualquer acesso ao banco)", async () => {
-  const eu = { id: 424242, email: "auto-del@test.local", tipo: "ADMIN" as const };
-  const cookie = await cookieDe(eu);
+  const me = { id: 424242, email: "auto-del@test.local", tipo: "ADMIN" as const };
+  const cookie = await cookieDe(me);
   const res = await usuarioDelete(
-    req(`/api/usuarios/${eu.id}`, { method: "DELETE", cookie }),
-    ctx(eu.id),
+    req(`/api/usuarios/${me.id}`, { method: "DELETE", cookie }),
+    ctx(me.id),
   );
   assert.equal(res.status, 409);
   assert.deepEqual(await res.json(), { erro: "Você não pode excluir a própria conta" });
@@ -233,18 +233,18 @@ test("REQ-USR-06: a sessão é checada antes do id (visitante recebe 403, não 4
 // ---------------------------------------------------------------------------
 
 test("REQ-AUTH-15: os schemas normalizam o e-mail (espaços e caixa) no login, cadastro e atualização", () => {
-  const sujo = "  Foo.Bar@Exemplo.COM ";
-  const limpo = "foo.bar@exemplo.com";
-  assert.equal(loginSchema.parse({ email: sujo, senha: "x" }).email, limpo);
+  const dirty = "  Foo.Bar@Exemplo.COM ";
+  const clean = "foo.bar@exemplo.com";
+  assert.equal(loginSchema.parse({ email: dirty, senha: "x" }).email, clean);
   assert.equal(
-    adminRegistrationSchema.parse({ nome: "Fulano", email: sujo, senha: "Senha12345" }).email,
-    limpo,
+    adminRegistrationSchema.parse({ nome: "Fulano", email: dirty, senha: "Senha12345" }).email,
+    clean,
   );
   assert.equal(
-    publicRegistrationSchema.parse({ nome: "Fulano", email: sujo, senha: "Senha12345" }).email,
-    limpo,
+    publicRegistrationSchema.parse({ nome: "Fulano", email: dirty, senha: "Senha12345" }).email,
+    clean,
   );
-  assert.equal(updateUserSchema.parse({ email: sujo }).email, limpo);
+  assert.equal(updateUserSchema.parse({ email: dirty }).email, clean);
 });
 
 test("REQ-AUTH-16: senha acima de 72 bytes é recusada; 72 bytes é aceita (conta bytes, não caracteres)", () => {
@@ -266,7 +266,7 @@ test("REQ-AUTH-17: caminhoLocalOuRaiz aceita caminho local e manda todo o resto 
   assert.equal(localPathOrRoot("/perfil"), "/perfil");
   assert.equal(localPathOrRoot("/produtos?categoria=2#topo"), "/produtos?categoria=2#topo");
   assert.equal(localPathOrRoot("/"), "/");
-  for (const perigoso of [
+  for (const dangerous of [
     null,
     "",
     "perfil",
@@ -282,7 +282,7 @@ test("REQ-AUTH-17: caminhoLocalOuRaiz aceita caminho local e manda todo o resto 
     " /perfil",
     "data:text/html,x",
   ]) {
-    assert.equal(localPathOrRoot(perigoso), "/", JSON.stringify(perigoso));
+    assert.equal(localPathOrRoot(dangerous), "/", JSON.stringify(dangerous));
   }
 });
 
@@ -304,27 +304,27 @@ test("REQ-CHAT-08: o schema recusa historico com mais de 20 itens, texto acima d
 test("REQ-CHAT-08: a chave do Gemini vai no cabeçalho x-goog-api-key, nunca na URL", async () => {
   process.env.GEMINI_KEY = "chave-gemini-de-teste-123";
   const cookie = await cookieDe({ id: 111, email: "chat08@test.local", tipo: "CLIENTE" });
-  let urlUsada = "";
-  let cabecalhos: Record<string, string> = {};
-  const restaurar = stubFetch((url, init) => {
-    urlUsada = url;
-    cabecalhos = (init?.headers ?? {}) as Record<string, string>;
+  let usedUrl = "";
+  let headers: Record<string, string> = {};
+  const restore = stubFetch((url, init) => {
+    usedUrl = url;
+    headers = (init?.headers ?? {}) as Record<string, string>;
     return json({ candidates: [{ content: { parts: [{ text: "ok" }] } }] });
   });
   try {
     const res = await chat(req("/api/ia/chat", { method: "POST", cookie, body: { mensagem: "Como reciclar pilhas?" } }));
     assert.equal(res.status, 200);
-    assert.ok(!urlUsada.includes("key="), "a chave não pode estar na URL");
-    assert.equal(cabecalhos["x-goog-api-key"], "chave-gemini-de-teste-123");
+    assert.ok(!usedUrl.includes("key="), "a chave não pode estar na URL");
+    assert.equal(headers["x-goog-api-key"], "chave-gemini-de-teste-123");
 
     // o mesmo vale para o provedor usado pelo EcoScan
-    urlUsada = "";
-    cabecalhos = {};
+    usedUrl = "";
+    headers = {};
     await generateText("prompt");
-    assert.ok(!urlUsada.includes("key="));
-    assert.equal(cabecalhos["x-goog-api-key"], "chave-gemini-de-teste-123");
+    assert.ok(!usedUrl.includes("key="));
+    assert.equal(headers["x-goog-api-key"], "chave-gemini-de-teste-123");
   } finally {
-    restaurar();
+    restore();
   }
 });
 
@@ -344,14 +344,14 @@ test("REQ-CHAT-08: historico com 21 itens responde 400", async () => {
 test("REQ-CHAT-09: se a chamada ao Gemini lança erro, o chat responde 502 (não 500)", async () => {
   process.env.GEMINI_KEY = "chave-gemini-de-teste-123";
   const cookie = await cookieDe({ id: 113, email: "chat09@test.local", tipo: "CLIENTE" });
-  const restaurar = stubFetch(() => {
+  const restore = stubFetch(() => {
     throw new TypeError("fetch failed");
   });
   try {
     const res = await chat(req("/api/ia/chat", { method: "POST", cookie, body: { mensagem: "oi" } }));
     assert.equal(res.status, 502);
   } finally {
-    restaurar();
+    restore();
   }
 });
 
@@ -360,57 +360,57 @@ test("REQ-CHAT-09: se a chamada ao Gemini lança erro, o chat responde 502 (não
 // ---------------------------------------------------------------------------
 
 /** `fetch` que nunca responde, mas rejeita quando o `signal` aborta. */
-const fetchPenduradoAteAbortar = (_url: string, init?: RequestInit) =>
-  new Promise<Response>((_, rejeita) => {
+const fetchHangingUntilAborted = (_url: string, init?: RequestInit) =>
+  new Promise<Response>((_, rejects) => {
     if (!init?.signal) return; // sem signal fica pendurado: o corredor abaixo acusa a falha
-    init.signal.addEventListener("abort", () => rejeita(init.signal!.reason));
+    init.signal.addEventListener("abort", () => rejects(init.signal!.reason));
   });
 
 /** Falha claramente (em vez de travar o teste) se a promessa não terminar. */
-const withTimeout = <T,>(promessa: Promise<T>, ms = 2000) =>
+const withTimeout = <T,>(promise: Promise<T>, ms = 2000) =>
   Promise.race([
-    promessa,
-    new Promise<never>((_, rejeita) => setTimeout(() => rejeita(new Error("sem timeout: a chamada ficou pendurada")), ms)),
+    promise,
+    new Promise<never>((_, rejects) => setTimeout(() => rejects(new Error("sem timeout: a chamada ficou pendurada")), ms)),
   ]);
 
 test("REQ-SCAN-09: fetchComTimeout aborta a chamada que não responde", async () => {
-  const restaurar = stubFetch(fetchPenduradoAteAbortar);
+  const restore = stubFetch(fetchHangingUntilAborted);
   try {
     await assert.rejects(() => withTimeout(fetchWithTimeout("http://exemplo.test", {}, 20)), (e: Error) => !/sem timeout/.test(e.message));
   } finally {
-    restaurar();
+    restore();
   }
 });
 
 test("REQ-SCAN-09: o Azure que não responde no tempo limite vira falha tratada (null), não exceção", async () => {
-  const restaurar = stubFetch(fetchPenduradoAteAbortar);
+  const restore = stubFetch(fetchHangingUntilAborted);
   try {
     assert.equal(await withTimeout(classifyImage(Buffer.from("x"), 20)), null);
   } finally {
-    restaurar();
+    restore();
   }
 });
 
 test("REQ-SCAN-09: o Gemini que não responde, ou lança erro, vira null (o scan usa a contingência)", async () => {
   process.env.GEMINI_KEY = "chave-gemini-de-teste-123";
-  let restaurar = stubFetch(fetchPenduradoAteAbortar);
+  let restore = stubFetch(fetchHangingUntilAborted);
   try {
     assert.equal(await withTimeout(generateText("prompt", undefined, 20)), null);
   } finally {
-    restaurar();
+    restore();
   }
-  restaurar = stubFetch(() => {
+  restore = stubFetch(() => {
     throw new TypeError("fetch failed");
   });
   try {
     assert.equal(await generateText("prompt"), null);
   } finally {
-    restaurar();
+    restore();
   }
 });
 
 test("REQ-SCAN-05: se a rede do Gemini falha, o scan devolve a análise de contingência (sem banco)", async () => {
-  const restaurar = stubFetch((url) => {
+  const restore = stubFetch((url) => {
     if (url.startsWith("https://azure.test")) {
       return json({ predictions: [{ tagName: "metal", probability: 0.9 }] });
     }
@@ -421,7 +421,7 @@ test("REQ-SCAN-05: se a rede do Gemini falha, o scan devolve a análise de conti
     assert.equal(r.sucesso, true);
     assert.ok((r as { analise_sustentabilidade?: unknown }).analise_sustentabilidade);
   } finally {
-    restaurar();
+    restore();
   }
 });
 
@@ -440,44 +440,44 @@ test("REQ-USR-07: PUT de usuário inexistente por ADMIN responde 404", async () 
 
 test("REQ-USR-07: PUT com e-mail de outro usuário responde 409", async () => {
   const cookie = await cookieDe(await createUserDirectly(email("e409-admin"), "ADMIN"));
-  const outro = await createUserDirectly(email("e409-outro"));
-  const alvo = await createUserDirectly(email("e409-alvo"));
+  const other = await createUserDirectly(email("e409-outro"));
+  const target = await createUserDirectly(email("e409-alvo"));
   const res = await usuarioPut(
-    req(`/api/usuarios/${alvo.id}`, { method: "PUT", cookie, body: { email: outro.email } }),
-    ctx(alvo.id),
+    req(`/api/usuarios/${target.id}`, { method: "PUT", cookie, body: { email: other.email } }),
+    ctx(target.id),
   );
   assert.equal(res.status, 409);
 });
 
 test("REQ-USR-07: DELETE de usuário que tem marca responde 409 e mantém o usuário", async () => {
   const cookie = await cookieDe(await createUserDirectly(email("fk-admin"), "ADMIN"));
-  const dono = await createUserDirectly(email("fk-dono"), "MARCA");
-  await prisma.marca.create({ data: { nome: `Marca FK ${dono.email}`, usuarioId: dono.id, status: "APROVADA" } });
-  const res = await usuarioDelete(req(`/api/usuarios/${dono.id}`, { method: "DELETE", cookie }), ctx(dono.id));
+  const owner = await createUserDirectly(email("fk-dono"), "MARCA");
+  await prisma.marca.create({ data: { nome: `Marca FK ${owner.email}`, usuarioId: owner.id, status: "APROVADA" } });
+  const res = await usuarioDelete(req(`/api/usuarios/${owner.id}`, { method: "DELETE", cookie }), ctx(owner.id));
   assert.equal(res.status, 409);
-  assert.ok(await prisma.usuario.findUnique({ where: { id: dono.id } }));
+  assert.ok(await prisma.usuario.findUnique({ where: { id: owner.id } }));
 });
 
 test("REQ-AUTH-15: cadastro grava o e-mail em minúsculas e recusa o mesmo e-mail com outra caixa", async () => {
-  const minusculo = email("caixa");
-  const misto = minusculo.replace("caixa", "CaIxA").replace("@test.local", "@TEST.local");
-  await prisma.usuario.deleteMany({ where: { email: minusculo } });
-  const novo = { nome: "Usuario Caixa", senha: "Senha12345" };
+  const lowercase = email("caixa");
+  const mixed = lowercase.replace("caixa", "CaIxA").replace("@test.local", "@TEST.local");
+  await prisma.usuario.deleteMany({ where: { email: lowercase } });
+  const fresh = { nome: "Usuario Caixa", senha: "Senha12345" };
 
-  const primeiro = await cadastrar(req("/api/users", { method: "POST", body: { ...novo, email: misto } }));
-  assert.equal(primeiro.status, 201);
-  assert.ok(await prisma.usuario.findUnique({ where: { email: minusculo } }), "gravado em minúsculas");
+  const first = await cadastrar(req("/api/users", { method: "POST", body: { ...fresh, email: mixed } }));
+  assert.equal(first.status, 201);
+  assert.ok(await prisma.usuario.findUnique({ where: { email: lowercase } }), "gravado em minúsculas");
 
-  const repetido = await cadastrar(req("/api/users", { method: "POST", body: { ...novo, email: minusculo } }));
-  assert.equal(repetido.status, 409);
+  const repeated = await cadastrar(req("/api/users", { method: "POST", body: { ...fresh, email: lowercase } }));
+  assert.equal(repeated.status, 409);
 });
 
 test("REQ-AUTH-15: conta antiga com e-mail de caixa mista continua entrando por qualquer caixa", async () => {
-  const legado = email("legado").replace("legado", "LeGaDo");
-  await prisma.usuario.deleteMany({ where: { email: legado } });
+  const legacy = email("legado").replace("legado", "LeGaDo");
+  await prisma.usuario.deleteMany({ where: { email: legacy } });
   await prisma.usuario.create({
-    data: { nome: "Legado", email: legado, senha: await bcrypt.hash("Senha12345", 4), tipo: "CLIENTE" },
+    data: { nome: "Legado", email: legacy, senha: await bcrypt.hash("Senha12345", 4), tipo: "CLIENTE" },
   });
-  const res = await login(req("/api/auth", { method: "POST", body: { email: legado.toLowerCase(), senha: "Senha12345" } }));
+  const res = await login(req("/api/auth", { method: "POST", body: { email: legacy.toLowerCase(), senha: "Senha12345" } }));
   assert.equal(res.status, 200);
 });

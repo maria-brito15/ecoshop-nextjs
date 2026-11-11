@@ -27,7 +27,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useListProducts, type OrdemProdutos } from "@/lib/hooks/useProdutos";
+import { useListProducts, type ProductOrder } from "@/lib/hooks/useProdutos";
 import { useListCategories } from "@/lib/hooks/useCategorias";
 import { useListBrands } from "@/lib/hooks/useMarcas";
 import type { Produto, ProdutoCertificado } from "@/types/api";
@@ -244,31 +244,31 @@ function ProductCard({ produto: product, index }: { produto: Produto; index: num
 export default function ProductsPage() {
   // Estados de paginação e filtros
   const [page, setPage] = useState(1);
-  const [name, setNome] = useState("");
-  const [busca, setBusca] = useState("");
-  const [categoryId, setCategoriaId] = useState<number | undefined>(undefined);
-  const [brandId, setMarcaId] = useState<number | undefined>(undefined);
-  const [maxPreco, setMaxPreco] = useState(1000);
-  const [precoInput, setPrecoInput] = useState(1000);
-  const [sortBy, setSortBy] = useState<OrdemProdutos>("relevancia");
+  const [name, setName] = useState("");
+  const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
+  const [brandId, setBrandId] = useState<number | undefined>(undefined);
+  const [maxPrice, setMaxPrice] = useState(1000);
+  const [priceInput, setPriceInput] = useState(1000);
+  const [sortBy, setSortBy] = useState<ProductOrder>("relevancia");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Hooks de dados — ordenação, marca e preço máximo são aplicados pelo
   // servidor ao catálogo inteiro, não só à página atual (REQ-CAT-06/07).
-  const { data, loading: carregando, error: erro } = useListProducts(page, 12, categoryId, busca, {
+  const { data, loading: loading, error: error } = useListProducts(page, 12, categoryId, search, {
     marcaId: brandId,
-    precoMax: maxPreco < 1000 ? maxPreco : undefined,
+    precoMax: maxPrice < 1000 ? maxPrice : undefined,
     sort: sortBy,
   });
   const { data: catData } = useListCategories();
-  const { data: marcasData } = useListBrands();
+  const { data: brandsData } = useListBrands();
 
   const products = data?.produtos ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / 12);
   const categories = catData?.categorias ?? [];
-  const brands = (marcasData?.marcas ?? []).filter(
+  const brands = (brandsData?.marcas ?? []).filter(
     (m) => m.status === "APROVADA",
   );
 
@@ -279,31 +279,31 @@ export default function ProductsPage() {
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     setPage(1);
-    setBusca(name);
+    setSearch(name);
   }
 
   // Debounce no filtro de preço para evitar re-renders excessivos
   function handlePriceChange(val: number) {
-    setPrecoInput(val);
+    setPriceInput(val);
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      setMaxPreco(val);
+      setMaxPrice(val);
       setPage(1);
     }, 300);
   }
 
   function clearFilters() {
-    setNome("");
-    setBusca("");
-    setCategoriaId(undefined);
-    setMarcaId(undefined);
-    setMaxPreco(1000);
-    setPrecoInput(1000);
+    setName("");
+    setSearch("");
+    setCategoryId(undefined);
+    setBrandId(undefined);
+    setMaxPrice(1000);
+    setPriceInput(1000);
     setSortBy("relevancia");
     setPage(1);
   }
 
-  const pricePercent = ((precoInput / 1000) * 100).toFixed(1);
+  const pricePercent = ((priceInput / 1000) * 100).toFixed(1);
 
   // --------------------------------------------------------------------------
   // RENDER
@@ -340,7 +340,7 @@ export default function ProductsPage() {
               <h1 className="font-display text-3xl md:text-4xl font-extrabold text-[var(--color-text-primary)]">
                 Produtos <span className="text-gradient-eco">Sustentáveis</span>
               </h1>
-              {!carregando && (
+              {!loading && (
                 <p className="text-[var(--color-text-secondary)] mt-1 text-sm">
                   {total > 0 ? (
                     <>
@@ -366,7 +366,7 @@ export default function ProductsPage() {
                 type="text"
                 placeholder="Buscar produto..."
                 value={name}
-                onChange={(e) => setNome(e.target.value)}
+                onChange={(e) => setName(e.target.value)}
                 className={`
                   flex-1 px-4 py-2.5 rounded-xl text-sm font-medium
                   bg-[var(--color-bg-body)]
@@ -453,7 +453,7 @@ export default function ProductsPage() {
                 <li>
                   <button
                     onClick={() => {
-                      setCategoriaId(undefined);
+                      setCategoryId(undefined);
                       setPage(1);
                     }}
                     className={`
@@ -476,7 +476,7 @@ export default function ProductsPage() {
                   <li key={cat.id}>
                     <button
                       onClick={() => {
-                        setCategoriaId(cat.id);
+                        setCategoryId(cat.id);
                         setPage(1);
                       }}
                       className={`
@@ -509,7 +509,7 @@ export default function ProductsPage() {
                   <li>
                     <button
                       onClick={() => {
-                        setMarcaId(undefined);
+                        setBrandId(undefined);
                         setPage(1);
                       }}
                       className={`
@@ -532,7 +532,7 @@ export default function ProductsPage() {
                     <li key={m.id}>
                       <button
                         onClick={() => {
-                          setMarcaId(m.id);
+                          setBrandId(m.id);
                           setPage(1);
                         }}
                         className={`
@@ -564,7 +564,7 @@ export default function ProductsPage() {
                 min={0}
                 max={1000}
                 step={10}
-                value={precoInput}
+                value={priceInput}
                 onChange={(e) => handlePriceChange(Number(e.target.value))}
                 style={{
                   background: `linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ${pricePercent}%, var(--color-border) ${pricePercent}%, var(--color-border) 100%)`,
@@ -588,7 +588,7 @@ export default function ProductsPage() {
                   Até
                 </span>
                 <span className="text-lg font-extrabold font-display text-[var(--color-primary)]">
-                  R$ {precoInput.toLocaleString("pt-BR")}
+                  R$ {priceInput.toLocaleString("pt-BR")}
                 </span>
               </div>
             </div>
@@ -641,7 +641,7 @@ export default function ProductsPage() {
                   ⚙ Filtros
                   {(categoryId !== undefined ||
                     brandId !== undefined ||
-                    maxPreco < 1000) && (
+                    maxPrice < 1000) && (
                     <span className="w-2 h-2 rounded-full bg-[var(--color-primary)]" />
                   )}
                 </button>
@@ -649,7 +649,7 @@ export default function ProductsPage() {
                 {/* Contador de resultados */}
                 <p className="text-sm font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
                   <span className="text-[var(--color-primary)]">📦</span>
-                  {carregando ? (
+                  {loading ? (
                     "Carregando..."
                   ) : (
                     <>
@@ -670,7 +670,7 @@ export default function ProductsPage() {
                 <select
                   value={sortBy}
                   onChange={(e) => {
-                    setSortBy(e.target.value as OrdemProdutos);
+                    setSortBy(e.target.value as ProductOrder);
                     setPage(1);
                   }}
                   className={`
@@ -700,7 +700,7 @@ export default function ProductsPage() {
             </div>
 
             {/* Estado de erro */}
-            {erro && (
+            {error && (
               <div
                 className={`
                   flex flex-col items-center justify-center
@@ -715,7 +715,7 @@ export default function ProductsPage() {
                   Ops! Algo deu errado.
                 </h3>
                 <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-                  {erro}
+                  {error}
                 </p>
                 <button
                   onClick={() => window.location.reload()}
@@ -727,7 +727,7 @@ export default function ProductsPage() {
             )}
 
             {/* Skeletons (loading) */}
-            {carregando && !erro && (
+            {loading && !error && (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <SkeletonCard key={i} />
@@ -736,7 +736,7 @@ export default function ProductsPage() {
             )}
 
             {/* Nenhum produto encontrado */}
-            {!carregando && !erro && products.length === 0 && (
+            {!loading && !error && products.length === 0 && (
               <div
                 className={`
                   flex flex-col items-center justify-center
@@ -761,7 +761,7 @@ export default function ProductsPage() {
             )}
 
             {/* Grid de produtos */}
-            {!carregando && !erro && products.length > 0 && (
+            {!loading && !error && products.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                 {products.map((product, i) => (
                   <ProductCard key={product.id} produto={product} index={i} />
@@ -770,7 +770,7 @@ export default function ProductsPage() {
             )}
 
             {/* Paginação */}
-            {totalPages > 1 && !carregando && (
+            {totalPages > 1 && !loading && (
               <div className="flex items-center justify-center gap-3 mt-10">
                 <button
                   onClick={() => setPage((p) => p - 1)}
@@ -888,7 +888,7 @@ export default function ProductsPage() {
                 <li>
                   <button
                     onClick={() => {
-                      setCategoriaId(undefined);
+                      setCategoryId(undefined);
                       setPage(1);
                       setSidebarOpen(false);
                     }}
@@ -901,7 +901,7 @@ export default function ProductsPage() {
                   <li key={cat.id}>
                     <button
                       onClick={() => {
-                        setCategoriaId(cat.id);
+                        setCategoryId(cat.id);
                         setPage(1);
                         setSidebarOpen(false);
                       }}
@@ -924,7 +924,7 @@ export default function ProductsPage() {
                   <li>
                     <button
                       onClick={() => {
-                        setMarcaId(undefined);
+                        setBrandId(undefined);
                         setPage(1);
                         setSidebarOpen(false);
                       }}
@@ -937,7 +937,7 @@ export default function ProductsPage() {
                     <li key={m.id}>
                       <button
                         onClick={() => {
-                          setMarcaId(m.id);
+                          setBrandId(m.id);
                           setPage(1);
                           setSidebarOpen(false);
                         }}
@@ -961,7 +961,7 @@ export default function ProductsPage() {
                 min={0}
                 max={1000}
                 step={10}
-                value={precoInput}
+                value={priceInput}
                 onChange={(e) => handlePriceChange(Number(e.target.value))}
                 style={{
                   background: `linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ${pricePercent}%, var(--color-border) ${pricePercent}%, var(--color-border) 100%)`,
@@ -973,7 +973,7 @@ export default function ProductsPage() {
                   Até
                 </span>
                 <span className="text-lg font-extrabold font-display text-[var(--color-primary)]">
-                  R$ {precoInput.toLocaleString("pt-BR")}
+                  R$ {priceInput.toLocaleString("pt-BR")}
                 </span>
               </div>
             </div>

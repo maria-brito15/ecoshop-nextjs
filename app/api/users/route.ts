@@ -51,12 +51,12 @@ const REGISTRATION_WINDOW = 3600;
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
-    const { blocked: bloqueado } = await rateLimit(`${ip}:register`, {
+    const { blocked: blocked } = await rateLimit(`${ip}:register`, {
       limit: REGISTRATION_LIMIT,
       windowSeconds: REGISTRATION_WINDOW,
     });
 
-    if (bloqueado) {
+    if (blocked) {
       return NextResponse.json(
         { erro: "Muitas tentativas de cadastro. Aguarde 1 hora." },
         { status: 429 },
@@ -68,14 +68,14 @@ export async function POST(req: NextRequest) {
 
     if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const { nome: name, email, telefone, senha: password, tipo: type, marcaNome: brandName, marcaDescricao: brandDescription } =
+    const { nome: name, email, telefone: phone, senha: password, tipo: type, marcaNome: brandName, marcaDescricao: brandDescription } =
       parsed.data;
 
     // A duplicidade de e-mail é decidida pelo service (ConflitoDeNegocio → 409).
     const user = await createUser({
       nome: name,
       email,
-      telefone,
+      telefone: phone,
       senha: password,
       tipo: type,
       marcaNome: brandName,

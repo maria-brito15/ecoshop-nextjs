@@ -35,9 +35,9 @@ import path from "node:path";
 after(closeConnections);
 
 test("REQ-AUTZ-01: escrita no catálogo exige ADMIN (401 sem login, 403 para CLIENTE)", async () => {
-  const cliente = await createUserDirectly(email("authz01"), "CLIENTE");
-  const cookie = await cookieDe(cliente);
-  const rotas: [
+  const client = await createUserDirectly(email("authz01"), "CLIENTE");
+  const cookie = await cookieDe(client);
+  const routes: [
     string,
     (r: ReturnType<typeof req>) => Promise<Response>,
     string,
@@ -58,7 +58,7 @@ test("REQ-AUTZ-01: escrita no catálogo exige ADMIN (401 sem login, 403 para CLI
       { nome: "x", preco: 1, categoriaId: 1, marcaId: 1 },
     ],
   ];
-  for (const [name, handler, method, body] of rotas) {
+  for (const [name, handler, method, body] of routes) {
     assert.equal(
       (await handler(req(`/api/${name}`, { method, body }))).status,
       401,
@@ -112,12 +112,12 @@ test("REQ-AUTZ-03: scan e chat de IA exigem usuário autenticado", async () => {
 });
 
 test("REQ-AUTZ-04: listar e criar usuários é exclusivo de ADMIN", async () => {
-  const cliente = await createUserDirectly(email("authz04"), "CLIENTE");
+  const client = await createUserDirectly(email("authz04"), "CLIENTE");
   assert.equal((await listarUsuarios(req("/api/usuarios"))).status, 401);
   assert.equal(
     (
       await listarUsuarios(
-        req("/api/usuarios", { cookie: await cookieDe(cliente) }),
+        req("/api/usuarios", { cookie: await cookieDe(client) }),
       )
     ).status,
     403,
@@ -197,7 +197,7 @@ test("REQ-AUTZ-07: toda rota de API declara sua política de acesso (autenticaç
 
   // Rotas intencionalmente públicas (leitura do catálogo, login, cadastro,
   // logout e health-check). Qualquer outra precisa chamar um guard.
-  const PUBLICAS = new Set([
+  const PUBLIC_ROUTES = new Set([
     "health/route.ts:GET",
     "auth/route.ts:POST",
     "auth/route.ts:DELETE",
@@ -214,32 +214,32 @@ test("REQ-AUTZ-07: toda rota de API declara sua política de acesso (autenticaç
   ]);
 
   const GUARDS = ["requireAuth(", "requireAdmin(", "getSession("];
-  const METODOS = ["GET", "POST", "PUT", "DELETE", "PATCH"];
+  const METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"];
 
   function listFilesRoute(dir: string): string[] {
     const result: string[] = [];
     for (const name of fs.readdirSync(dir)) {
-      const caminho = path.join(dir, name);
-      if (fs.statSync(caminho).isDirectory()) {
-        result.push(...listFilesRoute(caminho));
+      const fullPath = path.join(dir, name);
+      if (fs.statSync(fullPath).isDirectory()) {
+        result.push(...listFilesRoute(fullPath));
       } else if (name === "route.ts") {
-        result.push(caminho);
+        result.push(fullPath);
       }
     }
     return result;
   }
 
   /** Extrai o corpo (entre chaves balanceadas) de uma função a partir do índice do seu "{" inicial. */
-  function corpoAPartirDe(fonte: string, indiceAbreChave: number): string {
-    let profundidade = 0;
-    for (let i = indiceAbreChave; i < fonte.length; i++) {
-      if (fonte[i] === "{") profundidade++;
-      if (fonte[i] === "}") {
-        profundidade--;
-        if (profundidade === 0) return fonte.slice(indiceAbreChave, i + 1);
+  function bodyFrom(source: string, openBraceIndex: number): string {
+    let depth = 0;
+    for (let i = openBraceIndex; i < source.length; i++) {
+      if (source[i] === "{") depth++;
+      if (source[i] === "}") {
+        depth--;
+        if (depth === 0) return source.slice(openBraceIndex, i + 1);
       }
     }
-    return fonte.slice(indiceAbreChave);
+    return source.slice(openBraceIndex);
   }
 
   /**
@@ -248,47 +248,47 @@ test("REQ-AUTZ-07: toda rota de API declara sua política de acesso (autenticaç
    * Conta parênteses a partir do primeiro "(" após o nome da função até seu
    * fechamento, e só então procura o próximo "{" — esse é o corpo real.
    */
-  function corpoDoHandler(fonte: string, indiceNomeFuncao: number): string {
-    const abreParen = fonte.indexOf("(", indiceNomeFuncao);
-    let profundidade = 0;
-    let i = abreParen;
-    for (; i < fonte.length; i++) {
-      if (fonte[i] === "(") profundidade++;
-      if (fonte[i] === ")") {
-        profundidade--;
-        if (profundidade === 0) break;
+  function handlerBody(source: string, functionNameIndex: number): string {
+    const openParen = source.indexOf("(", functionNameIndex);
+    let depth = 0;
+    let i = openParen;
+    for (; i < source.length; i++) {
+      if (source[i] === "(") depth++;
+      if (source[i] === ")") {
+        depth--;
+        if (depth === 0) break;
       }
     }
-    const abreChave = fonte.indexOf("{", i);
-    return corpoAPartirDe(fonte, abreChave);
+    const openBrace = source.indexOf("{", i);
+    return bodyFrom(source, openBrace);
   }
 
-  const semPolitica: string[] = [];
+  const withoutPolicy: string[] = [];
 
   for (const file of listFilesRoute(API_DIR)) {
-    const fonte = fs.readFileSync(file, "utf8");
+    const source = fs.readFileSync(file, "utf8");
     const fileKey = path
       .relative(API_DIR, file)
       .split(path.sep)
       .join("/");
 
-    for (const metodo of METODOS) {
-      const re = new RegExp(`export\\s+async\\s+function\\s+${metodo}\\s*\\(`);
-      const m = re.exec(fonte);
+    for (const method of METHODS) {
+      const re = new RegExp(`export\\s+async\\s+function\\s+${method}\\s*\\(`);
+      const m = re.exec(source);
       if (!m) continue;
 
-      const key = `${fileKey}:${metodo}`;
-      if (PUBLICAS.has(key)) continue;
+      const key = `${fileKey}:${method}`;
+      if (PUBLIC_ROUTES.has(key)) continue;
 
-      const corpo = corpoDoHandler(fonte, m.index);
-      const declaraGuard = GUARDS.some((g) => corpo.includes(g));
-      if (!declaraGuard) semPolitica.push(key);
+      const body = handlerBody(source, m.index);
+      const declaresGuard = GUARDS.some((g) => body.includes(g));
+      if (!declaresGuard) withoutPolicy.push(key);
     }
   }
 
   assert.deepEqual(
-    semPolitica,
+    withoutPolicy,
     [],
-    `Rota(s) de API sem política de acesso declarada (nem guard, nem na allowlist de públicas): ${semPolitica.join(", ")}`,
+    `Rota(s) de API sem política de acesso declarada (nem guard, nem na allowlist de públicas): ${withoutPolicy.join(", ")}`,
   );
 });

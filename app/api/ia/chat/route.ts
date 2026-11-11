@@ -63,11 +63,11 @@ export async function POST(req: NextRequest) {
   if (authError) return authError;
 
   const session = await getSession(req);
-  const { blocked: bloqueado } = await rateLimit(`chat:${session!.id}`, {
+  const { blocked: blocked } = await rateLimit(`chat:${session!.id}`, {
     limit: MESSAGE_LIMIT,
     windowSeconds: WINDOW_SECONDS,
   });
-  if (bloqueado) {
+  if (blocked) {
     return NextResponse.json(
       { erro: "Muitas mensagens. Aguarde 1 minuto e tente novamente." },
       { status: 429 },

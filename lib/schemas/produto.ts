@@ -150,7 +150,7 @@ export const listProductsQuerySchema = z.object({
     .trim()
     .max(100, "nome não pode passar de 100 caracteres")
     .optional()
-    .transform((valor) => valor || undefined),
+    .transform((value) => value || undefined),
 });
 
 // Tipos inferidos para uso nos services

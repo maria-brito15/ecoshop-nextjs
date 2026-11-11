@@ -17,14 +17,14 @@
  */
 
 import { prisma } from "@/lib/db";
-import { redis, withTimeout, TIMEOUT_COMANDO_MS } from "@/lib/redis";
+import { redis, withTimeout, COMMAND_TIMEOUT_MS } from "@/lib/redis";
 
-export type StatusDaSaude = "ok" | "degradado" | "indisponivel";
+export type HealthStatus = "ok" | "degradado" | "indisponivel";
 
 export interface HealthReport {
   /** A aplicação consegue atender (o banco responde). */
   ok: boolean;
-  status: StatusDaSaude;
+  status: HealthStatus;
   timestamp: string;
   services: { database: boolean; redis: boolean };
 }
@@ -32,16 +32,16 @@ export interface HealthReport {
 /** Monta o relatório e o código HTTP a partir do estado de cada dependência. */
 export function buildHealthReport(
   services: HealthReport["services"],
-  agora: Date = new Date(),
+  now: Date = new Date(),
 ): { relatorio: HealthReport; httpStatus: 200 | 503 } {
-  const status: StatusDaSaude = !services.database
+  const status: HealthStatus = !services.database
     ? "indisponivel"
     : services.redis
       ? "ok"
       : "degradado";
   const ok = services.database;
   return {
-    relatorio: { ok, status, timestamp: agora.toISOString(), services },
+    relatorio: { ok, status, timestamp: now.toISOString(), services },
     httpStatus: ok ? 200 : 503,
   };
 }
@@ -57,7 +57,7 @@ async function checkDatabase(): Promise<boolean> {
 
 async function checkRedis(): Promise<boolean> {
   try {
-    await withTimeout(redis.ping(), TIMEOUT_COMANDO_MS);
+    await withTimeout(redis.ping(), COMMAND_TIMEOUT_MS);
     return true;
   } catch {
     return false;

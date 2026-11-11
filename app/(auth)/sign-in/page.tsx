@@ -39,12 +39,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useLogin, useRegistro } from "@/lib/hooks/useAuth";
+import { useLogin, useRegistration } from "@/lib/hooks/useAuth";
 import { localPathOrRoot } from "@/lib/http/next-url";
 import { fetchSession } from "@/lib/hooks/sessao";
-import type { LoginBody, RegistroBody } from "@/types/api";
+import type { LoginBody, RegistrationBody } from "@/types/api";
 
-type Modo = "login" | "cadastro";
+type Mode = "login" | "cadastro";
 
 type Form = {
   nome: string;
@@ -112,7 +112,7 @@ function Particles() {
 export default function AuthPage() {
   const router = useRouter();
 
-  const [modo, setModo] = useState<Modo>("login");
+  const [mode, setMode] = useState<Mode>("login");
   const [form, setForm] = useState<Form>({
     nome: "",
     email: "",
@@ -124,15 +124,15 @@ export default function AuthPage() {
   });
 
   const [darkMode, setDarkMode] = useState(false);
-  const [senhaErro, setSenhaErro] = useState<string | null>(null);
-  const [marcaPendenteMsg, setMarcaPendenteMsg] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [pendingBrandMessage, setPendingBrandMessage] = useState(false);
 
   const login = useLogin();
-  const registro = useRegistro();
+  const record = useRegistration();
 
-  const hook = modo === "login" ? login : registro;
-  const erro = senhaErro || hook.erro;
-  const carregando = hook.carregando;
+  const hook = mode === "login" ? login : record;
+  const error = passwordError || hook.erro;
+  const loading = hook.carregando;
 
   // Redireciona se usuário já estiver logado
   useEffect(() => {
@@ -159,7 +159,7 @@ export default function AuthPage() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
-    if (name === "senhaConfirm" || name === "senha") setSenhaErro(null);
+    if (name === "senhaConfirm" || name === "senha") setPasswordError(null);
   }
 
   /**
@@ -178,8 +178,8 @@ export default function AuthPage() {
     setForm((prev) => ({ ...prev, telefone: maskPhone(e.target.value) }));
   }
 
-  function alternarModo(novo: Modo) {
-    setModo(novo);
+  function toggleMode(fresh: Mode) {
+    setMode(fresh);
     setForm({
       nome: "",
       email: "",
@@ -189,13 +189,13 @@ export default function AuthPage() {
       isLoja: false,
       marcaNome: "",
     });
-    setSenhaErro(null);
-    setMarcaPendenteMsg(false);
+    setPasswordError(null);
+    setPendingBrandMessage(false);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSenhaErro(null);
+    setPasswordError(null);
 
     const nextUrl =
       typeof window !== "undefined"
@@ -204,26 +204,26 @@ export default function AuthPage() {
           )
         : "/";
 
-    if (modo === "login") {
+    if (mode === "login") {
       const body: LoginBody = { email: form.email, senha: form.senha };
       const data = await login.executar("/api/auth", body);
       if (data) router.push(nextUrl);
     } else {
       // Validações do registro
       if (form.senha !== form.senhaConfirm) {
-        setSenhaErro("As senhas não coincidem.");
+        setPasswordError("As senhas não coincidem.");
         return;
       }
       if (form.senha.length < 8) {
-        setSenhaErro("A senha deve ter pelo menos 8 caracteres.");
+        setPasswordError("A senha deve ter pelo menos 8 caracteres.");
         return;
       }
       if (form.isLoja && !form.marcaNome.trim()) {
-        setSenhaErro("Informe o nome da marca.");
+        setPasswordError("Informe o nome da marca.");
         return;
       }
 
-      const body: RegistroBody = {
+      const body: RegistrationBody = {
         nome: form.nome,
         email: form.email,
         senha: form.senha,
@@ -233,10 +233,10 @@ export default function AuthPage() {
           : {}),
       };
 
-      const data = await registro.executar("/api/users", body);
+      const data = await record.executar("/api/users", body);
       if (!data) return;
       if (data.marcaPendente) {
-        setMarcaPendenteMsg(true);
+        setPendingBrandMessage(true);
         return;
       }
       router.push("/");
@@ -301,13 +301,13 @@ export default function AuthPage() {
               className="text-3xl font-extrabold tracking-tight"
               style={{ color: "var(--color-text-primary)" }}
             >
-              {modo === "login" ? "Bem-vindo" : "Criar Conta"}
+              {mode === "login" ? "Bem-vindo" : "Criar Conta"}
             </h1>
             <p
               className="mt-1.5 text-sm"
               style={{ color: "var(--color-text-secondary)" }}
             >
-              {modo === "login"
+              {mode === "login"
                 ? "Acesse sua conta EcoShop"
                 : "Junte-se à comunidade sustentável"}
             </p>
@@ -321,14 +321,14 @@ export default function AuthPage() {
               border: "1px solid var(--color-border)",
             }}
           >
-            {(["login", "cadastro"] as Modo[]).map((m) => (
+            {(["login", "cadastro"] as Mode[]).map((m) => (
               <button
                 key={m}
                 type="button"
-                onClick={() => alternarModo(m)}
+                onClick={() => toggleMode(m)}
                 className="py-3 rounded-xl text-sm font-semibold transition-all duration-250 relative"
                 style={
-                  modo === m
+                  mode === m
                     ? {
                         background: "var(--color-bg-surface)",
                         color: "var(--color-primary)",
@@ -348,7 +348,7 @@ export default function AuthPage() {
           </div>
 
           {/* Exibição de erro */}
-          {erro && (
+          {error && (
             <div
               className="mb-5 px-4 py-3.5 rounded-xl text-sm font-medium flex items-center gap-2.5"
               style={{
@@ -373,11 +373,11 @@ export default function AuthPage() {
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
-              {erro}
+              {error}
             </div>
           )}
 
-          {marcaPendenteMsg ? (
+          {pendingBrandMessage ? (
             <div
               className="px-4 py-4 rounded-xl text-sm font-medium"
               style={{
@@ -394,11 +394,11 @@ export default function AuthPage() {
           <form
             onSubmit={handleSubmit}
             style={{ animation: "fadeSlide 0.35s ease" }}
-            key={modo}
+            key={mode}
           >
             <div className="flex flex-col gap-5">
               {/* Campo Nome (apenas cadastro) */}
-              {modo === "cadastro" && (
+              {mode === "cadastro" && (
                 <div>
                   <label
                     className="block text-sm font-semibold mb-2"
@@ -474,7 +474,7 @@ export default function AuthPage() {
               </div>
 
               {/* Campo Telefone (apenas cadastro) */}
-              {modo === "cadastro" && (
+              {mode === "cadastro" && (
                 <div>
                   <label
                     className="block text-sm font-semibold mb-2"
@@ -523,7 +523,7 @@ export default function AuthPage() {
                   style={{ color: "var(--color-text-primary)" }}
                 >
                   Senha *{" "}
-                  {modo === "cadastro" && (
+                  {mode === "cadastro" && (
                     <span
                       className="font-normal text-xs"
                       style={{ color: "var(--color-text-tertiary)" }}
@@ -556,14 +556,14 @@ export default function AuthPage() {
                     onChange={handleChange}
                     placeholder="••••••••"
                     required
-                    minLength={modo === "cadastro" ? 8 : undefined}
+                    minLength={mode === "cadastro" ? 8 : undefined}
                     className={inputCls}
                   />
                 </div>
               </div>
 
               {/* Campo Confirmar Senha (apenas cadastro) */}
-              {modo === "cadastro" && (
+              {mode === "cadastro" && (
                 <div>
                   <label
                     className="block text-sm font-semibold mb-2"
@@ -602,7 +602,7 @@ export default function AuthPage() {
               )}
 
               {/* Checkbox para se cadastrar como loja/parceiro */}
-              {modo === "cadastro" && (
+              {mode === "cadastro" && (
                 <div
                   className="flex flex-col gap-2.5 p-4 rounded-xl transition-all duration-200 cursor-pointer"
                   style={{
@@ -653,7 +653,7 @@ export default function AuthPage() {
               {/* Botão de submit */}
               <button
                 type="submit"
-                disabled={carregando}
+                disabled={loading}
                 className="w-full py-4 rounded-xl text-sm font-bold uppercase tracking-wide text-white flex items-center justify-center gap-2 transition-all duration-250 disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{
                   background:
@@ -662,7 +662,7 @@ export default function AuthPage() {
                   marginTop: "4px",
                 }}
                 onMouseEnter={(e) => {
-                  if (!carregando)
+                  if (!loading)
                     (e.currentTarget as HTMLButtonElement).style.transform =
                       "translateY(-2px)";
                 }}
@@ -671,7 +671,7 @@ export default function AuthPage() {
                     "translateY(0)";
                 }}
               >
-                {carregando ? (
+                {loading ? (
                   <>
                     <svg
                       className="animate-spin"
@@ -687,7 +687,7 @@ export default function AuthPage() {
                     </svg>
                     Aguarde...
                   </>
-                ) : modo === "login" ? (
+                ) : mode === "login" ? (
                   <>
                     Entrar
                     <svg

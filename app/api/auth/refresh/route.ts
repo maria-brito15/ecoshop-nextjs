@@ -87,9 +87,9 @@ export async function POST(req: NextRequest) {
     if (!user) return ERRORS.notFound("Usuário");
 
     if (user.tipo !== session.tipo) {
-      const novoToken = await signToken(user);
+      const newToken = await signToken(user);
       const res = NextResponse.json({ ok: true, tipo: user.tipo });
-      setAuthCookie(res, novoToken);
+      setAuthCookie(res, newToken);
       await invalidateKey(currentUserKey(user.id));
       return res;
     }
@@ -106,10 +106,10 @@ export async function POST(req: NextRequest) {
  * falha, remove os cookies e leva ao login, com `next` preservado.
  */
 export async function GET(req: NextRequest) {
-  const destino = localPathOrRoot(req.nextUrl.searchParams.get("next"));
-  const paraLogin = () => {
+  const destination = localPathOrRoot(req.nextUrl.searchParams.get("next"));
+  const toLogin = () => {
     const res = NextResponse.redirect(
-      new URL(`/sign-in?next=${encodeURIComponent(destino)}`, req.url),
+      new URL(`/sign-in?next=${encodeURIComponent(destination)}`, req.url),
     );
     clearSessionCookies(res);
     return res;
@@ -120,12 +120,12 @@ export async function GET(req: NextRequest) {
       req.cookies.get(REFRESH_COOKIE)?.value,
       getIdentity,
     );
-    if (!r.ok) return paraLogin();
+    if (!r.ok) return toLogin();
 
-    const res = NextResponse.redirect(new URL(destino, req.url));
+    const res = NextResponse.redirect(new URL(destination, req.url));
     applySession(res, r.session);
     return res;
   } catch {
-    return paraLogin();
+    return toLogin();
   }
 }

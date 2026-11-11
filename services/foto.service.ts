@@ -70,18 +70,18 @@ function hasAllowedExtension(filename: string): boolean {
  * Exemplo: "123_meu_produto_foto.jpg" ou "123_1702900000_abc123.jpg"
  *
  * @param productId - ID do produto associado
- * @param nomeOriginal - Nome original do arquivo (para extrair extensão)
- * @param customizado - Nome personalizado opcional (sanitizado)
+ * @param originalName - Nome original do arquivo (para extrair extensão)
+ * @param custom - Nome personalizado opcional (sanitizado)
  * @returns Nome sanitizado e único
  */
 function buildFileName(
   productId: number,
-  nomeOriginal: string,
-  customizado?: string | null,
+  originalName: string,
+  custom?: string | null,
 ): string {
-  const ext = path.extname(nomeOriginal).toLowerCase();
-  const base = customizado
-    ? customizado.replace(/[^a-zA-Z0-9]/g, "_")
+  const ext = path.extname(originalName).toLowerCase();
+  const base = custom
+    ? custom.replace(/[^a-zA-Z0-9]/g, "_")
     : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
   return `${productId}_${base}${ext}`;
 }
@@ -105,16 +105,16 @@ export async function listPhotos(productId: number) {
   }
 }
 
-export type MotivoDeFalhaNoUpload =
+export type UploadFailureReason =
   | "PRODUTO_NAO_ENCONTRADO"
   | "EXTENSAO_NAO_PERMITIDA"
   | "ARQUIVO_MUITO_GRANDE"
   | "CONTEUDO_NAO_E_IMAGEM"
   | "NOME_JA_EXISTE";
 
-export type ResultadoDoUpload =
+export type UploadResult =
   | { ok: true; photo: { nome: string; url: string } }
-  | { ok: false; reason: MotivoDeFalhaNoUpload };
+  | { ok: false; reason: UploadFailureReason };
 
 /**
  * Valida e grava a foto em `diretorio` (sem acesso ao banco; exportada para teste).
@@ -131,8 +131,8 @@ export async function savePhoto(params: {
   arquivo: File;
   nomeCustomizado?: string | null;
   directory: string;
-}): Promise<ResultadoDoUpload> {
-  const { produtoId: productId, arquivo: file, nomeCustomizado: customName, directory: diretorio } = params;
+}): Promise<UploadResult> {
+  const { produtoId: productId, arquivo: file, nomeCustomizado: customName, directory: directory } = params;
 
   if (!hasAllowedExtension(file.name)) {
     return { ok: false, reason: "EXTENSAO_NAO_PERMITIDA" };
@@ -150,9 +150,9 @@ export async function savePhoto(params: {
 
   const fileName = buildFileName(productId, file.name, customName);
 
-  await fs.mkdir(diretorio, { recursive: true });
+  await fs.mkdir(directory, { recursive: true });
   try {
-    await fs.writeFile(path.join(diretorio, fileName), buffer, { flag: "wx" });
+    await fs.writeFile(path.join(directory, fileName), buffer, { flag: "wx" });
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "EEXIST") {
       return { ok: false, reason: "NOME_JA_EXISTE" };
@@ -178,7 +178,7 @@ export async function uploadPhoto(params: {
   produtoId: number;
   arquivo: File;
   nomeCustomizado?: string | null;
-}): Promise<ResultadoDoUpload> {
+}): Promise<UploadResult> {
   const product = await prisma.produto.findUnique({
     where: { id: params.produtoId },
     select: { id: true },

@@ -42,19 +42,19 @@ export type RefreshResult =
 
 /** Abre uma sessão: sempre emite o acesso; a renovação depende do Redis. */
 export async function startSession(
-  identidade: SessionIdentity,
-  armazem: RefreshTokenStore = refreshTokenStore,
+  identity: SessionIdentity,
+  store: RefreshTokenStore = refreshTokenStore,
 ): Promise<IssuedSession> {
   const access = await signToken({
-    id: identidade.id,
-    email: identidade.email,
-    tipo: identidade.tipo,
+    id: identity.id,
+    email: identity.email,
+    tipo: identity.tipo,
   });
 
   let refresh: string | null = null;
   try {
     const token = generateRefreshToken();
-    await armazem.create(token, identidade.id);
+    await store.create(token, identity.id);
     refresh = token;
   } catch (err) {
     log.warn("sessao.renovacao_indisponivel", { erro: serializeError(err) });
@@ -70,34 +70,34 @@ export async function startSession(
 export async function refreshSession(
   refreshToken: string | undefined,
   getIdentity: (userId: number) => Promise<SessionIdentity | null>,
-  armazem: RefreshTokenStore = refreshTokenStore,
+  store: RefreshTokenStore = refreshTokenStore,
 ): Promise<RefreshResult> {
   if (!refreshToken) return { ok: false, reason: "SEM_TOKEN" };
 
   let userId: number | null;
   try {
-    userId = await armazem.consume(refreshToken);
+    userId = await store.consume(refreshToken);
   } catch (err) {
     log.warn("sessao.renovacao_negada_redis_indisponivel", { erro: serializeError(err) });
     return { ok: false, reason: "INDISPONIVEL" };
   }
   if (userId === null) return { ok: false, reason: "INVALIDO" };
 
-  const identidade = await getIdentity(userId);
-  if (!identidade) return { ok: false, reason: "INVALIDO" };
+  const identity = await getIdentity(userId);
+  if (!identity) return { ok: false, reason: "INVALIDO" };
 
-  const session = await startSession(identidade, armazem);
-  return { ok: true, session: session, tipo: identidade.tipo };
+  const session = await startSession(identity, store);
+  return { ok: true, session: session, tipo: identity.tipo };
 }
 
 /** Logout: revoga o token de renovação (se houver). Nunca lança. */
 export async function endSession(
   refreshToken: string | undefined,
-  armazem: RefreshTokenStore = refreshTokenStore,
+  store: RefreshTokenStore = refreshTokenStore,
 ): Promise<void> {
   if (!refreshToken) return;
   try {
-    await armazem.revoke(refreshToken);
+    await store.revoke(refreshToken);
   } catch (err) {
     log.warn("sessao.revogacao_falhou", { erro: serializeError(err) });
   }
@@ -110,10 +110,10 @@ export async function endSession(
  */
 export async function revokeUserSessions(
   userId: number,
-  armazem: RefreshTokenStore = refreshTokenStore,
+  store: RefreshTokenStore = refreshTokenStore,
 ): Promise<void> {
   try {
-    await armazem.revokeAll(userId);
+    await store.revokeAll(userId);
   } catch (err) {
     log.warn("sessao.revogacao_total_falhou", { usuarioId: userId, erro: serializeError(err) });
   }

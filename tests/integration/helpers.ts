@@ -14,7 +14,7 @@ import { signToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 
-export type Tipo = "CLIENTE" | "MARCA" | "ADMIN";
+export type Type = "CLIENTE" | "MARCA" | "ADMIN";
 
 /** Sufixo único por execução: evita colisão entre arquivos e execuções. */
 export const RUN = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
@@ -22,7 +22,7 @@ export const email = (name: string) => `${name}-${RUN}@test.local`;
 
 export async function createUserDirectly(
   mail: string,
-  type: Tipo = "CLIENTE",
+  type: Type = "CLIENTE",
   passwordHash = "hash-qualquer",
 ) {
   await prisma.usuario.deleteMany({ where: { email: mail } });
@@ -31,13 +31,13 @@ export async function createUserDirectly(
   });
 }
 
-export async function cookieDe(u: { id: number; email: string; tipo: Tipo }) {
+export async function cookieDe(u: { id: number; email: string; tipo: Type }) {
   return `token=${await signToken({ id: u.id, email: u.email, tipo: u.tipo })}`;
 }
 
 let seq = 0;
 /** IP simulado distinto por requisição, para o rate limit não vazar entre testes. */
-export const ipNovo = () =>
+export const newIp = () =>
   `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${++seq % 250}`;
 
 export function req(
@@ -51,7 +51,7 @@ export function req(
   } = {},
 ) {
   const headers: Record<string, string> = {
-    "x-forwarded-for": opts.ip ?? ipNovo(),
+    "x-forwarded-for": opts.ip ?? newIp(),
   };
   if (opts.cookie) headers.cookie = opts.cookie;
   if (!opts.form && opts.body !== undefined)
@@ -81,8 +81,8 @@ export function stubFetch(
   };
 }
 
-export const json = (corpo: unknown, status = 200) =>
-  new Response(JSON.stringify(corpo), {
+export const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
     status,
     headers: { "content-type": "application/json" },
   });

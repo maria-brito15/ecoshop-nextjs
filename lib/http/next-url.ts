@@ -7,11 +7,11 @@
  * caractere de controle. Qualquer outra coisa (`//host`, `https://host`,
  * `/\host`, `javascript:`...) volta para `/`, evitando redirecionamento aberto.
  */
-export function localPathOrRoot(valor: string | null | undefined): string {
-  if (!valor) return "/";
-  if (!valor.startsWith("/")) return "/";
-  if (valor.startsWith("//")) return "/";
-  if (valor.includes("\\")) return "/";
-  if (/[\u0000-\u001f\u007f]/.test(valor)) return "/";
-  return valor;
+export function localPathOrRoot(value: string | null | undefined): string {
+  if (!value) return "/";
+  if (!value.startsWith("/")) return "/";
+  if (value.startsWith("//")) return "/";
+  if (value.includes("\\")) return "/";
+  if (/[\u0000-\u001f\u007f]/.test(value)) return "/";
+  return value;
 }

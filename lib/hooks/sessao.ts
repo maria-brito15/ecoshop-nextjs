@@ -22,13 +22,13 @@ export interface SessionUser {
   tipo: "CLIENTE" | "MARCA" | "ADMIN";
 }
 
-let emAndamento: Promise<SessionUser | null> | null = null;
+let inProgress: Promise<SessionUser | null> | null = null;
 
 /** @returns o usuário logado, ou `null` se não há sessão (ou se a consulta falhou). */
 export function fetchSession(): Promise<SessionUser | null> {
-  if (emAndamento) return emAndamento;
+  if (inProgress) return inProgress;
 
-  emAndamento = fetch("/api/auth/me", { credentials: "include" })
+  inProgress = fetch("/api/auth/me", { credentials: "include" })
     .then(async (res) => {
       if (!res.ok) return null;
       const data = (await res.json()) as { usuario?: SessionUser | null };
@@ -36,10 +36,10 @@ export function fetchSession(): Promise<SessionUser | null> {
     })
     .catch(() => null)
     .finally(() => {
-      emAndamento = null;
+      inProgress = null;
     });
 
-  return emAndamento;
+  return inProgress;
 }
 
 /** Logout: revoga a sessão no servidor e esvazia o cache de dados do cliente. */

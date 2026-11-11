@@ -35,7 +35,7 @@
  * - autenticado: Qualquer usuário logado (CLIENTE, MARCA ou ADMIN) tem permissão.
  *                Usado para rotas de perfil e funcionalidades pessoais.
  */
-export type NivelAcesso = "admin" | "autenticado";
+export type AccessLevel = "admin" | "autenticado";
 
 /**
  * Regra de proteção para uma rota ou grupo de rotas.
@@ -56,7 +56,7 @@ export interface RouteRule {
    * - "admin": apenas ADMIN pode acessar
    * - "autenticado": qualquer usuário logado pode acessar
    */
-  level: NivelAcesso;
+  level: AccessLevel;
 
   /**
    * Tipo de resposta quando o acesso é negado.

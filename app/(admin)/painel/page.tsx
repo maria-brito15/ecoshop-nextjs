@@ -63,9 +63,9 @@ import {
 
 import type { Produto, Categoria, Marca, Certificado } from "@/types/api";
 
-type Aba = "produtos" | "categorias" | "marcas" | "certificados";
+type Tab = "produtos" | "categorias" | "marcas" | "certificados";
 
-const ABA_CONFIG: Record<Aba, { label: string; icon: string; desc: string }> = {
+const TAB_CONFIG: Record<Tab, { label: string; icon: string; desc: string }> = {
   produtos: {
     label: "Produtos",
     icon: "📦",
@@ -88,8 +88,8 @@ const ABA_CONFIG: Record<Aba, { label: string; icon: string; desc: string }> = {
 // PÁGINA PRINCIPAL DO PAINEL
 // ============================================================================
 
-function PainelPage() {
-  const [aba, setAba] = useState<Aba>("produtos");
+function DashboardPage() {
+  const [tab, setTab] = useState<Tab>("produtos");
 
   return (
     <div className="flex min-h-[calc(100vh-var(--spacing-header))]">
@@ -121,18 +121,18 @@ function PainelPage() {
 
         <nav className="flex-1 p-4 space-y-1">
           {(
-            Object.entries(ABA_CONFIG) as [Aba, (typeof ABA_CONFIG)[Aba]][]
+            Object.entries(TAB_CONFIG) as [Tab, (typeof TAB_CONFIG)[Tab]][]
           ).map(([key, cfg]) => (
             <button
               key={key}
-              onClick={() => setAba(key)}
+              onClick={() => setTab(key)}
               className={`
                   group w-full flex items-center gap-3
                   px-4 py-3 rounded-[var(--radius-btn)]
                   text-sm font-medium
                   transition-all duration-200
                   ${
-                    aba === key
+                    tab === key
                       ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-semibold"
                       : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface-hover)] hover:text-[var(--color-text-primary)]"
                   }
@@ -143,7 +143,7 @@ function PainelPage() {
                     w-9 h-9 flex items-center justify-center rounded-lg text-base
                     transition-all duration-200
                     ${
-                      aba === key
+                      tab === key
                         ? "bg-[var(--color-primary)] shadow-[var(--shadow-btn)]"
                         : "bg-[var(--color-bg-body)] group-hover:bg-[var(--color-primary-light)]"
                     }
@@ -152,7 +152,7 @@ function PainelPage() {
                 {cfg.icon}
               </span>
               {cfg.label}
-              {aba === key && (
+              {tab === key && (
                 <span className="ml-auto w-1.5 h-5 rounded-full bg-[var(--color-primary)]" />
               )}
             </button>
@@ -184,17 +184,17 @@ function PainelPage() {
             {/* Tabs mobile (scroll horizontal) */}
             <div className="flex gap-2 lg:hidden overflow-x-auto pb-0.5 scrollbar-hide">
               {(
-                Object.entries(ABA_CONFIG) as [Aba, (typeof ABA_CONFIG)[Aba]][]
+                Object.entries(TAB_CONFIG) as [Tab, (typeof TAB_CONFIG)[Tab]][]
               ).map(([key, cfg]) => (
                 <button
                   key={key}
-                  onClick={() => setAba(key)}
+                  onClick={() => setTab(key)}
                   className={`
                     shrink-0 flex items-center gap-1.5
                     px-3 py-1.5 rounded-full text-xs font-medium
                     transition-all duration-200 border
                     ${
-                      aba === key
+                      tab === key
                         ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)]"
                         : "bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-primary)]"
                     }
@@ -212,10 +212,10 @@ function PainelPage() {
                 className="text-xl font-bold text-[var(--color-text-primary)]"
                 style={{ fontFamily: "var(--font-display)" }}
               >
-                {ABA_CONFIG[aba].label}
+                {TAB_CONFIG[tab].label}
               </h1>
               <p className="text-sm text-[var(--color-text-secondary)]">
-                {ABA_CONFIG[aba].desc}
+                {TAB_CONFIG[tab].desc}
               </p>
             </div>
           </div>
@@ -223,10 +223,10 @@ function PainelPage() {
 
         {/* Conteúdo da aba selecionada */}
         <div className="p-6">
-          {aba === "produtos" && <ProductsSection />}
-          {aba === "categorias" && <CategoriesSection />}
-          {aba === "marcas" && <BrandsSection />}
-          {aba === "certificados" && <CertificatesSection />}
+          {tab === "produtos" && <ProductsSection />}
+          {tab === "categorias" && <CategoriesSection />}
+          {tab === "marcas" && <BrandsSection />}
+          {tab === "certificados" && <CertificatesSection />}
         </div>
       </main>
     </div>
@@ -266,31 +266,31 @@ function PhotosModal({
   produto: product,
   isOpen,
   onClose,
-  onFotoAdicionada,
+  onFotoAdicionada: onPhotoAdded,
 }: PhotosModalProps) {
   const {
-    data: fotosData,
-    loading: carregando,
-    error: erro,
+    data: photosData,
+    loading: loading,
+    error: error,
   } = useListPhotos(isOpen ? product.id : (null as unknown as number));
   const uploadMutation = useUploadPhoto(product.id);
   const deleteMutation = useDeletePhoto(product.id);
 
-  const photos = fotosData?.fotos ?? [];
+  const photos = photosData?.fotos ?? [];
 
-  const [erroUpload, setErroUpload] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Limpa erro de upload ao abrir modal
   useEffect(() => {
-    if (isOpen) setErroUpload(null);
+    if (isOpen) setUploadError(null);
   }, [isOpen]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setErroUpload(null);
+    setUploadError(null);
     const formData = new FormData();
     formData.append("arquivo", file);
 
@@ -300,23 +300,23 @@ function PhotosModal({
     );
 
     if (result) {
-      onFotoAdicionada();
+      onPhotoAdded();
       if (fileInputRef.current) fileInputRef.current.value = "";
     } else {
-      setErroUpload(uploadMutation.erro ?? "Erro ao fazer upload");
+      setUploadError(uploadMutation.erro ?? "Erro ao fazer upload");
     }
   };
 
   const handleDeletePhoto = async (fileName: string) => {
     if (!confirm("Tem certeza que deseja deletar esta foto?")) return;
 
-    setErroUpload(null);
+    setUploadError(null);
     const result = await deleteMutation.executar(
       `/api/produtos/${product.id}/fotos?nome=${encodeURIComponent(fileName)}`,
     );
 
     if (!result) {
-      setErroUpload(deleteMutation.erro ?? "Erro ao deletar foto");
+      setUploadError(deleteMutation.erro ?? "Erro ao deletar foto");
     }
   };
 
@@ -394,10 +394,10 @@ function PhotosModal({
                 )}
               </label>
             </div>
-            {erroUpload && (
-              <p className="text-sm text-red-600 mt-2">❌ {erroUpload}</p>
+            {uploadError && (
+              <p className="text-sm text-red-600 mt-2">❌ {uploadError}</p>
             )}
-            {erro && <p className="text-sm text-red-600 mt-2">❌ {erro}</p>}
+            {error && <p className="text-sm text-red-600 mt-2">❌ {error}</p>}
           </div>
 
           {/* Galeria de fotos existentes */}
@@ -406,7 +406,7 @@ function PhotosModal({
               Fotos Existentes ({photos.length})
             </label>
 
-            {carregando ? (
+            {loading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
               </div>
@@ -477,12 +477,12 @@ function PhotosModal({
 // ============================================================================
 
 function ProductsSection() {
-  const [modalFotosAberto, setModalFotosAberto] = useState(false);
-  const [produtoSelecionado, setProdutoSelecionado] = useState<Produto | null>(
+  const [photosModalOpen, setPhotosModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Produto | null>(
     null,
   );
-  const [modalAberto, setModalAberto] = useState(false);
-  const [editando, setEditando] = useState<Produto | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Produto | null>(null);
   const [form, setForm] = useState({
     nome: "",
     descricao: "",
@@ -490,27 +490,27 @@ function ProductsSection() {
     categoriaId: "",
     marcaId: "",
   });
-  const [certificateIds, setCertificadoIds] = useState<number[]>([]);
+  const [certificateIds, setCertificateIds] = useState<number[]>([]);
 
-  const { data: produtosData, loading: carregando, error: erro } = useListProducts(1, 100);
-  const productList = produtosData?.produtos ?? [];
+  const { data: productsData, loading: loading, error: error } = useListProducts(1, 100);
+  const productList = productsData?.produtos ?? [];
 
-  const { data: categoriasData } = useListCategories();
-  const categories = categoriasData?.categorias ?? [];
+  const { data: categoriesData } = useListCategories();
+  const categories = categoriesData?.categorias ?? [];
 
-  const { data: marcasData } = useListBrands();
-  const brands = marcasData?.marcas ?? [];
+  const { data: brandsData } = useListBrands();
+  const brands = brandsData?.marcas ?? [];
 
-  const { data: certificadosData } = useListCertificates();
-  const certificates = certificadosData?.certificados ?? [];
+  const { data: certificatesData } = useListCertificates();
+  const certificates = certificatesData?.certificados ?? [];
 
   const create = useCreateProduct();
-  const atualizar = useUpdateProduct();
-  const deletar = useDeleteProduct();
+  const update = useUpdateProduct();
+  const remove = useDeleteProduct();
 
-  const handleAbrirModal = (product?: Produto) => {
+  const handleOpenModal = (product?: Produto) => {
     if (product) {
-      setEditando(product);
+      setEditing(product);
       setForm({
         nome: product.nome,
         descricao: product.descricao || "",
@@ -518,11 +518,11 @@ function ProductsSection() {
         categoriaId: String(product.categoriaId),
         marcaId: String(product.marcaId),
       });
-      setCertificadoIds(
+      setCertificateIds(
         (product.certificados ?? []).map((pc) => pc.certificado.id),
       );
     } else {
-      setEditando(null);
+      setEditing(null);
       setForm({
         nome: "",
         descricao: "",
@@ -530,25 +530,25 @@ function ProductsSection() {
         categoriaId: "",
         marcaId: "",
       });
-      setCertificadoIds([]);
+      setCertificateIds([]);
     }
-    setModalAberto(true);
+    setModalOpen(true);
   };
 
   function toggleCertificate(id: number) {
-    setCertificadoIds((prev) =>
+    setCertificateIds((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
     );
   }
 
-  const handleSalvar = async () => {
+  const handleSave = async () => {
     if (!form.nome || !form.preco || !form.categoriaId || !form.marcaId) {
       alert("Preencha todos os campos obrigatórios");
       return;
     }
 
-    if (editando) {
-      await atualizar.executar(`/api/produtos/${editando.id}`, {
+    if (editing) {
+      await update.executar(`/api/produtos/${editing.id}`, {
         nome: form.nome,
         descricao: form.descricao || undefined,
         preco: parseFloat(form.preco),
@@ -566,30 +566,30 @@ function ProductsSection() {
       });
     }
 
-    setModalAberto(false);
+    setModalOpen(false);
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm("Tem certeza?")) return;
-    await deletar.executar(`/api/produtos/${id}`);
+    await remove.executar(`/api/produtos/${id}`);
   };
 
   const handleOpenPhotos = (product: Produto) => {
-    setProdutoSelecionado(product);
-    setModalFotosAberto(true);
+    setSelectedProduct(product);
+    setPhotosModalOpen(true);
   };
 
   return (
     <>
       <SectionHeader
         title="Produtos"
-        onAdd={() => handleAbrirModal()}
+        onAdd={() => handleOpenModal()}
         addLabel="Novo Produto"
       />
 
-      {erro && <ErrorMessage message={erro} />}
+      {error && <ErrorMessage message={error} />}
 
-      {carregando ? (
+      {loading ? (
         <TableContainer>
           <thead>
             <tr>
@@ -645,7 +645,7 @@ function ProductsSection() {
                 <Td className="space-x-2">
                   <ActionButton
                     variant="edit"
-                    onClick={() => handleAbrirModal(product)}
+                    onClick={() => handleOpenModal(product)}
                   >
                     ✏️ Editar
                   </ActionButton>
@@ -669,10 +669,10 @@ function ProductsSection() {
       )}
 
       {/* Modal de criação/edição */}
-      {modalAberto && (
+      {modalOpen && (
         <Modal
-          title={editando ? "Editar Produto" : "Novo Produto"}
-          onClose={() => setModalAberto(false)}
+          title={editing ? "Editar Produto" : "Novo Produto"}
+          onClose={() => setModalOpen(false)}
         >
           <div className="space-y-4">
             <Field
@@ -711,7 +711,7 @@ function ProductsSection() {
               type="select"
               options={brands.map((m) => ({ id: m.id, nome: m.nome }))}
             />
-            {editando && (
+            {editing && (
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                   Certificados
@@ -741,15 +741,15 @@ function ProductsSection() {
             )}
             <div className="flex gap-2 pt-4">
               <button
-                onClick={handleSalvar}
-                disabled={create.carregando || atualizar.carregando}
+                onClick={handleSave}
+                disabled={create.carregando || update.carregando}
                 className="flex-1 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-hover)] disabled:opacity-50"
               >
                 {" "}
-                {editando ? "Atualizar" : "Criar"}{" "}
+                {editing ? "Atualizar" : "Criar"}{" "}
               </button>
               <button
-                onClick={() => setModalAberto(false)}
+                onClick={() => setModalOpen(false)}
                 className="flex-1 px-4 py-2 bg-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-border-hover)]"
               >
                 {" "}
@@ -761,13 +761,13 @@ function ProductsSection() {
       )}
 
       {/* Modal de gerenciamento de fotos */}
-      {produtoSelecionado && (
+      {selectedProduct && (
         <PhotosModal
-          produto={produtoSelecionado}
-          isOpen={modalFotosAberto}
+          produto={selectedProduct}
+          isOpen={photosModalOpen}
           onClose={() => {
-            setModalFotosAberto(false);
-            setProdutoSelecionado(null);
+            setPhotosModalOpen(false);
+            setSelectedProduct(null);
           }}
           onFotoAdicionada={() => {}}
         />
@@ -781,32 +781,32 @@ function ProductsSection() {
 // ============================================================================
 
 function CategoriesSection() {
-  const { data, loading: carregando, error: erro } = useListCategories();
+  const { data, loading: loading, error: error } = useListCategories();
   const create = useCreateCategory();
-  const atualizar = useUpdateCategory();
-  const deletar = useDeleteCategory();
+  const update = useUpdateCategory();
+  const remove = useDeleteCategory();
 
   const categories = data?.categorias ?? [];
 
-  const [modalAberto, setModalAberto] = useState(false);
-  const [editando, setEditando] = useState<Categoria | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Categoria | null>(null);
   const [form, setForm] = useState({ nome: "", descricao: "" });
 
   function openCreate() {
-    setEditando(null);
+    setEditing(null);
     setForm({ nome: "", descricao: "" });
-    setModalAberto(true);
+    setModalOpen(true);
   }
 
-  function abrirEditar(c: Categoria) {
-    setEditando(c);
+  function openEdit(c: Categoria) {
+    setEditing(c);
     setForm({ nome: c.nome, descricao: c.descricao ?? "" });
-    setModalAberto(true);
+    setModalOpen(true);
   }
 
   function close() {
-    setModalAberto(false);
-    setEditando(null);
+    setModalOpen(false);
+    setEditing(null);
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -817,9 +817,9 @@ function CategoriesSection() {
     e.preventDefault();
     const body = { nome: form.nome, descricao: form.descricao || undefined };
 
-    if (editando) {
-      const ok = await atualizar.executar(
-        `/api/categorias/${editando.id}`,
+    if (editing) {
+      const ok = await update.executar(
+        `/api/categorias/${editing.id}`,
         body,
       );
       if (ok) close();
@@ -831,11 +831,11 @@ function CategoriesSection() {
 
   async function handleDelete(id: number) {
     if (!confirm("Tem certeza que deseja deletar esta categoria?")) return;
-    await deletar.executar(`/api/categorias/${id}`);
+    await remove.executar(`/api/categorias/${id}`);
   }
 
-  const mutando = create.carregando || atualizar.carregando;
-  const mutationError = create.erro || atualizar.erro || deletar.erro;
+  const mutating = create.carregando || update.carregando;
+  const mutationError = create.erro || update.erro || remove.erro;
 
   return (
     <section className="animate-[fadeIn_0.4s_ease]">
@@ -855,10 +855,10 @@ function CategoriesSection() {
           </tr>
         </thead>
         <tbody>
-          {carregando ? (
+          {loading ? (
             <LoadingRow cols={4} />
-          ) : erro ? (
-            <EmptyRow cols={4} message={`Erro ao carregar: ${erro}`} />
+          ) : error ? (
+            <EmptyRow cols={4} message={`Erro ao carregar: ${error}`} />
           ) : categories.length === 0 ? (
             <EmptyRow cols={4} message="Nenhuma categoria cadastrada ainda." />
           ) : (
@@ -880,7 +880,7 @@ function CategoriesSection() {
                 </Td>
                 <Td>
                   <div className="flex gap-2">
-                    <ActionButton variant="edit" onClick={() => abrirEditar(c)}>
+                    <ActionButton variant="edit" onClick={() => openEdit(c)}>
                       ✏️ Editar
                     </ActionButton>
                     <ActionButton
@@ -897,11 +897,11 @@ function CategoriesSection() {
         </tbody>
       </TableContainer>
       <Modal
-        open={modalAberto}
-        title={editando ? "Editar Categoria" : "Nova Categoria"}
+        open={modalOpen}
+        title={editing ? "Editar Categoria" : "Nova Categoria"}
         onClose={close}
         onSubmit={handleSubmit}
-        loading={mutando}
+        loading={mutating}
         error={mutationError}
       >
         <Field label="Nome">
@@ -933,37 +933,37 @@ function CategoriesSection() {
 // ============================================================================
 
 function BrandsSection() {
-  const { data, loading: carregando, error: erro } = useListBrands();
+  const { data, loading: loading, error: error } = useListBrands();
   const create = useCreateBrand();
-  const atualizar = useUpdateBrand();
-  const deletar = useDeleteBrand();
-  const aprovar = useApproveBrand();
+  const update = useUpdateBrand();
+  const remove = useDeleteBrand();
+  const approve = useApproveBrand();
 
   const brands = data?.marcas ?? [];
 
-  const [modalAberto, setModalAberto] = useState(false);
-  const [editando, setEditando] = useState<Marca | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Marca | null>(null);
   const [form, setForm] = useState({ nome: "", descricao: "", usuarioId: "" });
 
   function openCreate() {
-    setEditando(null);
+    setEditing(null);
     setForm({ nome: "", descricao: "", usuarioId: "" });
-    setModalAberto(true);
+    setModalOpen(true);
   }
 
-  function abrirEditar(m: Marca) {
-    setEditando(m);
+  function openEdit(m: Marca) {
+    setEditing(m);
     setForm({
       nome: m.nome,
       descricao: m.descricao ?? "",
       usuarioId: String(m.usuarioId),
     });
-    setModalAberto(true);
+    setModalOpen(true);
   }
 
   function close() {
-    setModalAberto(false);
-    setEditando(null);
+    setModalOpen(false);
+    setEditing(null);
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -973,9 +973,9 @@ function BrandsSection() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (editando) {
+    if (editing) {
       const body = { nome: form.nome, descricao: form.descricao || undefined };
-      const ok = await atualizar.executar(`/api/marcas/${editando.id}`, body);
+      const ok = await update.executar(`/api/marcas/${editing.id}`, body);
       if (ok) close();
     } else {
       const body = {
@@ -990,16 +990,16 @@ function BrandsSection() {
 
   async function handleDelete(id: number) {
     if (!confirm("Tem certeza que deseja deletar esta marca?")) return;
-    await deletar.executar(`/api/marcas/${id}`);
+    await remove.executar(`/api/marcas/${id}`);
   }
 
   async function handleApprove(id: number) {
-    await aprovar.executar(`/api/marcas/${id}/aprovar`);
+    await approve.executar(`/api/marcas/${id}/aprovar`);
   }
 
-  const mutando = create.carregando || atualizar.carregando;
+  const mutating = create.carregando || update.carregando;
   const mutationError =
-    create.erro || atualizar.erro || deletar.erro || aprovar.erro;
+    create.erro || update.erro || remove.erro || approve.erro;
 
   return (
     <section className="animate-[fadeIn_0.4s_ease]">
@@ -1021,10 +1021,10 @@ function BrandsSection() {
           </tr>
         </thead>
         <tbody>
-          {carregando ? (
+          {loading ? (
             <LoadingRow cols={6} />
-          ) : erro ? (
-            <EmptyRow cols={6} message={`Erro ao carregar: ${erro}`} />
+          ) : error ? (
+            <EmptyRow cols={6} message={`Erro ao carregar: ${error}`} />
           ) : brands.length === 0 ? (
             <EmptyRow cols={6} message="Nenhuma marca cadastrada ainda." />
           ) : (
@@ -1067,7 +1067,7 @@ function BrandsSection() {
                         ✅ Aprovar
                       </ActionButton>
                     )}
-                    <ActionButton variant="edit" onClick={() => abrirEditar(m)}>
+                    <ActionButton variant="edit" onClick={() => openEdit(m)}>
                       ✏️ Editar
                     </ActionButton>
                     <ActionButton
@@ -1084,11 +1084,11 @@ function BrandsSection() {
         </tbody>
       </TableContainer>
       <Modal
-        open={modalAberto}
-        title={editando ? "Editar Marca" : "Nova Marca"}
+        open={modalOpen}
+        title={editing ? "Editar Marca" : "Nova Marca"}
         onClose={close}
         onSubmit={handleSubmit}
-        loading={mutando}
+        loading={mutating}
         error={mutationError}
       >
         <Field label="Nome">
@@ -1110,7 +1110,7 @@ function BrandsSection() {
             className={inputCls}
           />
         </Field>
-        {!editando && (
+        {!editing && (
           <Field label="ID do Usuário Responsável">
             <input
               name="usuarioId"
@@ -1133,15 +1133,15 @@ function BrandsSection() {
 // ============================================================================
 
 function CertificatesSection() {
-  const { data, loading: carregando, error: erro } = useListCertificates();
+  const { data, loading: loading, error: error } = useListCertificates();
   const create = useCreateCertificate();
-  const atualizar = useUpdateCertificate();
-  const deletar = useDeleteCertificate();
+  const update = useUpdateCertificate();
+  const remove = useDeleteCertificate();
 
   const certificates = data?.certificados ?? [];
 
-  const [modalAberto, setModalAberto] = useState(false);
-  const [editando, setEditando] = useState<Certificado | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Certificado | null>(null);
   const [form, setForm] = useState({
     nome: "",
     descricao: "",
@@ -1149,24 +1149,24 @@ function CertificatesSection() {
   });
 
   function openCreate() {
-    setEditando(null);
+    setEditing(null);
     setForm({ nome: "", descricao: "", orgaoEmissor: "" });
-    setModalAberto(true);
+    setModalOpen(true);
   }
 
-  function abrirEditar(c: Certificado) {
-    setEditando(c);
+  function openEdit(c: Certificado) {
+    setEditing(c);
     setForm({
       nome: c.nome,
       descricao: c.descricao ?? "",
       orgaoEmissor: c.orgaoEmissor,
     });
-    setModalAberto(true);
+    setModalOpen(true);
   }
 
   function close() {
-    setModalAberto(false);
-    setEditando(null);
+    setModalOpen(false);
+    setEditing(null);
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -1181,9 +1181,9 @@ function CertificatesSection() {
       orgaoEmissor: form.orgaoEmissor,
     };
 
-    if (editando) {
-      const ok = await atualizar.executar(
-        `/api/certificados/${editando.id}`,
+    if (editing) {
+      const ok = await update.executar(
+        `/api/certificados/${editing.id}`,
         body,
       );
       if (ok) close();
@@ -1195,11 +1195,11 @@ function CertificatesSection() {
 
   async function handleDelete(id: number) {
     if (!confirm("Tem certeza que deseja deletar este certificado?")) return;
-    await deletar.executar(`/api/certificados/${id}`);
+    await remove.executar(`/api/certificados/${id}`);
   }
 
-  const mutando = create.carregando || atualizar.carregando;
-  const mutationError = create.erro || atualizar.erro || deletar.erro;
+  const mutating = create.carregando || update.carregando;
+  const mutationError = create.erro || update.erro || remove.erro;
 
   return (
     <section className="animate-[fadeIn_0.4s_ease]">
@@ -1220,10 +1220,10 @@ function CertificatesSection() {
           </tr>
         </thead>
         <tbody>
-          {carregando ? (
+          {loading ? (
             <LoadingRow cols={5} />
-          ) : erro ? (
-            <EmptyRow cols={5} message={`Erro ao carregar: ${erro}`} />
+          ) : error ? (
+            <EmptyRow cols={5} message={`Erro ao carregar: ${error}`} />
           ) : certificates.length === 0 ? (
             <EmptyRow cols={5} message="Nenhum certificado cadastrado ainda." />
           ) : (
@@ -1255,7 +1255,7 @@ function CertificatesSection() {
                 </Td>
                 <Td>
                   <div className="flex gap-2">
-                    <ActionButton variant="edit" onClick={() => abrirEditar(c)}>
+                    <ActionButton variant="edit" onClick={() => openEdit(c)}>
                       ✏️ Editar
                     </ActionButton>
                     <ActionButton
@@ -1272,11 +1272,11 @@ function CertificatesSection() {
         </tbody>
       </TableContainer>
       <Modal
-        open={modalAberto}
-        title={editando ? "Editar Certificado" : "Novo Certificado"}
+        open={modalOpen}
+        title={editing ? "Editar Certificado" : "Novo Certificado"}
         onClose={close}
         onSubmit={handleSubmit}
-        loading={mutando}
+        loading={mutating}
         error={mutationError}
       >
         <Field label="Nome">
@@ -1403,21 +1403,21 @@ function ActionButton({
 
 /** Rótulo visual do status de aprovação de uma marca (ADR-0018). */
 function BrandStatusBadge({ status }: { status: Marca["status"] }) {
-  const estilos: Record<Marca["status"], string> = {
+  const styles: Record<Marca["status"], string> = {
     PENDENTE: "bg-amber-50 text-amber-700",
     APROVADA: "bg-emerald-50 text-emerald-700",
     REJEITADA: "bg-red-50 text-red-600",
   };
-  const rotulos: Record<Marca["status"], string> = {
+  const labels: Record<Marca["status"], string> = {
     PENDENTE: "Pendente",
     APROVADA: "Aprovada",
     REJEITADA: "Rejeitada",
   };
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${estilos[status]}`}
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${styles[status]}`}
     >
-      {rotulos[status]}
+      {labels[status]}
     </span>
   );
 }
@@ -1577,4 +1577,4 @@ function Field({
   );
 }
 
-export default PainelPage;
+export default DashboardPage;

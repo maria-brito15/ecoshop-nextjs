@@ -73,7 +73,7 @@ export interface GeminiConfig {
  * Chamada comum aos dois usos (texto simples e conversa com histórico).
  * Nunca lança: qualquer falha vira `null`.
  */
-async function gerar(
+async function generate(
   contents: unknown[],
   config: GeminiConfig | undefined,
   timeoutMs: number,
@@ -133,7 +133,7 @@ export async function generateText(
   config?: GeminiConfig,
   timeoutMs: number = TIMEOUT_GEMINI_MS,
 ): Promise<string | null> {
-  return gerar([{ parts: [{ text: prompt }] }], config, timeoutMs);
+  return generate([{ parts: [{ text: prompt }] }], config, timeoutMs);
 }
 
 /**
@@ -147,5 +147,5 @@ export async function generateWithHistory(
   config?: GeminiConfig,
   timeoutMs: number = TIMEOUT_GEMINI_MS,
 ): Promise<string | null> {
-  return gerar(contents, config, timeoutMs);
+  return generate(contents, config, timeoutMs);
 }

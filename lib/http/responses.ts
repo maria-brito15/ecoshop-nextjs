@@ -20,9 +20,9 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import {
-  RecursoNaoEncontrado,
-  ConflitoDeNegocio,
-  OperacaoNaoAutorizada,
+  ResourceNotFound,
+  BusinessConflict,
+  OperationNotAllowed,
 } from "@/lib/errors/dominio";
 import { log, serializeError } from "@/lib/log";
 
@@ -67,17 +67,17 @@ export const ERRORS = {
    * 400 Bad Request - Dados inválidos na requisição.
    * Aceita detalhes opcionais (ex: erros de validação do Zod).
    *
-   * @param {unknown} detalhes - Opcional: detalhes adicionais (ex: flatten do Zod)
+   * @param {unknown} details - Opcional: detalhes adicionais (ex: flatten do Zod)
    */
-  invalidData: (detalhes?: unknown) =>
-    NextResponse.json({ erro: "Dados inválidos", detalhes }, { status: 400 }),
+  invalidData: (details?: unknown) =>
+    NextResponse.json({ erro: "Dados inválidos", detalhes: details }, { status: 400 }),
 
   /**
    * 404 Not Found - Recurso não encontrado.
-   * @param {string} recurso - Nome do recurso (ex: "Produto", "Usuário")
+   * @param {string} resource - Nome do recurso (ex: "Produto", "Usuário")
    */
-  notFound: (recurso: string) =>
-    errorResponse(`${recurso} não encontrado`, 404),
+  notFound: (resource: string) =>
+    errorResponse(`${resource} não encontrado`, 404),
 
   /**
    * 500 Internal Server Error - Erro não tratado.
@@ -88,10 +88,10 @@ export const ERRORS = {
    * 500 em produção não deixava rastro. O corpo da resposta continua sem detalhe.
    *
    * @param context - O que se tentava fazer (vira "Erro ao <contexto>")
-   * @param causa - O erro capturado no `catch`
+   * @param cause - O erro capturado no `catch`
    */
-  internal: (context: string, causa?: unknown) => {
-    log.error("erro_interno", { contexto: context, erro: serializeError(causa) });
+  internal: (context: string, cause?: unknown) => {
+    log.error("erro_interno", { contexto: context, erro: serializeError(cause) });
     return errorResponse(`Erro ao ${context}`, 500);
   },
 
@@ -114,7 +114,7 @@ export const ERRORS = {
  * de 409 (REQ-REF-03, D7) e que deixava `PUT` de usuário inexistente em 500.
  *
  * @param err - Erro capturado no catch da rota
- * @param recurso - Nome do recurso para as mensagens dos erros do Prisma (ex: "Categoria")
+ * @param resource - Nome do recurso para as mensagens dos erros do Prisma (ex: "Categoria")
  * @returns A resposta adequada, ou `null` se o erro não é um dos conhecidos
  *          (o chamador deve então cair em `ERROS.interno(...)`)
  *
@@ -125,24 +125,24 @@ export const ERRORS = {
  *   return mapeiaErro(err, "Categoria") ?? ERROS.interno("atualizar categoria");
  * }
  */
-export function mapError(err: unknown, recurso: string): NextResponse | null {
-  if (err instanceof RecursoNaoEncontrado) {
-    return ERRORS.notFound(err.recurso);
+export function mapError(err: unknown, resource: string): NextResponse | null {
+  if (err instanceof ResourceNotFound) {
+    return ERRORS.notFound(err.resource);
   }
-  if (err instanceof ConflitoDeNegocio) {
+  if (err instanceof BusinessConflict) {
     return ERRORS.conflict(err.message);
   }
-  if (err instanceof OperacaoNaoAutorizada) {
+  if (err instanceof OperationNotAllowed) {
     return errorResponse(err.message, 403);
   }
 
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    if (err.code === "P2025") return ERRORS.notFound(recurso);
+    if (err.code === "P2025") return ERRORS.notFound(resource);
     if (err.code === "P2002")
-      return ERRORS.conflict(`Já existe ${recurso.toLowerCase()} com esse nome`);
+      return ERRORS.conflict(`Já existe ${resource.toLowerCase()} com esse nome`);
     if (err.code === "P2003")
       return ERRORS.conflict(
-        `${recurso} possui vínculos e não pode ser excluído(a) ou alterado(a) para uma referência inexistente`,
+        `${resource} possui vínculos e não pode ser excluído(a) ou alterado(a) para uma referência inexistente`,
       );
     return null;
   }

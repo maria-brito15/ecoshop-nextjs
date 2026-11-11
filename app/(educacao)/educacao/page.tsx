@@ -29,9 +29,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-type Aba = "artigos" | "dicas" | "quiz";
+type Tab = "artigos" | "dicas" | "quiz";
 
-type Artigo = {
+type Article = {
   tag: "verde" | "agua" | "energia" | "consumo";
   tagLabel: string;
   tagColor: string;
@@ -42,14 +42,14 @@ type Artigo = {
   body: string;
 };
 
-type Dica = {
+type Tip = {
   icon: string;
   title: string;
   color: string;
   tips: string[];
 };
 
-type Questao = {
+type Question = {
   q: string;
   opts: string[];
   ans: number;
@@ -64,7 +64,7 @@ type Questao = {
  * Artigos educativos sobre sustentabilidade.
  * Cada artigo tem tag, ícone, título, tempo de leitura e conteúdo completo.
  */
-const ARTIGOS: Artigo[] = [
+const ARTICLES: Article[] = [
   {
     tag: "verde",
     tagLabel: "Meio ambiente",
@@ -118,7 +118,7 @@ const ARTIGOS: Artigo[] = [
  * Dicas de reciclagem por tipo de material.
  * Cada material tem ícone, cor e lista de orientações.
  */
-const DICAS: Dica[] = [
+const TIPS: Tip[] = [
   {
     icon: "♻️",
     title: "Plástico",
@@ -197,7 +197,7 @@ const DICAS: Dica[] = [
  * Perguntas do quiz sobre sustentabilidade.
  * Cada questão tem pergunta, opções, resposta correta e explicação.
  */
-const QUESTOES: Questao[] = [
+const QUESTIONS: Question[] = [
   {
     q: "Qual cor de lixeira é usada para plástico na coleta seletiva?",
     opts: ["Azul", "Vermelha", "Verde", "Amarela"],
@@ -279,7 +279,7 @@ function useScrollReveal(deps: unknown[] = []) {
 // COMPONENTES DAS ABAS
 // ----------------------------------------------------------------------------
 
-const ABAS: { id: Aba; label: string; icon: string }[] = [
+const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "artigos", label: "Artigos", icon: "📖" },
   { id: "dicas", label: "Dicas de reciclagem", icon: "♻️" },
   { id: "quiz", label: "Quiz", icon: "🧠" },
@@ -289,25 +289,25 @@ const ABAS: { id: Aba; label: string; icon: string }[] = [
  * Seção de artigos educativos.
  * Exibe lista de artigos em cards. Ao clicar, expande para leitura completa.
  */
-function SecaoArtigos({
-  onArtigoChange,
+function ArticlesSection({
+  onArtigoChange: onArticleChange,
 }: {
-  onArtigoChange?: (aberto: boolean) => void;
+  onArtigoChange?: (open: boolean) => void;
 }) {
-  const [aberto, setAberto] = useState<Artigo | null>(null);
+  const [open, setOpen] = useState<Article | null>(null);
 
-  function abrirArtigo(artigo: Artigo) {
-    setAberto(artigo);
-    onArtigoChange?.(true);
+  function openArticle(article: Article) {
+    setOpen(article);
+    onArticleChange?.(true);
   }
 
   function closeArticle() {
-    setAberto(null);
-    onArtigoChange?.(false);
+    setOpen(null);
+    onArticleChange?.(false);
   }
 
   // Visualização expandida do artigo
-  if (aberto) {
+  if (open) {
     return (
       <div className="animate-[fadeSlideUp_0.4s_ease]">
         <button
@@ -318,17 +318,17 @@ function SecaoArtigos({
         </button>
 
         <div className="max-w-3xl">
-          <span className={`badge-eco mb-4 inline-flex ${aberto.tagColor}`}>
-            {aberto.icon} {aberto.tagLabel}
+          <span className={`badge-eco mb-4 inline-flex ${open.tagColor}`}>
+            {open.icon} {open.tagLabel}
           </span>
           <p className="text-xs text-[var(--color-text-tertiary)] font-semibold uppercase tracking-wider mb-3">
-            {aberto.time} de leitura
+            {open.time} de leitura
           </p>
           <h2 className="font-display text-3xl md:text-4xl font-extrabold text-[var(--color-text-primary)] mb-6 leading-tight">
-            {aberto.title}
+            {open.title}
           </h2>
           <div className="prose max-w-none">
-            {aberto.body.split(/\n\n+/).map((p, i) => (
+            {open.body.split(/\n\n+/).map((p, i) => (
               <p
                 key={i}
                 className="text-[var(--color-text-secondary)] leading-8 mb-5 text-base"
@@ -345,29 +345,29 @@ function SecaoArtigos({
   // Grid de artigos
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {ARTIGOS.map((artigo, i) => (
+      {ARTICLES.map((article, i) => (
         <article
           key={i}
           className="card-eco flex flex-col p-7 cursor-pointer relative overflow-hidden group"
-          onClick={() => abrirArtigo(artigo)}
+          onClick={() => openArticle(article)}
         >
           <div className="absolute top-0 left-0 w-1 h-full bg-[var(--color-primary)] opacity-0 group-hover:opacity-100 transition-opacity" />
 
           <div className="flex items-center gap-3 mb-4">
-            <span className={`badge-eco text-xs ${artigo.tagColor}`}>
-              {artigo.icon} {artigo.tagLabel}
+            <span className={`badge-eco text-xs ${article.tagColor}`}>
+              {article.icon} {article.tagLabel}
             </span>
             <span className="text-xs text-[var(--color-text-tertiary)] ml-auto">
-              ⏱ {artigo.time}
+              ⏱ {article.time}
             </span>
           </div>
 
           <h3 className="font-display text-lg font-bold text-[var(--color-text-primary)] mb-3 leading-snug group-hover:text-[var(--color-primary)] transition-colors">
-            {artigo.title}
+            {article.title}
           </h3>
 
           <p className="text-[var(--color-text-secondary)] text-sm leading-6 flex-1 mb-5">
-            {artigo.summary}
+            {article.summary}
           </p>
 
           <span className="text-sm font-semibold text-[var(--color-primary)] group-hover:gap-2 flex items-center gap-1 transition-all">
@@ -383,22 +383,22 @@ function SecaoArtigos({
  * Seção de dicas de reciclagem.
  * Exibe cards com orientações específicas por tipo de material.
  */
-function SecaoDicas() {
-  const [selecionada, setSelecionada] = useState<Dica>(DICAS[0]);
+function TipsSection() {
+  const [selected, setSelected] = useState<Tip>(TIPS[0]);
 
   return (
     <div>
       <div className="flex flex-wrap gap-3 mb-8">
-        {DICAS.map((d, i) => (
+        {TIPS.map((d, i) => (
           <button
             key={i}
-            onClick={() => setSelecionada(d)}
+            onClick={() => setSelected(d)}
             className={`
               inline-flex items-center gap-2
               px-4 py-2 rounded-full text-sm font-semibold
               border transition-all duration-200
               ${
-                selecionada.title === d.title
+                selected.title === d.title
                   ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-[var(--shadow-btn)]"
                   : "bg-[var(--color-bg-surface)] border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
               }
@@ -410,18 +410,18 @@ function SecaoDicas() {
       </div>
 
       <div
-        key={selecionada.title}
+        key={selected.title}
         className="bg-[var(--color-bg-surface)] rounded-2xl p-8 border border-[var(--color-border)] shadow-[var(--shadow-card)] animate-[fadeSlideUp_0.35s_ease]"
       >
         <div className="flex items-center gap-4 mb-6">
           <div
-            className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl border ${selecionada.color}`}
+            className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl border ${selected.color}`}
           >
-            {selecionada.icon}
+            {selected.icon}
           </div>
           <div>
             <h3 className="font-display text-xl font-bold text-[var(--color-text-primary)]">
-              {selecionada.title}
+              {selected.title}
             </h3>
             <p className="text-sm text-[var(--color-text-secondary)]">
               Como descartar corretamente
@@ -430,7 +430,7 @@ function SecaoDicas() {
         </div>
 
         <ul className="space-y-3">
-          {selecionada.tips.map((tip, i) => (
+          {selected.tips.map((tip, i) => (
             <li
               key={i}
               className="flex items-start gap-3 p-3 rounded-xl bg-[var(--color-bg-body)] border border-[var(--color-border)] text-[var(--color-text-secondary)] text-sm leading-6"
@@ -451,39 +451,39 @@ function SecaoDicas() {
  * Seção do quiz interativo.
  * Perguntas de múltipla escolha com pontuação e explicações.
  */
-function SecaoQuiz() {
-  const [indice, setIndice] = useState(0);
+function QuizSection() {
+  const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
-  const [escolha, setEscolha] = useState<number | null>(null);
-  const [finalizado, setFinalizado] = useState(false);
+  const [choice, setChoice] = useState<number | null>(null);
+  const [finished, setFinished] = useState(false);
 
-  const questao = QUESTOES[indice];
-  const progresso = (indice / QUESTOES.length) * 100;
+  const question = QUESTIONS[index];
+  const progress = (index / QUESTIONS.length) * 100;
 
-  function responder(i: number) {
-    if (escolha !== null) return;
-    setEscolha(i);
-    if (i === questao.ans) setScore((s) => s + 1);
+  function answer(i: number) {
+    if (choice !== null) return;
+    setChoice(i);
+    if (i === question.ans) setScore((s) => s + 1);
   }
 
-  function avancar() {
-    if (indice + 1 >= QUESTOES.length) setFinalizado(true);
+  function advance() {
+    if (index + 1 >= QUESTIONS.length) setFinished(true);
     else {
-      setIndice((n) => n + 1);
-      setEscolha(null);
+      setIndex((n) => n + 1);
+      setChoice(null);
     }
   }
 
   function reset() {
-    setIndice(0);
+    setIndex(0);
     setScore(0);
-    setEscolha(null);
-    setFinalizado(false);
+    setChoice(null);
+    setFinished(false);
   }
 
   // Tela de resultados
-  if (finalizado) {
-    const pct = Math.round((score / QUESTOES.length) * 100);
+  if (finished) {
+    const pct = Math.round((score / QUESTIONS.length) * 100);
     const emoji = pct >= 80 ? "🏆" : pct >= 60 ? "🌟" : "📚";
     const msg =
       pct >= 80
@@ -529,7 +529,7 @@ function SecaoQuiz() {
                 {pct}%
               </span>
               <span className="text-sm text-[var(--color-text-tertiary)] mt-1">
-                {score}/{QUESTOES.length}
+                {score}/{QUESTIONS.length}
               </span>
             </div>
           </div>
@@ -557,13 +557,13 @@ function SecaoQuiz() {
             Teste seus conhecimentos
           </h3>
           <p className="text-white/90 text-sm">
-            Pergunta {indice + 1} de {QUESTOES.length}
+            Pergunta {index + 1} de {QUESTIONS.length}
           </p>
 
           <div className="mt-5 h-2 rounded-full bg-white/20 overflow-hidden">
             <div
               className="h-full bg-[var(--color-primary)] rounded-full transition-all duration-500"
-              style={{ width: `${progresso}%` }}
+              style={{ width: `${progress}%` }}
             />
           </div>
         </div>
@@ -577,25 +577,25 @@ function SecaoQuiz() {
           </div>
 
           <p className="font-display text-lg font-bold text-[var(--color-text-primary)] mb-6 leading-snug">
-            {questao.q}
+            {question.q}
           </p>
 
           <div className="space-y-3 mb-6">
-            {questao.opts.map((opt, i) => {
-              const respondido = escolha !== null;
-              const eCorreta = i === questao.ans;
-              const eEscolhida = i === escolha;
+            {question.opts.map((opt, i) => {
+              const answered = choice !== null;
+              const isCorrect = i === question.ans;
+              const isChosen = i === choice;
 
               let cls =
                 "w-full text-left px-5 py-3.5 rounded-xl border-2 font-medium text-sm transition-all duration-200 ";
 
-              if (!respondido) {
+              if (!answered) {
                 cls +=
                   "border-[var(--color-border)] text-[var(--color-text-primary)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-light)]";
-              } else if (eCorreta) {
+              } else if (isCorrect) {
                 cls +=
                   "border-emerald-400 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300";
-              } else if (eEscolhida) {
+              } else if (isChosen) {
                 cls +=
                   "border-red-400 bg-red-50 text-red-800 dark:bg-red-500/15 dark:text-red-300";
               } else {
@@ -606,25 +606,25 @@ function SecaoQuiz() {
               return (
                 <button
                   key={i}
-                  onClick={() => responder(i)}
-                  disabled={respondido}
+                  onClick={() => answer(i)}
+                  disabled={answered}
                   className={cls}
                 >
                   <span className="flex items-center gap-3">
                     <span
                       className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold border-2 ${
-                        !respondido
+                        !answered
                           ? "border-[var(--color-border)] text-[var(--color-text-tertiary)]"
-                          : eCorreta
+                          : isCorrect
                             ? "border-emerald-400 bg-emerald-400 text-white"
-                            : eEscolhida
+                            : isChosen
                               ? "border-red-400 bg-red-400 text-white"
                               : "border-[var(--color-border)] text-[var(--color-text-tertiary)]"
                       }`}
                     >
-                      {respondido && eCorreta
+                      {answered && isCorrect
                         ? "✓"
-                        : respondido && eEscolhida
+                        : answered && isChosen
                           ? "✕"
                           : String.fromCharCode(65 + i)}
                     </span>
@@ -635,27 +635,27 @@ function SecaoQuiz() {
             })}
           </div>
 
-          {escolha !== null && (
+          {choice !== null && (
             <div
               className={`p-4 rounded-xl text-sm mb-6 leading-6 border animate-[fadeSlideUp_0.3s_ease] ${
-                escolha === questao.ans
+                choice === question.ans
                   ? "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-500/15 dark:border-emerald-500/30 dark:text-emerald-300"
                   : "bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-500/15 dark:border-amber-500/30 dark:text-amber-300"
               }`}
             >
               <strong>
-                {escolha === questao.ans ? "✅ Correto! " : "❌ Incorreto. "}
+                {choice === question.ans ? "✅ Correto! " : "❌ Incorreto. "}
               </strong>
-              {questao.exp}
+              {question.exp}
             </div>
           )}
 
-          {escolha !== null && (
+          {choice !== null && (
             <button
-              onClick={avancar}
+              onClick={advance}
               className="w-full py-3.5 rounded-full text-sm font-bold bg-[var(--color-primary)] text-white shadow-[var(--shadow-btn)] hover:bg-[var(--color-primary-hover)] hover:-translate-y-0.5 transition-all animate-[fadeSlideUp_0.3s_ease]"
             >
-              {indice + 1 < QUESTOES.length
+              {index + 1 < QUESTIONS.length
                 ? "Próxima pergunta →"
                 : "Ver resultado →"}
             </button>
@@ -670,11 +670,11 @@ function SecaoQuiz() {
 // PÁGINA PRINCIPAL
 // ----------------------------------------------------------------------------
 
-export default function EducacaoPage() {
-  const [aba, setAba] = useState<Aba>("artigos");
-  const [artigoAberto, setArtigoAberto] = useState(false);
+export default function EducationPage() {
+  const [tab, setTab] = useState<Tab>("artigos");
+  const [openArticle, setOpenArticle] = useState(false);
 
-  useScrollReveal([aba, artigoAberto]);
+  useScrollReveal([tab, openArticle]);
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
@@ -859,12 +859,12 @@ export default function EducacaoPage() {
         {/* SEÇÃO: ARTIGOS / DICAS / QUIZ (TABS) */}
         <section className="animate-on-scroll">
           <div className="flex items-center gap-2 mb-8 flex-wrap">
-            {ABAS.map((a) => (
+            {TABS.map((a) => (
               <button
                 key={a.id}
-                onClick={() => setAba(a.id)}
+                onClick={() => setTab(a.id)}
                 className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
-                  aba === a.id
+                  tab === a.id
                     ? "bg-[var(--color-primary)] text-white shadow-[var(--shadow-btn)]"
                     : "bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
                 }`}
@@ -874,12 +874,12 @@ export default function EducacaoPage() {
             ))}
           </div>
 
-          <div key={aba} className="animate-[fadeSlideUp_0.35s_ease]">
-            {aba === "artigos" && (
-              <SecaoArtigos onArtigoChange={setArtigoAberto} />
+          <div key={tab} className="animate-[fadeSlideUp_0.35s_ease]">
+            {tab === "artigos" && (
+              <ArticlesSection onArtigoChange={setOpenArticle} />
             )}
-            {aba === "dicas" && <SecaoDicas />}
-            {aba === "quiz" && <SecaoQuiz />}
+            {tab === "dicas" && <TipsSection />}
+            {tab === "quiz" && <QuizSection />}
           </div>
         </section>
 

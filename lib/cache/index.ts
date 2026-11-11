@@ -19,7 +19,7 @@ import type { CacheProvider } from "./contracts";
 const provider: CacheProvider = new RedisCacheProvider();
 
 /** Buscas em andamento, por chave. */
-const emVoo = new Map<string, Promise<unknown>>();
+const inFlight = new Map<string, Promise<unknown>>();
 
 /**
  * Cache-aside: devolve do cache; no miss executa `fetcher`, grava e devolve.
@@ -36,33 +36,33 @@ export async function withCache<T>(
   const cached = await provider.get<T>(key);
   if (cached !== null) return cached;
 
-  const pendente = emVoo.get(key) as Promise<T> | undefined;
-  if (pendente) return pendente;
+  const pending = inFlight.get(key) as Promise<T> | undefined;
+  if (pending) return pending;
 
-  const busca = (async () => {
+  const search = (async () => {
     const fresh = await fetcher();
     await provider.set(key, fresh, ttl);
     return fresh;
-  })().finally(() => emVoo.delete(key));
+  })().finally(() => inFlight.delete(key));
 
-  emVoo.set(key, busca);
-  return busca;
+  inFlight.set(key, search);
+  return search;
 }
 
 /**
  * Invalida todas as chaves de um recurso (ex.: "PRODUTOS" → `produtos:*`).
  */
 export async function invalidateCache(
-  recurso: keyof typeof PREFIX,
+  resource: keyof typeof PREFIX,
 ): Promise<void> {
-  await provider.delPattern(`${PREFIX[recurso]}*`);
+  await provider.delPattern(`${PREFIX[resource]}*`);
 }
 
 /** Invalida vários recursos em paralelo. */
 export async function invalidateCaches(
-  recursos: (keyof typeof PREFIX)[],
+  resources: (keyof typeof PREFIX)[],
 ): Promise<void> {
-  await Promise.all(recursos.map(invalidateCache));
+  await Promise.all(resources.map(invalidateCache));
 }
 
 /** Invalida uma chave específica. */

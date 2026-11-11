@@ -23,30 +23,30 @@ import { GET as listarProdutosHandler } from "@/app/api/produtos/route";
 
 after(closeConnections);
 
-const unico = (base: string) => `${base}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+const single = (base: string) => `${base}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
 // ---------------------------------------------------------------------------
 // REQ-OPS-14: Redis fora do ar falha rápido (não pendura a requisição)
 // ---------------------------------------------------------------------------
 
 test("REQ-OPS-14: comPrazo libera quem espera quando o comando não responde", async () => {
-  const inicio = Date.now();
+  const start = Date.now();
   await assert.rejects(() => withTimeout(new Promise(() => {}), 50), /sem resposta/);
-  assert.ok(Date.now() - inicio < 1000);
+  assert.ok(Date.now() - start < 1000);
   assert.equal(await withTimeout(Promise.resolve("ok"), 50), "ok");
 });
 
 test("REQ-OPS-14: com o Redis fora do ar, cache e rate limit respondem rápido e sem lançar erro", () => {
-  const filho = spawnSync(
+  const child = spawnSync(
     process.execPath,
     ["--import", "tsx", "tests/integration/_redis-fora.script.ts"],
     // a inicialização do tsx pode levar dezenas de segundos em disco lento
     { cwd: process.cwd(), encoding: "utf8", timeout: 150_000 },
   );
-  assert.equal(filho.status, 0, filho.stderr);
-  const linha = filho.stdout.split("\n").find((l) => l.startsWith("RESULTADO "));
-  assert.ok(linha, `sem resultado:\n${filho.stdout}\n${filho.stderr}`);
-  const r = JSON.parse(linha.slice("RESULTADO ".length));
+  assert.equal(child.status, 0, child.stderr);
+  const line = child.stdout.split("\n").find((l) => l.startsWith("RESULTADO "));
+  assert.ok(line, `sem resultado:\n${child.stdout}\n${child.stderr}`);
+  const r = JSON.parse(line.slice("RESULTADO ".length));
 
   assert.equal(r.get, null, "GET com Redis fora é um miss, não erro");
   for (const ms of r.tempos) {
@@ -62,13 +62,13 @@ test("REQ-OPS-14: com o Redis fora do ar, cache e rate limit respondem rápido e
 // ---------------------------------------------------------------------------
 
 test("REQ-OPS-15: a contagem no Redis nasce com validade (SET NX EX + INCR), sem chave imortal", async () => {
-  const id = unico("atomico");
+  const id = single("atomico");
   const config = { limit: 2, windowSeconds: 30 };
   assert.equal((await rateLimit(id, config)).blocked, false);
   assert.equal((await rateLimit(id, config)).blocked, false);
-  const terceira = await rateLimit(id, config);
-  assert.equal(terceira.blocked, true);
-  assert.equal(terceira.remainingAttempts, 0);
+  const third = await rateLimit(id, config);
+  assert.equal(third.blocked, true);
+  assert.equal(third.remainingAttempts, 0);
 
   const ttl = await redis.ttl(`rate_limit:${id}`);
   assert.ok(ttl > 0 && ttl <= 30, `a chave precisa ter validade (ttl=${ttl})`);
@@ -76,26 +76,26 @@ test("REQ-OPS-15: a contagem no Redis nasce com validade (SET NX EX + INCR), sem
 });
 
 test("REQ-OPS-15: se o contador principal falha, a reserva em memória mantém o limite", async () => {
-  const quebrado: WindowCounter = {
+  const broken: WindowCounter = {
     increment: async () => {
       throw new Error("Redis fora");
     },
   };
-  const reserva = new InMemoryCounter();
+  const fallback = new InMemoryCounter();
   const config = { limit: 2, windowSeconds: 60 };
-  const r1 = await rateLimit("x", config, quebrado, reserva);
-  const r2 = await rateLimit("x", config, quebrado, reserva);
-  const r3 = await rateLimit("x", config, quebrado, reserva);
+  const r1 = await rateLimit("x", config, broken, fallback);
+  const r2 = await rateLimit("x", config, broken, fallback);
+  const r3 = await rateLimit("x", config, broken, fallback);
   assert.deepEqual([r1.blocked, r2.blocked, r3.blocked], [false, false, true]);
   assert.equal(r1.remainingAttempts, 1);
 });
 
 test("REQ-OPS-15: o contador em memória zera quando a janela acaba", async () => {
-  let agora = 1_000_000;
-  const counter = new InMemoryCounter(() => agora);
+  let now = 1_000_000;
+  const counter = new InMemoryCounter(() => now);
   assert.equal(await counter.increment("k", 10), 1);
   assert.equal(await counter.increment("k", 10), 2);
-  agora += 11_000;
+  now += 11_000;
   assert.equal(await counter.increment("k", 10), 1);
   assert.equal(await counter.increment("outra", 10), 1);
 });
@@ -104,9 +104,9 @@ test("REQ-OPS-15: o contador em memória zera quando a janela acaba", async () =
 // REQ-OPS-16: IP do cliente atrás de proxy confiável
 // ---------------------------------------------------------------------------
 
-const comXff = (valor?: string) =>
-  req("/x", { ip: valor }) as unknown as Request;
-const requisicao = (xff?: string, realIp?: string) =>
+const comXff = (value?: string) =>
+  req("/x", { ip: value }) as unknown as Request;
+const request = (xff?: string, realIp?: string) =>
   new Request("http://localhost/x", {
     headers: {
       ...(xff ? { "x-forwarded-for": xff } : {}),
@@ -115,37 +115,37 @@ const requisicao = (xff?: string, realIp?: string) =>
   });
 
 test("REQ-OPS-16: com 1 proxy confiável, vale a última entrada de x-forwarded-for (a que o proxy escreveu)", () => {
-  assert.equal(getClientIp(requisicao("203.0.113.7"), 1), "203.0.113.7");
+  assert.equal(getClientIp(request("203.0.113.7"), 1), "203.0.113.7");
   // o cliente forjou 9.9.9.9; o proxy acrescentou o IP real no fim
-  assert.equal(getClientIp(requisicao("9.9.9.9, 203.0.113.7"), 1), "203.0.113.7");
-  assert.equal(getClientIp(requisicao("9.9.9.9, 8.8.8.8, 203.0.113.7"), 1), "203.0.113.7");
+  assert.equal(getClientIp(request("9.9.9.9, 203.0.113.7"), 1), "203.0.113.7");
+  assert.equal(getClientIp(request("9.9.9.9, 8.8.8.8, 203.0.113.7"), 1), "203.0.113.7");
 });
 
 test("REQ-OPS-16: com 2 proxies confiáveis vale a penúltima entrada; com mais proxies que entradas, a primeira", () => {
-  assert.equal(getClientIp(requisicao("1.1.1.1, 2.2.2.2"), 2), "1.1.1.1");
-  assert.equal(getClientIp(requisicao("1.1.1.1"), 3), "1.1.1.1");
+  assert.equal(getClientIp(request("1.1.1.1, 2.2.2.2"), 2), "1.1.1.1");
+  assert.equal(getClientIp(request("1.1.1.1"), 3), "1.1.1.1");
 });
 
 test("REQ-OPS-16: sem proxy confiável o cabeçalho é ignorado; sem cabeçalho cai em x-real-ip ou unknown", () => {
-  assert.equal(getClientIp(requisicao("9.9.9.9"), 0), "unknown");
-  assert.equal(getClientIp(requisicao(undefined, "10.0.0.5"), 1), "10.0.0.5");
-  assert.equal(getClientIp(requisicao(), 1), "unknown");
+  assert.equal(getClientIp(request("9.9.9.9"), 0), "unknown");
+  assert.equal(getClientIp(request(undefined, "10.0.0.5"), 1), "10.0.0.5");
+  assert.equal(getClientIp(request(), 1), "unknown");
   void comXff;
 });
 
 test("REQ-OPS-16: TRUST_PROXY_HOPS define o padrão e valor inválido volta para 1", () => {
   const env = process.env as Record<string, string | undefined>;
-  const anterior = env.TRUST_PROXY_HOPS;
+  const previous = env.TRUST_PROXY_HOPS;
   try {
     env.TRUST_PROXY_HOPS = "2";
-    assert.equal(getClientIp(requisicao("1.1.1.1, 2.2.2.2")), "1.1.1.1");
+    assert.equal(getClientIp(request("1.1.1.1, 2.2.2.2")), "1.1.1.1");
     env.TRUST_PROXY_HOPS = "abc";
-    assert.equal(getClientIp(requisicao("1.1.1.1, 2.2.2.2")), "2.2.2.2");
+    assert.equal(getClientIp(request("1.1.1.1, 2.2.2.2")), "2.2.2.2");
     delete env.TRUST_PROXY_HOPS;
-    assert.equal(getClientIp(requisicao("1.1.1.1, 2.2.2.2")), "2.2.2.2");
+    assert.equal(getClientIp(request("1.1.1.1, 2.2.2.2")), "2.2.2.2");
   } finally {
-    if (anterior === undefined) delete env.TRUST_PROXY_HOPS;
-    else env.TRUST_PROXY_HOPS = anterior;
+    if (previous === undefined) delete env.TRUST_PROXY_HOPS;
+    else env.TRUST_PROXY_HOPS = previous;
   }
 });
 
@@ -153,28 +153,28 @@ test("REQ-OPS-16: TRUST_PROXY_HOPS define o padrão e valor inválido volta para
 // REQ-CAT-10: chave de cache da listagem
 // ---------------------------------------------------------------------------
 
-const chaveDe = (query: Record<string, string>) =>
+const keyFor = (query: Record<string, string>) =>
   productListKey(listProductsQuerySchema.parse(query));
 
 test("REQ-CAT-10: a chave não depende da ordem dos parâmetros nem de parâmetros desconhecidos", () => {
-  const a = chaveDe({ sort: "preco_asc", page: "2", categoriaId: "3" });
-  const b = chaveDe({ categoriaId: "3", page: "2", sort: "preco_asc", lixo: "x", outro: "y" });
+  const a = keyFor({ sort: "preco_asc", page: "2", categoriaId: "3" });
+  const b = keyFor({ categoriaId: "3", page: "2", sort: "preco_asc", lixo: "x", outro: "y" });
   assert.equal(a, b);
 });
 
 test("REQ-CAT-10: filtros diferentes geram chaves diferentes; os padrões entram na chave", () => {
-  const base = chaveDe({});
+  const base = keyFor({});
   assert.match(base, /^produtos:page=1&size=12&/);
-  assert.notEqual(base, chaveDe({ page: "2" }));
-  assert.notEqual(base, chaveDe({ marcaId: "4" }));
-  assert.notEqual(base, chaveDe({ precoMax: "50" }));
-  assert.notEqual(base, chaveDe({ sort: "nome_desc" }));
-  assert.notEqual(base, chaveDe({ nome: "bambu" }));
+  assert.notEqual(base, keyFor({ page: "2" }));
+  assert.notEqual(base, keyFor({ marcaId: "4" }));
+  assert.notEqual(base, keyFor({ precoMax: "50" }));
+  assert.notEqual(base, keyFor({ sort: "nome_desc" }));
+  assert.notEqual(base, keyFor({ nome: "bambu" }));
 });
 
 test("REQ-CAT-10: a busca por nome ignora caixa e espaços nas pontas (mesma busca, mesma chave)", () => {
-  assert.equal(chaveDe({ nome: "Bambu" }), chaveDe({ nome: "  bambu " }));
-  assert.equal(chaveDe({ nome: "" }), chaveDe({}));
+  assert.equal(keyFor({ nome: "Bambu" }), keyFor({ nome: "  bambu " }));
+  assert.equal(keyFor({ nome: "" }), keyFor({}));
 });
 
 test("REQ-CAT-10: nome com mais de 100 caracteres responde 400 (o tamanho da chave tem limite)", async () => {
@@ -187,27 +187,27 @@ test("REQ-CAT-10: nome com mais de 100 caracteres responde 400 (o tamanho da cha
 // ---------------------------------------------------------------------------
 
 test("REQ-OPS-17: acessos simultâneos à mesma chave com cache vazio fazem uma só busca", async () => {
-  const key = `teste:${unico("sf")}`;
-  let buscas = 0;
+  const key = `teste:${single("sf")}`;
+  let fetches = 0;
   const fetcher = async () => {
-    buscas++;
+    fetches++;
     await new Promise((r) => setTimeout(r, 40));
     return { valor: 42 };
   };
   const results = await Promise.all(Array.from({ length: 8 }, () => withCache(key, 5, fetcher)));
-  assert.equal(buscas, 1, "as 8 chamadas deveriam dividir a mesma busca");
+  assert.equal(fetches, 1, "as 8 chamadas deveriam dividir a mesma busca");
   for (const r of results) assert.deepEqual(r, { valor: 42 });
   await redis.del(key).catch(() => {});
 });
 
 test("REQ-OPS-17: chaves diferentes não se misturam e uma busca que falha não fica presa", async () => {
   const [a, b] = await Promise.all([
-    withCache(`teste:${unico("a")}`, 5, async () => "A"),
-    withCache(`teste:${unico("b")}`, 5, async () => "B"),
+    withCache(`teste:${single("a")}`, 5, async () => "A"),
+    withCache(`teste:${single("b")}`, 5, async () => "B"),
   ]);
   assert.deepEqual([a, b], ["A", "B"]);
 
-  const key = `teste:${unico("falha")}`;
+  const key = `teste:${single("falha")}`;
   await assert.rejects(() => withCache(key, 5, async () => { throw new Error("banco caiu"); }), /banco caiu/);
   assert.equal(await withCache(key, 5, async () => "recuperou"), "recuperou");
   await redis.del(key).catch(() => {});
@@ -223,16 +223,16 @@ test("REQ-OPS-01: banco e Redis no ar → ok (200); só o Redis fora → degrada
   assert.equal(ok.relatorio.status, "ok");
   assert.equal(ok.relatorio.ok, true);
 
-  const degradado = buildHealthReport({ database: true, redis: false });
-  assert.equal(degradado.httpStatus, 200);
-  assert.equal(degradado.relatorio.status, "degradado");
-  assert.equal(degradado.relatorio.ok, true);
-  assert.deepEqual(degradado.relatorio.services, { database: true, redis: false });
+  const degraded = buildHealthReport({ database: true, redis: false });
+  assert.equal(degraded.httpStatus, 200);
+  assert.equal(degraded.relatorio.status, "degradado");
+  assert.equal(degraded.relatorio.ok, true);
+  assert.deepEqual(degraded.relatorio.services, { database: true, redis: false });
 
   for (const redisOk of [true, false]) {
-    const fora = buildHealthReport({ database: false, redis: redisOk });
-    assert.equal(fora.httpStatus, 503);
-    assert.equal(fora.relatorio.status, "indisponivel");
-    assert.equal(fora.relatorio.ok, false);
+    const down = buildHealthReport({ database: false, redis: redisOk });
+    assert.equal(down.httpStatus, 503);
+    assert.equal(down.relatorio.status, "indisponivel");
+    assert.equal(down.relatorio.ok, false);
   }
 });

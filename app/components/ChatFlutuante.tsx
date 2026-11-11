@@ -22,45 +22,45 @@ import { useEffect, useRef, useState } from "react";
 import { useChat } from "@/lib/hooks/useIA";
 import { fetchSession } from "@/lib/hooks/sessao";
 
-type Mensagem = { role: "user" | "model"; texto: string };
+type Message = { role: "user" | "model"; texto: string };
 
-export default function ChatFlutuante() {
-  const [logado, setLogado] = useState(false);
-  const [aberto, setAberto] = useState(false);
-  const [mensagens, setMensagens] = useState<Mensagem[]>([]);
-  const [text, setTexto] = useState("");
+export default function FloatingChat() {
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [text, setText] = useState("");
   const chat = useChat();
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetchSession().then((user) => setLogado(user !== null));
+    fetchSession().then((user) => setLoggedIn(user !== null));
   }, []);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-  }, [mensagens, chat.carregando]);
+  }, [messages, chat.carregando]);
 
-  if (!logado) return null;
+  if (!loggedIn) return null;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const message = text.trim();
     if (!message || chat.carregando) return;
 
-    const history = mensagens.map((m) => ({
+    const history = messages.map((m) => ({
       role: m.role,
       parts: [{ text: m.texto }],
     }));
 
-    setMensagens((prev) => [...prev, { role: "user", texto: message }]);
-    setTexto("");
+    setMessages((prev) => [...prev, { role: "user", texto: message }]);
+    setText("");
 
     const result = await chat.executar("/api/ia/chat", {
       mensagem: message,
       historico: history,
     });
     if (result) {
-      setMensagens((prev) => [
+      setMessages((prev) => [
         ...prev,
         { role: "model", texto: result.resposta },
       ]);
@@ -69,7 +69,7 @@ export default function ChatFlutuante() {
 
   return (
     <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3">
-      {aberto && (
+      {open && (
         <div
           className="w-80 sm:w-96 h-[28rem] rounded-2xl flex flex-col overflow-hidden"
           style={{
@@ -90,7 +90,7 @@ export default function ChatFlutuante() {
             </span>
             <button
               type="button"
-              onClick={() => setAberto(false)}
+              onClick={() => setOpen(false)}
               aria-label="Fechar chat"
               className="text-white/80 hover:text-white text-lg leading-none"
             >
@@ -102,7 +102,7 @@ export default function ChatFlutuante() {
             ref={listRef}
             className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3"
           >
-            {mensagens.length === 0 && (
+            {messages.length === 0 && (
               <p
                 className="text-sm text-center mt-8"
                 style={{ color: "var(--color-text-tertiary)" }}
@@ -111,7 +111,7 @@ export default function ChatFlutuante() {
                 sustentáveis.
               </p>
             )}
-            {mensagens.map((m, i) => (
+            {messages.map((m, i) => (
               <div
                 key={i}
                 className={`max-w-[85%] px-3 py-2 rounded-xl text-sm whitespace-pre-wrap ${
@@ -152,7 +152,7 @@ export default function ChatFlutuante() {
             <input
               type="text"
               value={text}
-              onChange={(e) => setTexto(e.target.value)}
+              onChange={(e) => setText(e.target.value)}
               placeholder="Digite sua pergunta..."
               maxLength={2000}
               disabled={chat.carregando}
@@ -178,15 +178,15 @@ export default function ChatFlutuante() {
 
       <button
         type="button"
-        onClick={() => setAberto((v) => !v)}
-        aria-label={aberto ? "Fechar chat" : "Abrir chat de sustentabilidade"}
+        onClick={() => setOpen((v) => !v)}
+        aria-label={open ? "Fechar chat" : "Abrir chat de sustentabilidade"}
         className="w-14 h-14 rounded-full flex items-center justify-center text-2xl text-white transition-transform hover:scale-105"
         style={{
           background: "var(--color-primary)",
           boxShadow: "0 8px 24px rgba(45,149,105,0.4)",
         }}
       >
-        {aberto ? "✕" : "💬"}
+        {open ? "✕" : "💬"}
       </button>
     </div>
   );

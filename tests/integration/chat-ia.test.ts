@@ -15,11 +15,11 @@ import { POST as chat } from "@/app/api/ia/chat/route";
 
 after(closeConnections);
 
-let restaurar: (() => void) | undefined;
+let restore: (() => void) | undefined;
 beforeEach(() => {
   process.env.GEMINI_KEY = "chave-gemini-de-teste-123";
 });
-afterEach(() => restaurar?.());
+afterEach(() => restore?.());
 
 const gemini = (text: string) =>
   json({ candidates: [{ content: { parts: [{ text: text }] } }] });
@@ -30,7 +30,7 @@ const submit = (cookie: string, message: unknown) =>
   chat(req("/api/ia/chat", { method: "POST", cookie, body: { mensagem: message } }));
 
 test("REQ-CHAT-01: mensagem válida de usuário autenticado devolve a resposta da IA", async () => {
-  restaurar = stubFetch(() => gemini("Leve as pilhas a um ponto de coleta."));
+  restore = stubFetch(() => gemini("Leve as pilhas a um ponto de coleta."));
   const res = await submit(
     await asUser("chat01"),
     "Como descartar pilhas?",
@@ -44,7 +44,7 @@ test("REQ-CHAT-01: mensagem válida de usuário autenticado devolve a resposta d
 
 test("REQ-CHAT-02: mais de 20 mensagens por minuto por usuário respondem 429", async () => {
   await clearRateLimit();
-  restaurar = stubFetch(() => gemini("ok"));
+  restore = stubFetch(() => gemini("ok"));
   const cookie = await asUser("chat02");
   const status: number[] = [];
   for (let i = 0; i < 21; i++) status.push((await submit(cookie, "oi")).status);
@@ -62,7 +62,7 @@ test("REQ-CHAT-03: sem chave configurada o chat responde 503", async () => {
 });
 
 test("REQ-CHAT-04: se a IA falha, o chat responde 502", async () => {
-  restaurar = stubFetch(() => json({ erro: "falha" }, 500));
+  restore = stubFetch(() => json({ erro: "falha" }, 500));
   const res = await submit(await asUser("chat04"), "oi");
   assert.equal(res.status, 502);
 });

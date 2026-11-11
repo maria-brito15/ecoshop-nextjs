@@ -63,15 +63,15 @@ export async function middleware(req: NextRequest) {
   const payload = token ? await verifyToken(token) : null;
 
   // Verifica se a rota atual corresponde a alguma regra de proteção
-  const regra = ROUTE_RULES.find((r) => pathname.startsWith(r.prefix));
+  const rule = ROUTE_RULES.find((r) => pathname.startsWith(r.prefix));
 
   // Rota pública: nenhuma regra se aplica → acesso liberado
-  if (!regra) return NextResponse.next();
+  if (!rule) return NextResponse.next();
 
   // CASO 1: Usuário NÃO está autenticado
   if (!payload) {
     // Para rotas de API: retorna JSON 401 (Unauthorized)
-    if (regra.responseType === "api") {
+    if (rule.responseType === "api") {
       return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
     }
 
@@ -95,9 +95,9 @@ export async function middleware(req: NextRequest) {
 
   // CASO 2: Usuário autenticado mas nível de acesso insuficiente
   // Regra com nivel "admin" e usuário não é ADMIN
-  if (regra.level === "admin" && payload.tipo !== "ADMIN") {
+  if (rule.level === "admin" && payload.tipo !== "ADMIN") {
     // Para rotas de API: retorna JSON 403 (Forbidden)
-    if (regra.responseType === "api") {
+    if (rule.responseType === "api") {
       return NextResponse.json({ erro: "Acesso negado" }, { status: 403 });
     }
 

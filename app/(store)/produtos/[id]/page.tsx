@@ -44,7 +44,7 @@ type Tab = "sobre" | "specs" | "certificados";
  * Item do histórico local de produtos visitados (REQ-PERF-05).
  * Mesma forma lida por app/(perfil)/perfil/page.tsx na chave "ecoshop_history".
  */
-type HistoricoItem = {
+type HistoryItem = {
   produtoId: number;
   nome: string;
   fotoUrl?: string;
@@ -107,8 +107,8 @@ function CertBadge({ cert }: { cert: Certificado }) {
 /**
  * Card de impacto ambiental (estimativas baseadas no preço do produto).
  */
-function ImpactCard({ preco }: { preco: number }) {
-  const val = Number(preco);
+function ImpactCard({ preco: price }: { preco: number }) {
+  const val = Number(price);
   const co2 = (val * 0.012).toFixed(1) + "kg";
   const water = Math.round(val * 0.8) + "L";
   const trees = val > 200 ? "2" : "1";
@@ -185,12 +185,12 @@ function Tabs({
 
 export default function ProductPage({ params }: Props) {
   const { id } = use(params);
-  const { data, loading: carregando, error: erro } = useGetProduct(Number(id));
-  const { data: fotosData } = useListPhotos(Number(id));
+  const { data, loading: loading, error: error } = useGetProduct(Number(id));
+  const { data: photosData } = useListPhotos(Number(id));
   const [activeTab, setActiveTab] = useState<Tab>("sobre");
   const [imgLoaded, setImgLoaded] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
-  const [fotoSelecionada, setFotoSelecionada] = useState<string | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setHeroVisible(true), 80);
@@ -205,9 +205,9 @@ export default function ProductPage({ params }: Props) {
     if (!product) return;
     try {
       const raw = localStorage.getItem("ecoshop_history");
-      const history: HistoricoItem[] = raw ? JSON.parse(raw) : [];
-      const semDuplicata = history.filter((h) => h.produtoId !== product.id);
-      const atualizado = [
+      const history: HistoryItem[] = raw ? JSON.parse(raw) : [];
+      const withoutDuplicate = history.filter((h) => h.produtoId !== product.id);
+      const updated = [
         {
           produtoId: product.id,
           nome: product.nome,
@@ -215,19 +215,19 @@ export default function ProductPage({ params }: Props) {
           preco: Number(product.preco),
           visitadoEm: new Date().toISOString(),
         },
-        ...semDuplicata,
+        ...withoutDuplicate,
       ].slice(0, 50);
-      localStorage.setItem("ecoshop_history", JSON.stringify(atualizado));
+      localStorage.setItem("ecoshop_history", JSON.stringify(updated));
     } catch {
       // localStorage indisponível (ex.: modo privado); histórico não é crítico
     }
   }, [data?.produto]);
 
   // Estado de carregamento
-  if (carregando) return <SkeletonDetail />;
+  if (loading) return <SkeletonDetail />;
 
   // Produto não encontrado
-  if (erro) {
+  if (error) {
     return (
       <main className="min-h-screen bg-[var(--color-bg-body)] flex items-center justify-center">
         <div className="text-center p-8 max-w-md">
@@ -235,7 +235,7 @@ export default function ProductPage({ params }: Props) {
           <h2 className="font-display text-2xl font-bold text-[var(--color-text-primary)] mb-2">
             Produto não encontrado
           </h2>
-          <p className="text-[var(--color-text-secondary)] mb-6">{erro}</p>
+          <p className="text-[var(--color-text-secondary)] mb-6">{error}</p>
           <Link href="/produtos" className="btn-primary">
             ← Voltar para produtos
           </Link>
@@ -256,15 +256,15 @@ export default function ProductPage({ params }: Props) {
     style: "currency",
     currency: "BRL",
   });
-  const parcelas = 12;
-  const valorParcela = (numericPrice / parcelas).toLocaleString("pt-BR", {
+  const installments = 12;
+  const installmentValue = (numericPrice / installments).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
   const hasCerts = !!(product.certificados && product.certificados.length > 0);
-  const photos = fotosData?.fotos ?? [];
+  const photos = photosData?.fotos ?? [];
   const mainImage =
-    fotoSelecionada ?? product.fotoUrl ?? photos[0]?.url ?? null;
+    selectedPhoto ?? product.fotoUrl ?? photos[0]?.url ?? null;
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)] pb-20">
@@ -334,7 +334,7 @@ export default function ProductPage({ params }: Props) {
                     type="button"
                     onClick={() => {
                       setImgLoaded(false);
-                      setFotoSelecionada(photo.url);
+                      setSelectedPhoto(photo.url);
                     }}
                     aria-label={`Ver foto ${photo.nome}`}
                     className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors ${
@@ -389,7 +389,7 @@ export default function ProductPage({ params }: Props) {
               <p className="text-sm text-[var(--color-text-secondary)]">
                 em até{" "}
                 <strong className="text-[var(--color-text-primary)]">
-                  {parcelas}x de {valorParcela}
+                  {installments}x de {installmentValue}
                 </strong>{" "}
                 sem juros
               </p>

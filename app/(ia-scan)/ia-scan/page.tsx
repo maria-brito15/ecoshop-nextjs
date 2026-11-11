@@ -132,7 +132,7 @@ function SustainabilityText({ value }: { value: unknown }) {
   );
 }
 
-function isSucesso(data: ScanResponse): data is ScanResponse & {
+function isSuccess(data: ScanResponse): data is ScanResponse & {
   sucesso: true;
   material: string;
   confianca: number;
@@ -146,7 +146,7 @@ function isSucesso(data: ScanResponse): data is ScanResponse & {
   );
 }
 
-function isInsuficiente(data: ScanResponse): data is ScanResponse & {
+function isInsufficient(data: ScanResponse): data is ScanResponse & {
   sucesso: false;
   confianca: number;
   confianca_minima_requerida: number;
@@ -324,11 +324,11 @@ function InsufficientResult({
 // ----------------------------------------------------------------------------
 
 export default function IaScanPage() {
-  const [file, setArquivo] = useState<SelectedFile | null>(null);
+  const [file, setFile] = useState<SelectedFile | null>(null);
   const [dragover, setDragover] = useState(false);
-  const [erroLocal, setErroLocal] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const { data, carregando, erro: erroHook, executar } = useScan();
+  const { data, carregando: loading, erro: hookError, executar: execute } = useScan();
 
   function validateFile(file: File): string | null {
     if (!VALID_TYPES.includes(file.type))
@@ -340,12 +340,12 @@ export default function IaScanPage() {
   function selectFile(file: File) {
     const err = validateFile(file);
     if (err) {
-      setErroLocal(err);
+      setLocalError(err);
       return;
     }
 
-    setErroLocal(null);
-    setArquivo({
+    setLocalError(null);
+    setFile({
       file,
       previewUrl: URL.createObjectURL(file),
       name:
@@ -356,10 +356,10 @@ export default function IaScanPage() {
     });
   }
 
-  function resetar() {
+  function reset() {
     if (file?.previewUrl) URL.revokeObjectURL(file.previewUrl);
-    setArquivo(null);
-    setErroLocal(null);
+    setFile(null);
+    setLocalError(null);
     if (fileRef.current) fileRef.current.value = "";
   }
 
@@ -367,7 +367,7 @@ export default function IaScanPage() {
     if (!file) return;
     const form = new FormData();
     form.append("image", file.file);
-    executar("/api/ia/scan", form);
+    execute("/api/ia/scan", form);
   }
 
   const onDragOver = useCallback((e: React.DragEvent) => {
@@ -384,10 +384,10 @@ export default function IaScanPage() {
     if (file) selectFile(file);
   }, []);
 
-  const showResult = !carregando && data != null;
-  const sucesso = showResult && data && isSucesso(data);
-  const insuficiente =
-    showResult && data && !sucesso && isInsuficiente(data);
+  const showResult = !loading && data != null;
+  const success = showResult && data && isSuccess(data);
+  const insufficient =
+    showResult && data && !success && isInsufficient(data);
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
@@ -409,7 +409,7 @@ export default function IaScanPage() {
 
       <div className="container-eco pb-24">
         {/* MENSAGENS DE ERRO */}
-        {(erroLocal || erroHook) && (
+        {(localError || hookError) && (
           <div
             className="flex items-start gap-4 p-5 rounded-xl mb-8 bg-red-50 border border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800/40 dark:text-red-300"
             role="alert"
@@ -419,7 +419,7 @@ export default function IaScanPage() {
               <strong className="block font-semibold mb-0.5">
                 Ops! Algo deu errado.
               </strong>
-              <span className="text-sm">{erroLocal ?? erroHook}</span>
+              <span className="text-sm">{localError ?? hookError}</span>
             </div>
           </div>
         )}
@@ -473,7 +473,7 @@ export default function IaScanPage() {
         )}
 
         {/* PREVIEW DA IMAGEM (antes da análise) */}
-        {file && !carregando && !showResult && (
+        {file && !loading && !showResult && (
           <div className="max-w-2xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 bg-[var(--color-bg-surface)] rounded-2xl p-6 border border-[var(--color-border)] shadow-[var(--shadow-card)] animate-[fadeSlideUp_0.4s_ease]">
             <div className="flex items-center gap-5">
               <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-[var(--color-border)] flex-shrink-0 bg-[var(--color-bg-body)]">
@@ -494,7 +494,7 @@ export default function IaScanPage() {
             </div>
             <div className="flex gap-3 w-full sm:w-auto">
               <button
-                onClick={resetar}
+                onClick={reset}
                 className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold border-2 border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-primary)] hover:text-[var(--color-text-primary)] hover:-translate-y-0.5 transition-all duration-200"
               >
                 🗑️ Cancelar
@@ -510,7 +510,7 @@ export default function IaScanPage() {
         )}
 
         {/* LOADING (processamento) */}
-        {carregando && (
+        {loading && (
           <div
             className="flex flex-col items-center justify-center py-20 text-center animate-[fadeSlideUp_0.4s_ease]"
             aria-live="polite"
@@ -528,11 +528,11 @@ export default function IaScanPage() {
         )}
 
         {/* RESULTADOS */}
-        {sucesso && data && (
-          <SuccessResult data={data as any} onReset={resetar} />
+        {success && data && (
+          <SuccessResult data={data as any} onReset={reset} />
         )}
-        {insuficiente && data && (
-          <InsufficientResult data={data as any} onReset={resetar} />
+        {insufficient && data && (
+          <InsufficientResult data={data as any} onReset={reset} />
         )}
       </div>
     </main>

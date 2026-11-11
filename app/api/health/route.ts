@@ -22,6 +22,6 @@ import { NextResponse } from "next/server";
 import { checkHealth } from "@/services/saude.service";
 
 export async function GET() {
-  const { relatorio, httpStatus } = await checkHealth();
-  return NextResponse.json(relatorio, { status: httpStatus });
+  const { relatorio: report, httpStatus } = await checkHealth();
+  return NextResponse.json(report, { status: httpStatus });
 }

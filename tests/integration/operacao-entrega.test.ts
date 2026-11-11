@@ -17,30 +17,30 @@ import { register } from "@/instrumentation";
 
 after(closeConnections);
 
-const SEGREDO_VALIDO ="x7Qm2LbR9vTn4KcE8wYpZa3JdHfUg6Nz";
+const VALID_SECRET ="x7Qm2LbR9vTn4KcE8wYpZa3JdHfUg6Nz";
 
-type Ambiente = Record<string, string | undefined>;
+type Environment = Record<string, string | undefined>;
 
 /** Executa `fn` com variáveis de ambiente alteradas e restaura tudo no final. */
-async function comAmbiente(alteracoes: Ambiente, fn: () => Promise<void>) {
-  const env = process.env as Ambiente;
-  const anteriores: Ambiente = {};
-  for (const key of Object.keys(alteracoes)) {
-    anteriores[key] = env[key];
-    if (alteracoes[key] === undefined) delete env[key];
-    else env[key] = alteracoes[key];
+async function withEnvironment(changes: Environment, fn: () => Promise<void>) {
+  const env = process.env as Environment;
+  const previous: Environment = {};
+  for (const key of Object.keys(changes)) {
+    previous[key] = env[key];
+    if (changes[key] === undefined) delete env[key];
+    else env[key] = changes[key];
   }
   try {
     await fn();
   } finally {
-    for (const key of Object.keys(anteriores)) {
-      if (anteriores[key] === undefined) delete env[key];
-      else env[key] = anteriores[key];
+    for (const key of Object.keys(previous)) {
+      if (previous[key] === undefined) delete env[key];
+      else env[key] = previous[key];
     }
   }
 }
 
-const PRODUCAO: Ambiente = {
+const PRODUCTION: Environment = {
   NODE_ENV: "production",
   NEXT_RUNTIME: "nodejs",
   DATABASE_URL: "postgresql://usuario:senha@host:5432/banco",
@@ -48,7 +48,7 @@ const PRODUCAO: Ambiente = {
 };
 
 test("REQ-OPS-06: validarJwtSecret aceita um segredo com 32+ caracteres que não é valor-exemplo", () => {
-  assert.equal(validateJwtSecret(SEGREDO_VALIDO), null);
+  assert.equal(validateJwtSecret(VALID_SECRET), null);
 });
 
 test("REQ-OPS-06: validarJwtSecret recusa segredo ausente, vazio ou curto", () => {
@@ -60,23 +60,23 @@ test("REQ-OPS-06: validarJwtSecret recusa segredo ausente, vazio ou curto", () =
 
 test("REQ-OPS-06: validarJwtSecret recusa os valores-exemplo conhecidos, mesmo com 32+ caracteres", () => {
   // O .env.example antigo tinha 38 caracteres: só a regra de tamanho não o barraria.
-  const exemplos = [
+  const examples = [
     "supersecretkeychangeinproduction",
     "seu-segredo-jwt-aqui-mude-em-producao",
     "SEU-SEGREDO-JWT-AQUI-MUDE-EM-PRODUCAO",
     "please-changeme-please-changeme-please",
   ];
-  for (const exemplo of exemplos) {
-    assert.ok(exemplo.length >= 32, `precondição: "${exemplo}" tem 32+ caracteres`);
-    assert.notEqual(validateJwtSecret(exemplo), null, exemplo);
+  for (const example of examples) {
+    assert.ok(example.length >= 32, `precondição: "${example}" tem 32+ caracteres`);
+    assert.notEqual(validateJwtSecret(example), null, example);
   }
 });
 
 test("REQ-OPS-06: a mensagem de erro nunca contém o valor do segredo", () => {
-  const segredo = "supersecretkeychangeinproduction";
-  const erro = validateJwtSecret(segredo);
-  assert.ok(erro);
-  assert.ok(!erro.includes(segredo));
+  const secret = "supersecretkeychangeinproduction";
+  const error = validateJwtSecret(secret);
+  assert.ok(error);
+  assert.ok(!error.includes(secret));
 });
 
 /**
@@ -84,31 +84,31 @@ test("REQ-OPS-06: a mensagem de erro nunca contém o valor do segredo", () => {
  * trocado por uma função que lança (um exit de verdade mataria o teste) e
  * `console.error` é capturado.
  */
-async function executarRegister(): Promise<{ codigoDeSaida?: number; mensagem: string }> {
-  const sair = mock.method(process, "exit", (codigo?: number) => {
-    throw new Error(`exit:${codigo}`);
+async function runRegister(): Promise<{ codigoDeSaida?: number; mensagem: string }> {
+  const leave = mock.method(process, "exit", (code?: number) => {
+    throw new Error(`exit:${code}`);
   });
-  const erro = mock.method(console, "error", () => {});
+  const error = mock.method(console, "error", () => {});
   try {
     await register();
     return { mensagem: "" };
   } catch (e) {
-    const casou = /^exit:(\d+)$/.exec((e as Error).message);
-    if (!casou) throw e;
+    const matched = /^exit:(\d+)$/.exec((e as Error).message);
+    if (!matched) throw e;
     return {
-      codigoDeSaida: Number(casou[1]),
-      mensagem: erro.mock.calls.map((c) => String(c.arguments[0])).join("\n"),
+      codigoDeSaida: Number(matched[1]),
+      mensagem: error.mock.calls.map((c) => String(c.arguments[0])).join("\n"),
     };
   } finally {
-    sair.mock.restore();
-    erro.mock.restore();
+    leave.mock.restore();
+    error.mock.restore();
   }
 }
 
 test("REQ-OPS-06: em produção, register() encerra o processo (código 1) com segredo inválido", async () => {
   for (const jwt of [undefined, "", "curto", "supersecretkeychangeinproduction"]) {
-    await comAmbiente({ ...PRODUCAO, JWT_SECRET: jwt }, async () => {
-      const r = await executarRegister();
+    await withEnvironment({ ...PRODUCTION, JWT_SECRET: jwt }, async () => {
+      const r = await runRegister();
       assert.equal(r.codigoDeSaida, 1, `JWT_SECRET=${jwt === undefined ? "(ausente)" : "inválido"}`);
       assert.match(r.mensagem, /JWT_SECRET/);
       // só valores longos: "curto" é uma palavra que a própria mensagem usa
@@ -121,8 +121,8 @@ test("REQ-OPS-06: em produção, register() encerra o processo (código 1) com s
 
 test("REQ-OPS-18: em produção, register() encerra o processo se DATABASE_URL falta ou não é PostgreSQL, e a mensagem não vaza a URL", async () => {
   for (const url of [undefined, "", "mysql://u:p@h/db", "nao-e-url"]) {
-    await comAmbiente({ ...PRODUCAO, JWT_SECRET: SEGREDO_VALIDO, DATABASE_URL: url }, async () => {
-      const r = await executarRegister();
+    await withEnvironment({ ...PRODUCTION, JWT_SECRET: VALID_SECRET, DATABASE_URL: url }, async () => {
+      const r = await runRegister();
       assert.equal(r.codigoDeSaida, 1, `DATABASE_URL=${url === undefined ? "(ausente)" : url}`);
       assert.match(r.mensagem, /DATABASE_URL/);
       assert.ok(!r.mensagem.includes("nao-e-url") || url === "nao-e-url");
@@ -131,41 +131,41 @@ test("REQ-OPS-18: em produção, register() encerra o processo se DATABASE_URL f
 });
 
 test("REQ-OPS-18: todos os problemas aparecem de uma vez (segredo e banco), e o Redis é opcional", async () => {
-  await comAmbiente({ ...PRODUCAO, JWT_SECRET: "curto", DATABASE_URL: undefined, REDIS_URL: undefined }, async () => {
-    const r = await executarRegister();
+  await withEnvironment({ ...PRODUCTION, JWT_SECRET: "curto", DATABASE_URL: undefined, REDIS_URL: undefined }, async () => {
+    const r = await runRegister();
     assert.equal(r.codigoDeSaida, 1);
     assert.match(r.mensagem, /JWT_SECRET/);
     assert.match(r.mensagem, /DATABASE_URL/);
     assert.doesNotMatch(r.mensagem, /REDIS_URL/);
   });
-  await comAmbiente({ ...PRODUCAO, JWT_SECRET: SEGREDO_VALIDO, REDIS_URL: undefined }, async () => {
-    assert.equal((await executarRegister()).codigoDeSaida, undefined);
+  await withEnvironment({ ...PRODUCTION, JWT_SECRET: VALID_SECRET, REDIS_URL: undefined }, async () => {
+    assert.equal((await runRegister()).codigoDeSaida, undefined);
   });
 });
 
 test("REQ-OPS-06: em produção, register() inicia com segredo válido", async () => {
-  await comAmbiente({ ...PRODUCAO, JWT_SECRET: SEGREDO_VALIDO }, async () => {
-    assert.equal((await executarRegister()).codigoDeSaida, undefined);
+  await withEnvironment({ ...PRODUCTION, JWT_SECRET: VALID_SECRET }, async () => {
+    assert.equal((await runRegister()).codigoDeSaida, undefined);
   });
 });
 
 test("REQ-OPS-06: fora de produção, register() não exige o segredo", async () => {
   for (const nodeEnv of ["development", "test"]) {
-    await comAmbiente({ ...PRODUCAO, NODE_ENV: nodeEnv, JWT_SECRET: undefined }, async () => {
-      assert.equal((await executarRegister()).codigoDeSaida, undefined);
+    await withEnvironment({ ...PRODUCTION, NODE_ENV: nodeEnv, JWT_SECRET: undefined }, async () => {
+      assert.equal((await runRegister()).codigoDeSaida, undefined);
     });
   }
 });
 
 test("REQ-OPS-06: durante o build e no runtime edge, register() não valida (build do Docker não tem o segredo)", async () => {
-  await comAmbiente(
-    { ...PRODUCAO, NEXT_PHASE: "phase-production-build", JWT_SECRET: undefined },
+  await withEnvironment(
+    { ...PRODUCTION, NEXT_PHASE: "phase-production-build", JWT_SECRET: undefined },
     async () => {
-      assert.equal((await executarRegister()).codigoDeSaida, undefined);
+      assert.equal((await runRegister()).codigoDeSaida, undefined);
     },
   );
-  await comAmbiente({ ...PRODUCAO, NEXT_RUNTIME: "edge", JWT_SECRET: undefined }, async () => {
-    assert.equal((await executarRegister()).codigoDeSaida, undefined);
+  await withEnvironment({ ...PRODUCTION, NEXT_RUNTIME: "edge", JWT_SECRET: undefined }, async () => {
+    assert.equal((await runRegister()).codigoDeSaida, undefined);
   });
 });
 
@@ -178,14 +178,14 @@ test("REQ-OPS-06: durante o build e no runtime edge, register() não valida (bui
  * (mesmo vazias): o dotenv dos seeds carrega `.env.local` sem sobrescrever o que
  * já existe no ambiente, e o teste não pode depender do arquivo de quem o roda.
  */
-function rodarSeed(file: string, ambiente: Ambiente) {
+function runSeed(file: string, environment: Environment) {
   return spawnSync("npx", ["tsx", file], {
     cwd: process.cwd(),
     env: {
       ...process.env,
       SEED_USER_PASSWORD: "",
       ADMIN_PASSWORD: "",
-      ...ambiente,
+      ...environment,
     } as NodeJS.ProcessEnv,
     encoding: "utf8",
     shell: true,
@@ -193,27 +193,27 @@ function rodarSeed(file: string, ambiente: Ambiente) {
 }
 
 test("REQ-OPS-09: seed.ts sem SEED_USER_PASSWORD ou com senha curta falha sem gravar nada", async () => {
-  const antes = await prisma.usuario.count();
+  const before = await prisma.usuario.count();
   for (const password of ["", "curta-11chr"]) {
-    const r = rodarSeed("prisma/seed.ts", { SEED_USER_PASSWORD: password });
+    const r = runSeed("prisma/seed.ts", { SEED_USER_PASSWORD: password });
     assert.notEqual(r.status, 0, `senha "${password}" deveria falhar`);
     assert.match(r.stderr, /SEED_USER_PASSWORD/);
   }
-  assert.equal(await prisma.usuario.count(), antes);
+  assert.equal(await prisma.usuario.count(), before);
 });
 
 test("REQ-OPS-09: seed-admin.ts sem ADMIN_PASSWORD ou com senha curta falha sem gravar nada", async () => {
   const mail = email("seedadmin-falha");
-  const antes = await prisma.usuario.count();
+  const before = await prisma.usuario.count();
   for (const password of ["", "curta-11chr"]) {
-    const r = rodarSeed("prisma/seed-admin.ts", {
+    const r = runSeed("prisma/seed-admin.ts", {
       ADMIN_EMAIL: mail,
       ADMIN_PASSWORD: password,
     });
     assert.notEqual(r.status, 0, `senha "${password}" deveria falhar`);
     assert.match(r.stderr, /ADMIN_PASSWORD/);
   }
-  assert.equal(await prisma.usuario.count(), antes);
+  assert.equal(await prisma.usuario.count(), before);
   assert.equal(await prisma.usuario.findUnique({ where: { email: mail } }), null);
 });
 
@@ -221,7 +221,7 @@ test("REQ-OPS-09: seed-admin.ts com ADMIN_PASSWORD válida cria o ADMIN com senh
   const mail = email("seedadmin-ok");
   const password = "SenhaForte-De-Teste-1";
   try {
-    const r = rodarSeed("prisma/seed-admin.ts", {
+    const r = runSeed("prisma/seed-admin.ts", {
       ADMIN_EMAIL: mail,
       ADMIN_PASSWORD: password,
     });

@@ -22,18 +22,18 @@ const URL_POSTGRES = /^postgres(ql)?:\/\/\S+$/i;
 
 /** @returns a lista de problemas (vazia se o ambiente de produção está válido). Nunca inclui valores. */
 export function productionEnvironmentProblems(env: NodeJS.ProcessEnv): string[] {
-  const problemas: string[] = [];
+  const problems: string[] = [];
 
   const jwt = validateJwtSecret(env.JWT_SECRET);
-  if (jwt) problemas.push(jwt);
+  if (jwt) problems.push(jwt);
 
   if (!env.DATABASE_URL || !URL_POSTGRES.test(env.DATABASE_URL)) {
-    problemas.push(
+    problems.push(
       "DATABASE_URL ausente ou inválida: use uma URL postgresql://usuario:senha@host:porta/banco.",
     );
   }
 
-  return problemas;
+  return problems;
 }
 
 export function requireProductionEnvironment(
@@ -42,10 +42,10 @@ export function requireProductionEnvironment(
   if (env.NODE_ENV !== "production") return;
   if (env.NEXT_PHASE === "phase-production-build") return;
 
-  const problemas = productionEnvironmentProblems(env);
-  if (problemas.length === 0) return;
+  const problems = productionEnvironmentProblems(env);
+  if (problems.length === 0) return;
 
-  for (const problema of problemas) console.error(`❌ [config] ${problema}`);
+  for (const problem of problems) console.error(`❌ [config] ${problem}`);
   console.error("❌ [config] A aplicação não vai iniciar.");
   process.exit(1);
 }

@@ -7,13 +7,13 @@
  * `instrumentation.ts` (na inicialização do servidor em produção).
  */
 
-const TAMANHO_MINIMO = 32;
+const MIN_LENGTH = 32;
 
 /**
  * Trechos de valores-exemplo que já circularam no repositório ou em docs.
  * Só o tamanho não basta: o antigo exemplo do `.env.example` tinha 38 caracteres.
  */
-const TRECHOS_DE_EXEMPLO = [
+const EXAMPLE_SNIPPETS = [
   "supersecretkey",
   "seu-segredo",
   "mude-em",
@@ -24,15 +24,15 @@ const TRECHOS_DE_EXEMPLO = [
 /**
  * @returns a mensagem do problema (sem nunca incluir o valor), ou `null` se o segredo é aceitável.
  */
-export function validateJwtSecret(valor: string | undefined): string | null {
-  if (!valor) {
+export function validateJwtSecret(value: string | undefined): string | null {
+  if (!value) {
     return "JWT_SECRET não definido. Gere um valor aleatório com 32+ caracteres.";
   }
-  if (valor.length < TAMANHO_MINIMO) {
-    return `JWT_SECRET curto demais: use pelo menos ${TAMANHO_MINIMO} caracteres.`;
+  if (value.length < MIN_LENGTH) {
+    return `JWT_SECRET curto demais: use pelo menos ${MIN_LENGTH} caracteres.`;
   }
-  const minusculo = valor.toLowerCase();
-  if (TRECHOS_DE_EXEMPLO.some((trecho) => minusculo.includes(trecho))) {
+  const lowercase = value.toLowerCase();
+  if (EXAMPLE_SNIPPETS.some((snippet) => lowercase.includes(snippet))) {
     return "JWT_SECRET parece um valor-exemplo. Gere um valor aleatório.";
   }
   return null;

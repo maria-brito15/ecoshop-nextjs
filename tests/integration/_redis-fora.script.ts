@@ -6,28 +6,28 @@ process.env.REDIS_URL = "redis://127.0.0.1:1";
 import { redisGet, redisSet, redisDel, redisDelPattern } from "@/lib/redis";
 import { rateLimit } from "@/lib/rate-limit";
 
-async function medir<T>(fn: () => Promise<T>) {
-  const inicio = Date.now();
-  const valor = await fn();
-  return { valor, ms: Date.now() - inicio };
+async function measure<T>(fn: () => Promise<T>) {
+  const start = Date.now();
+  const value = await fn();
+  return { valor: value, ms: Date.now() - start };
 }
 
 async function main() {
-  const get = await medir(() => redisGet("chave"));
-  const set = await medir(() => redisSet("chave", { a: 1 }, 10));
-  const del = await medir(() => redisDel("chave"));
-  const padrao = await medir(() => redisDelPattern("chave:*"));
+  const get = await measure(() => redisGet("chave"));
+  const set = await measure(() => redisSet("chave", { a: 1 }, 10));
+  const del = await measure(() => redisDel("chave"));
+  const pattern = await measure(() => redisDelPattern("chave:*"));
   const config = { limit: 1, windowSeconds: 60 };
-  const limite1 = await medir(() => rateLimit("redis-fora", config));
-  const limite2 = await medir(() => rateLimit("redis-fora", config));
+  const limit1 = await measure(() => rateLimit("redis-fora", config));
+  const limit2 = await measure(() => rateLimit("redis-fora", config));
 
   console.log(
     "RESULTADO " +
       JSON.stringify({
         get: get.valor,
-        tempos: [get.ms, set.ms, del.ms, padrao.ms, limite1.ms, limite2.ms],
-        limite1: limite1.valor,
-        limite2: limite2.valor,
+        tempos: [get.ms, set.ms, del.ms, pattern.ms, limit1.ms, limit2.ms],
+        limite1: limit1.valor,
+        limite2: limit2.valor,
       }),
   );
   process.exit(0);

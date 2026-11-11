@@ -28,8 +28,8 @@ import type {
   LoginBody,
   LoginResponse,
   OkResponse,
-  RegistroBody,
-  RegistroResponse,
+  RegistrationBody,
+  RegistrationResponse,
 } from "@/types/api";
 
 /**
@@ -88,6 +88,6 @@ export function useLogout() {
  *   if (result) router.push("/");
  * };
  */
-export function useRegistro() {
-  return useMutation<RegistroResponse, RegistroBody>({ method: "POST" });
+export function useRegistration() {
+  return useMutation<RegistrationResponse, RegistrationBody>({ method: "POST" });
 }

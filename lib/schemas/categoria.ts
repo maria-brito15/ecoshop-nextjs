@@ -67,5 +67,5 @@ export const updateCategorySchema = z.object({
 });
 
 // Tipos inferidos para uso nos services
-export type CategoriaInput = z.infer<typeof categorySchema>;
-export type AtualizarCategoriaInput = z.infer<typeof updateCategorySchema>;
+export type CategoryInput = z.infer<typeof categorySchema>;
+export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;

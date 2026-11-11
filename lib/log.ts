@@ -10,41 +10,41 @@
  * Proporcional ao projeto (Art. XIII): sem tracing distribuído nem APM.
  */
 
-type Nivel = "info" | "warn" | "error";
+type Level = "info" | "warn" | "error";
 
 const SENSITIVE_KEY =
   /senha|password|passwd|token|secret|key|authorization|cookie|prediction/i;
-const CREDENCIAL_EM_URL = /([a-z][a-z0-9+.-]*:\/\/)[^@\s/]*@/gi;
-const PROFUNDIDADE_MAXIMA = 4;
+const CREDENTIAL_IN_URL = /([a-z][a-z0-9+.-]*:\/\/)[^@\s/]*@/gi;
+const MAX_DEPTH = 4;
 
 function maskText(text: string): string {
-  return text.replace(CREDENCIAL_EM_URL, "$1[REDIGIDO]@");
+  return text.replace(CREDENTIAL_IN_URL, "$1[REDIGIDO]@");
 }
 
-function redigir(valor: unknown, profundidade = 0): unknown {
-  if (typeof valor === "string") return maskText(valor);
-  if (valor === null || typeof valor !== "object") return valor;
-  if (profundidade >= PROFUNDIDADE_MAXIMA) return "[PROFUNDO]";
-  if (valor instanceof Error) return serializeError(valor);
-  if (Array.isArray(valor)) return valor.map((v) => redigir(v, profundidade + 1));
+function redact(value: unknown, depth = 0): unknown {
+  if (typeof value === "string") return maskText(value);
+  if (value === null || typeof value !== "object") return value;
+  if (depth >= MAX_DEPTH) return "[PROFUNDO]";
+  if (value instanceof Error) return serializeError(value);
+  if (Array.isArray(value)) return value.map((v) => redact(v, depth + 1));
 
-  const saida: Record<string, unknown> = {};
-  for (const [key, v] of Object.entries(valor)) {
-    saida[key] = SENSITIVE_KEY.test(key)
+  const output: Record<string, unknown> = {};
+  for (const [key, v] of Object.entries(value)) {
+    output[key] = SENSITIVE_KEY.test(key)
       ? "[REDIGIDO]"
-      : redigir(v, profundidade + 1);
+      : redact(v, depth + 1);
   }
-  return saida;
+  return output;
 }
 
 /** Erro → objeto serializável, sem segredos (a pilha é cortada em 6 linhas). */
 export function serializeError(err: unknown): Record<string, unknown> {
   if (err instanceof Error) {
-    const codigo = (err as { code?: unknown }).code;
+    const code = (err as { code?: unknown }).code;
     return {
       nome: err.name,
       mensagem: maskText(err.message),
-      ...(typeof codigo === "string" ? { codigo } : {}),
+      ...(typeof code === "string" ? { codigo: code } : {}),
       ...(err.stack
         ? { pilha: maskText(err.stack.split("\n").slice(0, 6).join("\n")) }
         : {}),
@@ -53,37 +53,37 @@ export function serializeError(err: unknown): Record<string, unknown> {
   return { valor: maskText(String(err)) };
 }
 
-function writeLog(nivel: Nivel, evento: string, context: Record<string, unknown> = {}) {
-  const linha = JSON.stringify({
+function writeLog(level: Level, event: string, context: Record<string, unknown> = {}) {
+  const line = JSON.stringify({
     ts: new Date().toISOString(),
-    nivel,
-    evento,
-    ...(redigir(context) as Record<string, unknown>),
+    nivel: level,
+    evento: event,
+    ...(redact(context) as Record<string, unknown>),
   });
-  if (nivel === "error") console.error(linha);
-  else if (nivel === "warn") console.warn(linha);
-  else console.log(linha);
+  if (level === "error") console.error(line);
+  else if (level === "warn") console.warn(line);
+  else console.log(line);
 }
 
 export const log = {
-  info: (evento: string, context?: Record<string, unknown>) =>
-    writeLog("info", evento, context),
-  warn: (evento: string, context?: Record<string, unknown>) =>
-    writeLog("warn", evento, context),
-  error: (evento: string, context?: Record<string, unknown>) =>
-    writeLog("error", evento, context),
+  info: (event: string, context?: Record<string, unknown>) =>
+    writeLog("info", event, context),
+  warn: (event: string, context?: Record<string, unknown>) =>
+    writeLog("warn", event, context),
+  error: (event: string, context?: Record<string, unknown>) =>
+    writeLog("error", event, context),
 };
 
 /**
  * Cria uma função que só deixa passar uma chamada a cada `intervaloMs` por
  * `chave`: evita inundar o log quando uma dependência fica fora do ar.
  */
-export function throttle(intervaloMs: number) {
-  const ultimo = new Map<string, number>();
-  return (key: string, agora: number = Date.now()): boolean => {
-    const anterior = ultimo.get(key);
-    if (anterior !== undefined && agora - anterior < intervaloMs) return false;
-    ultimo.set(key, agora);
+export function throttle(intervalMs: number) {
+  const last = new Map<string, number>();
+  return (key: string, now: number = Date.now()): boolean => {
+    const previous = last.get(key);
+    if (previous !== undefined && now - previous < intervalMs) return false;
+    last.set(key, now);
     return true;
   };
 }

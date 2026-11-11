@@ -16,7 +16,7 @@
  */
 
 import { createHash, randomBytes } from "node:crypto";
-import { redis, withTimeout, TIMEOUT_COMANDO_MS } from "@/lib/redis";
+import { redis, withTimeout, COMMAND_TIMEOUT_MS } from "@/lib/redis";
 import { REFRESH_TOKEN_SECONDS } from "./constantes";
 
 /** Onde os tokens de renovação ficam. Lança se o armazenamento está indisponível. */
@@ -40,31 +40,31 @@ const hashDoToken = (token: string) =>
 const tokenKey = (hash: string) => `refresh:${hash}`;
 const refreshUserKey = (userId: number) => `refresh_usuario:${userId}`;
 
-const withShortTimeout = <T>(promessa: Promise<T>) =>
-  withTimeout(promessa, TIMEOUT_COMANDO_MS);
+const withShortTimeout = <T>(promise: Promise<T>) =>
+  withTimeout(promise, COMMAND_TIMEOUT_MS);
 
 class RedisRefreshTokenStore implements RefreshTokenStore {
   async create(token: string, userId: number): Promise<void> {
     const hash = hashDoToken(token);
-    const conjunto = refreshUserKey(userId);
+    const set = refreshUserKey(userId);
     await withShortTimeout(
       redis
         .multi()
         .set(tokenKey(hash), String(userId), {
           EX: REFRESH_TOKEN_SECONDS,
         })
-        .sAdd(conjunto, hash)
-        .expire(conjunto, REFRESH_TOKEN_SECONDS)
+        .sAdd(set, hash)
+        .expire(set, REFRESH_TOKEN_SECONDS)
         .exec(),
     );
   }
 
   async consume(token: string): Promise<number | null> {
     const hash = hashDoToken(token);
-    const dono = await withShortTimeout(redis.getDel(tokenKey(hash)));
-    if (dono === null) return null;
+    const owner = await withShortTimeout(redis.getDel(tokenKey(hash)));
+    if (owner === null) return null;
 
-    const userId = Number(dono);
+    const userId = Number(owner);
     if (!Number.isInteger(userId)) return null;
     // Limpeza do conjunto: se falhar, o hash vira lixo até o conjunto expirar.
     await withShortTimeout(redis.sRem(refreshUserKey(userId), hash)).catch(() => undefined);
@@ -76,10 +76,10 @@ class RedisRefreshTokenStore implements RefreshTokenStore {
   }
 
   async revokeAll(userId: number): Promise<void> {
-    const conjunto = refreshUserKey(userId);
-    const hashes = await withShortTimeout(redis.sMembers(conjunto));
+    const set = refreshUserKey(userId);
+    const hashes = await withShortTimeout(redis.sMembers(set));
     await withShortTimeout(
-      redis.del([...hashes.map(tokenKey), conjunto]),
+      redis.del([...hashes.map(tokenKey), set]),
     );
   }
 }

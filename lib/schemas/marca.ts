@@ -72,5 +72,5 @@ export const updateBrandSchema = z.object({
 });
 
 // Tipos inferidos para uso nos services
-export type MarcaInput = z.infer<typeof brandSchema>;
-export type AtualizarMarcaInput = z.infer<typeof updateBrandSchema>;
+export type BrandInput = z.infer<typeof brandSchema>;
+export type UpdateBrandInput = z.infer<typeof updateBrandSchema>;

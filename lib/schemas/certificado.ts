@@ -75,7 +75,7 @@ export const updateCertificateSchema = z.object({
 });
 
 // Tipos inferidos para uso nos services
-export type CertificadoInput = z.infer<typeof certificateSchema>;
-export type AtualizarCertificadoInput = z.infer<
+export type CertificateInput = z.infer<typeof certificateSchema>;
+export type UpdateCertificateInput = z.infer<
   typeof updateCertificateSchema
 >;
