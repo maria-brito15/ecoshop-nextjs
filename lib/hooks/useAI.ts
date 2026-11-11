@@ -1,45 +1,43 @@
 // lib/hooks/useAI.ts
 
 /**
- * ============================================================================
- * IA HOOKS
- * ============================================================================
- * Hooks para interação com as funcionalidades de Inteligência Artificial do EcoShop.
+ * AI HOOKS
  *
- * Funcionalidades:
- * - Chat: conversa com o assistente de sustentabilidade (Gemini)
- * - Scan: análise de imagem para identificar materiais recicláveis (Azure Vision + Gemini)
+ * Hooks for interacting with EcoShop's Artificial Intelligence features.
  *
- * Por que hooks separados?
- * - Cada funcionalidade tem requisitos diferentes de payload/resposta
- * - Chat usa JSON, Scan usa FormData (upload de arquivo)
+ * Features:
+ * - Chat: conversation with the sustainability assistant (Gemini)
+ * - Scan: image analysis to identify recyclable materials (Azure Vision + Gemini)
+ *
+ * Why separate hooks?
+ * - Each feature has different payload/response requirements
+ * - Chat uses JSON, Scan uses FormData (file upload)
  *
  * Endpoints:
- * - Chat: POST /api/ia/chat (público)
- * - Scan: POST /api/ia/scan (requer autenticação)
- * ============================================================================
+ * - Chat: POST /api/ia/chat (requires authentication)
+ * - Scan: POST /api/ia/scan (requires authentication)
  */
 
 import { useMutation } from "./useMutation";
 import type { ChatBody, ChatResponse, ScanResponse } from "@/types/api";
 
 /**
- * Hook para chat com assistente de sustentabilidade.
- * Endpoint público — qualquer usuário pode usar.
+ * Hook for the chat with the sustainability assistant.
+ * Requires authentication.
  *
- * O chat mantém histórico da conversa para contexto.
+ * The chat keeps the conversation history for context.
  *
- * @returns Mutation hook para envio de mensagens ao chat
+ * @returns Mutation hook for sending messages to the chat
  *
  * @example
  * const chat = useChat();
  *
- * const enviarMensagem = async (msg, historico) => {
- *   const result = await chat.executar("/api/ia/chat", {
+ * const sendMessage = async (msg, history) => {
+ *   const result = await chat.execute("/api/ia/chat", {
  *     mensagem: msg,
- *     historico
+ *     historico: history
  *   });
- *   if (result) setResposta(result.resposta);
+ *   if (result) setReply(result.resposta);
  * };
  */
 export function useChat() {
@@ -47,24 +45,24 @@ export function useChat() {
 }
 
 /**
- * Hook para análise de imagem (EcoScan IA).
- * Requer autenticação — usuário precisa estar logado.
+ * Hook for image analysis (EcoScan AI).
+ * Requires authentication — the user must be signed in.
  *
- * O corpo da requisição deve ser um FormData contendo:
- * - image: File (a imagem a ser analisada)
+ * The request body must be a FormData containing:
+ * - image: File (the image to analyze)
  *
- * @returns Mutation hook para envio de imagens para análise
+ * @returns Mutation hook for sending images for analysis
  *
  * @example
  * const scan = useScan();
  * const formData = new FormData();
- * formData.append("image", imagemFile);
- * const result = await scan.executar("/api/ia/scan", formData);
+ * formData.append("image", imageFile);
+ * const result = await scan.execute("/api/ia/scan", formData);
  *
  * if (result?.sucesso) {
- *   console.log(`Material identificado: ${result.material}`);
- *   console.log(`Confiança: ${result.confianca}%`);
- *   console.log(`Análise: ${result.analise_sustentabilidade}`);
+ *   console.log(`Identified material: ${result.material}`);
+ *   console.log(`Confidence: ${result.confianca}%`);
+ *   console.log(`Analysis: ${result.analise_sustentabilidade}`);
  * }
  */
 export function useScan() {

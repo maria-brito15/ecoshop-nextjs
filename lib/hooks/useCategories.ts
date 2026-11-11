@@ -1,27 +1,25 @@
 // lib/hooks/useCategories.ts
 
 /**
- * ============================================================================
- * CATEGORIAS HOOKS
- * ============================================================================
- * Coleção de hooks para operações CRUD de categorias.
+ * CATEGORIES HOOKS
  *
- * Categorias são usadas para:
- * - Filtrar produtos na listagem
- * - Organizar o catálogo por tipo (roupas, alimentos, cosméticos, etc.)
- * - Navegação no frontend
+ * Collection of hooks for category CRUD operations.
  *
- * Permissões:
- * - GET (listar/buscar): público (qualquer usuário pode ver)
- * - POST, PUT, DELETE: requer autenticação ADMIN
+ * Categories are used to:
+ * - Filter products in the listing
+ * - Organize the catalog by type (clothing, food, cosmetics, etc.)
+ * - Frontend navigation
+ *
+ * Permissions:
+ * - GET (list/fetch): public (any user can see)
+ * - POST, PUT, DELETE: requires ADMIN authentication
  *
  * Endpoints:
- * - Listagem: GET /api/categorias
- * - Busca: GET /api/categorias/:id
- * - Criar: POST /api/categorias (admin)
- * - Atualizar: PUT /api/categorias/:id (admin)
- * - Deletar: DELETE /api/categorias/:id (admin)
- * ============================================================================
+ * - List: GET /api/categorias
+ * - Fetch: GET /api/categorias/:id
+ * - Create: POST /api/categorias (admin)
+ * - Update: PUT /api/categorias/:id (admin)
+ * - Delete: DELETE /api/categorias/:id (admin)
  */
 
 import { useFetch } from "./useFetch";
@@ -37,40 +35,40 @@ import type {
 } from "@/types/api";
 
 /**
- * Lista todas as categorias disponíveis.
- * Endpoint público — usado no menu de navegação e filtros.
+ * Lists all available categories.
+ * Public endpoint — used in the navigation menu and filters.
  *
- * @returns Hook com array de categorias, loading e erro
+ * @returns Hook with the category array, loading and error
  *
  * @example
- * const { data } = useListarCategorias();
- * const categorias = data?.categorias ?? [];
+ * const { data } = useListCategories();
+ * const categories = data?.categorias ?? [];
  */
 export function useListCategories() {
   return useFetch<ListCategoriesResponse>("/api/categorias");
 }
 
 /**
- * Busca uma categoria específica pelo ID.
+ * Fetches a specific category by ID.
  *
- * @param id - ID da categoria (se null, hook não executa)
- * @returns Hook com dados da categoria
+ * @param id - Category ID (if null, the hook does not run)
+ * @returns Hook with the category data
  */
 export function useGetCategory(id: number | null) {
   return useFetch<GetCategoryResponse>(id ? `/api/categorias/${id}` : null);
 }
 
 /**
- * Cria uma nova categoria.
- * Requer autenticação ADMIN.
+ * Creates a new category.
+ * Requires ADMIN authentication.
  *
- * @returns Mutation hook para criação de categoria
+ * @returns Mutation hook for category creation
  *
  * @example
- * const criar = useCriarCategoria();
- * await criar.executar("/api/categorias", {
- *   nome: "Eletrônicos Sustentáveis",
- *   descricao: "Produtos eletrônicos com baixo consumo energético"
+ * const create = useCreateCategory();
+ * await create.execute("/api/categorias", {
+ *   nome: "Sustainable Electronics",
+ *   descricao: "Electronic products with low energy consumption"
  * });
  */
 export function useCreateCategory() {
@@ -81,10 +79,10 @@ export function useCreateCategory() {
 }
 
 /**
- * Atualiza uma categoria existente.
- * Requer autenticação ADMIN.
+ * Updates an existing category.
+ * Requires ADMIN authentication.
  *
- * @returns Mutation hook para atualização de categoria
+ * @returns Mutation hook for category update
  */
 export function useUpdateCategory() {
   return useMutation<UpdateCategoryResponse, UpdateCategoryBody>({
@@ -94,13 +92,13 @@ export function useUpdateCategory() {
 }
 
 /**
- * Deleta uma categoria.
- * Requer autenticação ADMIN.
+ * Deletes a category.
+ * Requires ADMIN authentication.
  *
- * ATENÇÃO: Categorias com produtos associados podem não ser deletadas
- * devido a constraint de chave estrangeira.
+ * ATTENTION: Categories with associated products may not be deleted
+ * because of the foreign key constraint.
  *
- * @returns Mutation hook para deleção de categoria
+ * @returns Mutation hook for category deletion
  */
 export function useDeleteCategory() {
   return useMutation<OkResponse>({

@@ -1,43 +1,41 @@
 // lib/schemas/certificate.ts
 
 /**
- * ============================================================================
- * CERTIFICADO SCHEMAS (Zod)
- * ============================================================================
- * Schemas de validação para operações CRUD de certificados de sustentabilidade.
+ * CERTIFICATE SCHEMAS (Zod)
  *
- * Certificados são selos que atestam que um produto atende a padrões ambientais.
- * Exemplos reais:
- * - Cruelty Free (PETA) → não testado em animais
- * - Orgânico Brasil (SisOrg) → produtos orgânicos certificados
- * - FSC (Forest Stewardship Council) → manejo florestal responsável
- * - Eureciclo → compensação ambiental de embalagens
+ * Validation schemas for sustainability certificate CRUD operations.
  *
- * Regras de negócio:
- * - Nome do certificado é único no sistema
- * - Órgão emissor é obrigatório (ex: "PETA", "SisOrg", "FSC")
- * - Descrição é opcional
+ * Certificates are seals attesting that a product meets environmental standards.
+ * Real examples:
+ * - Cruelty Free (PETA) → not tested on animals
+ * - Organic Brazil (SisOrg) → certified organic products
+ * - FSC (Forest Stewardship Council) → responsible forest management
+ * - Eureciclo → environmental offsetting of packaging
  *
- * Endpoints que usam estes schemas:
+ * Business rules:
+ * - The certificate name is unique in the system
+ * - The issuing body is required (e.g. "PETA", "SisOrg", "FSC")
+ * - The description is optional
+ *
+ * Endpoints that use these schemas:
  * - POST /api/certificados
  * - PUT /api/certificados/:id
- * ============================================================================
  */
 
 import { z } from "zod";
 
 /**
- * Schema para criação de um novo certificado.
+ * Schema for creating a new certificate.
  *
- * Regras:
- * - nome: obrigatório, não vazio (ex: "Cruelty Free", "Orgânico Brasil")
- * - descricao: opcional — detalhamento do que o selo garante
- * - orgaoEmissor: obrigatório, não vazio (entidade responsável pela certificação)
+ * Rules:
+ * - nome: required, not empty (e.g. "Cruelty Free", "Organic Brazil")
+ * - descricao: optional — details of what the seal guarantees
+ * - orgaoEmissor: required, not empty (the certifying entity)
  *
  * @example
- * const dados = {
+ * const data = {
  *   nome: "Cruelty Free",
- *   descricao: "Garante que o produto não foi testado em animais",
+ *   descricao: "Ensures the product was not tested on animals",
  *   orgaoEmissor: "PETA"
  * };
  */
@@ -48,22 +46,22 @@ export const certificateSchema = z.object({
 });
 
 /**
- * Schema para atualização de um certificado existente.
+ * Schema for updating an existing certificate.
  *
- * TODOS os campos são opcionais — permite atualização parcial.
- * Útil para corrigir apenas um campo sem precisar enviar todos.
+ * ALL fields are optional — allows partial updates.
+ * Useful to fix a single field without sending all of them.
  *
- * Regras (quando presentes):
- * - nome: mínimo 1 caractere
- * - descricao: string livre
- * - orgaoEmissor: mínimo 1 caractere
+ * Rules (when present):
+ * - nome: minimum 1 character
+ * - descricao: free string
+ * - orgaoEmissor: minimum 1 character
  *
  * @example
- * // Corrigir órgão emissor
- * const dados = { orgaoEmissor: "Instituto IBD" };
+ * // Fix the issuing body
+ * const data = { orgaoEmissor: "IBD Institute" };
  *
- * // Atualizar apenas descrição
- * const dados = { descricao: "Certificação internacional de produtos orgânicos" };
+ * // Update only the description
+ * const data = { descricao: "International certification of organic products" };
  */
 export const updateCertificateSchema = z.object({
   nome: z.string().min(1, "Name cannot be empty").optional(),
@@ -74,7 +72,7 @@ export const updateCertificateSchema = z.object({
     .optional(),
 });
 
-// Tipos inferidos para uso nos services
+// Inferred types for use in the services
 export type CertificateInput = z.infer<typeof certificateSchema>;
 export type UpdateCertificateInput = z.infer<
   typeof updateCertificateSchema

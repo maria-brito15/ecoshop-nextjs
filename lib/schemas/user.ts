@@ -1,39 +1,37 @@
 // lib/schemas/user.ts
 
 /**
- * ============================================================================
- * USUÁRIO SCHEMAS (Zod)
- * ============================================================================
- * Schemas de validação para operações relacionadas a usuários.
+ * USER SCHEMAS (Zod)
  *
- * Por que Zod?
- * - Validação declarativa com inferência de tipos TypeScript
- * - Mensagens de erro customizáveis
- * - Segurança contra dados maliciosos (sanitização automática)
+ * Validation schemas for user-related operations.
  *
- * Este arquivo contém schemas para:
- * - Login (email + senha)
- * - Registro público (qualquer pessoa pode criar conta)
- * - Cadastro administrativo (admin pode criar usuários de qualquer tipo)
- * - Atualização de perfil (usuário editando seus próprios dados)
+ * Why Zod?
+ * - Declarative validation with TypeScript type inference
+ * - Customizable error messages
+ * - Protection against malicious data (automatic sanitization)
  *
- * IMPORTANTE: Senhas nunca são validadas em texto plano além do tamanho mínimo.
- * A segurança das senhas é responsabilidade do backend (bcrypt).
- * ============================================================================
+ * This file contains schemas for:
+ * - Login (email + password)
+ * - Public registration (anyone can create an account)
+ * - Admin registration (an admin can create users of any type)
+ * - Profile update (a user editing their own data)
+ *
+ * IMPORTANT: Passwords are never validated in plain text beyond the minimum length.
+ * Password security is the backend's responsibility (bcrypt).
  */
 
 import { z } from "zod";
 
 /**
- * E-mail normalizado: sem espaços nas pontas e em minúsculas (REQ-AUTH-15).
- * A normalização acontece antes da checagem de formato.
+ * Normalized email: no surrounding spaces and lowercase (REQ-AUTH-15).
+ * Normalization happens before the format check.
  */
 const emailSchema = z.string().trim().toLowerCase().email("Invalid email");
 
 /**
- * O bcrypt só usa os primeiros 72 bytes da senha: o resto seria ignorado em
- * silêncio. Conta bytes (UTF-8), não caracteres, e usa `TextEncoder`, que
- * existe também no navegador (REQ-AUTH-16).
+ * bcrypt only uses the first 72 bytes of the password: the rest would be silently
+ * ignored. Counts bytes (UTF-8), not characters, and uses `TextEncoder`, which
+ * also exists in the browser (REQ-AUTH-16).
  */
 const PASSWORD_MAX_BYTES = 72;
 const passwordSchema = z
@@ -45,15 +43,15 @@ const passwordSchema = z
   );
 
 /**
- * Schema de validação para login.
+ * Validation schema for login.
  *
- * Regras:
- * - email: formato válido (ex: usuario@dominio.com)
- * - senha: não vazia (mínimo 1 caractere)
+ * Rules:
+ * - email: valid format (e.g. user@domain.com)
+ * - senha: not empty (minimum 1 character)
  *
- * NOTA: Não validamos tamanho mínimo da senha no login porque
- * usuários antigos podem ter senhas curtas (antes da regra de 8 caracteres).
- * A validação de tamanho é aplicada apenas no cadastro.
+ * NOTE: We do not validate a minimum password length on login because
+ * older users may have short passwords (from before the 8-character rule).
+ * Length validation is applied only on registration.
  */
 export const loginSchema = z.object({
   email: emailSchema,
@@ -61,23 +59,23 @@ export const loginSchema = z.object({
 });
 
 /**
- * Schema para cadastro de usuários realizado por ADMIN.
+ * Schema for user registration performed by an ADMIN.
  *
- * Diferencia do registro público por permitir:
- * - Tipo de usuário (CLIENTE, MARCA, ADMIN)
+ * It differs from public registration by allowing:
+ * - The user type (CLIENTE, MARCA, ADMIN)
  *
- * Regras:
- * - nome: mínimo 3 caracteres
- * - email: formato válido
- * - telefone: opcional, string livre
- * - senha: mínimo 8 caracteres (recomendação de segurança OWASP)
- * - tipo: enum com padrão "CLIENTE"
+ * Rules:
+ * - nome: minimum 3 characters
+ * - email: valid format
+ * - telefone: optional, free string
+ * - senha: minimum 8 characters (OWASP security recommendation)
+ * - tipo: enum with default "CLIENTE"
  *
  * @example
- * const dados = {
- *   nome: "João Silva",
- *   email: "joao@exemplo.com",
- *   senha: "senha123456",
+ * const data = {
+ *   nome: "John Smith",
+ *   email: "john@example.com",
+ *   senha: "password123456",
  *   tipo: "ADMIN"
  * };
  */
@@ -90,20 +88,20 @@ export const adminRegistrationSchema = z.object({
 });
 
 /**
- * Schema para registro público de usuários (qualquer pessoa).
+ * Schema for public user registration (anyone).
  *
- * Regras:
- * - nome: mínimo 3 caracteres
- * - email: formato válido
- * - telefone: opcional, string livre
- * - senha: mínimo 8 caracteres
- * - tipo: restrito a CLIENTE ou MARCA (ADMIN não pode ser criado via registro público)
- * - marcaNome: obrigatório quando tipo é MARCA (REQ-AUTH-14); o pedido de marca
- *   fica pendente de aprovação de um ADMIN (REQ-AUTH-11, ADR-0018)
+ * Rules:
+ * - nome: minimum 3 characters
+ * - email: valid format
+ * - telefone: optional, free string
+ * - senha: minimum 8 characters
+ * - tipo: restricted to CLIENTE or MARCA (ADMIN cannot be created via public registration)
+ * - marcaNome: required when tipo is MARCA (REQ-AUTH-14); the brand request
+ *   stays pending until an ADMIN approves it (REQ-AUTH-11, ADR-0018)
  *
- * Por que restringir ADMIN?
- * - Segurança: apenas admins existentes podem criar outros admins
- * - Fluxo: novo usuário se cadastra como CLIENTE ou MARCA
+ * Why restrict ADMIN?
+ * - Security: only existing admins can create other admins
+ * - Flow: a new user registers as CLIENTE or MARCA
  */
 export const publicRegistrationSchema = z
   .object({
@@ -126,34 +124,34 @@ export const publicRegistrationSchema = z
   });
 
 /**
- * Schema para atualização de perfil de usuário.
+ * Schema for updating a user profile.
  *
- * TODOS os campos são opcionais — permite atualização parcial.
- * O usuário pode atualizar apenas os campos que desejar.
+ * ALL fields are optional — allows partial updates.
+ * The user can update only the fields they want.
  *
- * Regras (quando presentes):
- * - nome: mínimo 3 caracteres (se fornecido)
- * - email: formato válido (se fornecido)
- * - telefone: string livre (se fornecido)
- * - senha: mínimo 8 caracteres (se fornecida)
+ * Rules (when present):
+ * - nome: minimum 3 characters (if provided)
+ * - email: valid format (if provided)
+ * - telefone: free string (if provided)
+ * - senha: minimum 8 characters (if provided)
  *
- * NOTA: A senha é hasheada novamente no service antes de salvar.
+ * NOTE: The password is hashed again in the service before saving.
  *
  * @example
- * // Atualizar apenas o nome
- * const dados = { nome: "João Silva Junior" };
+ * // Update only the name
+ * const data = { nome: "John Smith Jr" };
  *
- * // Atualizar nome e telefone
- * const dados = { nome: "João", telefone: "(11) 99999-8888" };
+ * // Update name and phone
+ * const data = { nome: "John", telefone: "(11) 99999-8888" };
  *
- * // Atualizar senha
- * const dados = { senha: "nova_senha_segura_123" };
+ * // Update the password
+ * const data = { senha: "new_secure_password_123" };
  */
 export const updateUserSchema = z.object({
   nome: z.string().min(3, "Name must have at least 3 characters").optional(),
   email: emailSchema.optional(),
   telefone: z.string().optional(),
   senha: passwordSchema.optional(),
-  // Obrigatória para trocar a PRÓPRIA senha (REQ-AUTH-21); o service decide.
+  // Required to change your OWN password (REQ-AUTH-21); the service decides.
   senhaAtual: z.string().min(1, "Current password is required").optional(),
 });

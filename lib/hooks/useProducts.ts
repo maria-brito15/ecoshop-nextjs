@@ -1,28 +1,26 @@
 // lib/hooks/useProducts.ts
 
 /**
- * ============================================================================
- * PRODUTOS HOOKS
- * ============================================================================
- * Coleção de hooks para operações CRUD de produtos.
+ * PRODUCTS HOOKS
  *
- * Cada hook encapsula:
- * - URL do endpoint
- * - Método HTTP
- * - Invalidação de cache após mutations
+ * Collection of hooks for product CRUD operations.
  *
- * Por que hooks específicos?
- * - Centraliza URLs (evita strings espalhadas pelo código)
- * - Garante tipagem consistente
- * - Facilita refatoração (mudar endpoint em um único lugar)
+ * Each hook encapsulates:
+ * - Endpoint URL
+ * - HTTP method
+ * - Cache invalidation after mutations
+ *
+ * Why specific hooks?
+ * - Centralizes URLs (avoids strings scattered across the code)
+ * - Guarantees consistent typing
+ * - Easier refactoring (change an endpoint in a single place)
  *
  * Endpoints:
- * - Listagem: GET /api/produtos (com paginação e filtros)
- * - Busca: GET /api/produtos/:id
- * - Criar: POST /api/produtos (admin)
- * - Atualizar: PUT /api/produtos/:id (admin)
- * - Deletar: DELETE /api/produtos/:id (admin)
- * ============================================================================
+ * - List: GET /api/produtos (with pagination and filters)
+ * - Fetch: GET /api/produtos/:id
+ * - Create: POST /api/produtos (admin)
+ * - Update: PUT /api/produtos/:id (admin)
+ * - Delete: DELETE /api/produtos/:id (admin)
  */
 
 import { useFetch } from "./useFetch";
@@ -36,7 +34,7 @@ import type {
   UpdateProductResponse,
 } from "@/types/api";
 
-/** Ordenações aceitas por `useListarProdutos` (REQ-CAT-06). */
+/** Orderings accepted by `useListProducts` (REQ-CAT-06). */
 export type ProductOrder =
   | "relevancia"
   | "preco_asc"
@@ -52,26 +50,26 @@ export interface ListProductsFilters {
 }
 
 /**
- * Lista produtos com paginação e filtros.
+ * Lists products with pagination and filters.
  *
- * `marcaId`, `precoMax` e `sort` são aplicados pelo servidor ao catálogo
- * inteiro (não só à página devolvida) — REQ-CAT-06/07.
+ * `marcaId`, `precoMax` and `sort` are applied by the server to the whole
+ * catalog (not just the returned page) — REQ-CAT-06/07.
  *
- * @param page - Número da página (1-indexado, padrão: 1)
- * @param size - Itens por página (padrão: 12)
- * @param categoryId - Filtro opcional por categoria
- * @param name - Busca textual por nome (case-insensitive)
- * @param filters - Filtros adicionais: marca, preço máximo, ordenação
- * @returns Hook com dados paginados, loading e erro
+ * @param page - Page number (1-indexed, default: 1)
+ * @param size - Items per page (default: 12)
+ * @param categoryId - Optional category filter
+ * @param name - Text search by name (case-insensitive)
+ * @param filters - Additional filters: brand, maximum price, ordering
+ * @returns Hook with paginated data, loading and error
  *
  * @example
- * const { data, carregando } = useListarProdutos(1, 12, 5, "camiseta", {
+ * const { data, loading } = useListProducts(1, 12, 5, "t-shirt", {
  *   marcaId: 2,
  *   precoMax: 150,
  *   sort: "preco_asc",
  * });
- * // data?.produtos = array de produtos
- * // data?.total = total de produtos que atendem aos filtros
+ * // data?.produtos = array of products
+ * // data?.total = total products matching the filters
  */
 export function useListProducts(
   page = 1,
@@ -94,29 +92,29 @@ export function useListProducts(
 }
 
 /**
- * Busca um produto específico pelo ID.
+ * Fetches a specific product by ID.
  *
- * @param id - ID do produto (se null, hook não executa)
- * @returns Hook com dados do produto, loading e erro
+ * @param id - Product ID (if null, the hook does not run)
+ * @returns Hook with the product data, loading and error
  *
  * @example
- * const { data } = useBuscarProduto(produtoId);
- * const produto = data?.produto;
+ * const { data } = useGetProduct(productId);
+ * const product = data?.produto;
  */
 export function useGetProduct(id: number | null) {
   return useFetch<GetProductResponse>(id ? `/api/produtos/${id}` : null);
 }
 
 /**
- * Cria um novo produto.
- * Requer autenticação ADMIN.
+ * Creates a new product.
+ * Requires ADMIN authentication.
  *
- * @returns Mutation hook para criação de produto
+ * @returns Mutation hook for product creation
  *
  * @example
- * const criar = useCriarProduto();
- * await criar.executar("/api/produtos", {
- *   nome: "Camiseta Orgânica",
+ * const create = useCreateProduct();
+ * await create.execute("/api/produtos", {
+ *   nome: "Organic T-Shirt",
  *   preco: 89.90,
  *   categoriaId: 1,
  *   marcaId: 2
@@ -130,15 +128,15 @@ export function useCreateProduct() {
 }
 
 /**
- * Atualiza um produto existente.
- * Requer autenticação ADMIN.
+ * Updates an existing product.
+ * Requires ADMIN authentication.
  *
- * @returns Mutation hook para atualização de produto
+ * @returns Mutation hook for product update
  *
  * @example
- * const atualizar = useAtualizarProduto();
- * await atualizar.executar(`/api/produtos/${id}`, {
- *   preco: 79.90 // atualização parcial
+ * const update = useUpdateProduct();
+ * await update.execute(`/api/produtos/${id}`, {
+ *   preco: 79.90 // partial update
  * });
  */
 export function useUpdateProduct() {
@@ -149,14 +147,14 @@ export function useUpdateProduct() {
 }
 
 /**
- * Deleta um produto.
- * Requer autenticação ADMIN.
+ * Deletes a product.
+ * Requires ADMIN authentication.
  *
- * @returns Mutation hook para deleção de produto
+ * @returns Mutation hook for product deletion
  *
  * @example
- * const deletar = useDeletarProduto();
- * await deletar.executar(`/api/produtos/${id}`);
+ * const remove = useDeleteProduct();
+ * await remove.execute(`/api/produtos/${id}`);
  */
 export function useDeleteProduct() {
   return useMutation<{ ok: boolean }>({

@@ -1,30 +1,28 @@
 // lib/ai/providers/gemini-chat.ts
 
 /**
- * ============================================================================
- * GOOGLE GEMINI - GERAÇÃO DE TEXTO
- * ============================================================================
- * Integração com a API do Google Gemini 2.0 Flash para geração de texto.
+ * GOOGLE GEMINI - TEXT GENERATION
  *
- * O Gemini é utilizado em dois contextos:
- * 1. Análise de sustentabilidade: gera textos sobre impacto ambiental,
- *    tempo de decomposição, reciclabilidade, etc. (EcoScan IA)
- * 2. Chat educacional: conversa com usuários sobre sustentabilidade
+ * Integration with the Google Gemini 2.0 Flash API for text generation.
  *
- * Modelo utilizado: gemini-2.0-flash
- * - Mais rápido e econômico que o Pro
- * - Suficientemente capaz para tarefas de texto
+ * Gemini is used in two contexts:
+ * 1. Sustainability analysis: generates texts about environmental impact,
+ *    decomposition time, recyclability, etc. (EcoScan AI)
+ * 2. Educational chat: conversation with users about sustainability
  *
- * Variável de ambiente necessária:
- * - GEMINI_KEY: Chave de API do Google AI Studio
+ * Model used: gemini-2.0-flash
+ * - Faster and cheaper than Pro
+ * - Capable enough for text tasks
  *
- * Falhas (REQ-CHAT-09, REQ-SCAN-05, REQ-SCAN-09): a chamada tem tempo limite e
- * qualquer falha (rede, tempo esgotado, resposta de erro ou inválida) devolve
- * `null`; quem chama decide a contingência.
+ * Required environment variable:
+ * - GEMINI_KEY: Google AI Studio API key
  *
- * A chave vai no cabeçalho `x-goog-api-key`, nunca na URL (URLs acabam em logs
- * de proxy e de servidor) — REQ-CHAT-08.
- * ============================================================================
+ * Failures (REQ-CHAT-09, REQ-SCAN-05, REQ-SCAN-09): the call has a time limit and
+ * any failure (network, timeout, error or invalid response) returns
+ * `null`; the caller decides the fallback.
+ *
+ * The key goes in the `x-goog-api-key` header, never in the URL (URLs end up in
+ * proxy and server logs) — REQ-CHAT-08.
  */
 
 import { fetchWithTimeout } from "@/lib/http/fetch-with-timeout";
@@ -33,22 +31,22 @@ export const GEMINI_MODEL = "gemini-2.0-flash";
 
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-/** Tempo limite padrão (valor inicial, sem medição: ajustar com dados reais). */
+/** Default time limit (initial value, not measured: adjust with real data). */
 const TIMEOUT_GEMINI_MS = 20_000;
 
-/** Valor de exemplo que já apareceu em `.env` de desenvolvimento: não é uma chave. */
+/** Sample value that has appeared in development `.env` files: it is not a key. */
 const PLACEHOLDER_KEY = "sua_chave";
 
 /**
- * Recupera a chave da API Gemini do ambiente.
- * @returns Chave da API ou string vazia se não configurada
+ * Reads the Gemini API key from the environment.
+ * @returns API key, or an empty string if not configured
  */
 function getGeminiKey(): string {
   return process.env.GEMINI_KEY ?? "";
 }
 
 /**
- * Indica se há uma chave configurada (ausente ou valor de exemplo = não configurada).
+ * Tells whether a key is configured (missing or sample value = not configured).
  */
 export function isGeminiConfigured(): boolean {
   const key = getGeminiKey();
@@ -56,22 +54,22 @@ export function isGeminiConfigured(): boolean {
 }
 
 /**
- * Configuração opcional para geração de texto.
+ * Optional configuration for text generation.
  */
 export interface GeminiConfig {
-  /** Controla criatividade: 0 = determinístico, 1 = mais criativo */
+  /** Controls creativity: 0 = deterministic, 1 = more creative */
   temperature?: number;
-  /** Número de palavras candidatas consideradas (diversidade) */
+  /** Number of candidate words considered (diversity) */
   topK?: number;
-  /** Nucleus sampling: mantém X% de probabilidade acumulada */
+  /** Nucleus sampling: keeps X% of the cumulative probability */
   topP?: number;
-  /** Limite máximo de tokens na resposta */
+  /** Maximum number of tokens in the response */
   maxOutputTokens?: number;
 }
 
 /**
- * Chamada comum aos dois usos (texto simples e conversa com histórico).
- * Nunca lança: qualquer falha vira `null`.
+ * Call shared by both uses (plain text and conversation with history).
+ * Never throws: any failure becomes `null`.
  */
 async function generate(
   contents: unknown[],
@@ -104,27 +102,27 @@ async function generate(
     const data = await res.json();
     return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
   } catch {
-    // Rede, tempo esgotado ou resposta que não é JSON. Silencioso de propósito:
-    // não expõe detalhes internos (nem a chave) a quem chama.
+    // Network, timeout or a response that is not JSON. Silent on purpose:
+    // it does not expose internal details (nor the key) to the caller.
     return null;
   }
 }
 
 /**
- * Gera texto usando o modelo Gemini.
+ * Generates text using the Gemini model.
  *
- * @param prompt - Texto de entrada para o modelo
- * @param config - Configurações opcionais (temperature, topK, etc.)
- * @param timeoutMs - Tempo limite da chamada (padrão: constante do módulo)
- * @returns Texto gerado ou null se falha
- *
- * @example
- * const resposta = await gerarTexto("Explique o que é reciclagem");
- * console.log(resposta); // "Reciclagem é o processo de transformar resíduos..."
+ * @param prompt - Input text for the model
+ * @param config - Optional settings (temperature, topK, etc.)
+ * @param timeoutMs - Call time limit (default: module constant)
+ * @returns Generated text, or null on failure
  *
  * @example
- * const resposta = await gerarTexto(prompt, {
- *   temperature: 0.5, // menos criativo, mais factual
+ * const response = await generateText("Explain what recycling is");
+ * console.log(response); // "Recycling is the process of turning waste into..."
+ *
+ * @example
+ * const response = await generateText(prompt, {
+ *   temperature: 0.5, // less creative, more factual
  *   maxOutputTokens: 500
  * });
  */
@@ -137,10 +135,10 @@ export async function generateText(
 }
 
 /**
- * Gera a próxima resposta de uma conversa (formato de `contents` da API Gemini).
+ * Generates the next reply of a conversation (Gemini API `contents` format).
  *
- * @param contents - Turnos da conversa (`{ role, parts: [{ text }] }`)
- * @returns Texto gerado ou null se falha
+ * @param contents - Conversation turns (`{ role, parts: [{ text }] }`)
+ * @returns Generated text, or null on failure
  */
 export async function generateWithHistory(
   contents: unknown[],

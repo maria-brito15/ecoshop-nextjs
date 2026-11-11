@@ -1,25 +1,23 @@
 // lib/hooks/useBrands.ts
 
 /**
- * ============================================================================
- * MARCAS HOOKS
- * ============================================================================
- * Coleção de hooks para operações CRUD de marcas.
+ * BRANDS HOOKS
  *
- * Marcas representam fabricantes/empresas parceiras da EcoShop.
- * Cada marca está associada a um usuário do tipo "MARCA" ou "ADMIN".
+ * Collection of hooks for brand CRUD operations.
  *
- * Permissões:
- * - GET (listar/buscar): público
- * - POST, PUT, DELETE: requer autenticação ADMIN
+ * Brands represent EcoShop's partner manufacturers/companies.
+ * Each brand is associated with a user of type "MARCA" or "ADMIN".
+ *
+ * Permissions:
+ * - GET (list/fetch): public
+ * - POST, PUT, DELETE: requires ADMIN authentication
  *
  * Endpoints:
- * - Listagem: GET /api/marcas
- * - Busca: GET /api/marcas/:id
- * - Criar: POST /api/marcas (admin)
- * - Atualizar: PUT /api/marcas/:id (admin)
- * - Deletar: DELETE /api/marcas/:id (admin)
- * ============================================================================
+ * - List: GET /api/marcas
+ * - Fetch: GET /api/marcas/:id
+ * - Create: POST /api/marcas (admin)
+ * - Update: PUT /api/marcas/:id (admin)
+ * - Delete: DELETE /api/marcas/:id (admin)
  */
 
 import { useFetch } from "./useFetch";
@@ -36,37 +34,37 @@ import type {
 } from "@/types/api";
 
 /**
- * Lista todas as marcas disponíveis.
- * Endpoint público — usado em filtros de produtos.
+ * Lists all available brands.
+ * Public endpoint — used in product filters.
  *
- * @returns Hook com array de marcas, loading e erro
+ * @returns Hook with the brand array, loading and error
  */
 export function useListBrands() {
   return useFetch<ListBrandsResponse>("/api/marcas");
 }
 
 /**
- * Busca uma marca específica pelo ID.
+ * Fetches a specific brand by ID.
  *
- * @param id - ID da marca (se null, hook não executa)
- * @returns Hook com dados da marca
+ * @param id - Brand ID (if null, the hook does not run)
+ * @returns Hook with the brand data
  */
 export function useGetBrand(id: number | null) {
   return useFetch<GetBrandResponse>(id ? `/api/marcas/${id}` : null);
 }
 
 /**
- * Cria uma nova marca.
- * Requer autenticação ADMIN.
+ * Creates a new brand.
+ * Requires ADMIN authentication.
  *
- * @returns Mutation hook para criação de marca
+ * @returns Mutation hook for brand creation
  *
  * @example
- * const criar = useCriarMarca();
- * await criar.executar("/api/marcas", {
+ * const create = useCreateBrand();
+ * await create.execute("/api/marcas", {
  *   nome: "EcoBrand",
- *   descricao: "Roupas sustentáveis",
- *   usuarioId: 5 // ID do usuário responsável (tipo MARCA)
+ *   descricao: "Sustainable clothing",
+ *   usuarioId: 5 // ID of the responsible user (type MARCA)
  * });
  */
 export function useCreateBrand() {
@@ -77,10 +75,10 @@ export function useCreateBrand() {
 }
 
 /**
- * Atualiza uma marca existente.
- * Requer autenticação ADMIN.
+ * Updates an existing brand.
+ * Requires ADMIN authentication.
  *
- * @returns Mutation hook para atualização de marca
+ * @returns Mutation hook for brand update
  */
 export function useUpdateBrand() {
   return useMutation<UpdateBrandResponse, UpdateBrandBody>({
@@ -90,13 +88,13 @@ export function useUpdateBrand() {
 }
 
 /**
- * Deleta uma marca.
- * Requer autenticação ADMIN.
+ * Deletes a brand.
+ * Requires ADMIN authentication.
  *
- * ATENÇÃO: Marcas com produtos associados podem não ser deletadas
- * devido a constraint de chave estrangeira.
+ * ATTENTION: Brands with associated products may not be deleted
+ * because of the foreign key constraint.
  *
- * @returns Mutation hook para deleção de marca
+ * @returns Mutation hook for brand deletion
  */
 export function useDeleteBrand() {
   return useMutation<OkResponse>({
@@ -106,14 +104,14 @@ export function useDeleteBrand() {
 }
 
 /**
- * Aprova uma marca pendente.
- * Requer autenticação ADMIN. REQ-USR-03, ADR-0018.
+ * Approves a pending brand.
+ * Requires ADMIN authentication. REQ-USR-03, ADR-0018.
  *
- * @returns Mutation hook para aprovação de marca
+ * @returns Mutation hook for brand approval
  *
  * @example
- * const aprovar = useAprovarMarca();
- * await aprovar.executar(`/api/marcas/${marca.id}/aprovar`);
+ * const approve = useApproveBrand();
+ * await approve.execute(`/api/marcas/${brand.id}/aprovar`);
  */
 export function useApproveBrand() {
   return useMutation<ApproveBrandResponse>({

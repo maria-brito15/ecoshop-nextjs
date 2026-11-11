@@ -1,36 +1,34 @@
 // lib/ai/prompts/sustainability.ts
 
 /**
- * ============================================================================
- * SUSTENTABILIDADE PROMPT
- * ============================================================================
- * Prompt de sistema para o Gemini gerar análises de materiais recicláveis.
+ * SUSTAINABILITY PROMPT
  *
- * Este prompt é usado pelo EcoScan IA após a identificação do material.
- * O Gemini recebe o nome do material (ex: "plastico", "vidro", "papelao")
- * e deve retornar um JSON estruturado com informações de sustentabilidade.
+ * System prompt for Gemini to generate analyses of recyclable materials.
  *
- * Estrutura do prompt:
- * 1. Definição do papel do especialista
- * 2. Lista de campos obrigatórios com descrições detalhadas
- * 3. Regras de formatação (JSON puro, sem markdown)
- * 4. Exemplo de formato esperado
+ * This prompt is used by EcoScan AI after the material is identified.
+ * Gemini receives the material name (e.g. "plastico", "vidro", "papelao")
+ * and must return structured JSON with sustainability information.
  *
- * IMPORTANTE: O prompt é projetado para gerar JSON válido e completo.
- * O parser (parsearAnalise) extrai e valida o JSON da resposta.
- * ============================================================================
+ * Prompt structure:
+ * 1. Definition of the expert role
+ * 2. List of required fields with detailed descriptions
+ * 3. Formatting rules (plain JSON, no markdown)
+ * 4. Example of the expected format
+ *
+ * IMPORTANT: The prompt is designed to produce valid and complete JSON.
+ * The parser (parseAnalysis) extracts and validates the JSON from the response.
  */
 
 /**
- * Monta o prompt completo para análise de um material.
+ * Builds the complete prompt to analyze a material.
  *
- * @param material - Nome do material identificado (ex: "plastico", "vidro")
- * @returns Prompt formatado para enviar ao Gemini
+ * @param material - Name of the identified material (e.g. "plastico", "vidro")
+ * @returns Formatted prompt to send to Gemini
  *
  * @example
- * const prompt = montarPromptSustentabilidade("plastico");
- * const resposta = await gerarTexto(prompt);
- * const analise = parsearAnalise(resposta);
+ * const prompt = buildSustainabilityPrompt("plastico");
+ * const response = await generateText(prompt);
+ * const analysis = parseAnalysis(response);
  */
 export function buildSustainabilityPrompt(material: string): string {
   return `

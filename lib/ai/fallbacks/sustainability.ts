@@ -1,35 +1,33 @@
 // lib/ai/fallbacks/sustainability.ts
 
 /**
- * ============================================================================
- * SUSTENTABILIDADE FALLBACK
- * ============================================================================
- * Análise genérica de sustentabilidade para quando a IA falha.
+ * SUSTAINABILITY FALLBACK
  *
- * Cenários de uso do fallback:
- * 1. Gemini retornou resposta inválida (não-JSON, campos faltando)
- * 2. API do Gemini está indisponível (rate limit, timeout, erro)
- * 3. Chave da API não configurada
+ * Generic sustainability analysis for when the AI fails.
  *
- * A análise genérica é segura e educativa, sem informações específicas
- * do material, mas ainda útil para o usuário.
+ * When the fallback is used:
+ * 1. Gemini returned an invalid response (non-JSON, missing fields)
+ * 2. The Gemini API is unavailable (rate limit, timeout, error)
+ * 3. API key not configured
  *
- * IMPORTANTE: O fallback NÃO substitui uma análise real, mas evita
- * que o usuário receba um erro vazio. É melhor que nada.
- * ============================================================================
+ * The generic analysis is safe and educational, without material-specific
+ * information, but still useful to the user.
+ *
+ * IMPORTANT: The fallback does NOT replace a real analysis, but it keeps
+ * the user from getting an empty error. It is better than nothing.
  */
 
 import type { AiAnalysis } from "@/types/ai";
 
 /**
- * Gera uma análise genérica para um material.
+ * Generates a generic analysis for a material.
  *
- * @param material - Nome do material (ex: "plastico", "vidro")
- * @returns Objeto AnaliseIA com textos genéricos
+ * @param material - Material name (e.g. "plastico", "vidro")
+ * @returns AiAnalysis object with generic texts
  *
  * @example
- * const analise = analiseBasica("plastico");
- * // Retorna análise sem dados específicos, mas com informações educativas
+ * const analysis = fallbackAnalysis("plastico");
+ * // Returns an analysis without specific data, but with educational information
  */
 export function fallbackAnalysis(material: string): AiAnalysis {
   return {

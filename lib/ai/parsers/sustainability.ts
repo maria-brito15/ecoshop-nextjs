@@ -1,30 +1,28 @@
 // lib/ai/parsers/sustainability.ts
 
 /**
- * ============================================================================
- * SUSTENTABILIDADE PARSER
- * ============================================================================
- * Parser para extrair e validar JSON da resposta do Gemini.
+ * SUSTAINABILITY PARSER
  *
- * O Gemini pode retornar a resposta em diferentes formatos:
- * - JSON puro: {"impacto_ambiental": "..."}
- * - JSON com markdown: ```json {...} ```
- * - JSON com texto antes/depois
+ * Parser that extracts and validates the JSON from Gemini's response.
  *
- * Este módulo:
- * 1. Limpa a resposta removendo markdown
- * 2. Extrai o primeiro objeto JSON encontrado
- * 3. Valida se todos os campos obrigatórios estão presentes
+ * Gemini may return the response in different formats:
+ * - Plain JSON: {"impacto_ambiental": "..."}
+ * - JSON with markdown: ```json {...} ```
+ * - JSON with text before/after
  *
- * Fallback: se falhar, retorna null e o código chamador usa analiseBasica()
- * ============================================================================
+ * This module:
+ * 1. Cleans the response by removing markdown
+ * 2. Extracts the first JSON object found
+ * 3. Validates that all required fields are present
+ *
+ * Fallback: if it fails, it returns null and the caller uses fallbackAnalysis()
  */
 
 import type { AiAnalysis } from "@/types/ai";
 
 /**
- * Campos obrigatórios que devem estar presentes na análise.
- * Se algum campo estiver faltando ou vazio, a análise é rejeitada.
+ * Required fields that must be present in the analysis.
+ * If any field is missing or empty, the analysis is rejected.
  */
 const REQUIRED_FIELDS: (keyof AiAnalysis)[] = [
   "impacto_ambiental",
@@ -36,41 +34,41 @@ const REQUIRED_FIELDS: (keyof AiAnalysis)[] = [
 ];
 
 /**
- * Extrai e valida o JSON da resposta do Gemini.
+ * Extracts and validates the JSON from Gemini's response.
  *
- * Algoritmo:
- * 1. Remove blocos de código markdown (```json ... ```)
- * 2. Encontra a posição do primeiro '{' e último '}'
- * 3. Faz parse do JSON entre essas posições
- * 4. Valida se todos os campos obrigatórios são strings não vazias
+ * Algorithm:
+ * 1. Removes markdown code blocks (```json ... ```)
+ * 2. Finds the position of the first '{' and the last '}'
+ * 3. Parses the JSON between those positions
+ * 4. Validates that all required fields are non-empty strings
  *
- * @param rawText - Texto bruto retornado pelo Gemini
- * @returns Objeto AnaliseIA válido ou null se falha
+ * @param rawText - Raw text returned by Gemini
+ * @returns Valid AiAnalysis object, or null on failure
  *
  * @example
- * const resposta = await gerarTexto(prompt);
- * const analise = parsearAnalise(resposta);
- * if (analise) {
- *   console.log(analise.impacto_ambiental);
+ * const response = await generateText(prompt);
+ * const analysis = parseAnalysis(response);
+ * if (analysis) {
+ *   console.log(analysis.impacto_ambiental);
  * }
  */
 export function parseAnalysis(rawText: string): AiAnalysis | null {
   try {
-    // Passo 1: Remove blocos de código markdown
+    // Step 1: remove markdown code blocks
     const clean = rawText
       .replace(/```json\s*/g, "")
       .replace(/```\s*/g, "")
       .trim();
 
-    // Passo 2: Encontra o primeiro '{' e último '}'
+    // Step 2: find the first '{' and the last '}'
     const start = clean.indexOf("{");
     const end = clean.lastIndexOf("}");
     if (start === -1 || end === -1) return null;
 
-    // Passo 3: Parse do JSON
+    // Step 3: parse the JSON
     const parsed = JSON.parse(clean.slice(start, end + 1));
 
-    // Passo 4: Validação dos campos obrigatórios
+    // Step 4: validate the required fields
     const valid = REQUIRED_FIELDS.every(
       (field) =>
         typeof parsed[field] === "string" && parsed[field].trim().length > 0,
@@ -78,7 +76,7 @@ export function parseAnalysis(rawText: string): AiAnalysis | null {
 
     return valid ? (parsed as AiAnalysis) : null;
   } catch {
-    // JSON inválido (malformado, campos ausentes, tipo incorreto)
+    // Invalid JSON (malformed, missing fields, wrong type)
     return null;
   }
 }

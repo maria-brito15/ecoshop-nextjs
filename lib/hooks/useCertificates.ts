@@ -1,29 +1,27 @@
 // lib/hooks/useCertificates.ts
 
 /**
- * ============================================================================
- * CERTIFICADOS HOOKS
- * ============================================================================
- * Coleção de hooks para operações CRUD de certificados de sustentabilidade.
+ * CERTIFICATES HOOKS
  *
- * Certificados atestam que um produto atende a padrões ambientais rigorosos.
- * Exemplos: "FSC", "Orgânico Brasil", "Eureciclo", "Cruelty Free".
+ * Collection of hooks for sustainability certificate CRUD operations.
  *
- * Permissões:
- * - GET (listar/buscar): público
- * - POST, PUT, DELETE: requer autenticação ADMIN
+ * Certificates attest that a product meets strict environmental standards.
+ * Examples: "FSC", "Organic Brazil", "Eureciclo", "Cruelty Free".
  *
- * Relacionamentos:
- * - Muitos-para-muitos com Produtos (via ProdutoCertificado)
- * - Um certificado pode ser atribuído a múltiplos produtos
+ * Permissions:
+ * - GET (list/fetch): public
+ * - POST, PUT, DELETE: requires ADMIN authentication
+ *
+ * Relationships:
+ * - Many-to-many with Products (via ProdutoCertificado)
+ * - A certificate can be assigned to multiple products
  *
  * Endpoints:
- * - Listagem: GET /api/certificados
- * - Busca: GET /api/certificados/:id
- * - Criar: POST /api/certificados (admin)
- * - Atualizar: PUT /api/certificados/:id (admin)
- * - Deletar: DELETE /api/certificados/:id (admin)
- * ============================================================================
+ * - List: GET /api/certificados
+ * - Fetch: GET /api/certificados/:id
+ * - Create: POST /api/certificados (admin)
+ * - Update: PUT /api/certificados/:id (admin)
+ * - Delete: DELETE /api/certificados/:id (admin)
  */
 
 import { useFetch } from "./useFetch";
@@ -39,20 +37,20 @@ import type {
 } from "@/types/api";
 
 /**
- * Lista todos os certificados disponíveis.
- * Endpoint público — usado para exibir selos nos cards de produto.
+ * Lists all available certificates.
+ * Public endpoint — used to show seals on product cards.
  *
- * @returns Hook com array de certificados, loading e erro
+ * @returns Hook with the certificate array, loading and error
  */
 export function useListCertificates() {
   return useFetch<ListCertificatesResponse>("/api/certificados");
 }
 
 /**
- * Busca um certificado específico pelo ID.
+ * Fetches a specific certificate by ID.
  *
- * @param id - ID do certificado (se null, hook não executa)
- * @returns Hook com dados do certificado
+ * @param id - Certificate ID (if null, the hook does not run)
+ * @returns Hook with the certificate data
  */
 export function useGetCertificate(id: number | null) {
   return useFetch<GetCertificateResponse>(
@@ -61,17 +59,17 @@ export function useGetCertificate(id: number | null) {
 }
 
 /**
- * Cria um novo certificado.
- * Requer autenticação ADMIN.
+ * Creates a new certificate.
+ * Requires ADMIN authentication.
  *
- * @returns Mutation hook para criação de certificado
+ * @returns Mutation hook for certificate creation
  *
  * @example
- * const criar = useCriarCertificado();
- * await criar.executar("/api/certificados", {
+ * const create = useCreateCertificate();
+ * await create.execute("/api/certificados", {
  *   nome: "Recicla+",
- *   orgaoEmissor: "Instituto Recicla",
- *   descricao: "Certifica que o produto é 100% reciclável"
+ *   orgaoEmissor: "Recicla Institute",
+ *   descricao: "Certifies that the product is 100% recyclable"
  * });
  */
 export function useCreateCertificate() {
@@ -82,10 +80,10 @@ export function useCreateCertificate() {
 }
 
 /**
- * Atualiza um certificado existente.
- * Requer autenticação ADMIN.
+ * Updates an existing certificate.
+ * Requires ADMIN authentication.
  *
- * @returns Mutation hook para atualização de certificado
+ * @returns Mutation hook for certificate update
  */
 export function useUpdateCertificate() {
   return useMutation<UpdateCertificateResponse, UpdateCertificateBody>({
@@ -95,13 +93,13 @@ export function useUpdateCertificate() {
 }
 
 /**
- * Deleta um certificado.
- * Requer autenticação ADMIN.
+ * Deletes a certificate.
+ * Requires ADMIN authentication.
  *
- * ATENÇÃO: Certificados associados a produtos não podem ser deletados
- * devido a constraint de chave estrangeira.
+ * ATTENTION: Certificates linked to products cannot be deleted
+ * because of the foreign key constraint.
  *
- * @returns Mutation hook para deleção de certificado
+ * @returns Mutation hook for certificate deletion
  */
 export function useDeleteCertificate() {
   return useMutation<OkResponse>({

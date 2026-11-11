@@ -1,42 +1,40 @@
 // lib/schemas/category.ts
 
 /**
- * ============================================================================
- * CATEGORIA SCHEMAS (Zod)
- * ============================================================================
- * Schemas de validação para operações CRUD de categorias.
+ * CATEGORY SCHEMAS (Zod)
  *
- * Categorias organizam produtos em grupos como:
- * - Roupas Sustentáveis
- * - Alimentos Orgânicos
- * - Cosméticos Naturais
- * - Casa e Decoração
- * - Calçados Ecológicos
+ * Validation schemas for category CRUD operations.
  *
- * Regras de negócio:
- * - Nome da categoria é único no sistema (validação no banco via Prisma)
- * - Descrição é opcional
- * - Categorias com produtos associados não podem ser deletadas
+ * Categories organize products into groups such as:
+ * - Sustainable Clothing
+ * - Organic Food
+ * - Natural Cosmetics
+ * - Home and Decor
+ * - Eco-Friendly Footwear
  *
- * Endpoints que usam estes schemas:
+ * Business rules:
+ * - The category name is unique in the system (validated in the database via Prisma)
+ * - The description is optional
+ * - Categories with associated products cannot be deleted
+ *
+ * Endpoints that use these schemas:
  * - POST /api/categorias
  * - PUT /api/categorias/:id
- * ============================================================================
  */
 
 import { z } from "zod";
 
 /**
- * Schema para criação de uma nova categoria.
+ * Schema for creating a new category.
  *
- * Regras:
- * - nome: obrigatório, não vazio (trim automático)
- * - descricao: opcional (se fornecida, será trimada)
+ * Rules:
+ * - nome: required, not empty (automatic trim)
+ * - descricao: optional (trimmed if provided)
  *
  * @example
- * const dados = {
- *   nome: "Eletrônicos Sustentáveis",
- *   descricao: "Dispositivos com baixo consumo energético"
+ * const data = {
+ *   nome: "Sustainable Electronics",
+ *   descricao: "Devices with low energy consumption"
  * };
  */
 export const categorySchema = z.object({
@@ -45,27 +43,27 @@ export const categorySchema = z.object({
 });
 
 /**
- * Schema para atualização de uma categoria existente.
+ * Schema for updating an existing category.
  *
- * TODOS os campos são opcionais — permite atualização parcial.
- * Útil para PATCH operations onde apenas um campo precisa ser alterado.
+ * ALL fields are optional — allows partial updates.
+ * Useful for PATCH operations where only one field needs to change.
  *
- * Regras:
- * - nome: mínimo 1 caractere SE fornecido
- * - descricao: string livre SE fornecida
+ * Rules:
+ * - nome: minimum 1 character IF provided
+ * - descricao: free string IF provided
  *
  * @example
- * // Renomear categoria
- * const dados = { nome: "Moda Sustentável" };
+ * // Rename a category
+ * const data = { nome: "Sustainable Fashion" };
  *
- * // Atualizar apenas descrição
- * const dados = { descricao: "Vestuário ético e ecológico" };
+ * // Update only the description
+ * const data = { descricao: "Ethical and eco-friendly clothing" };
  */
 export const updateCategorySchema = z.object({
   nome: z.string().min(1, "Name cannot be empty").optional(),
   descricao: z.string().optional(),
 });
 
-// Tipos inferidos para uso nos services
+// Inferred types for use in the services
 export type CategoryInput = z.infer<typeof categorySchema>;
 export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;

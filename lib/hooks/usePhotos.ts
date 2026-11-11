@@ -1,24 +1,22 @@
 // lib/hooks/usePhotos.ts
 
 /**
- * ============================================================================
- * FOTOS HOOKS
- * ============================================================================
- * Coleção de hooks para gerenciamento de fotos de produtos.
+ * PHOTOS HOOKS
  *
- * As fotos são armazenadas no sistema de arquivos (public/data_fotos/)
- * e servidas como arquivos estáticos.
+ * Collection of hooks for managing product photos.
  *
- * Características:
+ * Photos are stored on the file system (public/data_fotos/)
+ * and served as static files.
+ *
+ * Features:
  * - Upload via FormData (multipart/form-data)
- * - Validação de extensões e tamanho no backend
- * - Nomes sanitizados para evitar colisões (formato: {produtoId}_{timestamp}_{random}.ext)
+ * - Extension and size validation on the backend
+ * - Sanitized names to avoid collisions (format: {productId}_{timestamp}_{random}.ext)
  *
  * Endpoints:
- * - Listagem: GET /api/produtos/:id/fotos
+ * - List: GET /api/produtos/:id/fotos
  * - Upload: POST /api/produtos/:id/fotos (admin)
- * - Deleção: DELETE /api/produtos/:id/fotos?nome={nome} (admin)
- * ============================================================================
+ * - Delete: DELETE /api/produtos/:id/fotos?nome={name} (admin)
  */
 
 "use client";
@@ -28,35 +26,35 @@ import { useMutation } from "./useMutation";
 import type { Photo, PhotosResponse } from "@/types/domain";
 
 /**
- * Lista todas as fotos de um produto específico.
+ * Lists all photos of a specific product.
  *
- * @param productId - ID do produto (se 0 ou null, hook não executa)
- * @returns Hook com array de fotos, loading e erro
+ * @param productId - Product ID (if 0 or null, the hook does not run)
+ * @returns Hook with the photo array, loading and error
  *
  * @example
- * const { data, carregando } = useListarFotos(produtoId);
- * const fotos = data?.fotos ?? [];
+ * const { data, loading } = useListPhotos(productId);
+ * const photos = data?.fotos ?? [];
  */
 export function useListPhotos(productId: number) {
   return useFetch<PhotosResponse>(`/api/produtos/${productId}/fotos`);
 }
 
 /**
- * Faz upload de uma nova foto para um produto.
- * Requer autenticação ADMIN.
+ * Uploads a new photo for a product.
+ * Requires ADMIN authentication.
  *
- * O corpo da requisição deve ser um FormData contendo:
- * - arquivo: File (a imagem)
- * - nome: string (opcional, nome personalizado)
+ * The request body must be a FormData containing:
+ * - arquivo: File (the image)
+ * - nome: string (optional, custom name)
  *
- * @param productId - ID do produto ao qual a foto será associada
- * @returns Mutation hook para upload de foto
+ * @param productId - ID of the product the photo will be associated with
+ * @returns Mutation hook for photo upload
  *
  * @example
- * const upload = useUploadFoto(produtoId);
+ * const upload = useUploadPhoto(productId);
  * const formData = new FormData();
  * formData.append("arquivo", file);
- * const result = await upload.executar(`/api/produtos/${produtoId}/fotos`, formData);
+ * const result = await upload.execute(`/api/produtos/${productId}/fotos`, formData);
  */
 export function useUploadPhoto(productId: number) {
   return useMutation<{ ok: boolean; foto: Photo; mensagem: string }, FormData>({
@@ -66,15 +64,15 @@ export function useUploadPhoto(productId: number) {
 }
 
 /**
- * Deleta uma foto específica de um produto.
- * Requer autenticação ADMIN.
+ * Deletes a specific photo of a product.
+ * Requires ADMIN authentication.
  *
- * @param productId - ID do produto
- * @returns Mutation hook para deleção de foto
+ * @param productId - Product ID
+ * @returns Mutation hook for photo deletion
  *
  * @example
- * const deletar = useDeletarFoto(produtoId);
- * await deletar.executar(`/api/produtos/${produtoId}/fotos?nome=${nomeArquivo}`);
+ * const remove = useDeletePhoto(productId);
+ * await remove.execute(`/api/produtos/${productId}/fotos?nome=${fileName}`);
  */
 export function useDeletePhoto(productId: number) {
   return useMutation<{ ok: boolean; mensagem: string }>({

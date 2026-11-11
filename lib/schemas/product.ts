@@ -1,45 +1,43 @@
 // lib/schemas/product.ts
 
 /**
- * ============================================================================
- * PRODUTO SCHEMAS (Zod)
- * ============================================================================
- * Schemas de validação para operações CRUD de produtos.
+ * PRODUCT SCHEMAS (Zod)
  *
- * Produtos são o core da plataforma — representam itens sustentáveis à venda.
+ * Validation schemas for product CRUD operations.
  *
- * Regras de negócio:
- * - Preço deve ser positivo (maior que zero)
- * - Categoria e Marca são obrigatórias (chaves estrangeiras)
- * - Nome é obrigatório e deve ser único (validação no banco via Prisma)
+ * Products are the core of the platform — they represent sustainable items for sale.
  *
- * Endpoints que usam estes schemas:
+ * Business rules:
+ * - Price must be positive (greater than zero)
+ * - Category and Brand are required (foreign keys)
+ * - Name is required and must be unique (validated in the database via Prisma)
+ *
+ * Endpoints that use these schemas:
  * - POST /api/produtos
  * - PUT /api/produtos/:id
- * ============================================================================
  */
 
 import { z } from "zod";
 
 /**
- * Schema para criação de um novo produto.
+ * Schema for creating a new product.
  *
- * Regras:
- * - nome: obrigatório, não vazio
- * - descricao: opcional, mínimo 1 caractere se fornecida
- * - preco: obrigatório, número positivo (maior que 0)
- * - categoriaId: obrigatório, inteiro positivo
- * - marcaId: obrigatório, inteiro positivo
+ * Rules:
+ * - nome: required, not empty
+ * - descricao: optional, minimum 1 character if provided
+ * - preco: required, positive number (greater than 0)
+ * - categoriaId: required, positive integer
+ * - marcaId: required, positive integer
  *
- * VALIDAÇÕES ADICIONAIS (no service):
- * - Verificar se categoriaId existe no banco
- * - Verificar se marcaId existe no banco
- * - Verificar se nome é único (não existe outro produto com mesmo nome)
+ * ADDITIONAL VALIDATIONS (in the service):
+ * - Check that categoriaId exists in the database
+ * - Check that marcaId exists in the database
+ * - Check that the name is unique (no other product with the same name)
  *
  * @example
- * const dados = {
- *   nome: "Camiseta Básica Orgânica",
- *   descricao: "100% algodão orgânico, tingimento natural",
+ * const data = {
+ *   nome: "Organic Basic T-Shirt",
+ *   descricao: "100% organic cotton, natural dyeing",
  *   preco: 89.90,
  *   categoriaId: 1,
  *   marcaId: 2
@@ -57,32 +55,32 @@ export const productSchema = z.object({
 });
 
 /**
- * Schema para atualização de um produto existente.
+ * Schema for updating an existing product.
  *
- * TODOS os campos são opcionais — permite atualização parcial.
- * O admin pode atualizar apenas os campos que desejar.
+ * ALL fields are optional — allows partial updates.
+ * The admin can update only the fields they want.
  *
- * Regras (quando presentes):
- * - nome: mínimo 1 caractere
- * - descricao: mínimo 1 caractere
- * - preco: positivo (maior que 0)
- * - categoriaId: inteiro positivo
- * - marcaId: inteiro positivo
- * - certificadoIds: lista completa dos certificados vinculados (REQ-PROD-05);
- *   substitui o vínculo atual — enviar `[]` remove todos os certificados
+ * Rules (when present):
+ * - nome: minimum 1 character
+ * - descricao: minimum 1 character
+ * - preco: positive (greater than 0)
+ * - categoriaId: positive integer
+ * - marcaId: positive integer
+ * - certificadoIds: full list of linked certificates (REQ-PROD-05);
+ *   replaces the current link — sending `[]` removes all certificates
  *
  * @example
- * // Aumentar preço em 10%
- * const dados = { preco: 98.89 };
+ * // Raise the price by 10%
+ * const data = { preco: 98.89 };
  *
- * // Atualizar apenas descrição
- * const dados = { descricao: "Camiseta orgânica com certificado FSC" };
+ * // Update only the description
+ * const data = { descricao: "Organic T-shirt with FSC certificate" };
  *
- * // Mudar categoria do produto
- * const dados = { categoriaId: 3 };
+ * // Change the product's category
+ * const data = { categoriaId: 3 };
  *
- * // Vincular dois certificados (substitui o vínculo anterior)
- * const dados = { certificadoIds: [1, 2] };
+ * // Link two certificates (replaces the previous link)
+ * const data = { certificadoIds: [1, 2] };
  */
 export const updateProductSchema = z.object({
   nome: z.string().min(1, "Name cannot be empty").optional(),
@@ -99,17 +97,17 @@ export const updateProductSchema = z.object({
 });
 
 /**
- * Schema de validação dos parâmetros de query de GET /api/produtos.
+ * Validation schema for the query parameters of GET /api/produtos.
  *
- * REQ-CAT-05: page e size inválidos, ou size acima de 100, respondem 400
- * em vez de serem aceitos silenciosamente (antes, `Number(...)` de um valor
- * inválido virava NaN e seguia para o Prisma sem checagem).
+ * REQ-CAT-05: invalid page and size, or size above 100, respond 400
+ * instead of being silently accepted (before, `Number(...)` of an invalid
+ * value became NaN and went to Prisma unchecked).
  *
- * REQ-CAT-06/07: `marcaId` filtra por marca; `precoMax` limita o preço; `sort`
- * ordena — todos aplicados pelo banco (Prisma `where`/`orderBy`), por isso
- * valem para o catálogo inteiro, não só para a página devolvida.
+ * REQ-CAT-06/07: `marcaId` filters by brand; `precoMax` limits the price; `sort`
+ * orders — all applied by the database (Prisma `where`/`orderBy`), so they
+ * apply to the whole catalog, not just the returned page.
  *
- * Usa `coerce` porque searchParams só entrega strings.
+ * Uses `coerce` because searchParams only delivers strings.
  */
 export const listProductsQuerySchema = z.object({
   page: z.coerce
@@ -143,8 +141,8 @@ export const listProductsQuerySchema = z.object({
     })
     .optional()
     .default("relevancia"),
-  // REQ-CAT-10: limite de tamanho (a busca por nome entra na chave de cache);
-  // texto vazio equivale a "sem filtro por nome".
+  // REQ-CAT-10: size limit (the name search is part of the cache key);
+  // empty text is equivalent to "no name filter".
   nome: z
     .string()
     .trim()
@@ -153,7 +151,7 @@ export const listProductsQuerySchema = z.object({
     .transform((value) => value || undefined),
 });
 
-// Tipos inferidos para uso nos services
+// Inferred types for use in the services
 export type ListProductsQuery = z.infer<typeof listProductsQuerySchema>;
 export type ProductInput = z.infer<typeof productSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;

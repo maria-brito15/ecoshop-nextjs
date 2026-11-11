@@ -1,27 +1,25 @@
 // lib/ai/analyze-image.ts
 
 /**
- * ============================================================================
- * ANALISAR IMAGEM - ORQUESTRAÇÃO PRINCIPAL
- * ============================================================================
- * Função principal que orquestra todo o fluxo de análise de imagem do EcoScan IA.
+ * ANALYZE IMAGE - MAIN ORCHESTRATION
  *
- * Fluxo completo:
- * 1. Classifica a imagem com Azure Custom Vision
- * 2. Se nenhuma predição → retorna erro
- * 3. Seleciona a predição com maior probabilidade
- * 4. Se confiança < threshold ou tag = "outros" → retorna erro com sugestão
- * 5. Monta prompt para Gemini com o material identificado
- * 6. Gera análise de sustentabilidade
- * 7. Se falha na geração → usa fallback genérico
- * 8. Retorna resultado completo para o frontend
+ * Main function orchestrating the whole EcoScan AI image analysis flow.
  *
- * Configuração via ambiente:
- * - AI_CONFIDENCE_THRESHOLD: confiança mínima (0.0 a 1.0, padrão: 0.7)
+ * Full flow:
+ * 1. Classify the image with Azure Custom Vision
+ * 2. If there is no prediction → return an error
+ * 3. Select the prediction with the highest probability
+ * 4. If confidence < threshold or tag = "outros" → return an error with a suggestion
+ * 5. Build the Gemini prompt with the identified material
+ * 6. Generate the sustainability analysis
+ * 7. If generation fails → use the generic fallback
+ * 8. Return the complete result to the frontend
  *
- * IMPORTANTE: O fallback (analiseBasica) garante que o usuário sempre receba
- * alguma resposta, mesmo quando a IA falha.
- * ============================================================================
+ * Environment configuration:
+ * - AI_CONFIDENCE_THRESHOLD: minimum confidence (0.0 to 1.0, default: 0.7)
+ *
+ * IMPORTANT: The fallback (fallbackAnalysis) guarantees the user always gets
+ * some answer, even when the AI fails.
  */
 
 import { classifyImage } from "./providers/azure-vision";
@@ -32,31 +30,31 @@ import { fallbackAnalysis } from "./fallbacks/sustainability";
 import type { ScanResult } from "@/types/ai";
 
 /**
- * Confiança mínima exigida para considerar uma predição válida.
- * Valor percentual: 0.7 = 70%
+ * Minimum confidence required to consider a prediction valid.
+ * Percentage value: 0.7 = 70%
  *
- * Se a melhor predição tiver confiança abaixo deste valor, o scan falha
- * e o usuário recebe uma sugestão para tirar uma foto melhor.
+ * If the best prediction has confidence below this value, the scan fails
+ * and the user gets a suggestion to take a better photo.
  */
 const MIN_CONFIDENCE = Number(process.env.AI_CONFIDENCE_THRESHOLD ?? 0.7);
 
 /**
- * Analisa uma imagem e retorna informações sobre o material identificado.
+ * Analyzes an image and returns information about the identified material.
  *
- * @param imageBuffer - Buffer da imagem (formato binário)
- * @param imageId - ID único gerado para esta análise (ex: "analise_123456_abc")
- * @returns Resultado da análise (sucesso ou falha)
+ * @param imageBuffer - Image buffer (binary format)
+ * @param imageId - Unique ID generated for this analysis (e.g. "analise_123456_abc")
+ * @returns Analysis result (success or failure)
  *
  * @example
  * const buffer = await file.arrayBuffer();
- * const resultado = await analisarImagem(Buffer.from(buffer), "analise_123");
+ * const result = await analyzeImage(Buffer.from(buffer), "analise_123");
  *
- * if (resultado.sucesso) {
- *   console.log(`Material: ${resultado.material}`);
- *   console.log(`Confiança: ${resultado.confianca}%`);
- *   console.log(resultado.analise_sustentabilidade.reciclabilidade);
+ * if (result.sucesso) {
+ *   console.log(`Material: ${result.material}`);
+ *   console.log(`Confidence: ${result.confianca}%`);
+ *   console.log(result.analise_sustentabilidade.reciclabilidade);
  * } else {
- *   console.log(resultado.sugestao);
+ *   console.log(result.sugestao);
  * }
  */
 export async function analyzeImage(
@@ -66,7 +64,7 @@ export async function analyzeImage(
   const timestamp = new Date().toISOString();
   const predictions = await classifyImage(imageBuffer);
 
-  // Caso 1: Nenhuma predição retornada (Azure falhou)
+  // Case 1: no prediction returned (Azure failed)
   if (!predictions?.length) {
     return {
       sucesso: false,
@@ -82,12 +80,12 @@ export async function analyzeImage(
     };
   }
 
-  // Encontra a predição com maior probabilidade
+  // Find the prediction with the highest probability
   const best = predictions.reduce((a, b) =>
     a.probability > b.probability ? a : b,
   );
 
-  // Caso 2: Confiança baixa OU material identificado como "outros"
+  // Case 2: low confidence OR material identified as "outros"
   if (best.probability < MIN_CONFIDENCE || best.tagName === "outros") {
     return {
       sucesso: false,
@@ -102,11 +100,11 @@ export async function analyzeImage(
     };
   }
 
-  // Caso 3: Identificação bem-sucedida → gera análise com Gemini
+  // Case 3: successful identification → generate the analysis with Gemini
   const prompt = buildSustainabilityPrompt(best.tagName);
   const rawText = await generateText(prompt);
 
-  // Tenta parsear JSON do Gemini, se falhar usa fallback genérico
+  // Try to parse Gemini's JSON; if it fails, use the generic fallback
   const analysis = rawText
     ? (parseAnalysis(rawText) ?? fallbackAnalysis(best.tagName))
     : fallbackAnalysis(best.tagName);

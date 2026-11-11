@@ -1,44 +1,42 @@
 // lib/schemas/brand.ts
 
 /**
- * ============================================================================
- * MARCA SCHEMAS (Zod)
- * ============================================================================
- * Schemas de validação para operações CRUD de marcas.
+ * BRAND SCHEMAS (Zod)
  *
- * Marcas representam fabricantes/empresas parceiras da EcoShop.
- * Exemplos: "EcoBrand", "Pureza Naturais", "Bambu Home".
+ * Validation schemas for brand CRUD operations.
  *
- * Regras de negócio:
- * - Nome da marca é único no sistema
- * - Cada marca é associada a um usuário (relacionamento 1:1)
- * - Apenas usuários do tipo MARCA ou ADMIN podem ser responsáveis por marcas
+ * Brands represent EcoShop's partner manufacturers/companies.
+ * Examples: "EcoBrand", "Pureza Naturais", "Bambu Home".
  *
- * Endpoints que usam estes schemas:
+ * Business rules:
+ * - The brand name is unique in the system
+ * - Each brand is associated with one user (1:1 relationship)
+ * - Only users of type MARCA or ADMIN can be responsible for brands
+ *
+ * Endpoints that use these schemas:
  * - POST /api/marcas
  * - PUT /api/marcas/:id
- * ============================================================================
  */
 
 import { z } from "zod";
 
 /**
- * Schema para criação de uma nova marca.
+ * Schema for creating a new brand.
  *
- * Regras:
- * - nome: obrigatório, não vazio (ex: "EcoBrand")
- * - descricao: opcional — história ou compromissos da marca
- * - usuarioId: obrigatório, inteiro positivo (ID do usuário responsável)
+ * Rules:
+ * - nome: required, not empty (e.g. "EcoBrand")
+ * - descricao: optional — the brand's story or commitments
+ * - usuarioId: required, positive integer (ID of the responsible user)
  *
- * VALIDAÇÃO ADICIONAL (no service):
- * - Verificar se o usuário existe
- * - Verificar se o usuário não já está associado a outra marca (unicidade)
- * - Verificar se o tipo do usuário é MARCA ou ADMIN
+ * ADDITIONAL VALIDATION (in the service):
+ * - Check that the user exists
+ * - Check that the user is not already associated with another brand (uniqueness)
+ * - Check that the user's type is MARCA or ADMIN
  *
  * @example
- * const dados = {
+ * const data = {
  *   nome: "EcoBrand",
- *   descricao: "Roupas sustentáveis feitas com algodão orgânico",
+ *   descricao: "Sustainable clothing made with organic cotton",
  *   usuarioId: 5
  * };
  */
@@ -49,28 +47,28 @@ export const brandSchema = z.object({
 });
 
 /**
- * Schema para atualização de uma marca existente.
+ * Schema for updating an existing brand.
  *
- * TODOS os campos são opcionais — permite atualização parcial.
- * NOTA: usuarioId NÃO pode ser alterado após a criação.
- * Para transferir responsabilidade, um admin deve criar uma nova marca.
+ * ALL fields are optional — allows partial updates.
+ * NOTE: usuarioId CANNOT be changed after creation.
+ * To transfer responsibility, an admin must create a new brand.
  *
- * Regras:
- * - nome: mínimo 1 caractere SE fornecido
- * - descricao: string livre SE fornecida
+ * Rules:
+ * - nome: minimum 1 character IF provided
+ * - descricao: free string IF provided
  *
  * @example
- * // Renomear marca
- * const dados = { nome: "EcoBrand Sustentável" };
+ * // Rename a brand
+ * const data = { nome: "EcoBrand Sustainable" };
  *
- * // Atualizar apenas descrição
- * const dados = { descricao: "Nova coleção 2026 com tecidos reciclados" };
+ * // Update only the description
+ * const data = { descricao: "New 2026 collection with recycled fabrics" };
  */
 export const updateBrandSchema = z.object({
   nome: z.string().min(1, "Name cannot be empty").optional(),
   descricao: z.string().optional(),
 });
 
-// Tipos inferidos para uso nos services
+// Inferred types for use in the services
 export type BrandInput = z.infer<typeof brandSchema>;
 export type UpdateBrandInput = z.infer<typeof updateBrandSchema>;
