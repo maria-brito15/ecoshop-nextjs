@@ -1,19 +1,17 @@
 // services/health.service.ts
 
 /**
- * ============================================================================
- * SAÚDE DA APLICAÇÃO
- * ============================================================================
- * Dependência OBRIGATÓRIA: banco. Dependência OPCIONAL: Redis (cache e rate
- * limit degradam sem ele, ADR-0020). Constitution, Art. XIII.2 / REQ-OPS-01:
+ * APPLICATION HEALTH
  *
- * - banco no ar, Redis no ar      → status "ok"          (HTTP 200)
- * - banco no ar, Redis fora       → status "degradado"   (HTTP 200)
- * - banco fora                    → status "indisponivel" (HTTP 503)
+ * REQUIRED dependency: database. OPTIONAL dependency: Redis (cache and rate
+ * limit degrade without it, ADR-0020). Constitution, Art. XIII.2 / REQ-OPS-01:
  *
- * Assim o healthcheck do Docker e o deploy não derrubam a aplicação só porque o
- * Redis (opcional) caiu.
- * ============================================================================
+ * - database up, Redis up    → status "ok"          (HTTP 200)
+ * - database up, Redis down  → status "degradado"   (HTTP 200)
+ * - database down            → status "indisponivel" (HTTP 503)
+ *
+ * This way the Docker healthcheck and the deploy do not take the application
+ * down just because Redis (optional) went down.
  */
 
 import { prisma } from "@/lib/db";
@@ -22,14 +20,14 @@ import { redis, withTimeout, COMMAND_TIMEOUT_MS } from "@/lib/redis";
 export type HealthStatus = "ok" | "degradado" | "indisponivel";
 
 export interface HealthReport {
-  /** A aplicação consegue atender (o banco responde). */
+  /** The application can serve requests (the database responds). */
   ok: boolean;
   status: HealthStatus;
   timestamp: string;
   services: { database: boolean; redis: boolean };
 }
 
-/** Monta o relatório e o código HTTP a partir do estado de cada dependência. */
+/** Builds the report and the HTTP code from the state of each dependency. */
 export function buildHealthReport(
   services: HealthReport["services"],
   now: Date = new Date(),
@@ -64,7 +62,7 @@ async function checkRedis(): Promise<boolean> {
   }
 }
 
-/** Consulta as dependências em paralelo e devolve o relatório. */
+/** Queries the dependencies in parallel and returns the report. */
 export async function checkHealth() {
   const [database, redisOk] = await Promise.all([
     checkDatabase(),

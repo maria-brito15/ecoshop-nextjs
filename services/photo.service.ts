@@ -1,28 +1,26 @@
 // services/photo.service.ts
 
 /**
- * ============================================================================
- * FOTO SERVICE
- * ============================================================================
- * Serviço para gerenciamento de fotos de produtos.
+ * PHOTO SERVICE
  *
- * As fotos são armazenadas no sistema de arquivos (public/data_fotos/)
- * e servidas como arquivos estáticos pelo Next.js.
+ * Service for managing product photos.
  *
- * Regras de negócio:
- * - Extensões permitidas: .jpg, .jpeg, .png, .gif, .webp
- * - Tamanho máximo: 5MB
- * - Nomes sanitizados para evitar colisões e path traversal
- * - Formato do nome: {produtoId}_{timestamp}_{random}.{ext}
+ * Photos are stored on the file system (public/data_fotos/)
+ * and served as static files by Next.js.
  *
- * Segurança:
- * - Validação de extensão (whitelist)
- * - Validação de tamanho (5MB max)
- * - Sanitização de nomes (remove caracteres especiais)
- * - Proteção contra path traversal (path.basename)
+ * Business rules:
+ * - Allowed extensions: .jpg, .jpeg, .png, .gif, .webp
+ * - Maximum size: 5MB
+ * - Sanitized names to avoid collisions and path traversal
+ * - Name format: {productId}_{timestamp}_{random}.{ext}
+ *
+ * Security:
+ * - Extension validation (whitelist)
+ * - Size validation (5MB max)
+ * - Name sanitization (removes special characters)
+ * - Path traversal protection (path.basename)
  *
  * @see https://nextjs.org/docs/app/building-your-application/optimizing/static-assets
- * ============================================================================
  */
 
 import fs from "fs/promises";
@@ -35,28 +33,28 @@ import {
 } from "@/lib/media/image-type";
 
 /**
- * Diretório onde as fotos são armazenadas.
- * Caminho absoluto para evitar ambiguidade.
+ * Directory where photos are stored.
+ * Absolute path to avoid ambiguity.
  */
 const PHOTOS_DIR = path.join(process.cwd(), "public/data_fotos");
 
 /**
- * Tamanho máximo do arquivo: 5MB.
- * Valor escolhido para balancear qualidade da imagem e performance.
+ * Maximum file size: 5MB.
+ * Value chosen to balance image quality and performance.
  */
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 /**
- * Extensões de arquivo permitidas (whitelist).
- * Todas são formatos comuns em câmeras de smartphones.
+ * Allowed file extensions (whitelist).
+ * All are common formats on smartphone cameras.
  */
 export const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
 
 /**
- * Valida se a extensão do arquivo está na whitelist.
+ * Checks whether the file extension is on the whitelist.
  *
- * @param filename - Nome do arquivo (ex: "foto.jpg")
- * @returns true se extensão é permitida
+ * @param filename - File name (e.g. "photo.jpg")
+ * @returns true if the extension is allowed
  */
 function hasAllowedExtension(filename: string): boolean {
   const ext = path.extname(filename).toLowerCase();
@@ -64,15 +62,15 @@ function hasAllowedExtension(filename: string): boolean {
 }
 
 /**
- * Gera um nome sanitizado e único para o arquivo.
+ * Generates a sanitized, unique name for the file.
  *
- * Formato: {produtoId}_{customizado ou timestamp_random}.{ext}
- * Exemplo: "123_meu_produto_foto.jpg" ou "123_1702900000_abc123.jpg"
+ * Format: {productId}_{custom or timestamp_random}.{ext}
+ * Example: "123_my_product_photo.jpg" or "123_1702900000_abc123.jpg"
  *
- * @param productId - ID do produto associado
- * @param originalName - Nome original do arquivo (para extrair extensão)
- * @param custom - Nome personalizado opcional (sanitizado)
- * @returns Nome sanitizado e único
+ * @param productId - ID of the associated product
+ * @param originalName - Original file name (to extract the extension)
+ * @param custom - Optional custom name (sanitized)
+ * @returns Sanitized, unique name
  */
 function buildFileName(
   productId: number,
@@ -87,10 +85,10 @@ function buildFileName(
 }
 
 /**
- * Lista todas as fotos de um produto.
+ * Lists all photos of a product.
  *
- * @param productId - ID do produto
- * @returns Objeto com array de fotos, total e produtoId
+ * @param productId - Product ID
+ * @returns Object with the photo array, total and productId
  */
 export async function listPhotos(productId: number) {
   try {
@@ -100,7 +98,7 @@ export async function listPhotos(productId: number) {
       .map((name) => ({ nome: name, url: `/data_fotos/${name}` }));
     return { fotos: photos, total: photos.length, produtoId: productId };
   } catch {
-    // Diretório não existe ou erro de leitura
+    // Directory does not exist or read error
     return { fotos: [], total: 0, produtoId: productId };
   }
 }
@@ -117,14 +115,14 @@ export type UploadResult =
   | { ok: false; reason: UploadFailureReason };
 
 /**
- * Valida e grava a foto em `diretorio` (sem acesso ao banco; exportada para teste).
+ * Validates and writes the photo to `directory` (no database access; exported for tests).
  *
- * Fluxo: extensão → tamanho → CONTEÚDO real (assinatura dos bytes, REQ-MIDIA-06)
- * → nome sanitizado → gravação exclusiva.
+ * Flow: extension → size → real CONTENT (byte signature, REQ-MIDIA-06)
+ * → sanitized name → exclusive write.
  *
- * A gravação usa a flag `wx` (falha se o arquivo já existe): decide a corrida
- * entre dois uploads simultâneos com o mesmo nome, em vez de checar a listagem do
- * diretório antes e sobrescrever depois (REQ-MIDIA-07).
+ * The write uses the `wx` flag (fails if the file already exists): it settles the race
+ * between two simultaneous uploads with the same name, instead of checking the
+ * directory listing first and overwriting afterwards (REQ-MIDIA-07).
  */
 export async function savePhoto(params: {
   produtoId: number;
@@ -167,12 +165,12 @@ export async function savePhoto(params: {
 }
 
 /**
- * Faz upload de uma nova foto para um produto.
+ * Uploads a new photo for a product.
  *
- * Fluxo: verifica se o produto existe → `gravarFoto` → invalida o cache de fotos.
+ * Flow: check that the product exists → `savePhoto` → invalidate the photo cache.
  *
- * @param params - Parâmetros do upload
- * @returns Resultado da operação (ok com foto ou erro com motivo)
+ * @param params - Upload parameters
+ * @returns Operation result (ok with the photo, or an error with a reason)
  */
 export async function uploadPhoto(params: {
   produtoId: number;
@@ -191,14 +189,14 @@ export async function uploadPhoto(params: {
 }
 
 /**
- * Deleta uma foto específica de um produto.
+ * Deletes a specific photo of a product.
  *
- * Validações de segurança:
- * - Nome deve começar com {produtoId}_ (previne deletar fotos de outros produtos)
- * - Usa path.basename para prevenir path traversal
+ * Security checks:
+ * - The name must start with {productId}_ (prevents deleting other products' photos)
+ * - Uses path.basename to prevent path traversal
  *
- * @param params - Parâmetros da deleção
- * @returns Resultado da operação (ok ou erro com motivo)
+ * @param params - Deletion parameters
+ * @returns Operation result (ok, or an error with a reason)
  */
 export async function deletePhoto(params: {
   produtoId: number;
@@ -209,12 +207,12 @@ export async function deletePhoto(params: {
 > {
   const { produtoId: productId, nomeArquivo: fileName } = params;
 
-  // Valida se o arquivo pertence ao produto
+  // Check that the file belongs to the product
   if (!fileName.startsWith(`${productId}_`)) {
     return { ok: false, reason: "INVALID_NAME" };
   }
 
-  // Proteção contra path traversal
+  // Path traversal protection
   const sanitizedName = path.basename(fileName);
   if (
     sanitizedName !== fileName ||
@@ -226,14 +224,14 @@ export async function deletePhoto(params: {
 
   const filePath = path.join(PHOTOS_DIR, sanitizedName);
 
-  // Verifica se arquivo existe
+  // Check that the file exists
   try {
     await fs.access(filePath);
   } catch {
     return { ok: false, reason: "FILE_NOT_FOUND" };
   }
 
-  // Deleta arquivo
+  // Delete the file
   await fs.unlink(filePath);
   await invalidateCache("PHOTOS");
 

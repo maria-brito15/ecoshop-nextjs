@@ -1,27 +1,25 @@
 // services/product.service.ts
 
 /**
- * ============================================================================
- * PRODUTO SERVICE
- * ============================================================================
- * Camada de serviço para operações CRUD de produtos.
+ * PRODUCT SERVICE
  *
- * Produtos são o core da plataforma - representam itens sustentáveis à venda.
+ * Service layer for product CRUD operations.
+ *
+ * Products are the core of the platform - they represent sustainable items for sale.
  *
  * Cache strategy:
- * - LISTA_PRODUTOS (2 min) para listagens paginadas
- * - ITEM (3 min) para produtos individuais
- * - A chave da listagem inclui todos os parâmetros de query
- * - Invalidação em write: todas as chaves com prefixo "produtos:*"
+ * - PRODUCT_LIST (2 min) for paginated listings
+ * - ITEM (3 min) for individual products
+ * - The listing key includes all query parameters
+ * - Invalidation on write: all keys with the "products:*" prefix
  *
- * Relacionamentos incluídos:
- * - Categoria (dados completos)
- * - Marca (dados completos)
- * - Certificados (via ProdutoCertificado, inclui certificado completo)
+ * Included relationships:
+ * - Category (full data)
+ * - Brand (full data)
+ * - Certificates (via ProdutoCertificado, includes the full certificate)
  *
- * @see lib/cache/keys.ts - Funções de geração de chaves
- * @see lib/cache/ttl.ts - Constantes de TTL
- * ============================================================================
+ * @see lib/cache/keys.ts - Key generation functions
+ * @see lib/cache/ttl.ts - TTL constants
  */
 
 import { prisma } from "@/lib/db";
@@ -40,7 +38,7 @@ import type {
 } from "@/lib/schemas/product";
 
 /**
- * Ordenações aceitas por `listarProdutos` (REQ-CAT-06).
+ * Orderings accepted by `listProducts` (REQ-CAT-06).
  */
 const ORDER_BY_SORT = {
   relevancia: { id: "asc" as const },
@@ -51,32 +49,32 @@ const ORDER_BY_SORT = {
 };
 
 /**
- * Lista produtos com paginação e filtros.
+ * Lists products with pagination and filters.
  *
- * Recebe os filtros JÁ VALIDADOS (`listarProdutosQuerySchema`; os padrões de
- * `page`, `size` e `sort` vêm do schema, não daqui):
- * - page: número da página (padrão: 1)
- * - size: itens por página (padrão: 12)
- * - categoriaId: filtrar por categoria
- * - marcaId: filtrar por marca (REQ-CAT-07)
- * - precoMax: preço máximo (REQ-CAT-06)
- * - sort: relevancia (padrão) | preco_asc | preco_desc | nome_asc | nome_desc (REQ-CAT-06)
- * - nome: busca textual por nome (case-insensitive, até 100 caracteres)
+ * Receives the ALREADY VALIDATED filters (`listProductsQuerySchema`; the defaults of
+ * `page`, `size` and `sort` come from the schema, not from here):
+ * - page: page number (default: 1)
+ * - size: items per page (default: 12)
+ * - categoriaId: filter by category
+ * - marcaId: filter by brand (REQ-CAT-07)
+ * - precoMax: maximum price (REQ-CAT-06)
+ * - sort: relevancia (default) | preco_asc | preco_desc | nome_asc | nome_desc (REQ-CAT-06)
+ * - nome: text search by name (case-insensitive, up to 100 characters)
  *
- * `where`/`orderBy` são resolvidos pelo Prisma (banco), não em memória —
- * por isso a ordenação e o limite de preço valem para o catálogo inteiro,
- * e não só para os itens da página devolvida (REQ-CAT-06).
+ * `where`/`orderBy` are resolved by Prisma (the database), not in memory —
+ * so ordering and the price limit apply to the whole catalog,
+ * not just to the items of the returned page (REQ-CAT-06).
  *
- * Cache: LISTA_PRODUTOS (2 minutos)
- * A chave (REQ-CAT-10) sai dos filtros validados, em ordem fixa.
+ * Cache: PRODUCT_LIST (2 minutes)
+ * The key (REQ-CAT-10) comes from the validated filters, in a fixed order.
  *
- * @param query - Filtros validados
- * @returns Objeto paginado com produtos, total, página atual e tamanho
+ * @param query - Validated filters
+ * @returns Paginated object with products, total, current page and size
  */
 export async function listProducts(query: ListProductsQuery) {
   const { page, size, categoriaId: categoryId, marcaId: brandId, precoMax: maxPrice, sort, nome: name } = query;
 
-  // A chave sai dos filtros validados (REQ-CAT-10), nunca da URL crua.
+  // The key comes from the validated filters (REQ-CAT-10), never from the raw URL.
   const key = productListKey(query);
 
   return withCache(key, TTL.PRODUCT_LIST, async () => {
@@ -107,11 +105,11 @@ export async function listProducts(query: ListProductsQuery) {
 }
 
 /**
- * Cria um novo produto.
- * Requer autenticação ADMIN.
+ * Creates a new product.
+ * Requires ADMIN authentication.
  *
- * @param data - Dados do produto (nome, preco, categoriaId, marcaId, descricao opcional)
- * @returns Produto recém-criado com categorias e marca incluídas
+ * @param data - Product data (nome, preco, categoriaId, marcaId, optional descricao)
+ * @returns Newly created product with categories and brand included
  */
 export async function createProduct(data: ProductInput) {
   const product = await prisma.produto.create({
@@ -124,15 +122,15 @@ export async function createProduct(data: ProductInput) {
 }
 
 /**
- * Busca um produto pelo ID.
+ * Fetches a product by ID.
  *
- * Inclui:
- * - Categoria (dados completos)
- * - Marca (dados completos)
- * - Certificados (com dados completos do certificado)
+ * Includes:
+ * - Category (full data)
+ * - Brand (full data)
+ * - Certificates (with the full certificate data)
  *
- * @param id - ID do produto
- * @returns Produto encontrado com relacionamentos ou null
+ * @param id - Product ID
+ * @returns The product with relationships, or null
  */
 export async function getProduct(id: number) {
   return withCache(productKey(id), TTL.ITEM, () =>
@@ -148,18 +146,18 @@ export async function getProduct(id: number) {
 }
 
 /**
- * Atualiza um produto existente.
- * Requer autenticação ADMIN.
+ * Updates an existing product.
+ * Requires ADMIN authentication.
  *
- * REQ-PROD-05: se `certificadoIds` vier no corpo, substitui por completo o
- * vínculo produto↔certificado (remove os antigos, cria os novos, numa
- * transação). Omitir o campo não altera o vínculo existente.
+ * REQ-PROD-05: if `certificadoIds` is in the body, it fully replaces the
+ * product↔certificate link (removes the old ones, creates the new ones, in a
+ * transaction). Omitting the field does not change the existing link.
  *
- * @param id - ID do produto a ser atualizado
- * @param data - Dados para atualização (todos opcionais)
- * @returns Produto atualizado com relacionamentos
- * @throws Error P2025 se o produto não existir
- * @throws Error P2003 se algum certificadoId não existir
+ * @param id - ID of the product to update
+ * @param data - Update data (all optional)
+ * @returns Updated product with relationships
+ * @throws Error P2025 if the product does not exist
+ * @throws Error P2003 if any certificadoId does not exist
  */
 export async function updateProduct(
   id: number,
@@ -205,17 +203,17 @@ export async function updateProduct(
 }
 
 /**
- * Deleta um produto.
- * Requer autenticação ADMIN.
+ * Deletes a product.
+ * Requires ADMIN authentication.
  *
- * REQ-PROD-07: produto com certificados vinculados NÃO pode ser excluído
- * (decisão do dono, 2026-11-11: bloqueio). A chave estrangeira de
- * `produto_certificado` é `ON DELETE RESTRICT` (não há cascata); o banco recusa
- * (P2003) e o handler responde 409. Para excluir, desvincule antes os
- * certificados (`atualizarProduto` com `certificadoIds: []`).
+ * REQ-PROD-07: a product with linked certificates CANNOT be deleted
+ * (owner's decision, 2026-11-11: block). The foreign key of
+ * `produto_certificado` is `ON DELETE RESTRICT` (there is no cascade); the database refuses
+ * (P2003) and the handler responds 409. To delete, unlink the
+ * certificates first (`updateProduct` with `certificadoIds: []`).
  *
- * @param id - ID do produto a ser deletado
- * @throws PrismaClientKnownRequestError P2025 se o produto não existir (404) ou P2003 se houver vínculos (409)
+ * @param id - ID of the product to delete
+ * @throws PrismaClientKnownRequestError P2025 if the product does not exist (404) or P2003 if there are links (409)
  */
 export async function deleteProduct(id: number) {
   await prisma.produto.delete({ where: { id } });

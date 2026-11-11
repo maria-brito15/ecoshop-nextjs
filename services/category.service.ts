@@ -1,25 +1,23 @@
 // services/category.service.ts
 
 /**
- * ============================================================================
- * CATEGORIA SERVICE
- * ============================================================================
- * Camada de serviço para operações CRUD de categorias.
+ * CATEGORY SERVICE
  *
- * Responsabilidades:
- * - Encapsular lógica de negócio relacionada a categorias
- * - Gerenciar cache (listagens e itens individuais)
- * - Invalidar cache automaticamente após mutações (create, update, delete)
- * - Tratar erros específicos do Prisma (ex: P2025 - registro não encontrado)
+ * Service layer for category CRUD operations.
+ *
+ * Responsibilities:
+ * - Encapsulate business logic related to categories
+ * - Manage the cache (listings and individual items)
+ * - Invalidate the cache automatically after mutations (create, update, delete)
+ * - Handle Prisma-specific errors (e.g. P2025 - record not found)
  *
  * Cache strategy:
- * - LISTA_CURTA (5 min) para listagens completas
- * - ITEM (3 min) para categorias individuais
- * - Invalidação em write: todas as chaves com prefixo "categorias:*"
+ * - SHORT_LIST (5 min) for complete listings
+ * - ITEM (3 min) for individual categories
+ * - Invalidation on write: all keys with the "categories:*" prefix
  *
- * @see lib/cache/keys.ts - Funções de geração de chaves
- * @see lib/cache/ttl.ts - Constantes de TTL
- * ============================================================================
+ * @see lib/cache/keys.ts - Key generation functions
+ * @see lib/cache/ttl.ts - TTL constants
  */
 
 import { prisma } from "@/lib/db";
@@ -34,17 +32,17 @@ import {
 } from "@/lib/cache";
 
 /**
- * Lista todas as categorias ordenadas por nome.
- * Endpoint público - qualquer usuário pode visualizar.
+ * Lists all categories ordered by name.
+ * Public endpoint - any user can view.
  *
- * Cache: LISTA_CURTA (5 minutos)
- * Chave: "categorias:lista"
+ * Cache: SHORT_LIST (5 minutes)
+ * Key: "categories:list"
  *
- * @returns Array de categorias ordenadas alfabeticamente por nome
+ * @returns Array of categories ordered alphabetically by name
  *
  * @example
- * const categorias = await listarCategorias();
- * // [{ id: 1, nome: "Alimentos Orgânicos", descricao: "..." }, ...]
+ * const categories = await listCategories();
+ * // [{ id: 1, nome: "Organic Food", descricao: "..." }, ...]
  */
 export async function listCategories() {
   return withCache(categoriesKey(), TTL.SHORT_LIST, () =>
@@ -53,14 +51,14 @@ export async function listCategories() {
 }
 
 /**
- * Busca uma categoria pelo ID.
- * Endpoint público - qualquer usuário pode visualizar.
+ * Fetches a category by ID.
+ * Public endpoint - any user can view.
  *
- * Cache: ITEM (3 minutos)
- * Chave: "categorias:{id}"
+ * Cache: ITEM (3 minutes)
+ * Key: "categories:{id}"
  *
- * @param id - ID da categoria
- * @returns Categoria encontrada ou null
+ * @param id - Category ID
+ * @returns The category, or null
  */
 export async function getCategory(id: number) {
   return withCache(categoryKey(id), TTL.ITEM, () =>
@@ -69,20 +67,20 @@ export async function getCategory(id: number) {
 }
 
 /**
- * Cria uma nova categoria.
- * Requer autenticação ADMIN.
+ * Creates a new category.
+ * Requires ADMIN authentication.
  *
- * Invalidação de cache:
- * - Remove todas as chaves com prefixo "categorias:*"
- * - Garante que listagens e categorias individuais sejam recarregadas
+ * Cache invalidation:
+ * - Removes all keys with the "categories:*" prefix
+ * - Ensures listings and individual categories are reloaded
  *
- * @param data - Dados da categoria (nome, descrição opcional)
- * @returns Categoria recém-criada
+ * @param data - Category data (nome, optional descricao)
+ * @returns Newly created category
  *
  * @example
- * const categoria = await criarCategoria({
- *   nome: "Eletrônicos Sustentáveis",
- *   descricao: "Dispositivos com baixo consumo energético"
+ * const category = await createCategory({
+ *   nome: "Sustainable Electronics",
+ *   descricao: "Devices with low energy consumption"
  * });
  */
 export async function createCategory(data: {
@@ -95,21 +93,21 @@ export async function createCategory(data: {
 }
 
 /**
- * Atualiza uma categoria existente.
- * Requer autenticação ADMIN.
+ * Updates an existing category.
+ * Requires ADMIN authentication.
  *
- * Invalidação de cache:
- * - Remove a chave individual da categoria (chaveCategoria)
- * - Remove todas as chaves de listagem (prefixo "categorias:*")
+ * Cache invalidation:
+ * - Removes the category's individual key (categoryKey)
+ * - Removes all listing keys ("categories:*" prefix)
  *
- * @param id - ID da categoria a ser atualizada
- * @param data - Dados para atualização (nome, descrição - ambos opcionais)
- * @returns Categoria atualizada
- * @throws Error P2025 se categoria não existir
+ * @param id - ID of the category to update
+ * @param data - Update data (nome, descricao - both optional)
+ * @returns Updated category
+ * @throws Error P2025 if the category does not exist
  *
- * NOTA (REQ-PROD-02, NFR-CONS-01): também invalida o cache de produtos,
- * pelo mesmo motivo da marca (o nome da categoria aparece embutido nos
- * produtos cacheados).
+ * NOTE (REQ-PROD-02, NFR-CONS-01): also invalidates the product cache,
+ * for the same reason as the brand (the category name is embedded in the
+ * cached products).
  */
 export async function updateCategory(
   id: number,
@@ -125,24 +123,24 @@ export async function updateCategory(
 }
 
 /**
- * Deleta uma categoria.
- * Requer autenticação ADMIN.
+ * Deletes a category.
+ * Requires ADMIN authentication.
  *
- * ATENÇÃO: Categorias com produtos associados NÃO podem ser deletadas
- * devido à constraint de chave estrangeira no banco (onDelete: restrict).
- * Neste caso, o Prisma lançará erro P2003.
+ * ATTENTION: Categories with associated products CANNOT be deleted
+ * because of the foreign key constraint in the database (onDelete: restrict).
+ * In that case, Prisma throws error P2003.
  *
- * Invalidação de cache:
- * - Remove a chave individual da categoria
- * - Remove todas as chaves de listagem
+ * Cache invalidation:
+ * - Removes the category's individual key
+ * - Removes all listing keys
  *
- * @param id - ID da categoria a ser deletada
- * @returns true se deletado com sucesso
- * @throws Error P2025 se categoria não existir
- * @throws Error P2003 se categoria possui produtos vinculados
+ * @param id - ID of the category to delete
+ * @returns true if deleted successfully
+ * @throws Error P2025 if the category does not exist
+ * @throws Error P2003 if the category has linked products
  */
 export async function deleteCategory(id: number) {
-  // Verifica se categoria existe antes de tentar deletar
+  // Check that the category exists before trying to delete it
   const category = await prisma.categoria.findUnique({ where: { id } });
   if (!category) {
     throw new ResourceNotFound("Category");

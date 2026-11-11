@@ -1,20 +1,18 @@
 // services/session.service.ts
 
 /**
- * ============================================================================
- * SESSÃO: ACESSO CURTO + RENOVAÇÃO REVOGÁVEL (ADR-0021)
- * ============================================================================
- * - Login emite um JWT de acesso (15 min) e um token de renovação opaco no Redis.
- * - Renovar GASTA o token (uso único) e emite um par novo, relendo o papel do
- *   usuário no banco: mudança de papel chega em no máximo 15 min.
- * - Sem Redis (decisão do dono, 2026-11-11): a renovação é NEGADA e o usuário
- *   entra de novo; o login continua funcionando, só sem token de renovação.
- * - Logout, troca de senha e exclusão de usuário revogam os tokens de renovação.
- *   Um acesso já emitido vale até expirar (no máximo 15 min): o JWT é verificado
- *   sem consultar o Redis.
+ * SESSION: SHORT-LIVED ACCESS + REVOCABLE REFRESH (ADR-0021)
  *
- * Não conhece `Request`/`Response`: devolve os tokens e o handler cuida dos cookies.
- * ============================================================================
+ * - Login issues an access JWT (15 min) and an opaque refresh token in Redis.
+ * - Refreshing SPENDS the token (single use) and issues a new pair, rereading the
+ *   user's role from the database: a role change takes effect within 15 min at most.
+ * - Without Redis (owner's decision, 2026-11-11): refresh is DENIED and the user
+ *   signs in again; login keeps working, just without a refresh token.
+ * - Logout, password change and user deletion revoke the refresh tokens.
+ *   An access token already issued is valid until it expires (15 min at most): the JWT is
+ *   verified without querying Redis.
+ *
+ * It does not know `Request`/`Response`: it returns the tokens and the handler deals with cookies.
  */
 
 import { signToken } from "@/lib/auth";
@@ -26,13 +24,13 @@ import {
 import { log, serializeError } from "@/lib/log";
 import type { JwtPayload } from "@/types/auth";
 
-/** Quem a sessão representa (o mesmo conteúdo do JWT). */
+/** Who the session represents (same content as the JWT). */
 export type SessionIdentity = JwtPayload;
 
 export interface IssuedSession {
   /** JWT de acesso. */
   access: string;
-  /** Token de renovação, ou `null` se o Redis estava indisponível (sessão só de acesso). */
+  /** Refresh token, or `null` if Redis was unavailable (access-only session). */
   refresh: string | null;
 }
 
@@ -40,7 +38,7 @@ export type RefreshResult =
   | { ok: true; session: IssuedSession; tipo: SessionIdentity["tipo"] }
   | { ok: false; reason: "NO_TOKEN" | "INVALID" | "UNAVAILABLE" };
 
-/** Abre uma sessão: sempre emite o acesso; a renovação depende do Redis. */
+/** Opens a session: always issues the access token; the refresh token depends on Redis. */
 export async function startSession(
   identity: SessionIdentity,
   store: RefreshTokenStore = refreshTokenStore,
@@ -63,9 +61,9 @@ export async function startSession(
 }
 
 /**
- * Troca um token de renovação por uma sessão nova.
+ * Exchanges a refresh token for a new session.
  *
- * @param getIdentity - Relê o usuário no banco (`null` se foi excluído)
+ * @param getIdentity - Rereads the user from the database (`null` if deleted)
  */
 export async function refreshSession(
   refreshToken: string | undefined,
@@ -90,7 +88,7 @@ export async function refreshSession(
   return { ok: true, session: session, tipo: identity.tipo };
 }
 
-/** Logout: revoga o token de renovação (se houver). Nunca lança. */
+/** Logout: revokes the refresh token (if any). Never throws. */
 export async function endSession(
   refreshToken: string | undefined,
   store: RefreshTokenStore = refreshTokenStore,
@@ -104,9 +102,9 @@ export async function endSession(
 }
 
 /**
- * Revoga todas as renovações de um usuário (troca de senha, exclusão). Nunca lança:
- * se o Redis estiver fora, o token continua inutilizável enquanto ele estiver fora
- * (a renovação é negada), mas volta a valer se o Redis voltar com os dados ❔.
+ * Revokes all of a user's refresh tokens (password change, deletion). Never throws:
+ * if Redis is down, the token stays unusable while it is down
+ * (refresh is denied), but it becomes valid again if Redis comes back with the data ❔.
  */
 export async function revokeUserSessions(
   userId: number,

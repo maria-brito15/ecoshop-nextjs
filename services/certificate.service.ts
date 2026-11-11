@@ -1,26 +1,24 @@
 // services/certificate.service.ts
 
 /**
- * ============================================================================
- * CERTIFICADO SERVICE
- * ============================================================================
- * Camada de serviço para operações CRUD de certificados de sustentabilidade.
+ * CERTIFICATE SERVICE
  *
- * Certificados são selos que atestam que um produto atende a padrões ambientais.
- * Exemplos: "FSC", "Orgânico Brasil", "Cruelty Free", "Eureciclo".
+ * Service layer for sustainability certificate CRUD operations.
  *
- * Relacionamentos:
- * - Muitos-para-muitos com Produtos (via ProdutoCertificado)
- * - Um certificado pode ser atribuído a múltiplos produtos
+ * Certificates are seals attesting that a product meets environmental standards.
+ * Examples: "FSC", "Organic Brazil", "Cruelty Free", "Eureciclo".
+ *
+ * Relationships:
+ * - Many-to-many with Products (via ProdutoCertificado)
+ * - A certificate can be assigned to multiple products
  *
  * Cache strategy:
- * - LISTA_CURTA (5 min) para listagens completas
- * - ITEM (3 min) para certificados individuais
- * - Invalidação em write: todas as chaves com prefixo "certificados:*"
+ * - SHORT_LIST (5 min) for complete listings
+ * - ITEM (3 min) for individual certificates
+ * - Invalidation on write: all keys with the "certificates:*" prefix
  *
- * @see lib/cache/keys.ts - Funções de geração de chaves
- * @see lib/cache/ttl.ts - Constantes de TTL
- * ============================================================================
+ * @see lib/cache/keys.ts - Key generation functions
+ * @see lib/cache/ttl.ts - TTL constants
  */
 
 import { prisma } from "@/lib/db";
@@ -35,13 +33,13 @@ import {
 } from "@/lib/cache";
 
 /**
- * Lista todos os certificados ordenados por nome.
- * Endpoint público - certificações são exibidas nos produtos.
+ * Lists all certificates ordered by name.
+ * Public endpoint - certifications are shown on products.
  *
- * Cache: LISTA_CURTA (5 minutos)
- * Chave: "certificados:lista"
+ * Cache: SHORT_LIST (5 minutes)
+ * Key: "certificates:list"
  *
- * @returns Array de certificados ordenados alfabeticamente por nome
+ * @returns Array of certificates ordered alphabetically by name
  */
 export async function listCertificates() {
   return withCache(certificatesKey(), TTL.SHORT_LIST, () =>
@@ -50,10 +48,10 @@ export async function listCertificates() {
 }
 
 /**
- * Busca um certificado pelo ID.
+ * Fetches a certificate by ID.
  *
- * @param id - ID do certificado
- * @returns Certificado encontrado ou null
+ * @param id - Certificate ID
+ * @returns The certificate, or null
  */
 export async function getCertificate(id: number) {
   return withCache(certificateKey(id), TTL.ITEM, () =>
@@ -62,19 +60,19 @@ export async function getCertificate(id: number) {
 }
 
 /**
- * Cria um novo certificado.
- * Requer autenticação ADMIN.
+ * Creates a new certificate.
+ * Requires ADMIN authentication.
  *
- * @param data - Dados do certificado
- * @param data.nome - Nome do certificado (ex: "Cruelty Free")
- * @param data.descricao - Descrição opcional do que o selo garante
- * @param data.orgaoEmissor - Entidade responsável (ex: "PETA", "SisOrg")
- * @returns Certificado recém-criado
+ * @param data - Certificate data
+ * @param data.nome - Certificate name (e.g. "Cruelty Free")
+ * @param data.descricao - Optional description of what the seal guarantees
+ * @param data.orgaoEmissor - Responsible entity (e.g. "PETA", "SisOrg")
+ * @returns Newly created certificate
  *
  * @example
- * const certificado = await criarCertificado({
+ * const certificate = await createCertificate({
  *   nome: "Cruelty Free",
- *   descricao: "Não testado em animais",
+ *   descricao: "Not tested on animals",
  *   orgaoEmissor: "PETA"
  * });
  */
@@ -89,13 +87,13 @@ export async function createCertificate(data: {
 }
 
 /**
- * Atualiza um certificado existente.
- * Requer autenticação ADMIN.
+ * Updates an existing certificate.
+ * Requires ADMIN authentication.
  *
- * @param id - ID do certificado a ser atualizado
- * @param data - Dados para atualização (todos opcionais)
- * @returns Certificado atualizado
- * @throws Error P2025 se certificado não existir
+ * @param id - ID of the certificate to update
+ * @param data - Update data (all optional)
+ * @returns Updated certificate
+ * @throws Error P2025 if the certificate does not exist
  */
 export async function updateCertificate(
   id: number,
@@ -110,16 +108,16 @@ export async function updateCertificate(
 }
 
 /**
- * Deleta um certificado.
- * Requer autenticação ADMIN.
+ * Deletes a certificate.
+ * Requires ADMIN authentication.
  *
- * ATENÇÃO: Certificados associados a produtos NÃO podem ser deletados
- * devido à constraint de chave estrangeira no banco.
+ * ATTENTION: Certificates linked to products CANNOT be deleted
+ * because of the foreign key constraint in the database.
  *
- * @param id - ID do certificado a ser deletado
- * @returns true se deletado com sucesso
- * @throws Error P2025 se certificado não existir
- * @throws Error P2003 se certificado possui produtos vinculados
+ * @param id - ID of the certificate to delete
+ * @returns true if deleted successfully
+ * @throws Error P2025 if the certificate does not exist
+ * @throws Error P2003 if the certificate has linked products
  */
 export async function deleteCertificate(id: number) {
   const certificate = await prisma.certificado.findUnique({ where: { id } });

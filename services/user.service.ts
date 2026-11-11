@@ -1,28 +1,26 @@
 // services/user.service.ts
 
 /**
- * ============================================================================
- * USUARIO SERVICE
- * ============================================================================
- * Camada de serviço para operações CRUD de usuários.
+ * USER SERVICE
  *
- * Responsabilidades:
- * - Hash de senhas com bcrypt (12 rounds - segurança x performance)
- * - Validação de unicidade de email
- * - Cache de usuários (me, individual, listagem)
- * - Invalidação de cache em mutações
+ * Service layer for user CRUD operations.
  *
- * Segurança:
- * - Senhas nunca são retornadas em respostas de API
- * - Buscas sempre excluem o campo "senha" (select explícito)
- * - Hash com bcrypt (SALT_ROUNDS = 12)
+ * Responsibilities:
+ * - Password hashing with bcrypt (12 rounds - security vs performance)
+ * - Email uniqueness validation
+ * - User cache (me, individual, listing)
+ * - Cache invalidation on mutations
+ *
+ * Security:
+ * - Passwords are never returned in API responses
+ * - Queries always exclude the "senha" field (explicit select)
+ * - Hash with bcrypt (SALT_ROUNDS = 12)
  *
  * Cache strategy:
- * - USUARIO (60s) para dados individuais
- * - Listagem de usuários NÃO é cacheadas (dados sensíveis)
+ * - USER (60s) for individual data
+ * - The user listing is NOT cached (sensitive data)
  *
- * @see lib/cache/keys.ts - Funções de geração de chaves
- * ============================================================================
+ * @see lib/cache/keys.ts - Key generation functions
  */
 
 import { Prisma } from "@prisma/client";
@@ -46,16 +44,16 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 
 /**
- * Número de rounds de hashing do bcrypt.
- * 12 rounds = ~2^12 iterações = ~4,096 iterações.
- * Balanceamento: segurança (dificulta brute force) x performance (não impacta UX).
+ * Number of bcrypt hashing rounds.
+ * 12 rounds = ~2^12 iterations = ~4,096 iterations.
+ * Trade-off: security (makes brute force harder) vs performance (does not affect UX).
  */
 const SALT_ROUNDS = 12;
 
 /**
- * Campos de Usuario que podem sair do servidor.
- * NUNCA inclua `senha` aqui (Constitution, Art. IV): toda resposta de usuário
- * deve usar esta projeção em vez da entidade Prisma completa.
+ * Usuario fields that may leave the server.
+ * NEVER include `senha` here (Constitution, Art. IV): every user response
+ * must use this projection instead of the full Prisma entity.
  */
 const PUBLIC_USER_FIELDS = {
   id: true,
@@ -81,7 +79,7 @@ interface UpdateUserData {
   email?: string;
   telefone?: string;
   senha?: string;
-  /** Obrigatória para trocar a PRÓPRIA senha (REQ-AUTH-21). */
+  /** Required to change your OWN password (REQ-AUTH-21). */
   senhaAtual?: string;
 }
 
@@ -89,9 +87,9 @@ const isUniquenessViolation = (err: unknown) =>
   err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
 
 /**
- * Lança `ConflitoDeNegocio` se o e-mail (ignorando a caixa) ou o nome da marca
- * pedida já existem. Serve tanto de atalho antes de gravar quanto para explicar
- * uma violação de unicidade detectada pelo banco.
+ * Throws `BusinessConflict` if the email (ignoring case) or the requested brand name
+ * already exist. Serves both as a shortcut before writing and to explain
+ * a uniqueness violation detected by the database.
  */
 async function ensureNoRegistrationConflict(
   userEmail: string,
@@ -115,28 +113,28 @@ async function ensureNoRegistrationConflict(
 }
 
 /**
- * Cria um novo usuário no sistema.
+ * Creates a new user in the system.
  *
- * Validações:
- * - Verifica se email já está cadastrado
- * - Aplica hash na senha com bcrypt
+ * Validations:
+ * - Checks whether the email is already registered
+ * - Hashes the password with bcrypt
  *
- * REQ-AUTH-11 / ADR-0018: quando `tipo === "MARCA"` e `marcaNome` é
- * informado (cadastro público, que exige o nome — REQ-AUTH-14), o usuário
- * é gravado como CLIENTE (direitos de CLIENTE enquanto pendente) e uma
- * `Marca` com `status: "PENDENTE"` é criada na mesma transação; só um
- * ADMIN aprovando (`aprovarMarca`) concede o tipo MARCA de fato.
- * Sem `marcaNome` (cadastro administrativo, que não pede esse campo), o
- * comportamento anterior é mantido: o tipo pedido é gravado direto.
+ * REQ-AUTH-11 / ADR-0018: when `tipo === "MARCA"` and `marcaNome` is
+ * provided (public registration, which requires the name — REQ-AUTH-14), the user
+ * is saved as CLIENTE (CLIENTE rights while pending) and a
+ * `Marca` with `status: "PENDENTE"` is created in the same transaction; only an
+ * ADMIN approving (`approveBrand`) actually grants the MARCA type.
+ * Without `marcaNome` (admin registration, which does not ask for that field), the
+ * previous behavior is kept: the requested type is saved directly.
  *
- * REQ-AUTH-15: o e-mail chega normalizado (minúsculas) pelo schema; a checagem
- * de duplicidade ignora a diferença de caixa para pegar contas antigas. Se duas
- * requisições simultâneas passarem pela checagem, a restrição única do banco
- * (P2002) decide, e o resultado também é 409.
+ * REQ-AUTH-15: the email arrives normalized (lowercase) from the schema; the
+ * duplicate check ignores case differences to catch legacy accounts. If two
+ * simultaneous requests pass the check, the database's unique constraint
+ * (P2002) decides, and the result is also 409.
  *
- * @param data - Dados do usuário
- * @returns Usuário criado (excluindo senha) e, se pendente, `marcaPendente: true`
- * @throws ConflitoDeNegocio se o e-mail (ou o nome da marca pedida) já existe
+ * @param data - User data
+ * @returns Created user (without the password) and, if pending, `marcaPendente: true`
+ * @throws BusinessConflict if the email (or the requested brand name) already exists
  */
 export async function createUser(data: CreateUserData) {
   const brandRequest = data.tipo === "MARCA" && !!data.marcaNome;
@@ -174,7 +172,7 @@ export async function createUser(data: CreateUserData) {
       return created;
     });
   } catch (err) {
-    // Corrida entre duas requisições: o banco recusou; explica qual valor conflitou.
+    // Race between two requests: the database refused; explain which value conflicted.
     if (isUniquenessViolation(err)) {
       await ensureNoRegistrationConflict(data.email, requestedBrand);
     }
@@ -188,14 +186,14 @@ export async function createUser(data: CreateUserData) {
 }
 
 /**
- * Lista todos os usuários (admin only).
+ * Lists all users (admin only).
  *
- * Campos retornados (exclui senha por segurança):
+ * Returned fields (password excluded for security):
  * - id, nome, email, telefone, tipo, criadoEm
  *
- * NOTA: Esta listagem NÃO usa cache por conter dados sensíveis.
+ * NOTE: This listing does NOT use the cache because it contains sensitive data.
  *
- * @returns Array de usuários com campos públicos
+ * @returns Array of users with public fields
  */
 export async function listUsers() {
   return prisma.usuario.findMany({
@@ -204,10 +202,10 @@ export async function listUsers() {
 }
 
 /**
- * Busca um usuário pelo ID.
+ * Fetches a user by ID.
  *
- * @param id - ID do usuário
- * @returns Usuário encontrado (excluindo senha) ou null
+ * @param id - User ID
+ * @returns The user (without the password), or null
  */
 export async function getUser(id: number) {
   return prisma.usuario.findUnique({
@@ -217,22 +215,22 @@ export async function getUser(id: number) {
 }
 
 /**
- * Atualiza um usuário existente.
+ * Updates an existing user.
  *
- * Se a senha for fornecida, aplica hash antes de salvar.
+ * If a password is provided, it is hashed before saving.
  *
- * Invalidação de cache:
- * - Remove chave individual do usuário
- * - Remove chave "me" do usuário
- * - Remove listagem de usuários (admin)
+ * Cache invalidation:
+ * - Removes the user's individual key
+ * - Removes the user's "me" key
+ * - Removes the user listing (admin)
  *
- * @param id - ID do usuário a ser atualizado
- * @param data - Dados para atualização (todos opcionais)
- * @param requesterId - Quem pede a atualização (a sessão); define se a senha atual é exigida
- * @returns Usuário atualizado
- * @throws ConflitoDeNegocio se o novo e-mail já pertence a outro usuário
- * @throws OperacaoNaoAutorizada (403) se trocar a própria senha sem a senha atual correta
- * @throws PrismaClientKnownRequestError P2025 se o usuário não existir (o handler mapeia para 404)
+ * @param id - ID of the user to update
+ * @param data - Update data (all optional)
+ * @param requesterId - Who is requesting the update (the session); decides whether the current password is required
+ * @returns Updated user
+ * @throws BusinessConflict if the new email already belongs to another user
+ * @throws OperationNotAllowed (403) when changing your own password without the correct current password
+ * @throws PrismaClientKnownRequestError P2025 if the user does not exist (the handler maps it to 404)
  */
 export async function updateUser(
   id: number,
@@ -241,8 +239,8 @@ export async function updateUser(
 ) {
   const { senhaAtual: currentPassword, ...fields } = data;
 
-  // REQ-AUTH-21: quem troca a PRÓPRIA senha prova que a conhece (uma sessão
-  // sequestrada não basta para tomar a conta). ADMIN alterando outro usuário não precisa.
+  // REQ-AUTH-21: whoever changes their OWN password proves they know it (a hijacked
+  // session is not enough to take over the account). An ADMIN changing another user does not need it.
   if (fields.senha && requesterId === id) {
     await requireCurrentPassword(id, currentPassword);
   }
@@ -261,38 +259,38 @@ export async function updateUser(
       select: PUBLIC_USER_FIELDS,
     });
   } catch (err) {
-    // `email` é a única coluna única de Usuario que esta atualização altera.
+    // `email` is the only unique Usuario column that this update changes.
     if (isUniquenessViolation(err)) {
       throw new BusinessConflict("Email already registered");
     }
     throw err;
   }
 
-  // Invalida múltiplas chaves de cache em paralelo
+  // Invalidate multiple cache keys in parallel
   await Promise.all([
     invalidateKey(userKey(id)),
     invalidateKey(currentUserKey(id)),
     invalidateCache("USERS"),
   ]);
 
-  // REQ-AUTH-20: trocar a senha encerra as outras sessões (tokens de renovação).
+  // REQ-AUTH-20: changing the password ends the other sessions (refresh tokens).
   if (fields.senha) await revokeUserSessions(id);
 
   return user;
 }
 
 /**
- * Deleta um usuário.
- * Requer autenticação ADMIN.
+ * Deletes a user.
+ * Requires ADMIN authentication.
  *
- * REQ-USR-08: ninguém exclui a própria conta por aqui (evita ficar sem ADMIN).
+ * REQ-USR-08: nobody deletes their own account here (avoids being left without an ADMIN).
  *
- * @param id - ID do usuário a ser deletado
- * @param requesterId - ID de quem pede a exclusão (a sessão)
- * @returns true se deletado com sucesso
- * @throws ConflitoDeNegocio se for a própria conta
- * @throws RecursoNaoEncontrado se o usuário não existir
- * @throws PrismaClientKnownRequestError P2003 se tiver dependências (ex.: marca); o handler mapeia para 409
+ * @param id - ID of the user to delete
+ * @param requesterId - ID of whoever requests the deletion (the session)
+ * @returns true if deleted successfully
+ * @throws BusinessConflict if it is the requester's own account
+ * @throws ResourceNotFound if the user does not exist
+ * @throws PrismaClientKnownRequestError P2003 if it has dependencies (e.g. brand); the handler maps it to 409
  */
 export async function deleteUser(id: number, requesterId: number) {
   if (id === requesterId) {
@@ -317,9 +315,9 @@ export async function deleteUser(id: number, requesterId: number) {
 }
 
 /**
- * Confere a senha atual do usuário (REQ-AUTH-21).
- * @throws RecursoNaoEncontrado se o usuário não existe
- * @throws OperacaoNaoAutorizada se a senha atual falta ou não confere
+ * Checks the user's current password (REQ-AUTH-21).
+ * @throws ResourceNotFound if the user does not exist
+ * @throws OperationNotAllowed if the current password is missing or does not match
  */
 async function requireCurrentPassword(id: number, currentPassword: string | undefined) {
   const user = await prisma.usuario.findUnique({
@@ -333,8 +331,8 @@ async function requireCurrentPassword(id: number, currentPassword: string | unde
 }
 
 /**
- * Hash de uma senha que ninguém conhece, calculado uma vez. Serve para gastar o
- * mesmo tempo de bcrypt quando o e-mail não existe (REQ-AUTH-23).
+ * Hash of a password nobody knows, computed once. It is used to spend the
+ * same bcrypt time when the email does not exist (REQ-AUTH-23).
  */
 let dummyHash: Promise<string> | undefined;
 const getDummyHash = () =>
@@ -344,13 +342,13 @@ const getDummyHash = () =>
   ));
 
 /**
- * Confere e-mail e senha do login.
+ * Checks the login email and password.
  *
- * REQ-AUTH-23: sempre executa a comparação do bcrypt, mesmo quando o e-mail não
- * existe, para que o tempo de resposta não revele quais e-mails têm conta.
- * REQ-AUTH-15: o e-mail é comparado ignorando a caixa (contas antigas).
+ * REQ-AUTH-23: always runs the bcrypt comparison, even when the email does not
+ * exist, so the response time does not reveal which emails have an account.
+ * REQ-AUTH-15: the email is compared ignoring case (legacy accounts).
  *
- * @returns a identidade da sessão, ou `null` se as credenciais não conferem
+ * @returns the session identity, or `null` if the credentials do not match
  */
 export async function verifyCredentials(
   providedEmail: string,
@@ -365,7 +363,7 @@ export async function verifyCredentials(
   return { id: user.id, email: user.email, tipo: user.tipo };
 }
 
-/** Relê id, e-mail e papel atuais do usuário (renovação de sessão); `null` se foi excluído. */
+/** Rereads the user's current id, email and role (session refresh); `null` if deleted. */
 export async function getIdentity(
   id: number,
 ): Promise<SessionIdentity | null> {
@@ -375,7 +373,7 @@ export async function getIdentity(
   });
 }
 
-/** Dados de "quem sou eu" (`/api/auth/me`), com cache curto. */
+/** "Who am I" data (`/api/auth/me`), with a short cache. */
 export async function getSessionProfile(id: number) {
   return withCache(currentUserKey(id), TTL.USER, () =>
     prisma.usuario.findUnique({
