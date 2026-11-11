@@ -1,25 +1,23 @@
 // app/(sobre)/about/page.tsx
 
 /**
- * ============================================================================
- * PÁGINA SOBRE O ECOSHOP
- * ============================================================================
- * Rota: "/about"
+ * ABOUT ECOSHOP PAGE
  *
- * Página institucional que conta a história do EcoShop, o time de desenvolvimento
- * e as tecnologias utilizadas no projeto.
+ * Route: "/about"
  *
- * Conteúdo abordado:
- * - Origem do projeto (Trabalho Interdisciplinar 2 da PUC Minas)
- * - Reconhecimento acadêmico (finalista entre melhores trabalhos)
- * - Problema que o EcoShop resolve
- * - Sprints do desenvolvimento (4 sprints)
- * - Comparação entre versão original (Java) e refatorada (Next.js)
- * - Melhorias implementadas na refatoração
- * - Equipe original do projeto
+ * Institutional page telling EcoShop's story, the development team
+ * and the technologies used in the project.
  *
- * @see app/(store)/produtos/page.tsx - Call-to-action para produtos
- * ============================================================================
+ * Topics covered:
+ * - Origin of the project (PUC Minas Interdisciplinary Work 2)
+ * - Academic recognition (finalist among the best works)
+ * - The problem EcoShop solves
+ * - Development sprints (4 sprints)
+ * - Comparison between the original version (Java) and the refactored one (Next.js)
+ * - Improvements made in the refactoring
+ * - The project's original team
+ *
+ * @see app/(store)/produtos/page.tsx - Call-to-action to products
  */
 
 "use client";
@@ -28,7 +26,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 
 // ----------------------------------------------------------------------------
-// DADOS ESTÁTICOS
+// STATIC DATA
 // ----------------------------------------------------------------------------
 
 const TEAM = [
@@ -151,8 +149,8 @@ const STATS = [
 // ----------------------------------------------------------------------------
 
 /**
- * Hook para animação de revelação ao rolar a página.
- * Adiciona classe "visible" a elementos com classe "animate-on-scroll".
+ * Hook for the reveal-on-scroll animation.
+ * Adds the "visible" class to elements with the "animate-on-scroll" class.
  */
 function useScrollReveal() {
   useEffect(() => {
@@ -181,7 +179,7 @@ function useScrollReveal() {
 }
 
 // ----------------------------------------------------------------------------
-// PÁGINA PRINCIPAL
+// MAIN PAGE
 // ----------------------------------------------------------------------------
 
 export default function AboutPage() {

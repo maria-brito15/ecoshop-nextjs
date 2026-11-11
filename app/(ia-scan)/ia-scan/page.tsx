@@ -1,31 +1,29 @@
 // app/(ia-scan)/ia-scan/page.tsx
 
 /**
- * ============================================================================
- * PÁGINA DO ECOSCAN IA
- * ============================================================================
- * Rota: "/ia-scan"
+ * ECOSCAN AI PAGE
  *
- * Página principal da funcionalidade de inteligência artificial do EcoShop.
- * Permite que usuários tirem fotos de resíduos e recebam informações
- * sobre como descartá-los corretamente.
+ * Route: "/ia-scan"
  *
- * Fluxo:
- * 1. Usuário seleciona/arrasta uma imagem
- * 2. Envia para o backend via FormData
- * 3. Azure Vision classifica o material
- * 4. Gemini gera análise detalhada de sustentabilidade
- * 5. Exibe resultados (material, confiança, dicas de descarte)
+ * Main page of EcoShop's artificial intelligence feature.
+ * It lets users take photos of waste and get information
+ * on how to dispose of it correctly.
  *
- * Estados da página:
- * - Upload: usuário seleciona imagem
- * - Processando: IA está analisando (loading)
- * - Sucesso: exibe análise detalhada
- * - Falha: exibe sugestão para melhorar a foto
+ * Flow:
+ * 1. User selects/drags an image
+ * 2. Sends it to the backend via FormData
+ * 3. Azure Vision classifies the material
+ * 4. Gemini generates a detailed sustainability analysis
+ * 5. Shows the results (material, confidence, disposal tips)
  *
- * @see lib/hooks/useAI.ts - Hook useScan
- * @see app/api/ia/scan/route.ts - Endpoint da API
- * ============================================================================
+ * Page states:
+ * - Upload: user selects an image
+ * - Processing: the AI is analyzing (loading)
+ * - Success: shows the detailed analysis
+ * - Failure: shows a suggestion to improve the photo
+ *
+ * @see lib/hooks/useAI.ts - useScan hook
+ * @see app/api/ia/scan/route.ts - API endpoint
  */
 
 "use client";
@@ -36,7 +34,7 @@ import { useScan } from "@/lib/hooks/useAI";
 import type { AiAnalysis } from "@/types/ai";
 import type { ScanResponse } from "@/types/api";
 
-// Formatos de imagem aceitos pelo Azure Vision
+// Image formats accepted by Azure Vision
 const VALID_TYPES = [
   "image/jpeg",
   "image/jpg",
@@ -62,10 +60,10 @@ function formatBytes(bytes: number) {
 }
 
 /**
- * Retorna cores baseadas na porcentagem de confiança da IA.
- * - ≥85%: verde (alta confiança)
- * - ≥70%: amarelo (média confiança)
- * - <70%: vermelho (baixa confiança)
+ * Returns colors based on the AI confidence percentage.
+ * - ≥85%: green (high confidence)
+ * - ≥70%: yellow (medium confidence)
+ * - <70%: red (low confidence)
  */
 function getConfidenceColors(conf: number) {
   if (conf >= 85) return { bg: "#d1fae5", color: "#065f46", border: "#10b981" };
@@ -78,7 +76,7 @@ function getConfidenceColors(conf: number) {
 // ----------------------------------------------------------------------------
 
 /**
- * Card de informação usado na exibição dos resultados.
+ * Information card used to display the results.
  */
 interface CardProps {
   icon: string;
@@ -159,8 +157,8 @@ function isInsufficient(data: ScanResponse): data is ScanResponse & {
 }
 
 /**
- * Resultado quando a análise foi bem-sucedida.
- * Exibe material identificado, confiança e análise completa.
+ * Result when the analysis succeeded.
+ * Shows the identified material, confidence and the full analysis.
  */
 function SuccessResult({
   data,
@@ -274,8 +272,8 @@ function SuccessResult({
 }
 
 /**
- * Resultado quando a análise falhou (baixa confiança ou material não identificado).
- * Exibe sugestão para melhorar a foto.
+ * Result when the analysis failed (low confidence or unidentified material).
+ * Shows a suggestion to improve the photo.
  */
 function InsufficientResult({
   data,
@@ -320,7 +318,7 @@ function InsufficientResult({
 }
 
 // ----------------------------------------------------------------------------
-// PÁGINA PRINCIPAL
+// MAIN PAGE
 // ----------------------------------------------------------------------------
 
 export default function IaScanPage() {

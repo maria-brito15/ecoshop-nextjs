@@ -1,27 +1,25 @@
 // app/(educacao)/educacao/page.tsx
 
 /**
- * ============================================================================
- * PÁGINA DE EDUCAÇÃO AMBIENTAL
- * ============================================================================
- * Rota: "/educacao"
+ * ENVIRONMENTAL EDUCATION PAGE
  *
- * Página educativa do EcoShop, responsável por conscientizar usuários
- * sobre sustentabilidade, reciclagem e práticas ecológicas.
+ * Route: "/educacao"
  *
- * Funcionalidades:
- * - Artigos educativos sobre meio ambiente
- * - Dicas práticas de reciclagem por tipo de material
- * - Quiz interativo para testar conhecimentos
+ * EcoShop's educational page, meant to raise users' awareness
+ * about sustainability, recycling and ecological practices.
  *
- * Conteúdos abordados:
- * - O que é Ecologia (produtores, consumidores, decompositores)
- * - Pilares da Sustentabilidade (ambiental, social, econômico)
- * - Coleta seletiva e cores das lixeiras
- * - Tempo de decomposição de materiais
+ * Features:
+ * - Educational articles about the environment
+ * - Practical recycling tips by material type
+ * - Interactive quiz to test knowledge
  *
- * @see app/components/Header.tsx - Navegação para esta página
- * ============================================================================
+ * Topics covered:
+ * - What is Ecology (producers, consumers, decomposers)
+ * - Pillars of Sustainability (environmental, social, economic)
+ * - Selective collection and bin colors
+ * - Decomposition time of materials
+ *
+ * @see app/components/Header.tsx - Navigation to this page
  */
 
 "use client";
@@ -57,12 +55,12 @@ type Question = {
 };
 
 // ----------------------------------------------------------------------------
-// CONTEÚDO ESTÁTICO
+// STATIC CONTENT
 // ----------------------------------------------------------------------------
 
 /**
- * Artigos educativos sobre sustentabilidade.
- * Cada artigo tem tag, ícone, título, tempo de leitura e conteúdo completo.
+ * Educational articles about sustainability.
+ * Each article has a tag, icon, title, reading time and full content.
  */
 const ARTICLES: Article[] = [
   {
@@ -115,8 +113,8 @@ const ARTICLES: Article[] = [
 ];
 
 /**
- * Dicas de reciclagem por tipo de material.
- * Cada material tem ícone, cor e lista de orientações.
+ * Recycling tips by material type.
+ * Each material has an icon, a color and a list of guidelines.
  */
 const TIPS: Tip[] = [
   {
@@ -194,8 +192,8 @@ const TIPS: Tip[] = [
 ];
 
 /**
- * Perguntas do quiz sobre sustentabilidade.
- * Cada questão tem pergunta, opções, resposta correta e explicação.
+ * Quiz questions about sustainability.
+ * Each question has a prompt, options, the correct answer and an explanation.
  */
 const QUESTIONS: Question[] = [
   {
@@ -240,9 +238,9 @@ const QUESTIONS: Question[] = [
 // ----------------------------------------------------------------------------
 
 /**
- * Hook para animação de revelação ao rolar a página.
- * Detecta quando elementos com classe "animate-on-scroll" entram na viewport
- * e adiciona a classe "visible" para trigger da animação CSS.
+ * Hook for the reveal-on-scroll animation.
+ * Detects when elements with the "animate-on-scroll" class enter the viewport
+ * and adds the "visible" class to trigger the CSS animation.
  */
 function useScrollReveal(deps: unknown[] = []) {
   useEffect(() => {
@@ -276,7 +274,7 @@ function useScrollReveal(deps: unknown[] = []) {
 }
 
 // ----------------------------------------------------------------------------
-// COMPONENTES DAS ABAS
+// TAB COMPONENTS
 // ----------------------------------------------------------------------------
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
@@ -286,8 +284,8 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 ];
 
 /**
- * Seção de artigos educativos.
- * Exibe lista de artigos em cards. Ao clicar, expande para leitura completa.
+ * Educational articles section.
+ * Shows a list of articles as cards. Clicking expands it for full reading.
  */
 function ArticlesSection({
   onArtigoChange: onArticleChange,
@@ -306,7 +304,7 @@ function ArticlesSection({
     onArticleChange?.(false);
   }
 
-  // Visualização expandida do artigo
+  // Expanded article view
   if (open) {
     return (
       <div className="animate-[fadeSlideUp_0.4s_ease]">
@@ -380,8 +378,8 @@ function ArticlesSection({
 }
 
 /**
- * Seção de dicas de reciclagem.
- * Exibe cards com orientações específicas por tipo de material.
+ * Recycling tips section.
+ * Shows cards with guidance specific to each material type.
  */
 function TipsSection() {
   const [selected, setSelected] = useState<Tip>(TIPS[0]);
@@ -448,8 +446,8 @@ function TipsSection() {
 }
 
 /**
- * Seção do quiz interativo.
- * Perguntas de múltipla escolha com pontuação e explicações.
+ * Interactive quiz section.
+ * Multiple-choice questions with scoring and explanations.
  */
 function QuizSection() {
   const [index, setIndex] = useState(0);
@@ -667,7 +665,7 @@ function QuizSection() {
 }
 
 // ----------------------------------------------------------------------------
-// PÁGINA PRINCIPAL
+// MAIN PAGE
 // ----------------------------------------------------------------------------
 
 export default function EducationPage() {

@@ -1,28 +1,26 @@
 // app/(admin)/painel/page.tsx
 
 /**
- * ============================================================================
- * PAINEL ADMINISTRATIVO
- * ============================================================================
- * Rota: "/painel" (protegida - apenas ADMIN)
+ * ADMIN PANEL
  *
- * Painel completo para gerenciamento da plataforma EcoShop.
- * Requer autenticação e tipo de usuário ADMIN.
+ * Route: "/painel" (protected - ADMIN only)
  *
- * Funcionalidades por aba:
- * - Produtos: CRUD completo (criar, editar, deletar, gerenciar fotos)
- * - Categorias: CRUD de categorias
- * - Marcas: CRUD de marcas (associadas a usuários)
- * - Certificados: CRUD de certificados de sustentabilidade
+ * Complete panel for managing the EcoShop platform.
+ * Requires authentication and the ADMIN user type.
  *
- * Segurança:
- * - Apenas usuários com tipo "ADMIN" têm acesso
- * - Middleware requireAdmin protege a rota
- * - Todas as operações de API validam permissões novamente
+ * Features per tab:
+ * - Products: full CRUD (create, edit, delete, manage photos)
+ * - Categories: category CRUD
+ * - Brands: brand CRUD (associated with users)
+ * - Certificates: sustainability certificate CRUD
+ *
+ * Security:
+ * - Only users of type "ADMIN" have access
+ * - The requireAdmin middleware protects the route
+ * - All API operations validate permissions again
  *
  * @see app/_middleware/auth.ts - requireAdmin
- * @see lib/hooks/* - Hooks para operações CRUD
- * ============================================================================
+ * @see lib/hooks/* - Hooks for CRUD operations
  */
 
 "use client";
@@ -85,7 +83,7 @@ const TAB_CONFIG: Record<Tab, { label: string; icon: string; desc: string }> = {
 };
 
 // ============================================================================
-// PÁGINA PRINCIPAL DO PAINEL
+// PANEL MAIN PAGE
 // ============================================================================
 
 function DashboardPage() {
@@ -234,7 +232,7 @@ function DashboardPage() {
 }
 
 // ============================================================================
-// COMPONENTES REUTILIZÁVEIS
+// REUSABLE COMPONENTS
 // ============================================================================
 
 const inputCls = `
@@ -252,8 +250,8 @@ const inputCls = `
 `;
 
 /**
- * Modal para gerenciar fotos de um produto específico.
- * Permite upload, visualização e deleção de imagens.
+ * Modal to manage the photos of a specific product.
+ * Allows uploading, viewing and deleting images.
  */
 interface PhotosModalProps {
   produto: Produto;
@@ -281,7 +279,7 @@ function PhotosModal({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Limpa erro de upload ao abrir modal
+  // Clear the upload error when opening the modal
   useEffect(() => {
     if (isOpen) setUploadError(null);
   }, [isOpen]);
@@ -473,7 +471,7 @@ function PhotosModal({
 }
 
 // ============================================================================
-// SEÇÃO: PRODUTOS
+// SECTION: PRODUCTS
 // ============================================================================
 
 function ProductsSection() {
@@ -777,7 +775,7 @@ function ProductsSection() {
 }
 
 // ============================================================================
-// SEÇÃO: CATEGORIAS
+// SECTION: CATEGORIES
 // ============================================================================
 
 function CategoriesSection() {
@@ -929,7 +927,7 @@ function CategoriesSection() {
 }
 
 // ============================================================================
-// SEÇÃO: MARCAS
+// SECTION: BRANDS
 // ============================================================================
 
 function BrandsSection() {
@@ -1129,7 +1127,7 @@ function BrandsSection() {
 }
 
 // ============================================================================
-// SEÇÃO: CERTIFICADOS
+// SECTION: CERTIFICATES
 // ============================================================================
 
 function CertificatesSection() {
@@ -1314,7 +1312,7 @@ function CertificatesSection() {
 }
 
 // ============================================================================
-// COMPONENTES AUXILIARES REUTILIZÁVEIS
+// REUSABLE HELPER COMPONENTS
 // ============================================================================
 
 function SectionHeader({
@@ -1401,7 +1399,7 @@ function ActionButton({
   );
 }
 
-/** Rótulo visual do status de aprovação de uma marca (ADR-0018). */
+/** Visual label for a brand's approval status (ADR-0018). */
 function BrandStatusBadge({ status }: { status: Marca["status"] }) {
   const styles: Record<Marca["status"], string> = {
     PENDENTE: "bg-amber-50 text-amber-700",

@@ -1,5 +1,5 @@
-// app/components/Header.tsx - VERSÃO CORRIGIDA
-// Alterações: Adicionar chamada a /api/auth/refresh após carregar dados do usuário
+// app/components/Header.tsx - FIXED VERSION
+// Changes: Add a call to /api/auth/refresh after loading the user data
 
 "use client";
 

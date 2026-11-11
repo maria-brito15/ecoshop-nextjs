@@ -1,25 +1,23 @@
 // app/layout.tsx
 
 /**
- * ============================================================================
  * ROOT LAYOUT
- * ============================================================================
- * Layout raiz da aplicação - envolve TODAS as páginas.
  *
- * Responsabilidades:
- * - Configurar metadados globais (SEO)
- * - Carregar fontes customizadas (Syne e Plus Jakarta Sans)
- * - Incluir o Header global (navegação)
- * - Prover estrutura HTML base
+ * The application's root layout - wraps ALL pages.
  *
- * Características:
- * - suppressHydrationWarning: evita warnings de incompatibilidade
- *   entre SSR e client (útil para dark mode)
- * - antialiased: suaviza fontes no navegador
+ * Responsibilities:
+ * - Configure global metadata (SEO)
+ * - Load custom fonts (Syne and Plus Jakarta Sans)
+ * - Include the global Header (navigation)
+ * - Provide the base HTML structure
  *
- * @see app/components/Header.tsx - Componente de navegação global
- * @see app/globals.css - Estilos globais e variáveis CSS
- * ============================================================================
+ * Characteristics:
+ * - suppressHydrationWarning: avoids mismatch warnings
+ *   between SSR and the client (useful for dark mode)
+ * - antialiased: smooths fonts in the browser
+ *
+ * @see app/components/Header.tsx - Global navigation component
+ * @see app/globals.css - Global styles and CSS variables
  */
 
 import type { Metadata } from "next";
@@ -29,8 +27,8 @@ import Header from "./components/Header";
 import FloatingChat from "./components/FloatingChat";
 
 /**
- * Fonte Syne - usada para títulos e elementos de destaque.
- * Características: geométrica, moderna, com peso 800 para extrabold.
+ * Syne font - used for headings and highlight elements.
+ * Characteristics: geometric, modern, with weight 800 for extra bold.
  */
 const syne = Syne({
   subsets: ["latin"],
@@ -40,8 +38,8 @@ const syne = Syne({
 });
 
 /**
- * Fonte Plus Jakarta Sans - usada para corpo de texto.
- * Características: legível, clean, boa para longos textos.
+ * Plus Jakarta Sans font - used for body text.
+ * Characteristics: readable, clean, good for long texts.
  */
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -51,12 +49,12 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 /**
- * Metadados globais para SEO e compartilhamento em redes sociais.
+ * Global metadata for SEO and social media sharing.
  *
- * title.default: usado quando a página não define seu próprio título
- * title.template: adiciona " | EcoShop" ao final de cada título de página
- * description: descrição padrão para mecanismos de busca
- * openGraph: configurações para compartilhamento em Facebook, LinkedIn, etc.
+ * title.default: used when the page does not define its own title
+ * title.template: appends " | EcoShop" to the end of each page title
+ * description: default description for search engines
+ * openGraph: settings for sharing on Facebook, LinkedIn, etc.
  */
 export const metadata: Metadata = {
   title: {
@@ -73,9 +71,9 @@ export const metadata: Metadata = {
 };
 
 /**
- * Root Layout - estrutura base da aplicação.
+ * Root Layout - the application's base structure.
  *
- * @param children - Componentes das páginas aninhadas
+ * @param children - Nested page components
  */
 export default function RootLayout({
   children,

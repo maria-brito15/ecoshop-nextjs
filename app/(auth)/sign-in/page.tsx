@@ -1,38 +1,36 @@
 // app/(auth)/sign-in/page.tsx
 
 /**
- * ============================================================================
- * PÁGINA DE AUTENTICAÇÃO - LOGIN E REGISTRO
- * ============================================================================
- * Rota: "/sign-in"
+ * AUTHENTICATION PAGE - LOGIN AND REGISTRATION
  *
- * Página responsável por autenticação de usuários, suportando:
- * - Login de usuários existentes
- * - Registro de novos usuários (CLIENTE ou MARCA)
+ * Route: "/sign-in"
  *
- * Funcionalidades:
- * - Alternância entre modo login e registro
- * - Validação de formulário (senhas coincidem, tamanho mínimo)
- * - Máscara de telefone (formatação automática)
+ * Page responsible for user authentication, supporting:
+ * - Login of existing users
+ * - Registration of new users (CLIENTE or MARCA)
+ *
+ * Features:
+ * - Switching between login and registration modes
+ * - Form validation (passwords match, minimum length)
+ * - Phone mask (automatic formatting)
  * - Dark mode toggle
- * - Rate limiting integrado (backend)
+ * - Integrated rate limiting (backend)
  *
- * Fluxo de login:
- * 1. Usuário preenche email e senha
- * 2. Submete para POST /api/auth
- * 3. Backend valida e retorna cookie httpOnly com JWT
- * 4. Redireciona para página anterior (next) ou home
+ * Login flow:
+ * 1. User fills in email and password
+ * 2. Submits to POST /api/auth
+ * 3. Backend validates and returns an httpOnly cookie with the JWT
+ * 4. Redirects to the previous page (next) or home
  *
- * Fluxo de registro:
- * 1. Usuário preenche nome, email, senha, telefone
- * 2. Submete para POST /api/users
- * 3. Backend valida, cria usuário, gera token
- * 4. Redireciona para home
+ * Registration flow:
+ * 1. User fills in name, email, password, phone
+ * 2. Submits to POST /api/users
+ * 3. Backend validates, creates the user, generates a token
+ * 4. Redirects to home
  *
- * @see lib/hooks/useAuth.ts - Hooks de autenticação
- * @see app/api/auth/route.ts - Endpoint de login
- * @see app/api/users/route.ts - Endpoint de registro
- * ============================================================================
+ * @see lib/hooks/useAuth.ts - Authentication hooks
+ * @see app/api/auth/route.ts - Login endpoint
+ * @see app/api/users/route.ts - Registration endpoint
  */
 
 "use client";
@@ -57,8 +55,8 @@ type Form = {
 };
 
 /**
- * Componente decorativo com folhas flutuantes animadas.
- * Apenas para efeito visual na página de autenticação.
+ * Decorative component with animated floating leaves.
+ * Visual effect only, on the authentication page.
  */
 function Particles() {
   return (
@@ -134,20 +132,20 @@ export default function AuthPage() {
   const error = passwordError || hook.erro;
   const loading = hook.carregando;
 
-  // Redireciona se usuário já estiver logado
+  // Redirect if the user is already signed in
   useEffect(() => {
     fetchSession().then((user) => {
       if (user) router.replace("/");
     });
   }, [router]);
 
-  // Carrega preferência de dark mode do localStorage
+  // Load the dark mode preference from localStorage
   useEffect(() => {
     const saved = localStorage.getItem("theme");
     if (saved === "dark") setDarkMode(true);
   }, []);
 
-  // Aplica dark mode ao HTML
+  // Apply dark mode to the HTML
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
     localStorage.setItem("theme", darkMode ? "dark" : "light");
@@ -163,7 +161,7 @@ export default function AuthPage() {
   }
 
   /**
-   * Aplica máscara de telefone no formato (XX) XXXXX-XXXX
+   * Applies the phone mask in the format (XX) XXXXX-XXXX
    */
   function maskPhone(value: string) {
     let v = value.replace(/\D/g, "").slice(0, 11);
@@ -209,7 +207,7 @@ export default function AuthPage() {
       const data = await login.executar("/api/auth", body);
       if (data) router.push(nextUrl);
     } else {
-      // Validações do registro
+      // Registration validations
       if (form.senha !== form.senhaConfirm) {
         setPasswordError("Passwords do not match.");
         return;

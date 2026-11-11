@@ -1,27 +1,25 @@
 // app/(perfil)/perfil/page.tsx
 
 /**
- * ============================================================================
- * PÁGINA DE PERFIL DO USUÁRIO
- * ============================================================================
- * Rota: "/perfil" (protegida - requer autenticação)
+ * USER PROFILE PAGE
  *
- * Página onde o usuário pode visualizar e editar seus dados pessoais,
- * além de acompanhar seu histórico de produtos visitados e impacto ambiental.
+ * Route: "/perfil" (protected - requires authentication)
  *
- * Funcionalidades:
- * - Visualização de dados do perfil (nome, email, telefone, tipo de conta)
- * - Edição de perfil (nome e telefone)
- * - Histórico de produtos visualizados (localStorage)
- * - Métricas de impacto ambiental (baseado no histórico)
+ * Page where the user can view and edit their personal data,
+ * and also follow their visited-products history and environmental impact.
  *
- * Permissões:
- * - Usuário só pode ver/editar seu próprio perfil
- * - Middleware requireAuth protege a rota
+ * Features:
+ * - Viewing profile data (name, email, phone, account type)
+ * - Profile editing (name and phone)
+ * - History of viewed products (localStorage)
+ * - Environmental impact metrics (based on the history)
  *
- * @see lib/auth/jwt.ts - Autenticação
- * @see app/api/usuarios/[id]/route.ts - Endpoint de perfil
- * ============================================================================
+ * Permissions:
+ * - A user can only view/edit their own profile
+ * - The requireAuth middleware protects the route
+ *
+ * @see lib/auth/jwt.ts - Authentication
+ * @see app/api/usuarios/[id]/route.ts - Profile endpoint
  */
 
 "use client";
@@ -45,8 +43,8 @@ type EditForm = {
 };
 
 /**
- * Item do histórico local de produtos visitados (REQ-PERF-05).
- * Mesma forma gravada por app/(store)/produtos/[id]/page.tsx na chave "ecoshop_history".
+ * Item of the local visited-products history (REQ-PERF-05).
+ * Same shape written by app/(store)/produtos/[id]/page.tsx under the key "ecoshop_history".
  */
 type HistoryItem = {
   produtoId: number;
@@ -61,8 +59,8 @@ type HistoryItem = {
 // ----------------------------------------------------------------------------
 
 /**
- * Card de métrica de impacto ambiental.
- * Exibe ícone, label e valor com animação.
+ * Environmental impact metric card.
+ * Shows an icon, a label and an animated value.
  */
 function ImpactCard({
   icon,
@@ -77,7 +75,7 @@ function ImpactCard({
   value: React.ReactNode;
   color: string;
   delay: number;
-  /** Fonte da métrica (REQ-PERF-06); nenhum número sem fonte declarada. */
+  /** Metric source (REQ-PERF-06); no number without a declared source. */
   fonte: string;
 }) {
   return (
@@ -132,7 +130,7 @@ function ImpactCard({
 }
 
 /**
- * Botão de aba para alternar entre "Histórico" e "Impacto".
+ * Tab button to switch between "History" and "Impact".
  */
 function TabBtn({
   active,
@@ -167,8 +165,8 @@ function TabBtn({
 }
 
 /**
- * Notificação temporária (toast) que aparece no canto superior direito.
- * Usada para feedback de ações (sucesso/erro).
+ * Temporary notification (toast) shown in the top right corner.
+ * Used for action feedback (success/error).
  */
 function Notification({
   message,
@@ -226,8 +224,8 @@ function Notification({
 }
 
 /**
- * Modal de edição de perfil.
- * Permite editar nome e telefone (email não é editável).
+ * Profile edit modal.
+ * Allows editing name and phone (email is not editable).
  */
 function EditModal({
   usuario: user,
@@ -461,7 +459,7 @@ function EditModal({
 }
 
 // ----------------------------------------------------------------------------
-// PÁGINA PRINCIPAL
+// MAIN PAGE
 // ----------------------------------------------------------------------------
 
 export default function ProfilePage() {
@@ -482,8 +480,8 @@ export default function ProfilePage() {
     type: "success" | "error";
   } | null>(null);
 
-  // Carrega histórico de produtos visualizados do localStorage (REQ-PERF-05);
-  // gravado em app/(store)/produtos/[id]/page.tsx ao abrir um produto.
+  // Load the viewed-products history from localStorage (REQ-PERF-05);
+  // written in app/(store)/produtos/[id]/page.tsx when a product is opened.
   const [history] = useState<HistoryItem[]>(() => {
     if (typeof window === "undefined") return [];
     try {
@@ -495,7 +493,7 @@ export default function ProfilePage() {
   });
   const historyCount = history.length;
 
-  // Busca dados do usuário autenticado
+  // Fetch the authenticated user's data
   useEffect(() => {
     async function fetchProfile() {
       try {
@@ -578,7 +576,7 @@ export default function ProfilePage() {
     setEditing(false);
   }
 
-  // Estados de carregamento e erro
+  // Loading and error states
   if (loading) {
     return (
       <div

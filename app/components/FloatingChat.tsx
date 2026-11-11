@@ -1,19 +1,17 @@
 // app/components/FloatingChat.tsx
 
 /**
- * ============================================================================
- * CHAT DE SUSTENTABILIDADE (botão flutuante)
- * ============================================================================
- * REQ-CHAT-06: interface de chat para o usuário autenticado conversar com o
- * assistente de sustentabilidade (Gemini, via POST /api/ia/chat).
+ * SUSTAINABILITY CHAT (floating button)
  *
- * Decisão do dono (2026-11-10): botão flutuante, visível em qualquer página,
- * em vez de uma rota própria. O histórico da conversa não é persistido no
- * servidor (REQ-CHAT: "casos-limite"); fica só neste componente e se perde
- * ao recarregar a página.
+ * REQ-CHAT-06: chat interface for the authenticated user to talk to the
+ * sustainability assistant (Gemini, via POST /api/ia/chat).
  *
- * Só aparece para quem está autenticado (a API exige sessão — REQ-CHAT-07).
- * ============================================================================
+ * Owner's decision (2026-11-10): a floating button, visible on any page,
+ * instead of a dedicated route. The conversation history is not persisted on the
+ * server (REQ-CHAT: "edge cases"); it only lives in this component and is lost
+ * when the page is reloaded.
+ *
+ * It only appears for authenticated users (the API requires a session — REQ-CHAT-07).
  */
 
 "use client";

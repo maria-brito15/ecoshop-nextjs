@@ -1,25 +1,23 @@
 // app/(store)/produtos/page.tsx
 
 /**
- * ============================================================================
- * PÁGINA DE LISTAGEM DE PRODUTOS
- * ============================================================================
- * Rota: "/produtos"
+ * PRODUCT LISTING PAGE
  *
- * Página principal do catálogo de produtos do EcoShop.
- * Permite que usuários naveguem, filtrem e busquem produtos sustentáveis.
+ * Route: "/produtos"
  *
- * Funcionalidades:
- * - Listagem paginada de produtos (12 por página)
- * - Filtros: categoria, faixa de preço, busca textual
- * - Ordenação: relevância, preço (crescente/decrescente), nome (A-Z/Z-A)
- * - Layout responsivo com sidebar (desktop) e menu lateral (mobile)
- * - Skeletons durante carregamento
- * - Lazy loading com Intersection Observer
+ * EcoShop's main product catalog page.
+ * Lets users browse, filter and search sustainable products.
  *
- * @see lib/hooks/useProducts.ts - Hook useListarProdutos
- * @see lib/hooks/useCategories.ts - Hook useListarCategorias
- * ============================================================================
+ * Features:
+ * - Paginated product listing (12 per page)
+ * - Filters: category, price range, text search
+ * - Sorting: relevance, price (ascending/descending), name (A-Z/Z-A)
+ * - Responsive layout with a sidebar (desktop) and side menu (mobile)
+ * - Skeletons while loading
+ * - Lazy loading with Intersection Observer
+ *
+ * @see lib/hooks/useProducts.ts - useListProducts hook
+ * @see lib/hooks/useCategories.ts - useListCategories hook
  */
 
 "use client";
@@ -35,8 +33,8 @@ import type { Produto, ProdutoCertificado } from "@/types/api";
 // ----------------------------------------------------------------------------
 // COMPONENTE: SKELETON CARD
 // ----------------------------------------------------------------------------
-// Exibido durante o carregamento dos produtos. Mantém a mesma estrutura
-// do ProductCard para evitar layout shift (CLS).
+// Shown while the products load. Keeps the same structure
+// as ProductCard to avoid layout shift (CLS).
 
 function SkeletonCard() {
   return (
@@ -58,8 +56,8 @@ function SkeletonCard() {
 // ----------------------------------------------------------------------------
 // COMPONENTE: PRODUCT CARD
 // ----------------------------------------------------------------------------
-// Card individual de produto com lazy loading via Intersection Observer.
-// A animação de entrada só ocorre quando o card entra na viewport.
+// Individual product card with lazy loading via Intersection Observer.
+// The entrance animation only plays when the card enters the viewport.
 
 function ProductCard({ produto: product, index }: { produto: Produto; index: number }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -86,7 +84,7 @@ function ProductCard({ produto: product, index }: { produto: Produto; index: num
     currency: "BRL",
   });
 
-  // Delay escalonado para cada card (0ms, 80ms, 160ms...)
+  // Staggered delay for each card (0ms, 80ms, 160ms...)
   const delay = Math.min(index % 6, 5) * 80;
   const categoryName = product.categoria?.nome ?? "Category";
   const brandName = product.marca?.nome ?? "Brand";
@@ -238,11 +236,11 @@ function ProductCard({ produto: product, index }: { produto: Produto; index: num
 }
 
 // ----------------------------------------------------------------------------
-// PÁGINA PRINCIPAL
+// MAIN PAGE
 // ----------------------------------------------------------------------------
 
 export default function ProductsPage() {
-  // Estados de paginação e filtros
+  // Pagination and filter states
   const [page, setPage] = useState(1);
   const [name, setName] = useState("");
   const [search, setSearch] = useState("");
@@ -254,8 +252,8 @@ export default function ProductsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Hooks de dados — ordenação, marca e preço máximo são aplicados pelo
-  // servidor ao catálogo inteiro, não só à página atual (REQ-CAT-06/07).
+  // Data hooks — sorting, brand and maximum price are applied by the
+  // server to the whole catalog, not just the current page (REQ-CAT-06/07).
   const { data, loading: loading, error: error } = useListProducts(page, 12, categoryId, search, {
     marcaId: brandId,
     precoMax: maxPrice < 1000 ? maxPrice : undefined,
@@ -282,7 +280,7 @@ export default function ProductsPage() {
     setSearch(name);
   }
 
-  // Debounce no filtro de preço para evitar re-renders excessivos
+  // Debounce on the price filter to avoid excessive re-renders
   function handlePriceChange(val: number) {
     setPriceInput(val);
     clearTimeout(debounceRef.current);

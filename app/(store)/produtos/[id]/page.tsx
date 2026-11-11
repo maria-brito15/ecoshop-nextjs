@@ -1,29 +1,27 @@
 // app/(store)/produtos/[id]/page.tsx
 
 /**
- * ============================================================================
- * PÁGINA DE DETALHE DO PRODUTO
- * ============================================================================
- * Rota: "/produtos/[id]"
+ * PRODUCT DETAIL PAGE
  *
- * Página de detalhamento completo de um produto específico.
- * Exibe todas as informações disponíveis sobre o produto.
+ * Route: "/produtos/[id]"
  *
- * Funcionalidades:
- * - Imagem principal do produto (fallback para ícone)
- * - Preço e opções de parcelamento
- * - Descrição detalhada
- * - Ficha técnica (especificações)
- * - Certificados de sustentabilidade
- * - Métricas de impacto ambiental (estimativas)
- * - Tabs organizando o conteúdo
+ * Full detail page for a specific product.
+ * Shows all available information about the product.
  *
- * Estados de carregamento:
- * - Skeleton durante o fetch
- * - Mensagem amigável se produto não encontrado
+ * Features:
+ * - Main product image (fallback to an icon)
+ * - Price and installment options
+ * - Detailed description
+ * - Technical sheet (specifications)
+ * - Sustainability certificates
+ * - Environmental impact metrics (estimates)
+ * - Tabs organizing the content
  *
- * @see lib/hooks/useProducts.ts - Hook useBuscarProduto
- * ============================================================================
+ * Loading states:
+ * - Skeleton during the fetch
+ * - Friendly message if the product is not found
+ *
+ * @see lib/hooks/useProducts.ts - useGetProduct hook
  */
 
 "use client";
@@ -41,8 +39,8 @@ type Props = {
 type Tab = "sobre" | "specs" | "certificados";
 
 /**
- * Item do histórico local de produtos visitados (REQ-PERF-05).
- * Mesma forma lida por app/(perfil)/perfil/page.tsx na chave "ecoshop_history".
+ * Item of the local visited-products history (REQ-PERF-05).
+ * Same shape read by app/(perfil)/perfil/page.tsx under the key "ecoshop_history".
  */
 type HistoryItem = {
   produtoId: number;
@@ -57,7 +55,7 @@ type HistoryItem = {
 // ----------------------------------------------------------------------------
 
 /**
- * Skeleton exibido enquanto os dados do produto carregam.
+ * Skeleton shown while the product data loads.
  */
 function SkeletonDetail() {
   return (
@@ -105,7 +103,7 @@ function CertBadge({ cert }: { cert: Certificado }) {
 }
 
 /**
- * Card de impacto ambiental (estimativas baseadas no preço do produto).
+ * Environmental impact card (estimates based on the product price).
  */
 function ImpactCard({ preco: price }: { preco: number }) {
   const val = Number(price);
@@ -146,7 +144,7 @@ function ImpactCard({ preco: price }: { preco: number }) {
 }
 
 /**
- * Tabs de navegação entre Sobre, Ficha Técnica e Certificados.
+ * Navigation tabs between About, Technical Sheet and Certificates.
  */
 function Tabs({
   activeTab,
@@ -179,7 +177,7 @@ function Tabs({
 }
 
 // ----------------------------------------------------------------------------
-// PÁGINA PRINCIPAL
+// MAIN PAGE
 // ----------------------------------------------------------------------------
 
 export default function ProductPage({ params }: Props) {
@@ -196,9 +194,9 @@ export default function ProductPage({ params }: Props) {
     return () => clearTimeout(timer);
   }, []);
 
-  // Registra a visita no histórico local (REQ-PERF-05): a aba Histórico do
-  // perfil (app/(perfil)/perfil/page.tsx) lê a mesma chave. Sem backend
-  // porque o histórico é por navegador, não por conta (ADR-0004).
+  // Record the visit in the local history (REQ-PERF-05): the History tab of the
+  // profile (app/(perfil)/perfil/page.tsx) reads the same key. No backend
+  // because the history is per browser, not per account (ADR-0004).
   useEffect(() => {
     const product = data?.produto;
     if (!product) return;
@@ -225,7 +223,7 @@ export default function ProductPage({ params }: Props) {
   // Estado de carregamento
   if (loading) return <SkeletonDetail />;
 
-  // Produto não encontrado
+  // Product not found
   if (error) {
     return (
       <main className="min-h-screen bg-[var(--color-bg-body)] flex items-center justify-center">

@@ -1,28 +1,26 @@
 // app/page.tsx
 
 /**
- * ============================================================================
- * PÁGINA INICIAL (HOME)
- * ============================================================================
- * Rota: "/"
+ * HOME PAGE
  *
- * Esta é a página principal do EcoShop, responsável por apresentar a
- * plataforma para novos visitantes e usuários.
+ * Route: "/"
  *
- * Funcionalidades:
- * - Hero section com call-to-action
- * - Listagem dos 4 primeiros produtos (destaques)
- * - Exibição de categorias disponíveis
- * - Banner informativo sobre o EcoScan IA
- * - Depoimentos e métricas de impacto
+ * This is EcoShop's main page, responsible for introducing the
+ * platform to new visitors and users.
  *
- * Estados de carregamento:
- * - Skeleton loading enquanto busca produtos/categorias
- * - Mensagem amigável em caso de erro
+ * Features:
+ * - Hero section with a call-to-action
+ * - Listing of the first 4 products (highlights)
+ * - Display of the available categories
+ * - Informational banner about EcoScan AI
+ * - Testimonials and impact metrics
  *
- * @see lib/hooks/useProducts.ts - Hook para listar produtos
- * @see lib/hooks/useCategories.ts - Hook para listar categorias
- * ============================================================================
+ * Loading states:
+ * - Skeleton loading while fetching products/categories
+ * - Friendly message on error
+ *
+ * @see lib/hooks/useProducts.ts - Hook to list products
+ * @see lib/hooks/useCategories.ts - Hook to list categories
  */
 
 "use client";
@@ -38,11 +36,11 @@ import type { Produto, Categoria } from "@/types/api";
 // ----------------------------------------------------------------------------
 
 /**
- * Retorna um ícone representativo baseado no nome da categoria.
- * Usado para tornar a navegação mais visual.
+ * Returns a representative icon based on the category name.
+ * Used to make navigation more visual.
  *
- * @param name - Nome da categoria (ex: "Casa e Decoração")
- * @returns Emoji correspondente à categoria
+ * @param name - Category name (e.g. "Home and Decor")
+ * @returns Emoji matching the category
  */
 function categoryIcon(name: string) {
   const n = name.toLowerCase();
@@ -54,9 +52,9 @@ function categoryIcon(name: string) {
 }
 
 /**
- * Hook customizado para animação de revelação ao rolar a página.
- * Adiciona classe "visible" aos elementos com classe "animate-on-scroll"
- * quando eles entram na viewport.
+ * Custom hook for the reveal-on-scroll animation.
+ * Adds the "visible" class to elements with the "animate-on-scroll" class
+ * when they enter the viewport.
  */
 function useScrollReveal() {
   useEffect(() => {
@@ -89,10 +87,10 @@ function useScrollReveal() {
 }
 
 /**
- * Card de produto exibido na grade da home.
- * Versão simplificada do ProductCard usado em /produtos.
+ * Product card shown in the home grid.
+ * Simplified version of the ProductCard used in /produtos.
  *
- * @param produto - Dados do produto a ser exibido
+ * @param product - Data of the product to display
  */
 function ProductCard({ produto: product }: { produto: Produto }) {
   const formattedPrice = Number(product.preco).toLocaleString("pt-BR", {
@@ -135,10 +133,10 @@ function ProductCard({ produto: product }: { produto: Produto }) {
 }
 
 /**
- * Card de categoria exibido na grade da home.
- * Ao clicar, redireciona para a listagem de produtos com filtro.
+ * Category card shown in the home grid.
+ * On click, redirects to the product listing with a filter.
  *
- * @param categoria - Dados da categoria
+ * @param category - Category data
  */
 function CategoryCard({ categoria: category }: { categoria: Categoria }) {
   return (
@@ -175,18 +173,18 @@ function CategoryCard({ categoria: category }: { categoria: Categoria }) {
 }
 
 // ----------------------------------------------------------------------------
-// PÁGINA PRINCIPAL
+// MAIN PAGE
 // ----------------------------------------------------------------------------
 
 export default function HomePage() {
-  // Busca os 4 primeiros produtos para exibir como destaques
+  // Fetch the first 4 products to show as highlights
   const {
     data: productsData,
     loading: loadingProducts,
     error: productsError,
   } = useListProducts(1, 4);
 
-  // Busca todas as categorias para exibir na grade
+  // Fetch all categories to show in the grid
   const { data: categoriesData, loading: loadingCategories } =
     useListCategories();
 
@@ -294,7 +292,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : productsError ? (
-            /* Estado de erro */
+            /* Error state */
             <div className="text-center py-12">
               <p className="text-[var(--color-error)] font-semibold mb-2">
                 Ops! Algo deu errado.
