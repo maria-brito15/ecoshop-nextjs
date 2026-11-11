@@ -43,10 +43,10 @@ export async function POST(
 
   try {
     const id = await routeId(params);
-    if (id === null) return ERRORS.invalidData("ID inválido");
+    if (id === null) return ERRORS.invalidData("Invalid ID");
     const brand = await approveBrand(id);
     return NextResponse.json({ marca: brand });
   } catch (err) {
-    return mapError(err, "Marca") ?? ERRORS.internal("aprovar marca", err);
+    return mapError(err, "Brand") ?? ERRORS.internal("approve brand", err);
   }
 }

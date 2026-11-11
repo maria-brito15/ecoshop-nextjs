@@ -60,6 +60,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ usuario: user });
   } catch (err) {
-    return ERRORS.internal("buscar o usuário da sessão", err);
+    return ERRORS.internal("fetch the session user", err);
   }
 }

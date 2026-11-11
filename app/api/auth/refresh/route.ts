@@ -65,9 +65,9 @@ export async function POST(req: NextRequest) {
       const r = await refreshSession(refreshToken, getIdentity);
       if (!r.ok) {
         const res =
-          r.reason === "INDISPONIVEL"
+          r.reason === "UNAVAILABLE"
             ? NextResponse.json(
-                { erro: "Não foi possível renovar a sessão agora. Entre novamente." },
+                { erro: "Could not renew the session right now. Please sign in again." },
                 { status: 503 },
               )
             : ERRORS.unauthorized();
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     if (!session) return ERRORS.unauthorized();
 
     const user = await getIdentity(session.id);
-    if (!user) return ERRORS.notFound("Usuário");
+    if (!user) return ERRORS.notFound("User");
 
     if (user.tipo !== session.tipo) {
       const newToken = await signToken(user);
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ ok: true, tipo: user.tipo });
   } catch (err) {
-    return ERRORS.internal("renovar sessão", err);
+    return ERRORS.internal("renew session", err);
   }
 }
 

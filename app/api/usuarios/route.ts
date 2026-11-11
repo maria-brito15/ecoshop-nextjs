@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     const users = await listUsers();
     return NextResponse.json({ usuarios: users });
   } catch (err) {
-    return ERRORS.internal("listar usuários", err);
+    return ERRORS.internal("list users", err);
   }
 }
 
@@ -74,6 +74,6 @@ export async function POST(req: NextRequest) {
     const user = await createUser(parsed.data);
     return NextResponse.json({ usuario: user }, { status: 201 });
   } catch (err) {
-    return mapError(err, "Usuário") ?? ERRORS.internal("criar usuário", err);
+    return mapError(err, "User") ?? ERRORS.internal("create user", err);
   }
 }

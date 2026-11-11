@@ -33,16 +33,16 @@ import type { AiAnalysis } from "@/types/ai";
  */
 export function fallbackAnalysis(material: string): AiAnalysis {
   return {
-    impacto_ambiental: `Material identificado como ${material}. A produção e descarte inadequado podem causar impactos ambientais significativos. É importante realizar o descarte correto para minimizar danos ao meio ambiente e permitir a reciclagem adequada.`,
+    impacto_ambiental: `Material identified as ${material}. Production and improper disposal can cause significant environmental impacts. It is important to dispose of it correctly to minimize harm to the environment and allow proper recycling.`,
 
-    tempo_decomposicao: `O tempo de decomposição varia conforme as condições ambientais. Fatores como temperatura, umidade e exposição solar influenciam diretamente no processo de degradação natural.`,
+    tempo_decomposicao: `Decomposition time varies with environmental conditions. Factors such as temperature, humidity and sun exposure directly influence the natural degradation process.`,
 
-    onde_descartar: `Descarte em pontos de coleta seletiva apropriados. Verifique com a prefeitura da sua cidade sobre Postos de Entrega Voluntária (PEVs) ou cooperativas de reciclagem próximas. Limpe o material antes de descartar.`,
+    onde_descartar: `Dispose of it at appropriate selective collection points. Check with your city hall about voluntary drop-off points or nearby recycling cooperatives. Clean the material before disposing of it.`,
 
-    reciclabilidade: `A reciclabilidade deste material pode variar. Consulte especialistas locais em gestão de resíduos para informações detalhadas sobre o processo de reciclagem e suas limitações na sua região.`,
+    reciclabilidade: `The recyclability of this material may vary. Consult local waste management experts for detailed information about the recycling process and its limitations in your region.`,
 
-    dicas_sustentaveis: `Separe materiais recicláveis do lixo comum. Reduza o consumo sempre que possível. Procure alternativas reutilizáveis. Apoie empresas comprometidas com sustentabilidade e economia circular.`,
+    dicas_sustentaveis: `Separate recyclable materials from regular trash. Reduce consumption whenever possible. Look for reusable alternatives. Support companies committed to sustainability and the circular economy.`,
 
-    beneficios_reciclagem: `A reciclagem reduz a necessidade de extração de recursos naturais, economiza energia, diminui emissões de gases de efeito estufa e gera empregos na cadeia de reciclagem.`,
+    beneficios_reciclagem: `Recycling reduces the need to extract natural resources, saves energy, lowers greenhouse gas emissions and creates jobs in the recycling chain.`,
   };
 }

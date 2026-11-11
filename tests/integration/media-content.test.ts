@@ -38,14 +38,14 @@ test("REQ-MIDIA-06: detectarTipoDeImagem reconhece JPEG, PNG, GIF e WebP pela as
   assert.equal(detectImageType(Buffer.concat([Buffer.from("RIFF"), Buffer.from([4, 0, 0, 0]), Buffer.from("WAVEfmt ")])), null);
 });
 
-test("REQ-MIDIA-06: a extensão precisa combinar com o tipo detectado", () => {
+test("REQ-MIDIA-06: the extension must match the detected type", () => {
   assert.equal(extensionMatchesType(".JPG", "jpeg"), true);
   assert.equal(extensionMatchesType(".jpeg", "jpeg"), true);
   assert.equal(extensionMatchesType(".png", "jpeg"), false);
   assert.equal(extensionMatchesType(".gif", "png"), false);
 });
 
-test("REQ-MIDIA-06: arquivo com extensão de imagem mas conteúdo que não é imagem é recusado e nada é gravado", async () => {
+test("REQ-MIDIA-06: a file with an image extension but non-image content is refused and nothing is written", async () => {
   await withFolder(async (dir) => {
     for (const [name, content] of [
       ["fake.png", HTML],
@@ -53,13 +53,13 @@ test("REQ-MIDIA-06: arquivo com extensão de imagem mas conteúdo que não é im
       ["vazio.webp", Buffer.alloc(0)],
     ] as const) {
       const r = await savePhoto({ produtoId: 7, arquivo: file(name, content), directory: dir });
-      assert.deepEqual(r, { ok: false, motivo: "CONTEUDO_NAO_E_IMAGEM" }, name);
+      assert.deepEqual(r, { ok: false, reason: "CONTENT_NOT_IMAGE" }, name);
     }
-    assert.ok(!existsSync(dir) || readdirSync(dir).length === 0, "nenhum arquivo pode ter sido gravado");
+    assert.ok(!existsSync(dir) || readdirSync(dir).length === 0, "no file may have been written");
   });
 });
 
-test("REQ-MIDIA-06: imagens válidas dos quatro tipos são gravadas com o conteúdo intacto", async () => {
+test("REQ-MIDIA-06: valid images of the four types are written with intact content", async () => {
   await withFolder(async (dir) => {
     for (const [name, content] of [["a.jpg", JPEG], ["b.png", PNG], ["c.gif", GIF], ["d.webp", WEBP]] as const) {
       const r = await savePhoto({ produtoId: 7, arquivo: file(name, content), nomeCustomizado: name.replace(".", "_"), directory: dir });
@@ -69,17 +69,17 @@ test("REQ-MIDIA-06: imagens válidas dos quatro tipos são gravadas com o conte�
   });
 });
 
-test("REQ-MIDIA-06: extensão fora da lista e arquivo acima de 5 MB continuam sendo recusados", async () => {
+test("REQ-MIDIA-06: an extension outside the list and a file above 5 MB are still refused", async () => {
   await withFolder(async (dir) => {
     const svg = await savePhoto({ produtoId: 7, arquivo: file("x.svg", HTML), directory: dir });
-    assert.deepEqual(svg, { ok: false, motivo: "EXTENSAO_NAO_PERMITIDA" });
+    assert.deepEqual(svg, { ok: false, reason: "EXTENSION_NOT_ALLOWED" });
     const large = Buffer.concat([PNG, Buffer.alloc(5 * 1024 * 1024)]);
     const r = await savePhoto({ produtoId: 7, arquivo: file("grande.png", large), directory: dir });
-    assert.deepEqual(r, { ok: false, motivo: "ARQUIVO_MUITO_GRANDE" });
+    assert.deepEqual(r, { ok: false, reason: "FILE_TOO_LARGE" });
   });
 });
 
-test("REQ-MIDIA-07: dois uploads simultâneos com o mesmo nome gravam um só e o outro recebe NOME_JA_EXISTE, sem sobrescrever", async () => {
+test("REQ-MIDIA-07: two simultaneous uploads with the same name write only one and the other gets NAME_ALREADY_EXISTS, without overwriting", async () => {
   await withFolder(async (dir) => {
     const sameName = (content: Buffer) =>
       savePhoto({ produtoId: 9, arquivo: file("f.png", content), nomeCustomizado: "capa", directory: dir });
@@ -88,7 +88,7 @@ test("REQ-MIDIA-07: dois uploads simultâneos com o mesmo nome gravam um só e o
     const results = await Promise.all([sameName(onePng), sameName(otherPng)]);
 
     const ok = results.filter((r) => r.ok);
-    const conflict = results.filter((r) => !r.ok && r.reason === "NOME_JA_EXISTE");
+    const conflict = results.filter((r) => !r.ok && r.reason === "NAME_ALREADY_EXISTS");
     assert.equal(ok.length, 1);
     assert.equal(conflict.length, 1);
     assert.equal(readdirSync(dir).length, 1);

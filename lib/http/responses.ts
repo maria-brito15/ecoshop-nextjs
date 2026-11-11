@@ -55,7 +55,7 @@ export const ERRORS = {
    * 401 Unauthorized - Usuário não autenticado.
    * Usado quando o token está ausente, inválido ou expirado.
    */
-  unauthorized: () => errorResponse("Não autorizado", 401),
+  unauthorized: () => errorResponse("Not authorized", 401),
 
   /**
    * 403 Forbidden - Usuário autenticado mas sem permissão.
@@ -70,14 +70,14 @@ export const ERRORS = {
    * @param {unknown} details - Opcional: detalhes adicionais (ex: flatten do Zod)
    */
   invalidData: (details?: unknown) =>
-    NextResponse.json({ erro: "Dados inválidos", detalhes: details }, { status: 400 }),
+    NextResponse.json({ erro: "Invalid data", detalhes: details }, { status: 400 }),
 
   /**
    * 404 Not Found - Recurso não encontrado.
    * @param {string} resource - Nome do recurso (ex: "Produto", "Usuário")
    */
   notFound: (resource: string) =>
-    errorResponse(`${resource} não encontrado`, 404),
+    errorResponse(`${resource} not found`, 404),
 
   /**
    * 500 Internal Server Error - Erro não tratado.
@@ -91,8 +91,8 @@ export const ERRORS = {
    * @param cause - O erro capturado no `catch`
    */
   internal: (context: string, cause?: unknown) => {
-    log.error("erro_interno", { contexto: context, erro: serializeError(cause) });
-    return errorResponse(`Erro ao ${context}`, 500);
+    log.error("internal_error", { context, error: serializeError(cause) });
+    return errorResponse(`Failed to ${context}`, 500);
   },
 
   /**
@@ -139,10 +139,10 @@ export function mapError(err: unknown, resource: string): NextResponse | null {
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === "P2025") return ERRORS.notFound(resource);
     if (err.code === "P2002")
-      return ERRORS.conflict(`Já existe ${resource.toLowerCase()} com esse nome`);
+      return ERRORS.conflict(`A ${resource.toLowerCase()} with this name already exists`);
     if (err.code === "P2003")
       return ERRORS.conflict(
-        `${resource} possui vínculos e não pode ser excluído(a) ou alterado(a) para uma referência inexistente`,
+        `${resource} has links and cannot be deleted or changed to a nonexistent reference`,
       );
     return null;
   }

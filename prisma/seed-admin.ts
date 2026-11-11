@@ -83,7 +83,7 @@ async function createOrUpdateAdmin() {
   console.log("\n🔧 Configurando administrador...");
   console.log(`   Email: ${ADMIN_CONFIG.email}`);
   console.log(`   Nome: ${ADMIN_CONFIG.nome}`);
-  console.log(`   Senha: ${"•".repeat(ADMIN_CONFIG.senha.length)} (oculta)`);
+  console.log(`   Password: ${"•".repeat(ADMIN_CONFIG.senha.length)} (hidden)`);
 
   // A senha já foi validada ao montar ADMIN_CONFIG (REQ-OPS-09).
 
@@ -97,7 +97,7 @@ async function createOrUpdateAdmin() {
 
   if (existingUser) {
     // Atualiza usuário existente
-    console.log("\n📝 Usuário já existe. Atualizando dados...");
+    console.log("\n📝 User already exists. Updating data...");
 
     const updatedUser = await prisma.usuario.update({
       where: { email: ADMIN_CONFIG.email },
@@ -109,7 +109,7 @@ async function createOrUpdateAdmin() {
       },
     });
 
-    console.log("\n✅ Administrador atualizado com sucesso!");
+    console.log("\n✅ Administrator updated successfully!");
     console.log(`   ID: ${updatedUser.id}`);
     console.log(`   Email: ${updatedUser.email}`);
     console.log(`   Tipo: ${updatedUser.tipo}`);
@@ -127,7 +127,7 @@ async function createOrUpdateAdmin() {
       },
     });
 
-    console.log("\n✅ Administrador criado com sucesso!");
+    console.log("\n✅ Administrator created successfully!");
     console.log(`   ID: ${newAdmin.id}`);
     console.log(`   Email: ${newAdmin.email}`);
     console.log(`   Tipo: ${newAdmin.tipo}`);
@@ -150,12 +150,12 @@ async function listAdmins() {
   });
 
   if (admins.length > 0) {
-    console.log("\n📋 Administradores existentes no sistema:");
+    console.log("\n📋 Existing administrators in the system:");
     for (const admin of admins) {
       console.log(`   • ${admin.nome} (${admin.email}) - ID: ${admin.id}`);
     }
   } else {
-    console.log("\n⚠️ Nenhum administrador encontrado no sistema.");
+    console.log("\n⚠️ No administrator found in the system.");
   }
 
   return admins;
@@ -166,13 +166,13 @@ async function listAdmins() {
  */
 async function main() {
   console.log("\n🌿 ========================================");
-  console.log("   ECOSHOP - SEED DE ADMINISTRADOR");
+  console.log("   ECOSHOP - ADMIN SEED");
   console.log("   ========================================\n");
 
   try {
     // Testa conexão com o banco
     await prisma.$queryRaw`SELECT 1`;
-    console.log("✅ Conexão com banco de dados estabelecida.\n");
+    console.log("✅ Database connection established.\n");
 
     // Lista admins existentes antes da operação
     await listAdmins();
@@ -186,10 +186,10 @@ async function main() {
     // A senha NUNCA é impressa: logs de Docker e de CI ficam retidos (REQ-OPS-09).
     console.log("\n🔐 Administrador pronto.");
     console.log(`   📧 Email: ${ADMIN_CONFIG.email}`);
-    console.log("   🔑 Senha: a definida em ADMIN_PASSWORD (não exibida).");
-    console.log("   Acesse o painel em /painel.\n");
+    console.log("   🔑 Password: the one set in ADMIN_PASSWORD (not shown).");
+    console.log("   Open the panel at /painel.\n");
   } catch (error) {
-    console.error("\n❌ Erro ao executar seed de administrador:");
+    console.error("\n❌ Error running the admin seed:");
     console.error(error);
     process.exit(1);
   } finally {

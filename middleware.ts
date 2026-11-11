@@ -72,7 +72,7 @@ export async function middleware(req: NextRequest) {
   if (!payload) {
     // Para rotas de API: retorna JSON 401 (Unauthorized)
     if (rule.responseType === "api") {
-      return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
+      return NextResponse.json({ erro: "Not authorized" }, { status: 401 });
     }
 
     // Acesso expirado (15 min) mas com token de renovação: renova e volta para

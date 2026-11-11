@@ -4,7 +4,7 @@
  * Log estruturado mínimo (Constitution, Art. XIII.1; REQ-OPS-19).
  *
  * Uma linha JSON por evento, com contexto (rota, dependência, duração...). Nada
- * de segredo: chaves sensíveis do contexto viram `[REDIGIDO]` e credenciais em
+ * de segredo: chaves sensíveis do contexto viram `[REDACTED]` e credenciais em
  * URLs dentro de textos (`redis://:senha@host`) são mascaradas.
  *
  * Proporcional ao projeto (Art. XIII): sem tracing distribuído nem APM.
@@ -18,20 +18,20 @@ const CREDENTIAL_IN_URL = /([a-z][a-z0-9+.-]*:\/\/)[^@\s/]*@/gi;
 const MAX_DEPTH = 4;
 
 function maskText(text: string): string {
-  return text.replace(CREDENTIAL_IN_URL, "$1[REDIGIDO]@");
+  return text.replace(CREDENTIAL_IN_URL, "$1[REDACTED]@");
 }
 
 function redact(value: unknown, depth = 0): unknown {
   if (typeof value === "string") return maskText(value);
   if (value === null || typeof value !== "object") return value;
-  if (depth >= MAX_DEPTH) return "[PROFUNDO]";
+  if (depth >= MAX_DEPTH) return "[TOO_DEEP]";
   if (value instanceof Error) return serializeError(value);
   if (Array.isArray(value)) return value.map((v) => redact(v, depth + 1));
 
   const output: Record<string, unknown> = {};
   for (const [key, v] of Object.entries(value)) {
     output[key] = SENSITIVE_KEY.test(key)
-      ? "[REDIGIDO]"
+      ? "[REDACTED]"
       : redact(v, depth + 1);
   }
   return output;
@@ -42,22 +42,22 @@ export function serializeError(err: unknown): Record<string, unknown> {
   if (err instanceof Error) {
     const code = (err as { code?: unknown }).code;
     return {
-      nome: err.name,
-      mensagem: maskText(err.message),
-      ...(typeof code === "string" ? { codigo: code } : {}),
+      name: err.name,
+      message: maskText(err.message),
+      ...(typeof code === "string" ? { code } : {}),
       ...(err.stack
-        ? { pilha: maskText(err.stack.split("\n").slice(0, 6).join("\n")) }
+        ? { stack: maskText(err.stack.split("\n").slice(0, 6).join("\n")) }
         : {}),
     };
   }
-  return { valor: maskText(String(err)) };
+  return { value: maskText(String(err)) };
 }
 
 function writeLog(level: Level, event: string, context: Record<string, unknown> = {}) {
   const line = JSON.stringify({
     ts: new Date().toISOString(),
-    nivel: level,
-    evento: event,
+    level,
+    event,
     ...(redact(context) as Record<string, unknown>),
   });
   if (level === "error") console.error(line);

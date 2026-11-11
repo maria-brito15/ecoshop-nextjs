@@ -20,7 +20,7 @@ export function requireSeedPassword(
 ): string {
   if (!value || value.length < MIN_LENGTH) {
     console.error(
-      `❌ ${variable} é obrigatória e deve ter pelo menos ${MIN_LENGTH} caracteres. Nada foi gravado.`,
+      `❌ ${variable} is required and must have at least ${MIN_LENGTH} characters. Nothing was written.`,
     );
     process.exit(1);
   }

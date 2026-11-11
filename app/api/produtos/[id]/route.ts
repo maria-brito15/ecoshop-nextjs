@@ -42,12 +42,12 @@ export async function GET(
 ) {
   try {
     const id = await routeId(params);
-    if (id === null) return ERRORS.invalidData("ID inválido");
+    if (id === null) return ERRORS.invalidData("Invalid ID");
     const product = await getProduct(id);
-    if (!product) return ERRORS.notFound("Produto");
+    if (!product) return ERRORS.notFound("Product");
     return NextResponse.json({ produto: product });
   } catch (err) {
-    return ERRORS.internal("buscar produto", err);
+    return ERRORS.internal("fetch product", err);
   }
 }
 
@@ -75,7 +75,7 @@ export async function PUT(
 
   try {
     const id = await routeId(params);
-    if (id === null) return ERRORS.invalidData("ID inválido");
+    if (id === null) return ERRORS.invalidData("Invalid ID");
     const body = await req.json();
     const parsed = updateProductSchema.safeParse(body);
     if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
@@ -84,7 +84,7 @@ export async function PUT(
     return NextResponse.json({ produto: product });
   } catch (err) {
     return (
-      mapError(err, "Produto") ?? ERRORS.internal("atualizar produto", err)
+      mapError(err, "Product") ?? ERRORS.internal("update product", err)
     );
   }
 }
@@ -111,12 +111,12 @@ export async function DELETE(
 
   try {
     const id = await routeId(params);
-    if (id === null) return ERRORS.invalidData("ID inválido");
+    if (id === null) return ERRORS.invalidData("Invalid ID");
     await deleteProduct(id);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return (
-      mapError(err, "Produto") ?? ERRORS.internal("deletar produto", err)
+      mapError(err, "Product") ?? ERRORS.internal("delete product", err)
     );
   }
 }

@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     if (blocked) {
       return NextResponse.json(
-        { erro: "Muitas tentativas. Aguarde 1 minuto e tente novamente." },
+        { erro: "Too many attempts. Wait 1 minute and try again." },
         { status: 429 },
       );
     }
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     if (session.refresh) setRefreshCookie(res, session.refresh);
     return res;
   } catch (err) {
-    return ERRORS.internal("processar autenticação", err);
+    return ERRORS.internal("process authentication", err);
   }
 }
 

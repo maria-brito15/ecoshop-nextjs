@@ -46,12 +46,12 @@ export async function GET(
 ) {
   try {
     const id = await routeId(params);
-    if (id === null) return ERRORS.invalidData("ID inválido");
+    if (id === null) return ERRORS.invalidData("Invalid ID");
     const category = await getCategory(id);
-    if (!category) return ERRORS.notFound("Categoria");
+    if (!category) return ERRORS.notFound("Category");
     return NextResponse.json({ categoria: category });
   } catch (err) {
-    return ERRORS.internal("buscar categoria", err);
+    return ERRORS.internal("fetch category", err);
   }
 }
 
@@ -79,7 +79,7 @@ export async function PUT(
 
   try {
     const id = await routeId(params);
-    if (id === null) return ERRORS.invalidData("ID inválido");
+    if (id === null) return ERRORS.invalidData("Invalid ID");
     const body = await req.json();
     const parsed = updateCategorySchema.safeParse(body);
     if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
@@ -88,8 +88,8 @@ export async function PUT(
     return NextResponse.json({ categoria: category });
   } catch (err) {
     return (
-      mapError(err, "Categoria") ??
-      ERRORS.internal("atualizar categoria", err)
+      mapError(err, "Category") ??
+      ERRORS.internal("update category", err)
     );
   }
 }
@@ -119,12 +119,12 @@ export async function DELETE(
 
   try {
     const id = await routeId(params);
-    if (id === null) return ERRORS.invalidData("ID inválido");
+    if (id === null) return ERRORS.invalidData("Invalid ID");
     await deleteCategory(id);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return (
-      mapError(err, "Categoria") ?? ERRORS.internal("deletar categoria", err)
+      mapError(err, "Category") ?? ERRORS.internal("delete category", err)
     );
   }
 }

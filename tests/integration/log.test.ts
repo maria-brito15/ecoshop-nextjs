@@ -21,71 +21,71 @@ function capture(method: "log" | "warn" | "error", fn: () => void): Record<strin
   }
 }
 
-test("REQ-OPS-19: o log é uma linha JSON com data, nível e evento", () => {
-  const [line] = capture("warn", () => log.warn("teste.evento", { rota: "/api/x", ms: 12 }));
-  assert.equal(line.nivel, "warn");
-  assert.equal(line.evento, "teste.evento");
-  assert.equal(line.rota, "/api/x");
+test("REQ-OPS-19: the log is a JSON line with date, level and event", () => {
+  const [line] = capture("warn", () => log.warn("test.event", { route: "/api/x", ms: 12 }));
+  assert.equal(line.level, "warn");
+  assert.equal(line.event, "test.event");
+  assert.equal(line.route, "/api/x");
   assert.equal(line.ms, 12);
   assert.ok(!Number.isNaN(Date.parse(String(line.ts))));
 });
 
-test("REQ-OPS-19: chaves sensíveis do contexto, em qualquer profundidade, viram [REDIGIDO]", () => {
+test("REQ-OPS-19: sensitive context keys, at any depth, become [REDACTED]", () => {
   const [line] = capture("log", () =>
-    log.info("teste.sensivel", {
+    log.info("test.sensitive", {
       senha: "abc",
       token: "t",
       JWT_SECRET: "s",
       GEMINI_KEY: "k",
-      aninhado: { authorization: "Bearer x", cookie: "token=1", ok: "visível" },
+      aninhado: { authorization: "Bearer x", cookie: "token=1", ok: "visible" },
       lista: [{ password: "p" }],
     }),
   );
-  assert.equal(line.senha, "[REDIGIDO]");
-  assert.equal(line.token, "[REDIGIDO]");
-  assert.equal(line.JWT_SECRET, "[REDIGIDO]");
-  assert.equal(line.GEMINI_KEY, "[REDIGIDO]");
-  assert.deepEqual(line.aninhado, { authorization: "[REDIGIDO]", cookie: "[REDIGIDO]", ok: "visível" });
-  assert.deepEqual(line.lista, [{ password: "[REDIGIDO]" }]);
+  assert.equal(line.senha, "[REDACTED]");
+  assert.equal(line.token, "[REDACTED]");
+  assert.equal(line.JWT_SECRET, "[REDACTED]");
+  assert.equal(line.GEMINI_KEY, "[REDACTED]");
+  assert.deepEqual(line.aninhado, { authorization: "[REDACTED]", cookie: "[REDACTED]", ok: "visible" });
+  assert.deepEqual(line.lista, [{ password: "[REDACTED]" }]);
 });
 
-test("REQ-OPS-19: credenciais dentro de URLs em textos são mascaradas", () => {
+test("REQ-OPS-19: credentials inside URLs in texts are masked", () => {
   const [line] = capture("log", () =>
-    log.info("teste.url", { destino: "falhou em redis://:minhasenha@cache:6379/0 e postgresql://usr:pw@db:5432/x" }),
+    log.info("test.url", { destination: "failed at redis://:mypassword@cache:6379/0 and postgresql://usr:pw@db:5432/x" }),
   );
   const text = JSON.stringify(line);
   assert.ok(!text.includes("minhasenha"));
   assert.ok(!text.includes("usr:pw"));
-  assert.match(String(line.destino), /redis:\/\/\[REDIGIDO\]@cache/);
+  assert.match(String(line.destination), /redis:\/\/\[REDACTED\]@cache/);
 });
 
-test("REQ-OPS-19: serializarErro traz nome, mensagem e pilha curta, sem segredo", () => {
-  const error = Object.assign(new Error("conexão recusada em redis://:segredo@h:1"), { code: "ECONNREFUSED" });
+test("REQ-OPS-19: serializeError returns name, message and a short stack, without secrets", () => {
+  const error = Object.assign(new Error("connection refused at redis://:secret@h:1"), { code: "ECONNREFUSED" });
   const s = serializeError(error);
-  assert.equal(s.nome, "Error");
-  assert.equal(s.codigo, "ECONNREFUSED");
-  assert.ok(!JSON.stringify(s).includes("segredo"));
-  assert.ok(String(s.pilha).split("\n").length <= 6);
-  assert.deepEqual(serializeError("texto solto"), { valor: "texto solto" });
+  assert.equal(s.name, "Error");
+  assert.equal(s.code, "ECONNREFUSED");
+  assert.ok(!JSON.stringify(s).includes("secret"));
+  assert.ok(String(s.stack).split("\n").length <= 6);
+  assert.deepEqual(serializeError("loose text"), { value: "loose text" });
 });
 
-test("REQ-OPS-19: ERROS.interno responde 500 sem detalhe no corpo e registra a causa no log", async () => {
-  const cause = new Error("falha ao falar com redis://:segredo@h:1");
+test("REQ-OPS-19: ERRORS.internal returns 500 with no detail in the body and logs the cause", async () => {
+  const cause = new Error("failure talking to redis://:secret@h:1");
   const records = capture("error", () => {
-    const res = ERRORS.internal("listar produtos", cause);
+    const res = ERRORS.internal("list products", cause);
     assert.equal(res.status, 500);
   });
   assert.equal(records.length, 1);
-  assert.equal(records[0].evento, "erro_interno");
-  assert.equal(records[0].contexto, "listar produtos");
-  assert.ok(!JSON.stringify(records[0]).includes("segredo"));
-  assert.match(JSON.stringify(records[0]), /falha ao falar com/);
+  assert.equal(records[0].event, "internal_error");
+  assert.equal(records[0].context, "list products");
+  assert.ok(!JSON.stringify(records[0]).includes("secret"));
+  assert.match(JSON.stringify(records[0]), /failure talking to/);
 
-  const body = await ERRORS.internal("listar produtos", cause).json();
-  assert.deepEqual(body, { erro: "Erro ao listar produtos" });
+  const body = await ERRORS.internal("list products", cause).json();
+  assert.deepEqual(body, { erro: "Failed to list products" });
 });
 
-test("REQ-OPS-19: limitarFrequencia deixa passar uma ocorrência por intervalo e por chave", () => {
+test("REQ-OPS-19: throttle lets one occurrence through per interval and per key", () => {
   const can = throttle(1000);
   assert.equal(can("a", 0), true);
   assert.equal(can("a", 500), false);

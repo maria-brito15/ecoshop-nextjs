@@ -30,12 +30,12 @@
  * await redisDelPattern(`${PREFIX.PRODUTOS}*`); // remove todos os caches de produtos
  */
 export const PREFIX = {
-  PRODUCTS: "produtos:",
-  CATEGORIES: "categorias:",
-  BRANDS: "marcas:",
-  CERTIFICATES: "certificados:",
-  USERS: "usuarios:",
-  PHOTOS: "fotos:",
+  PRODUCTS: "products:",
+  CATEGORIES: "categories:",
+  BRANDS: "brands:",
+  CERTIFICATES: "certificates:",
+  USERS: "users:",
+  PHOTOS: "photos:",
 } as const;
 
 /**
@@ -87,7 +87,7 @@ export function productKey(id: number): string {
  * @returns Chave no formato "categorias:lista"
  */
 export function categoriesKey(): string {
-  return `${PREFIX.CATEGORIES}lista`;
+  return `${PREFIX.CATEGORIES}list`;
 }
 
 /**
@@ -107,7 +107,7 @@ export function categoryKey(id: number): string {
  * @returns Chave no formato "marcas:lista"
  */
 export function brandsKey(): string {
-  return `${PREFIX.BRANDS}lista`;
+  return `${PREFIX.BRANDS}list`;
 }
 
 /**
@@ -126,7 +126,7 @@ export function brandKey(id: number): string {
  * @returns Chave no formato "certificados:lista"
  */
 export function certificatesKey(): string {
-  return `${PREFIX.CERTIFICATES}lista`;
+  return `${PREFIX.CERTIFICATES}list`;
 }
 
 /**
@@ -167,7 +167,7 @@ export function userKey(id: number): string {
  * @returns Chave no formato "usuarios:lista"
  */
 export function usersKey(): string {
-  return `${PREFIX.USERS}lista`;
+  return `${PREFIX.USERS}list`;
 }
 
 /**
@@ -177,5 +177,5 @@ export function usersKey(): string {
  * @returns Chave no formato "fotos:produto:123"
  */
 export function productPhotosKey(productId: number): string {
-  return `${PREFIX.PHOTOS}produto:${productId}`;
+  return `${PREFIX.PHOTOS}product:${productId}`;
 }

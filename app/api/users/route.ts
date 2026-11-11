@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
     if (blocked) {
       return NextResponse.json(
-        { erro: "Muitas tentativas de cadastro. Aguarde 1 hora." },
+        { erro: "Too many registration attempts. Wait 1 hour." },
         { status: 429 },
       );
     }
@@ -107,6 +107,6 @@ export async function POST(req: NextRequest) {
     if (session.refresh) setRefreshCookie(res, session.refresh);
     return res;
   } catch (err) {
-    return mapError(err, "Usuário") ?? ERRORS.internal("registrar usuário", err);
+    return mapError(err, "User") ?? ERRORS.internal("register user", err);
   }
 }

@@ -41,7 +41,7 @@ import { requireAuth } from "@/app/_middleware/auth";
 import { getSession } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 
-const SYSTEM_PROMPT = `Você é um assistente especialista em sustentabilidade e reciclagem da EcoShop. Responda em português. Seja objetivo e informativo. Forneça dicas práticas sobre descarte correto, reciclagem e alternativas sustentáveis.`;
+const SYSTEM_PROMPT = `You are an expert assistant in sustainability and recycling for EcoShop. Answer in English. Be objective and informative. Give practical tips on proper disposal, recycling and sustainable alternatives.`;
 
 /**
  * POST /api/ia/chat - Chat com assistente IA
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
   });
   if (blocked) {
     return NextResponse.json(
-      { erro: "Muitas mensagens. Aguarde 1 minuto e tente novamente." },
+      { erro: "Too many messages. Wait 1 minute and try again." },
       { status: 429 },
     );
   }
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
 
     if (!isGeminiConfigured()) {
       return NextResponse.json(
-        { erro: "Serviço de IA não configurado" },
+        { erro: "AI service not configured" },
         { status: 503 },
       );
     }
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
         role: "model",
         parts: [
           {
-            text: "Entendido! Estou pronto para ajudar com questões de sustentabilidade e reciclagem.",
+            text: "Understood! I am ready to help with sustainability and recycling questions.",
           },
         ],
       },
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
 
     if (!response) {
       return NextResponse.json(
-        { erro: "Erro ao gerar resposta da IA" },
+        { erro: "Error generating the AI response" },
         { status: 502 },
       );
     }

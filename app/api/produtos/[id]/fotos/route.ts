@@ -45,14 +45,14 @@ export async function GET(
   const id = await routeId(params);
 
   if (id === null) {
-    return ERRORS.invalidData("ID inválido");
+    return ERRORS.invalidData("Invalid ID");
   }
 
   try {
     const result = await listPhotos(id);
     return NextResponse.json(result);
   } catch (err) {
-    return ERRORS.internal("buscar fotos do produto", err);
+    return ERRORS.internal("fetch product photos", err);
   }
 }
 
@@ -83,14 +83,14 @@ export async function POST(
 
   const id = await routeId(params);
   if (id === null)
-    return ERRORS.invalidData("ID do produto inválido");
+    return ERRORS.invalidData("Invalid product ID");
 
   try {
     const formData = await req.formData();
     const file = formData.get("arquivo") as File | null;
     const customName = formData.get("nome") as string | null;
 
-    if (!file) return ERRORS.invalidData("Nenhum arquivo foi enviado");
+    if (!file) return ERRORS.invalidData("No file was sent");
 
     const result = await uploadPhoto({
       produtoId: id,
@@ -100,34 +100,34 @@ export async function POST(
 
     if (!result.ok) {
       switch (result.reason) {
-        case "PRODUTO_NAO_ENCONTRADO":
-          return ERRORS.notFound("Produto");
-        case "EXTENSAO_NAO_PERMITIDA":
+        case "PRODUCT_NOT_FOUND":
+          return ERRORS.notFound("Product");
+        case "EXTENSION_NOT_ALLOWED":
           return ERRORS.invalidData(
-            `Tipo de arquivo não permitido. Use: ${ALLOWED_EXTENSIONS.join(", ")}`,
+            `File type not allowed. Use: ${ALLOWED_EXTENSIONS.join(", ")}`,
           );
-        case "ARQUIVO_MUITO_GRANDE":
-          return ERRORS.invalidData("Arquivo muito grande. Máximo: 5MB");
-        case "CONTEUDO_NAO_E_IMAGEM":
+        case "FILE_TOO_LARGE":
+          return ERRORS.invalidData("File too large. Maximum: 5MB");
+        case "CONTENT_NOT_IMAGE":
           return ERRORS.invalidData(
-            "O conteúdo do arquivo não é uma imagem JPEG, PNG, GIF ou WebP do tipo indicado pela extensão",
+            "The file content is not a JPEG, PNG, GIF or WebP image matching the extension",
           );
-        case "NOME_JA_EXISTE":
+        case "NAME_ALREADY_EXISTS":
           return NextResponse.json(
-            { erro: "Um arquivo com este nome já existe" },
+            { erro: "A file with this name already exists" },
             { status: 409 },
           );
         default:
-          return ERRORS.internal("fazer upload da foto");
+          return ERRORS.internal("upload the photo");
       }
     }
 
     return NextResponse.json(
-      { ok: true, foto: result.photo, mensagem: "Foto enviada com sucesso" },
+      { ok: true, foto: result.photo, mensagem: "Photo uploaded successfully" },
       { status: 201 },
     );
   } catch (err) {
-    return ERRORS.internal("fazer upload da foto", err);
+    return ERRORS.internal("upload the photo", err);
   }
 }
 
@@ -158,9 +158,9 @@ export async function DELETE(
   const fileName = searchParams.get("nome");
 
   if (id === null)
-    return ERRORS.invalidData("ID do produto inválido");
+    return ERRORS.invalidData("Invalid product ID");
   if (!fileName)
-    return ERRORS.invalidData("Nome do arquivo não fornecido");
+    return ERRORS.invalidData("File name not provided");
 
   try {
     const result = await deletePhoto({
@@ -170,20 +170,20 @@ export async function DELETE(
 
     if (!result.ok) {
       switch (result.reason) {
-        case "NOME_INVALIDO":
-          return ERRORS.invalidData("Nome de arquivo inválido");
-        case "ARQUIVO_NAO_ENCONTRADO":
-          return ERRORS.notFound("Arquivo");
+        case "INVALID_NAME":
+          return ERRORS.invalidData("Invalid file name");
+        case "FILE_NOT_FOUND":
+          return ERRORS.notFound("File");
         default:
-          return ERRORS.internal("deletar foto");
+          return ERRORS.internal("delete photo");
       }
     }
 
     return NextResponse.json({
       ok: true,
-      mensagem: "Foto deletada com sucesso",
+      mensagem: "Photo deleted successfully",
     });
   } catch (err) {
-    return ERRORS.internal("deletar foto", err);
+    return ERRORS.internal("delete photo", err);
   }
 }

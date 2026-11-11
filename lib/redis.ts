@@ -36,7 +36,7 @@ const canWarn = throttle(30_000);
 
 /** Registra a falha do Redis, no máximo uma vez a cada 30 s por tipo. */
 export function warnRedisFailure(event: string, err: unknown) {
-  if (canWarn(event)) log.warn(event, { erro: serializeError(err) });
+  if (canWarn(event)) log.warn(event, { error: serializeError(err) });
 }
 
 function createRedisClient(): RedisClientType {
@@ -50,11 +50,11 @@ function createRedisClient(): RedisClientType {
     },
   }) as RedisClientType;
 
-  client.on("error", (err) => warnRedisFailure("redis.erro_de_conexao", err));
+  client.on("error", (err) => warnRedisFailure("redis.connection_error", err));
 
   client
     .connect()
-    .catch((err) => warnRedisFailure("redis.falha_ao_conectar", err));
+    .catch((err) => warnRedisFailure("redis.connect_failed", err));
 
   return client;
 }
@@ -73,7 +73,7 @@ export function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const limit = new Promise<never>((_, rejects) => {
     timer = setTimeout(
-      () => rejects(new Error(`Redis sem resposta em ${ms} ms`)),
+      () => rejects(new Error(`Redis did not respond within ${ms} ms`)),
       ms,
     );
   });
@@ -90,7 +90,7 @@ export async function redisGet<T>(key: string): Promise<T | null> {
     if (!raw) return null;
     return JSON.parse(raw) as T;
   } catch (err) {
-    warnRedisFailure("redis.get_falhou", err);
+    warnRedisFailure("redis.get_failed", err);
     return null;
   }
 }
@@ -107,7 +107,7 @@ export async function redisSet(
       COMMAND_TIMEOUT_MS,
     );
   } catch (err) {
-    warnRedisFailure("redis.set_falhou", err);
+    warnRedisFailure("redis.set_failed", err);
   }
 }
 
@@ -116,7 +116,7 @@ export async function redisDel(key: string): Promise<void> {
   try {
     await withTimeout(redis.del(key), COMMAND_TIMEOUT_MS);
   } catch (err) {
-    warnRedisFailure("redis.del_falhou", err);
+    warnRedisFailure("redis.del_failed", err);
   }
 }
 
@@ -139,6 +139,6 @@ export async function redisDelPattern(pattern: string): Promise<void> {
       SCAN_TIMEOUT_MS,
     );
   } catch (err) {
-    warnRedisFailure("redis.del_pattern_falhou", err);
+    warnRedisFailure("redis.del_pattern_failed", err);
   }
 }

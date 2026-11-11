@@ -86,7 +86,7 @@ export default function FloatingChat() {
             }}
           >
             <span className="font-semibold text-sm">
-              🌿 Chat de Sustentabilidade
+              🌿 Sustainability Chat
             </span>
             <button
               type="button"
@@ -107,8 +107,7 @@ export default function FloatingChat() {
                 className="text-sm text-center mt-8"
                 style={{ color: "var(--color-text-tertiary)" }}
               >
-                Pergunte sobre reciclagem, descarte correto ou alternativas
-                sustentáveis.
+                Ask about recycling, proper disposal or sustainable alternatives.
               </p>
             )}
             {messages.map((m, i) => (
@@ -179,7 +178,7 @@ export default function FloatingChat() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Fechar chat" : "Abrir chat de sustentabilidade"}
+        aria-label={open ? "Fechar chat" : "Open sustainability chat"}
         className="w-14 h-14 rounded-full flex items-center justify-center text-2xl text-white transition-transform hover:scale-105"
         style={{
           background: "var(--color-primary)",

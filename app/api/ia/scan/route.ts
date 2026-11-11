@@ -63,12 +63,12 @@ export async function POST(req: NextRequest) {
 
     if (!ALLOWED_TYPES.includes(file.type)) {
       return ERRORS.invalidData(
-        "Formato inválido. Use: jpg, jpeg, png, gif ou webp",
+        "Invalid format. Use: jpg, jpeg, png, gif or webp",
       );
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return ERRORS.invalidData("Arquivo muito grande (máx: 10MB)");
+      return ERRORS.invalidData("File too large (max: 10MB)");
     }
 
     const arrayBuffer = await file.arrayBuffer();
@@ -82,6 +82,6 @@ export async function POST(req: NextRequest) {
       status: result.sucesso ? 200 : 422,
     });
   } catch (err) {
-    return ERRORS.internal("processar análise", err);
+    return ERRORS.internal("process analysis", err);
   }
 }

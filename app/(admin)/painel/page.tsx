@@ -113,7 +113,7 @@ function DashboardPage() {
                 EcoShop
               </p>
               <p className="text-xs text-[var(--color-text-secondary)]">
-                Painel Admin
+                Admin Panel
               </p>
             </div>
           </div>
@@ -595,8 +595,8 @@ function ProductsSection() {
             <tr>
               <Th>Nome</Th>
               <Th>Preço</Th>
-              <Th>Categoria</Th>
-              <Th>Marca</Th>
+              <Th>Category</Th>
+              <Th>Brand</Th>
               <Th>Ações</Th>
             </tr>
           </thead>
@@ -610,8 +610,8 @@ function ProductsSection() {
             <tr>
               <Th>Nome</Th>
               <Th>Preço</Th>
-              <Th>Categoria</Th>
-              <Th>Marca</Th>
+              <Th>Category</Th>
+              <Th>Brand</Th>
               <Th>Ações</Th>
             </tr>
           </thead>
@@ -625,8 +625,8 @@ function ProductsSection() {
             <tr>
               <Th>Nome</Th>
               <Th>Preço</Th>
-              <Th>Categoria</Th>
-              <Th>Marca</Th>
+              <Th>Category</Th>
+              <Th>Brand</Th>
               <Th>Ações</Th>
             </tr>
           </thead>
@@ -696,7 +696,7 @@ function ProductsSection() {
               type="number"
             />
             <Field
-              label="Categoria"
+              label="Category"
               value={form.categoriaId}
               onChange={(e) =>
                 setForm({ ...form, categoriaId: e.target.value })
@@ -705,7 +705,7 @@ function ProductsSection() {
               options={categories.map((c) => ({ id: c.id, nome: c.nome }))}
             />
             <Field
-              label="Marca"
+              label="Brand"
               value={form.marcaId}
               onChange={(e) => setForm({ ...form, marcaId: e.target.value })}
               type="select"

@@ -73,19 +73,19 @@ process.env.JWT_SECRET ??= "teste-de-sessao-com-trinta-e-dois-caracteres";
 // REQ-AUTH-18: acesso curto
 // ---------------------------------------------------------------------------
 
-test("REQ-AUTH-18: o JWT de acesso expira em 15 minutos (não mais 7 dias)", async () => {
+test("REQ-AUTH-18: the access JWT expires in 15 minutes (no longer 7 days)", async () => {
   assert.equal(ACCESS_TOKEN_SECONDS, 15 * 60);
   const before = Math.floor(Date.now() / 1000);
   const claims = decodeJwt(await signToken(ADMIN));
   const duration = Number(claims.exp) - before;
-  assert.ok(duration >= 15 * 60 - 1 && duration <= 15 * 60 + 2, `duração=${duration}s`);
+  assert.ok(duration >= 15 * 60 - 1 && duration <= 15 * 60 + 2, `duration=${duration}s`);
 });
 
 // ---------------------------------------------------------------------------
 // REQ-AUTH-19: renovação de uso único, com papel relido
 // ---------------------------------------------------------------------------
 
-test("REQ-AUTH-19: iniciar sessão emite acesso e renovação; renovar GASTA o token e emite outro par", async () => {
+test("REQ-AUTH-19: starting a session issues access and refresh; refreshing SPENDS the token and issues another pair", async () => {
   const store = new InMemoryStore();
   const s1 = await startSession(ADMIN, store);
   assert.ok(s1.refresh);
@@ -98,10 +98,10 @@ test("REQ-AUTH-19: iniciar sessão emite acesso e renovação; renovar GASTA o t
 
   // o token antigo não serve mais (uso único)
   const reuse = await refreshSession(s1.refresh, lookup("ADMIN"), store);
-  assert.deepEqual(reuse, { ok: false, motivo: "INVALIDO" });
+  assert.deepEqual(reuse, { ok: false, reason: "INVALID" });
 });
 
-test("REQ-AUTH-19: dois pedidos simultâneos com o mesmo token renovam só um", async () => {
+test("REQ-AUTH-19: two simultaneous requests with the same token refresh only one", async () => {
   const store = new InMemoryStore();
   const { refresh: refresh } = await startSession(ADMIN, store);
   const [a, b] = await Promise.all([
@@ -111,7 +111,7 @@ test("REQ-AUTH-19: dois pedidos simultâneos com o mesmo token renovam só um", 
   assert.equal([a, b].filter((r) => r.ok).length, 1);
 });
 
-test("REQ-AUTH-19: ao renovar, o papel vem do banco: admin rebaixado perde o acesso de admin em no máximo 15 minutos", async () => {
+test("REQ-AUTH-19: on refresh, the role comes from the database: a demoted admin loses admin access within 15 minutes at most", async () => {
   const store = new InMemoryStore();
   const { refresh: refresh } = await startSession(ADMIN, store);
   const r = await refreshSession(refresh!, lookup("CLIENTE"), store);
@@ -121,24 +121,24 @@ test("REQ-AUTH-19: ao renovar, o papel vem do banco: admin rebaixado perde o ace
   assert.equal((decodeJwt(r.session.access) as { tipo: string }).tipo, "CLIENTE");
 });
 
-test("REQ-AUTH-19: sem token, token desconhecido ou usuário excluído → renovação recusada", async () => {
+test("REQ-AUTH-19: without a token, with an unknown token or a deleted user → refresh refused", async () => {
   const store = new InMemoryStore();
-  assert.deepEqual(await refreshSession(undefined, lookup("ADMIN"), store), { ok: false, motivo: "SEM_TOKEN" });
-  assert.deepEqual(await refreshSession("inventado", lookup("ADMIN"), store), { ok: false, motivo: "INVALIDO" });
+  assert.deepEqual(await refreshSession(undefined, lookup("ADMIN"), store), { ok: false, reason: "NO_TOKEN" });
+  assert.deepEqual(await refreshSession("inventado", lookup("ADMIN"), store), { ok: false, reason: "INVALID" });
 
   const { refresh: refresh } = await startSession(ADMIN, store);
   const withoutUser = async () => null;
-  assert.deepEqual(await refreshSession(refresh!, withoutUser, store), { ok: false, motivo: "INVALIDO" });
+  assert.deepEqual(await refreshSession(refresh!, withoutUser, store), { ok: false, reason: "INVALID" });
 });
 
-test("REQ-AUTH-19: sem Redis a renovação é NEGADA (indisponível) e o login continua, só sem token de renovação", async () => {
+test("REQ-AUTH-19: without Redis the refresh is DENIED (unavailable) and login continues, only without a refresh token", async () => {
   const store = new InMemoryStore();
   const { refresh: refresh } = await startSession(ADMIN, store);
   store.quebrado = true;
-  assert.deepEqual(await refreshSession(refresh!, lookup("ADMIN"), store), { ok: false, motivo: "INDISPONIVEL" });
+  assert.deepEqual(await refreshSession(refresh!, lookup("ADMIN"), store), { ok: false, reason: "UNAVAILABLE" });
 
   const withoutRedis = await startSession(ADMIN, store);
-  assert.ok(withoutRedis.access, "o acesso é emitido mesmo sem Redis");
+  assert.ok(withoutRedis.access, "access is issued even without Redis");
   assert.equal(withoutRedis.refresh, null);
 });
 
@@ -146,7 +146,7 @@ test("REQ-AUTH-19: sem Redis a renovação é NEGADA (indisponível) e o login c
 // REQ-AUTH-20: revogação
 // ---------------------------------------------------------------------------
 
-test("REQ-AUTH-20: logout revoga o token de renovação; revogar todas as sessões do usuário invalida todos os tokens dele", async () => {
+test("REQ-AUTH-20: logout revokes the refresh token; revoking all of a user's sessions invalidates all their tokens", async () => {
   const store = new InMemoryStore();
   const a = await startSession(ADMIN, store);
   const b = await startSession(ADMIN, store);
@@ -157,10 +157,10 @@ test("REQ-AUTH-20: logout revoga o token de renovação; revogar todas as sessõ
 
   await revokeUserSessions(1, store);
   assert.equal(store.tokens.has(b.refresh!), false);
-  assert.equal(store.tokens.has(other.refresh!), true, "sessões de outro usuário não são tocadas");
+  assert.equal(store.tokens.has(other.refresh!), true, "other users' sessions are not touched");
 });
 
-test("REQ-AUTH-20: revogar nunca lança, mesmo com o armazém fora do ar", async () => {
+test("REQ-AUTH-20: revoking never throws, even with the store down", async () => {
   const store = new InMemoryStore();
   store.quebrado = true;
   await assert.doesNotReject(() => endSession("x", store));
@@ -172,18 +172,18 @@ test("REQ-AUTH-20: revogar nunca lança, mesmo com o armazém fora do ar", async
 // REQ-AUTH-19/20 no Redis real
 // ---------------------------------------------------------------------------
 
-test("REQ-AUTH-19: no Redis real, só o hash do token é guardado, com validade, e GETDEL dá uso único", async () => {
+test("REQ-AUTH-19: on real Redis, only the token hash is stored, with a TTL, and GETDEL gives single use", async () => {
   const { redis } = await import("@/lib/redis");
   const token = generateRefreshToken();
-  assert.ok(token.length >= 43, "256 bits em base64url");
+  assert.ok(token.length >= 43, "256 bits in base64url");
   const userId = 987001;
 
   await refreshTokenStore.create(token, userId);
   const keys = await redis.keys("refresh:*");
-  assert.ok(!keys.some((c) => c.includes(token)), "o token em claro não pode estar no Redis");
+  assert.ok(!keys.some((c) => c.includes(token)), "the plain token must not be in Redis");
   const owner = await refreshTokenStore.consume(token);
   assert.equal(owner, userId);
-  assert.equal(await refreshTokenStore.consume(token), null, "uso único");
+  assert.equal(await refreshTokenStore.consume(token), null, "single use");
 
   const t2 = generateRefreshToken();
   const t3 = generateRefreshToken();
@@ -198,10 +198,10 @@ test("REQ-AUTH-19: no Redis real, só o hash do token é guardado, com validade,
 // REQ-AUTH-21: senha atual
 // ---------------------------------------------------------------------------
 
-test("REQ-AUTH-21: OperacaoNaoAutorizada vira 403 com a própria mensagem; o schema aceita senhaAtual", async () => {
-  const res = mapError(new OperationNotAllowed("Senha atual incorreta"), "Usuário");
+test("REQ-AUTH-21: OperationNotAllowed becomes 403 with its own message; the schema accepts senhaAtual", async () => {
+  const res = mapError(new OperationNotAllowed("Current password is incorrect"), "User");
   assert.equal(res?.status, 403);
-  assert.deepEqual(await res?.json(), { erro: "Senha atual incorreta" });
+  assert.deepEqual(await res?.json(), { erro: "Current password is incorrect" });
   assert.equal(updateUserSchema.parse({ senha: "NovaSenha123", senhaAtual: "Antiga123" }).senhaAtual, "Antiga123");
 });
 
@@ -212,7 +212,7 @@ test("REQ-AUTH-21: OperacaoNaoAutorizada vira 403 com a própria mensagem; o sch
 const page = (cookie?: string) =>
   new NextRequest("http://localhost/perfil?aba=2", { headers: cookie ? { cookie } : {} });
 
-test("REQ-AUTH-22: página protegida com acesso expirado e cookie de renovação passa pelo refresh e volta para a mesma página", async () => {
+test("REQ-AUTH-22: a protected page with an expired access and a refresh cookie goes through the refresh and returns to the same page", async () => {
   const res = await middleware(page(`${REFRESH_COOKIE}=abc`));
   assert.equal(res.status, 307);
   const destination = new URL(res.headers.get("location")!);
@@ -220,7 +220,7 @@ test("REQ-AUTH-22: página protegida com acesso expirado e cookie de renovação
   assert.equal(destination.searchParams.get("next"), "/perfil?aba=2");
 });
 
-test("REQ-AUTH-22: sem acesso e sem renovação vai para o login; com acesso válido segue", async () => {
+test("REQ-AUTH-22: without access and without refresh it goes to login; with a valid access it continues", async () => {
   const withNothing = await middleware(page());
   assert.match(withNothing.headers.get("location")!, /\/sign-in\?next=%2Fperfil/);
 
@@ -238,7 +238,7 @@ async function userWithPassword(name: string) {
   return createUserDirectly(email(name), "CLIENTE", await bcrypt.hash(PASSWORD, 4));
 }
 
-test("REQ-AUTH-18/19: login emite os cookies token e refresh; o refresh devolve o par novo e invalida o antigo", async () => {
+test("REQ-AUTH-18/19: login issues the token and refresh cookies; the refresh returns the new pair and invalidates the old one", async () => {
   const u = await userWithPassword("sess-login");
   const res = await login(req("/api/auth", { method: "POST", body: { email: u.email, senha: PASSWORD } }));
   assert.equal(res.status, 200);
@@ -247,8 +247,8 @@ test("REQ-AUTH-18/19: login emite os cookies token e refresh; o refresh devolve 
   assert.ok(cookies.some((c) => c.startsWith(`${REFRESH_COOKIE}=`)));
 });
 
-test("REQ-AUTH-21: trocar a PRÓPRIA senha exige a senha atual correta (403 sem ela); ADMIN trocando a de outro não precisa", async () => {
-  const u = await userWithPassword("sess-senha");
+test("REQ-AUTH-21: changing your OWN password requires the correct current password (403 without it); ADMIN changing someone else's does not need it", async () => {
+  const u = await userWithPassword("sess-password");
   const cookie = await cookieDe(u);
   const fresh = "NovaSenha456";
 
@@ -265,15 +265,15 @@ test("REQ-AUTH-21: trocar a PRÓPRIA senha exige a senha atual correta (403 sem 
   assert.equal(byAdmin.status, 200);
 });
 
-test("REQ-AUTH-23: login com e-mail inexistente também executa o bcrypt (tempo da mesma ordem que com e-mail existente)", async () => {
+test("REQ-AUTH-23: login with an unknown email also runs bcrypt (same order of time as with an existing email)", async () => {
   const u = await userWithPassword("sess-tempo");
   const measure = async (mail: string) => {
     const t = process.hrtime.bigint();
-    await login(req("/api/auth", { method: "POST", body: { email: mail, senha: "qualquer-senha" } }));
+    await login(req("/api/auth", { method: "POST", body: { email: mail, senha: "any-password" } }));
     return Number(process.hrtime.bigint() - t) / 1e6;
   };
   await measure(u.email); // aquece o hash de comparação
   const existing = await measure(u.email);
   const missing = await measure(email("nao-existe"));
-  assert.ok(missing > existing / 4, `inexistente=${missing}ms existente=${existing}ms: sem bcrypt seria quase instantâneo`);
+  assert.ok(missing > existing / 4, `missing=${missing}ms existing=${existing}ms: without bcrypt it would be almost instant`);
 });

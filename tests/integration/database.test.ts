@@ -11,22 +11,22 @@ import { PUT as atualizarProduto } from "@/app/api/produtos/[id]/route";
 
 after(closeConnections);
 
-test("REQ-PROD-07: excluir produto que tem certificado responde 409 e mantém produto e vínculo; depois de desvincular, exclui", async () => {
+test("REQ-PROD-07: deleting a product that has a certificate returns 409 and keeps the product and link; after unlinking, it deletes", async () => {
   const admin = await cookieDe(await createUserDirectly(email("prod07-admin"), "ADMIN"));
   const owner = await createUserDirectly(email("prod07-dono"), "MARCA");
   const suffix = email("prod07");
   const category = await prisma.categoria.create({ data: { nome: `Cat ${suffix}` } });
-  const brand = await prisma.marca.create({ data: { nome: `Marca ${suffix}`, usuarioId: owner.id, status: "APROVADA" } });
+  const brand = await prisma.marca.create({ data: { nome: `Brand ${suffix}`, usuarioId: owner.id, status: "APROVADA" } });
   const certificate = await prisma.certificado.create({ data: { nome: `Cert ${suffix}`, orgaoEmissor: "Teste" } });
   const product = await prisma.produto.create({
-    data: { nome: `Produto ${suffix}`, preco: 10, categoriaId: category.id, marcaId: brand.id },
+    data: { nome: `Product ${suffix}`, preco: 10, categoriaId: category.id, marcaId: brand.id },
   });
   await prisma.produtoCertificado.create({ data: { produtoId: product.id, certificadoId: certificate.id } });
 
   const blocked = await excluirProduto(req(`/api/produtos/${product.id}`, { method: "DELETE", cookie: admin }), ctx(product.id));
   assert.equal(blocked.status, 409);
-  assert.ok(await prisma.produto.findUnique({ where: { id: product.id } }), "o produto continua existindo");
-  assert.equal(await prisma.produtoCertificado.count({ where: { produtoId: product.id } }), 1, "o vínculo continua");
+  assert.ok(await prisma.produto.findUnique({ where: { id: product.id } }), "the product still exists");
+  assert.equal(await prisma.produtoCertificado.count({ where: { produtoId: product.id } }), 1, "the link still exists");
 
   const unlink = await atualizarProduto(
     req(`/api/produtos/${product.id}`, { method: "PUT", cookie: admin, body: { certificadoIds: [] } }),
@@ -37,7 +37,7 @@ test("REQ-PROD-07: excluir produto que tem certificado responde 409 e mantém pr
   assert.equal(deleted.status, 200);
 });
 
-test("REQ-PROD-07: a migration de índices existe no banco (categoria, marca e certificado)", async () => {
+test("REQ-PROD-07: the index migration exists in the database (category, brand and certificate)", async () => {
   const indices = await prisma.$queryRaw<{ indexname: string }[]>`
     SELECT indexname FROM pg_indexes WHERE schemaname = 'public'`;
   const names = new Set(indices.map((i) => i.indexname));
@@ -46,6 +46,6 @@ test("REQ-PROD-07: a migration de índices existe no banco (categoria, marca e c
     "produtos_marca_id_idx",
     "produto_certificado_certificado_id_idx",
   ]) {
-    assert.ok(names.has(expected), `falta o índice ${expected}`);
+    assert.ok(names.has(expected), `missing index ${expected}`);
   }
 });

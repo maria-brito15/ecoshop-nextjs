@@ -84,6 +84,6 @@ export async function POST(req: NextRequest) {
     const product = await createProduct(parsed.data);
     return NextResponse.json({ produto: product }, { status: 201 });
   } catch (err) {
-    return mapError(err, "Produto") ?? ERRORS.internal("criar produto", err);
+    return mapError(err, "Product") ?? ERRORS.internal("create product", err);
   }
 }

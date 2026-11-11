@@ -71,14 +71,14 @@ export async function analyzeImage(
     return {
       sucesso: false,
       mensagem:
-        "Nenhuma predição retornada pelo serviço de visão computacional.",
+        "No prediction returned by the computer vision service.",
       confianca: 0,
       confianca_minima_requerida: MIN_CONFIDENCE * 100,
       material_provavel: "N/A",
       imageId,
       timestamp,
       sugestao:
-        "Verifique se as credenciais Azure estão configuradas corretamente.",
+        "Check that the Azure credentials are configured correctly.",
     };
   }
 
@@ -92,13 +92,13 @@ export async function analyzeImage(
     return {
       sucesso: false,
       mensagem:
-        "Não foi possível identificar o objeto com confiança suficiente.",
+        "Could not identify the object with enough confidence.",
       confianca: Math.round(best.probability * 10000) / 100,
       confianca_minima_requerida: MIN_CONFIDENCE * 100,
       material_provavel: best.tagName,
       imageId,
       timestamp,
-      sugestao: "Tente tirar uma foto mais próxima e com melhor iluminação.",
+      sugestao: "Try taking a closer photo with better lighting.",
     };
   }
 

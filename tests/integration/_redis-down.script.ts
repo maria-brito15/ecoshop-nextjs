@@ -9,7 +9,7 @@ import { rateLimit } from "@/lib/rate-limit";
 async function measure<T>(fn: () => Promise<T>) {
   const start = Date.now();
   const value = await fn();
-  return { valor: value, ms: Date.now() - start };
+  return { value: value, ms: Date.now() - start };
 }
 
 async function main() {
@@ -18,16 +18,16 @@ async function main() {
   const del = await measure(() => redisDel("chave"));
   const pattern = await measure(() => redisDelPattern("chave:*"));
   const config = { limit: 1, windowSeconds: 60 };
-  const limit1 = await measure(() => rateLimit("redis-fora", config));
-  const limit2 = await measure(() => rateLimit("redis-fora", config));
+  const limit1 = await measure(() => rateLimit("redis-down", config));
+  const limit2 = await measure(() => rateLimit("redis-down", config));
 
   console.log(
     "RESULTADO " +
       JSON.stringify({
-        get: get.valor,
-        tempos: [get.ms, set.ms, del.ms, pattern.ms, limit1.ms, limit2.ms],
-        limite1: limit1.valor,
-        limite2: limit2.valor,
+        get: get.value,
+        times: [get.ms, set.ms, del.ms, pattern.ms, limit1.ms, limit2.ms],
+        limit1: limit1.value,
+        limit2: limit2.value,
       }),
   );
   process.exit(0);

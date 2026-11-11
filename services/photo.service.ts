@@ -106,11 +106,11 @@ export async function listPhotos(productId: number) {
 }
 
 export type UploadFailureReason =
-  | "PRODUTO_NAO_ENCONTRADO"
-  | "EXTENSAO_NAO_PERMITIDA"
-  | "ARQUIVO_MUITO_GRANDE"
-  | "CONTEUDO_NAO_E_IMAGEM"
-  | "NOME_JA_EXISTE";
+  | "PRODUCT_NOT_FOUND"
+  | "EXTENSION_NOT_ALLOWED"
+  | "FILE_TOO_LARGE"
+  | "CONTENT_NOT_IMAGE"
+  | "NAME_ALREADY_EXISTS";
 
 export type UploadResult =
   | { ok: true; photo: { nome: string; url: string } }
@@ -135,17 +135,17 @@ export async function savePhoto(params: {
   const { produtoId: productId, arquivo: file, nomeCustomizado: customName, directory: directory } = params;
 
   if (!hasAllowedExtension(file.name)) {
-    return { ok: false, reason: "EXTENSAO_NAO_PERMITIDA" };
+    return { ok: false, reason: "EXTENSION_NOT_ALLOWED" };
   }
 
   if (file.size > MAX_FILE_SIZE) {
-    return { ok: false, reason: "ARQUIVO_MUITO_GRANDE" };
+    return { ok: false, reason: "FILE_TOO_LARGE" };
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const type = detectImageType(buffer);
   if (!type || !extensionMatchesType(path.extname(file.name), type)) {
-    return { ok: false, reason: "CONTEUDO_NAO_E_IMAGEM" };
+    return { ok: false, reason: "CONTENT_NOT_IMAGE" };
   }
 
   const fileName = buildFileName(productId, file.name, customName);
@@ -155,7 +155,7 @@ export async function savePhoto(params: {
     await fs.writeFile(path.join(directory, fileName), buffer, { flag: "wx" });
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "EEXIST") {
-      return { ok: false, reason: "NOME_JA_EXISTE" };
+      return { ok: false, reason: "NAME_ALREADY_EXISTS" };
     }
     throw err;
   }
@@ -183,7 +183,7 @@ export async function uploadPhoto(params: {
     where: { id: params.produtoId },
     select: { id: true },
   });
-  if (!product) return { ok: false, reason: "PRODUTO_NAO_ENCONTRADO" };
+  if (!product) return { ok: false, reason: "PRODUCT_NOT_FOUND" };
 
   const result = await savePhoto({ ...params, directory: PHOTOS_DIR });
   if (result.ok) await invalidateCache("PHOTOS");
@@ -205,13 +205,13 @@ export async function deletePhoto(params: {
   nomeArquivo: string;
 }): Promise<
   | { ok: true }
-  | { ok: false; reason: "NOME_INVALIDO" | "ARQUIVO_NAO_ENCONTRADO" }
+  | { ok: false; reason: "INVALID_NAME" | "FILE_NOT_FOUND" }
 > {
   const { produtoId: productId, nomeArquivo: fileName } = params;
 
   // Valida se o arquivo pertence ao produto
   if (!fileName.startsWith(`${productId}_`)) {
-    return { ok: false, reason: "NOME_INVALIDO" };
+    return { ok: false, reason: "INVALID_NAME" };
   }
 
   // Proteção contra path traversal
@@ -221,7 +221,7 @@ export async function deletePhoto(params: {
     sanitizedName === "." ||
     sanitizedName === ".."
   ) {
-    return { ok: false, reason: "NOME_INVALIDO" };
+    return { ok: false, reason: "INVALID_NAME" };
   }
 
   const filePath = path.join(PHOTOS_DIR, sanitizedName);
@@ -230,7 +230,7 @@ export async function deletePhoto(params: {
   try {
     await fs.access(filePath);
   } catch {
-    return { ok: false, reason: "ARQUIVO_NAO_ENCONTRADO" };
+    return { ok: false, reason: "FILE_NOT_FOUND" };
   }
 
   // Deleta arquivo

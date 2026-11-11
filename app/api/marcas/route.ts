@@ -65,6 +65,6 @@ export async function POST(req: NextRequest) {
     const brand = await createBrand(parsed.data);
     return NextResponse.json({ marca: brand }, { status: 201 });
   } catch (err) {
-    return mapError(err, "Marca") ?? ERRORS.internal("criar marca", err);
+    return mapError(err, "Brand") ?? ERRORS.internal("create brand", err);
   }
 }

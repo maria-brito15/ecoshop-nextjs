@@ -16,7 +16,7 @@ import { POST as aprovarMarca } from "@/app/api/marcas/[id]/aprovar/route";
 
 after(closeConnections);
 
-test("REQ-USR-01: a listagem de usuários por admin não expõe a senha", async () => {
+test("REQ-USR-01: the admin's user listing does not expose the password", async () => {
   const cookie = await cookieDe(
     await createUserDirectly(email("usr01-admin"), "ADMIN"),
   );
@@ -26,11 +26,11 @@ test("REQ-USR-01: a listagem de usuários por admin não expõe a senha", async 
   assert.equal(
     body.includes('"senha"'),
     false,
-    "a lista não pode conter o campo senha",
+    "the list must not contain the password field",
   );
 });
 
-test("REQ-USR-02: criar usuário por admin guarda hash bcrypt e responde 201", async () => {
+test("REQ-USR-02: creating a user as admin stores a bcrypt hash and returns 201", async () => {
   const cookie = await cookieDe(
     await createUserDirectly(email("usr02-admin"), "ADMIN"),
   );
@@ -39,12 +39,12 @@ test("REQ-USR-02: criar usuário por admin guarda hash bcrypt e responde 201", a
     req("/api/usuarios", {
       method: "POST",
       cookie,
-      body: { nome: "Usuario Novo", email: fresh, senha: "Senha12345" },
+      body: { nome: "New User", email: fresh, senha: "Senha12345" },
     }),
   );
   assert.equal(res.status, 201);
   const saved = await prisma.usuario.findUnique({ where: { email: fresh } });
-  assert.ok(saved?.senha.startsWith("$2"), "a senha deve estar em hash bcrypt");
+  assert.ok(saved?.senha.startsWith("$2"), "the password must be a bcrypt hash");
   assert.notEqual(saved?.senha, "Senha12345");
 });
 
@@ -52,11 +52,11 @@ async function pendingBrand(baseName: string) {
   const mail = email(baseName);
   await prisma.usuario.deleteMany({ where: { email: mail } });
   const user = await prisma.usuario.create({
-    data: { nome: "Marca Pendente", email: mail, senha: "hash", tipo: "CLIENTE" },
+    data: { nome: "Pending Brand", email: mail, senha: "hash", tipo: "CLIENTE" },
   });
   const brand = await prisma.marca.create({
     data: {
-      nome: `Marca Pendente ${mail}`,
+      nome: `Pending Brand ${mail}`,
       usuarioId: user.id,
       status: "PENDENTE",
     },
@@ -64,7 +64,7 @@ async function pendingBrand(baseName: string) {
   return { usuario: user, marca: brand };
 }
 
-test("REQ-USR-03: ADMIN aprova marca pendente e o usuário associado passa a MARCA", async () => {
+test("REQ-USR-03: ADMIN approves a pending brand and the associated user becomes MARCA", async () => {
   const cookie = await cookieDe(
     await createUserDirectly(email("usr03-admin"), "ADMIN"),
   );
@@ -84,7 +84,7 @@ test("REQ-USR-03: ADMIN aprova marca pendente e o usuário associado passa a MAR
   assert.equal(updatedUser?.tipo, "MARCA");
 });
 
-test("REQ-USR-03: aprovar uma marca que já não está pendente responde 409", async () => {
+test("REQ-USR-03: approving a brand that is no longer pending returns 409", async () => {
   const cookie = await cookieDe(
     await createUserDirectly(email("usr03b-admin"), "ADMIN"),
   );
@@ -101,7 +101,7 @@ test("REQ-USR-03: aprovar uma marca que já não está pendente responde 409", a
   assert.equal(second.status, 409);
 });
 
-test("REQ-USR-05: a listagem de marcas inclui o status de cada uma", async () => {
+test("REQ-USR-05: the brand listing includes each brand's status", async () => {
   await pendingBrand("usr05");
   const res = await listarMarcas();
   assert.equal(res.status, 200);

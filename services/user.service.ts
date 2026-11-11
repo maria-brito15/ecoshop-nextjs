@@ -101,7 +101,7 @@ async function ensureNoRegistrationConflict(
     where: { email: { equals: userEmail, mode: "insensitive" } },
     select: { id: true },
   });
-  if (emailInUse) throw new BusinessConflict("Email já cadastrado");
+  if (emailInUse) throw new BusinessConflict("Email already registered");
 
   if (brandName) {
     const brandInUse = await prisma.marca.findUnique({
@@ -109,7 +109,7 @@ async function ensureNoRegistrationConflict(
       select: { id: true },
     });
     if (brandInUse) {
-      throw new BusinessConflict("Já existe uma marca com esse nome");
+      throw new BusinessConflict("A brand with this name already exists");
     }
   }
 }
@@ -263,7 +263,7 @@ export async function updateUser(
   } catch (err) {
     // `email` é a única coluna única de Usuario que esta atualização altera.
     if (isUniquenessViolation(err)) {
-      throw new BusinessConflict("Email já cadastrado");
+      throw new BusinessConflict("Email already registered");
     }
     throw err;
   }
@@ -296,13 +296,13 @@ export async function updateUser(
  */
 export async function deleteUser(id: number, requesterId: number) {
   if (id === requesterId) {
-    throw new BusinessConflict("Você não pode excluir a própria conta");
+    throw new BusinessConflict("You cannot delete your own account");
   }
 
   const user = await prisma.usuario.findUnique({ where: { id } });
 
   if (!user) {
-    throw new ResourceNotFound("Usuário");
+    throw new ResourceNotFound("User");
   }
 
   await prisma.usuario.delete({ where: { id } });
@@ -326,9 +326,9 @@ async function requireCurrentPassword(id: number, currentPassword: string | unde
     where: { id },
     select: { senha: true },
   });
-  if (!user) throw new ResourceNotFound("Usuário");
+  if (!user) throw new ResourceNotFound("User");
   if (!currentPassword || !(await bcrypt.compare(currentPassword, user.senha))) {
-    throw new OperationNotAllowed("Senha atual incorreta");
+    throw new OperationNotAllowed("Current password is incorrect");
   }
 }
 

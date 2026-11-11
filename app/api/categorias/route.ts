@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ categoria: category }, { status: 201 });
   } catch (err) {
     return (
-      mapError(err, "Categoria") ?? ERRORS.internal("criar categoria", err)
+      mapError(err, "Category") ?? ERRORS.internal("create category", err)
     );
   }
 }

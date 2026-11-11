@@ -27,14 +27,14 @@ const viaMiddleware = (path: string, cookie?: string) =>
     }),
   );
 
-test("REQ-PERF-01: o usuário autenticado acessa o próprio perfil (middleware e handler)", async () => {
+test("REQ-PERF-01: the authenticated user accesses their own profile (middleware and handler)", async () => {
   const u = await createUserDirectly(email("perf01"), "CLIENTE");
   const cookie = await cookieDe(u);
   const mw = await viaMiddleware(`/api/usuarios/${u.id}`, cookie);
   assert.equal(
     passes(mw),
     true,
-    `o middleware bloqueou o próprio usuário (status ${mw.status})`,
+    `the middleware blocked the user themselves (status ${mw.status})`,
   );
   const res = await buscarUsuario(
     req(`/api/usuarios/${u.id}`, { cookie }),
@@ -46,7 +46,7 @@ test("REQ-PERF-01: o usuário autenticado acessa o próprio perfil (middleware e
   assert.equal("senha" in body.usuario, false);
 });
 
-test("REQ-PERF-02: o usuário edita nome e telefone do próprio perfil", async () => {
+test("REQ-PERF-02: the user edits the name and phone of their own profile", async () => {
   const u = await createUserDirectly(email("perf02"), "CLIENTE");
   const res = await atualizarUsuario(
     req(`/api/usuarios/${u.id}`, {
@@ -62,7 +62,7 @@ test("REQ-PERF-02: o usuário edita nome e telefone do próprio perfil", async (
   assert.equal(saved?.telefone, "11999990000");
 });
 
-test("REQ-PERF-03: o usuário não consegue alterar o próprio tipo", async () => {
+test("REQ-PERF-03: the user cannot change their own type", async () => {
   const u = await createUserDirectly(email("perf03"), "CLIENTE");
   await atualizarUsuario(
     req(`/api/usuarios/${u.id}`, {
@@ -76,7 +76,7 @@ test("REQ-PERF-03: o usuário não consegue alterar o próprio tipo", async () =
   assert.equal(saved?.tipo, "CLIENTE");
 });
 
-test("REQ-AUTZ-06: o middleware exige sessão em /perfil e /api/usuarios, e ADMIN em /painel", async () => {
+test("REQ-AUTZ-06: the middleware requires a session on /perfil and /api/usuarios, and ADMIN on /painel", async () => {
   const client = await createUserDirectly(email("authz06c"), "CLIENTE");
   const admin = await createUserDirectly(email("authz06a"), "ADMIN");
   const cc = await cookieDe(client);
@@ -102,7 +102,7 @@ test("REQ-AUTZ-06: o middleware exige sessão em /perfil e /api/usuarios, e ADMI
   assert.equal(passes(await viaMiddleware("/painel", ca)), true);
 });
 
-test("REQ-AUTZ-08: /ia-scan exige login (redireciona visitante, libera usuário logado)", async () => {
+test("REQ-AUTZ-08: /ia-scan requires login (redirects a visitor, lets a signed-in user through)", async () => {
   const client = await createUserDirectly(email("authz08"), "CLIENTE");
   const cc = await cookieDe(client);
 
@@ -117,7 +117,7 @@ test("REQ-AUTZ-08: /ia-scan exige login (redireciona visitante, libera usuário 
 });
 
 test(
-  "REQ-PERF-04: a edição de perfil mostra a mensagem de erro devolvida pela API",
-  { skip: "verificação manual: ver status.md" },
+  "REQ-PERF-04: the profile edit shows the error message returned by the API",
+  { skip: "manual verification: see status.md" },
   () => {},
 );

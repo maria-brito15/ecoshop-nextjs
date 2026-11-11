@@ -68,8 +68,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ certificado: certificate }, { status: 201 });
   } catch (err) {
     return (
-      mapError(err, "Certificado") ??
-      ERRORS.internal("criar certificado", err)
+      mapError(err, "Certificate") ??
+      ERRORS.internal("create certificate", err)
     );
   }
 }

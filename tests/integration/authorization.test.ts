@@ -34,7 +34,7 @@ import path from "node:path";
 
 after(closeConnections);
 
-test("REQ-AUTZ-01: escrita no catálogo exige ADMIN (401 sem login, 403 para CLIENTE)", async () => {
+test("REQ-AUTZ-01: writing to the catalog requires ADMIN (401 without login, 403 for CLIENTE)", async () => {
   const client = await createUserDirectly(email("authz01"), "CLIENTE");
   const cookie = await cookieDe(client);
   const routes: [
@@ -62,7 +62,7 @@ test("REQ-AUTZ-01: escrita no catálogo exige ADMIN (401 sem login, 403 para CLI
     assert.equal(
       (await handler(req(`/api/${name}`, { method, body }))).status,
       401,
-      `${name} sem login`,
+      `${name} without login`,
     );
     assert.equal(
       (await handler(req(`/api/${name}`, { method, cookie, body }))).status,
@@ -90,12 +90,12 @@ test("REQ-AUTZ-01: escrita no catálogo exige ADMIN (401 sem login, 403 para CLI
   assert.equal((await photo(cookie)).status, 403);
 });
 
-test("REQ-AUTZ-02: a leitura do catálogo (produtos e categorias) é pública", async () => {
+test("REQ-AUTZ-02: reading the catalog (products and categories) is public", async () => {
   assert.equal((await listarProdutos(req("/api/produtos"))).status, 200);
   assert.equal((await listarCategorias()).status, 200);
 });
 
-test("REQ-AUTZ-03: scan e chat de IA exigem usuário autenticado", async () => {
+test("REQ-AUTZ-03: AI scan and chat require an authenticated user", async () => {
   assert.equal(
     (await scan(req("/api/ia/scan", { method: "POST", form: new FormData() })))
       .status,
@@ -111,7 +111,7 @@ test("REQ-AUTZ-03: scan e chat de IA exigem usuário autenticado", async () => {
   );
 });
 
-test("REQ-AUTZ-04: listar e criar usuários é exclusivo de ADMIN", async () => {
+test("REQ-AUTZ-04: listing and creating users is ADMIN-only", async () => {
   const client = await createUserDirectly(email("authz04"), "CLIENTE");
   assert.equal((await listarUsuarios(req("/api/usuarios"))).status, 401);
   assert.equal(
@@ -124,7 +124,7 @@ test("REQ-AUTZ-04: listar e criar usuários é exclusivo de ADMIN", async () => 
   );
 });
 
-test("REQ-AUTZ-05: /api/usuarios/[id]: o próprio usuário ou ADMIN; excluir só ADMIN", async () => {
+test("REQ-AUTZ-05: /api/usuarios/[id]: the user themselves or ADMIN; deleting is ADMIN-only", async () => {
   const a = await createUserDirectly(email("authz05a"), "CLIENTE");
   const b = await createUserDirectly(email("authz05b"), "CLIENTE");
   const admin = await createUserDirectly(email("authz05admin"), "ADMIN");
@@ -192,7 +192,7 @@ test("REQ-AUTZ-05: /api/usuarios/[id]: o próprio usuário ou ADMIN; excluir só
  * rotas públicas abaixo. Uma rota nova sem nenhuma das duas coisas quebra
  * este teste — não fica pública "por acidente".
  */
-test("REQ-AUTZ-07: toda rota de API declara sua política de acesso (autenticação explícita, ou pública na allowlist)", () => {
+test("REQ-AUTZ-07: every API route declares its access policy (explicit authentication, or public on the allowlist)", () => {
   const API_DIR = path.join(process.cwd(), "app", "api");
 
   // Rotas intencionalmente públicas (leitura do catálogo, login, cadastro,
@@ -289,6 +289,6 @@ test("REQ-AUTZ-07: toda rota de API declara sua política de acesso (autenticaç
   assert.deepEqual(
     withoutPolicy,
     [],
-    `Rota(s) de API sem política de acesso declarada (nem guard, nem na allowlist de públicas): ${withoutPolicy.join(", ")}`,
+    `API route(s) without a declared access policy (neither a guard nor on the public allowlist): ${withoutPolicy.join(", ")}`,
   );
 });

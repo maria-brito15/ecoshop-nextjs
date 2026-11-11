@@ -477,7 +477,7 @@ export default function HomePage() {
                 title: "Empresa",
                 links: [
                   { label: "Sobre nós", href: "/about" },
-                  { label: "Educação", href: "/educacao" },
+                  { label: "Education", href: "/educacao" },
                   { label: "EcoScan IA", href: "/ia-scan" },
                 ],
               },

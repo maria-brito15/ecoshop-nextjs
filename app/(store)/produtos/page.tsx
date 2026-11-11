@@ -88,8 +88,8 @@ function ProductCard({ produto: product, index }: { produto: Produto; index: num
 
   // Delay escalonado para cada card (0ms, 80ms, 160ms...)
   const delay = Math.min(index % 6, 5) * 80;
-  const categoryName = product.categoria?.nome ?? "Categoria";
-  const brandName = product.marca?.nome ?? "Marca";
+  const categoryName = product.categoria?.nome ?? "Category";
+  const brandName = product.marca?.nome ?? "Brand";
 
   return (
     <div

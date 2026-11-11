@@ -56,14 +56,14 @@ export async function GET(
   if (!session || (session.id !== id && session.tipo !== "ADMIN")) {
     return ERRORS.forbidden();
   }
-  if (id === null) return ERRORS.invalidData("ID inválido");
+  if (id === null) return ERRORS.invalidData("Invalid ID");
 
   try {
     const user = await getUser(id);
-    if (!user) return ERRORS.notFound("Usuário");
+    if (!user) return ERRORS.notFound("User");
     return NextResponse.json({ usuario: user });
   } catch (err) {
-    return ERRORS.internal("buscar usuário", err);
+    return ERRORS.internal("fetch user", err);
   }
 }
 
@@ -95,7 +95,7 @@ export async function PUT(
   if (!session || (session.id !== id && session.tipo !== "ADMIN")) {
     return ERRORS.forbidden();
   }
-  if (id === null) return ERRORS.invalidData("ID inválido");
+  if (id === null) return ERRORS.invalidData("Invalid ID");
 
   try {
     const body = await req.json();
@@ -105,7 +105,7 @@ export async function PUT(
     const user = await updateUser(id, parsed.data, session.id);
     return NextResponse.json({ usuario: user });
   } catch (err) {
-    return mapError(err, "Usuário") ?? ERRORS.internal("atualizar usuário", err);
+    return mapError(err, "User") ?? ERRORS.internal("update user", err);
   }
 }
 
@@ -132,10 +132,10 @@ export async function DELETE(
 
   try {
     const id = await routeId(params);
-    if (id === null) return ERRORS.invalidData("ID inválido");
+    if (id === null) return ERRORS.invalidData("Invalid ID");
     await deleteUser(id, session.id);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return mapError(err, "Usuário") ?? ERRORS.internal("deletar usuário", err);
+    return mapError(err, "User") ?? ERRORS.internal("delete user", err);
   }
 }

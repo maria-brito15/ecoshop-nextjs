@@ -38,7 +38,7 @@ export interface IssuedSession {
 
 export type RefreshResult =
   | { ok: true; session: IssuedSession; tipo: SessionIdentity["tipo"] }
-  | { ok: false; reason: "SEM_TOKEN" | "INVALIDO" | "INDISPONIVEL" };
+  | { ok: false; reason: "NO_TOKEN" | "INVALID" | "UNAVAILABLE" };
 
 /** Abre uma sessão: sempre emite o acesso; a renovação depende do Redis. */
 export async function startSession(
@@ -57,7 +57,7 @@ export async function startSession(
     await store.create(token, identity.id);
     refresh = token;
   } catch (err) {
-    log.warn("sessao.renovacao_indisponivel", { erro: serializeError(err) });
+    log.warn("session.refresh_unavailable", { error: serializeError(err) });
   }
   return { access: access, refresh: refresh };
 }
@@ -72,19 +72,19 @@ export async function refreshSession(
   getIdentity: (userId: number) => Promise<SessionIdentity | null>,
   store: RefreshTokenStore = refreshTokenStore,
 ): Promise<RefreshResult> {
-  if (!refreshToken) return { ok: false, reason: "SEM_TOKEN" };
+  if (!refreshToken) return { ok: false, reason: "NO_TOKEN" };
 
   let userId: number | null;
   try {
     userId = await store.consume(refreshToken);
   } catch (err) {
-    log.warn("sessao.renovacao_negada_redis_indisponivel", { erro: serializeError(err) });
-    return { ok: false, reason: "INDISPONIVEL" };
+    log.warn("session.refresh_denied_redis_unavailable", { error: serializeError(err) });
+    return { ok: false, reason: "UNAVAILABLE" };
   }
-  if (userId === null) return { ok: false, reason: "INVALIDO" };
+  if (userId === null) return { ok: false, reason: "INVALID" };
 
   const identity = await getIdentity(userId);
-  if (!identity) return { ok: false, reason: "INVALIDO" };
+  if (!identity) return { ok: false, reason: "INVALID" };
 
   const session = await startSession(identity, store);
   return { ok: true, session: session, tipo: identity.tipo };
@@ -99,7 +99,7 @@ export async function endSession(
   try {
     await store.revoke(refreshToken);
   } catch (err) {
-    log.warn("sessao.revogacao_falhou", { erro: serializeError(err) });
+    log.warn("session.revoke_failed", { error: serializeError(err) });
   }
 }
 
@@ -115,6 +115,6 @@ export async function revokeUserSessions(
   try {
     await store.revokeAll(userId);
   } catch (err) {
-    log.warn("sessao.revogacao_total_falhou", { usuarioId: userId, erro: serializeError(err) });
+    log.warn("session.revoke_all_failed", { userId, error: serializeError(err) });
   }
 }

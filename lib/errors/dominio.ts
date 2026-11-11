@@ -15,7 +15,7 @@
 /** O recurso pedido não existe. Vira 404 com a mensagem `<recurso> não encontrado`. */
 export class ResourceNotFound extends Error {
   constructor(readonly resource: string) {
-    super(`${resource} não encontrado`);
+    super(`${resource} not found`);
     this.name = "RecursoNaoEncontrado";
   }
 }

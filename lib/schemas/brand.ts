@@ -43,9 +43,9 @@ import { z } from "zod";
  * };
  */
 export const brandSchema = z.object({
-  nome: z.string().min(1, "Nome da marca é obrigatório"),
+  nome: z.string().min(1, "Brand name is required"),
   descricao: z.string().optional(),
-  usuarioId: z.number().int("ID do usuário deve ser um número inteiro"),
+  usuarioId: z.number().int("User ID must be an integer"),
 });
 
 /**
@@ -67,7 +67,7 @@ export const brandSchema = z.object({
  * const dados = { descricao: "Nova coleção 2026 com tecidos reciclados" };
  */
 export const updateBrandSchema = z.object({
-  nome: z.string().min(1, "Nome não pode estar vazio").optional(),
+  nome: z.string().min(1, "Name cannot be empty").optional(),
   descricao: z.string().optional(),
 });
 

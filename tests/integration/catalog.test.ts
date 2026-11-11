@@ -33,18 +33,18 @@ const prefix = `Cat${RUN}`;
 before(async () => {
   const admin = await createUserDirectly(email("cat-admin"), "ADMIN");
   adminCookie = await cookieDe(admin);
-  const owner = await createUserDirectly(email("cat-marca"), "MARCA");
+  const owner = await createUserDirectly(email("cat-brand"), "MARCA");
   const category = await prisma.categoria.create({
-    data: { nome: `Categoria ${prefix}` },
+    data: { nome: `Category ${prefix}` },
   });
   const brand = await prisma.marca.create({
-    data: { nome: `Marca ${prefix}`, usuarioId: owner.id },
+    data: { nome: `Brand ${prefix}`, usuarioId: owner.id },
   });
   categoryId = category.id;
   brandId = brand.id;
   await prisma.produto.createMany({
     data: Array.from({ length: 14 }, (_, i) => ({
-      nome: `Produto ${prefix} ${String(i).padStart(2, "0")}`,
+      nome: `Product ${prefix} ${String(i).padStart(2, "0")}`,
       preco: 10 + i,
       categoriaId: categoryId,
       marcaId: brandId,
@@ -55,7 +55,7 @@ before(async () => {
 const list = async (query: string) =>
   (await listar(req(`/api/produtos?${query}`))).json();
 
-test("REQ-CAT-01: o catálogo lista 12 produtos por página, com o total de resultados", async () => {
+test("REQ-CAT-01: the catalog lists 12 products per page, with the total number of results", async () => {
   const p1 = await list(`nome=${prefix}`);
   assert.equal(p1.total, 14);
   assert.equal(p1.produtos.length, 12);
@@ -64,12 +64,12 @@ test("REQ-CAT-01: o catálogo lista 12 produtos por página, com o total de resu
   assert.equal(p2.produtos.length, 2);
 });
 
-test("REQ-CAT-02: a busca por nome ignora maiúsculas e minúsculas", async () => {
+test("REQ-CAT-02: name search is case-insensitive", async () => {
   const r = await list(`nome=${prefix.toUpperCase()}`);
   assert.equal(r.total, 14);
 });
 
-test("REQ-CAT-03: o filtro por categoria devolve só produtos dela", async () => {
+test("REQ-CAT-03: the category filter returns only its products", async () => {
   const r = await list(`categoriaId=${categoryId}&size=50`);
   assert.equal(r.total, 14);
   assert.ok(
@@ -79,21 +79,21 @@ test("REQ-CAT-03: o filtro por categoria devolve só produtos dela", async () =>
   );
 });
 
-test("REQ-CAT-04: produto inexistente responde 404", async () => {
+test("REQ-CAT-04: unknown product returns 404", async () => {
   assert.equal(
     (await detalhe(req("/api/produtos/99999999"), ctx(99999999))).status,
     404,
   );
 });
 
-test("REQ-CAT-05: page ou size inválidos, ou size acima de 100, respondem 400", async () => {
+test("REQ-CAT-05: invalid page or size, or size above 100, return 400", async () => {
   assert.equal((await listar(req("/api/produtos?size=1000"))).status, 400);
   assert.equal((await listar(req("/api/produtos?page=abc"))).status, 400);
   // o painel pede size=100 (caso-limite da spec): tem que continuar aceito
   assert.equal((await listar(req("/api/produtos?size=100"))).status, 200);
 });
 
-test("REQ-CAT-06: ordenar por preço aplica ao catálogo inteiro, não só à página", async () => {
+test("REQ-CAT-06: sorting by price applies to the whole catalog, not just the page", async () => {
   // Os 14 produtos do before() têm preço 10..23 (nome em ordem crescente também).
   const desc = await list(`nome=${prefix}&size=5&sort=preco_desc`);
   assert.equal(desc.total, 14);
@@ -110,7 +110,7 @@ test("REQ-CAT-06: ordenar por preço aplica ao catálogo inteiro, não só à p�
   assert.deepEqual(page2Prices, [18, 17, 16, 15, 14]);
 });
 
-test("REQ-CAT-06: precoMax limita o catálogo inteiro, não só a página", async () => {
+test("REQ-CAT-06: precoMax limits the whole catalog, not just the page", async () => {
   const r = await list(`nome=${prefix}&size=3&precoMax=15`);
   // preços 10..15 => 6 produtos no total, mesmo pedindo só 3 por página
   assert.equal(r.total, 6);
@@ -119,14 +119,14 @@ test("REQ-CAT-06: precoMax limita o catálogo inteiro, não só a página", asyn
   );
 });
 
-test("REQ-CAT-07: o filtro por marca devolve só produtos dela", async () => {
-  const otherOwner = await createUserDirectly(email("cat07-marca"), "MARCA");
+test("REQ-CAT-07: the brand filter returns only its products", async () => {
+  const otherOwner = await createUserDirectly(email("cat07-brand"), "MARCA");
   const otherBrand = await prisma.marca.create({
-    data: { nome: `Outra Marca ${prefix}`, usuarioId: otherOwner.id },
+    data: { nome: `Other Brand ${prefix}`, usuarioId: otherOwner.id },
   });
   await prisma.produto.create({
     data: {
-      nome: `Produto outra marca ${prefix}`,
+      nome: `Product other brand ${prefix}`,
       preco: 99,
       categoriaId: categoryId,
       marcaId: otherBrand.id,
@@ -138,7 +138,7 @@ test("REQ-CAT-07: o filtro por marca devolve só produtos dela", async () => {
   assert.equal(r.produtos[0].marca.id, otherBrand.id);
 });
 
-test("REQ-PROD-01: produto criado por ADMIN aparece no catálogo logo depois (cache invalidado)", async () => {
+test("REQ-PROD-01: a product created by ADMIN shows up in the catalog right away (cache invalidated)", async () => {
   const name = `Novo ${prefix}`;
   assert.equal((await list(`nome=${encodeURIComponent(name)}`)).total, 0);
   const res = await criarProduto(
@@ -152,29 +152,29 @@ test("REQ-PROD-01: produto criado por ADMIN aparece no catálogo logo depois (ca
   assert.equal((await list(`nome=${encodeURIComponent(name)}`)).total, 1);
 });
 
-test("REQ-PROD-02: renomear uma marca reflete no detalhe do produto sem esperar o TTL", async () => {
+test("REQ-PROD-02: renaming a brand is reflected in the product detail without waiting for the TTL", async () => {
   const product = await prisma.produto.findFirstOrThrow({
     where: { marcaId: brandId },
   });
   const detailBefore = await (
     await detalhe(req(`/api/produtos/${product.id}`), ctx(product.id))
   ).json();
-  assert.equal(detailBefore.produto.marca.nome, `Marca ${prefix}`);
+  assert.equal(detailBefore.produto.marca.nome, `Brand ${prefix}`);
   await atualizarMarca(
     req(`/api/marcas/${brandId}`, {
       method: "PUT",
       cookie: adminCookie,
-      body: { nome: `Marca ${prefix} v2` },
+      body: { nome: `Brand ${prefix} v2` },
     }),
     ctx(brandId),
   );
   const detailAfter = await (
     await detalhe(req(`/api/produtos/${product.id}`), ctx(product.id))
   ).json();
-  assert.equal(detailAfter.produto.marca.nome, `Marca ${prefix} v2`);
+  assert.equal(detailAfter.produto.marca.nome, `Brand ${prefix} v2`);
 });
 
-test("REQ-REF-01: ADMIN cria categoria (201)", async () => {
+test("REQ-REF-01: ADMIN creates a category (201)", async () => {
   const res = await criarCategoria(
     req("/api/categorias", {
       method: "POST",
@@ -185,18 +185,18 @@ test("REQ-REF-01: ADMIN cria categoria (201)", async () => {
   assert.equal(res.status, 201);
 });
 
-test("REQ-REF-02: criar categoria com nome já existente responde 409", async () => {
+test("REQ-REF-02: creating a category with an existing name returns 409", async () => {
   const res = await criarCategoria(
     req("/api/categorias", {
       method: "POST",
       cookie: adminCookie,
-      body: { nome: `Categoria ${prefix}` },
+      body: { nome: `Category ${prefix}` },
     }),
   );
   assert.equal(res.status, 409);
 });
 
-test("REQ-REF-03: excluir categoria que tem produtos responde 409", async () => {
+test("REQ-REF-03: deleting a category that has products returns 409", async () => {
   const res = await excluirCategoria(
     req(`/api/categorias/${categoryId}`, {
       method: "DELETE",
@@ -207,14 +207,14 @@ test("REQ-REF-03: excluir categoria que tem produtos responde 409", async () => 
   assert.equal(res.status, 409);
 });
 
-test("REQ-REF-04: criar marca para usuário CLIENTE é recusado; para MARCA é aceito", async () => {
+test("REQ-REF-04: creating a brand for a CLIENTE user is refused; for MARCA it is accepted", async () => {
   const client = await createUserDirectly(email("ref04-cliente"), "CLIENTE");
-  const withoutBrand = await createUserDirectly(email("ref04-marca"), "MARCA");
+  const withoutBrand = await createUserDirectly(email("ref04-brand"), "MARCA");
   const res1 = await criarMarca(
     req("/api/marcas", {
       method: "POST",
       cookie: adminCookie,
-      body: { nome: `Marca inválida ${prefix}`, usuarioId: client.id },
+      body: { nome: `Invalid brand ${prefix}`, usuarioId: client.id },
     }),
   );
   assert.equal(res1.status, 409);
@@ -223,33 +223,33 @@ test("REQ-REF-04: criar marca para usuário CLIENTE é recusado; para MARCA é a
     req("/api/marcas", {
       method: "POST",
       cookie: adminCookie,
-      body: { nome: `Marca válida ${prefix}`, usuarioId: withoutBrand.id },
+      body: { nome: `Valid brand ${prefix}`, usuarioId: withoutBrand.id },
     }),
   );
   assert.equal(res2.status, 201);
 });
 
-test("REQ-PROD-03: atualizar produto inexistente responde 404", async () => {
+test("REQ-PROD-03: updating an unknown product returns 404", async () => {
   const res = await atualizarProduto(
     req("/api/produtos/99999999", {
       method: "PUT",
       cookie: adminCookie,
-      body: { nome: "Não existe" },
+      body: { nome: "Does not exist" },
     }),
     ctx(99999999),
   );
   assert.equal(res.status, 404);
 });
 
-test("REQ-PROD-05: PUT com certificadoIds atualiza o vínculo produto↔certificado", async () => {
+test("REQ-PROD-05: PUT with certificadoIds updates the product↔certificate link", async () => {
   const product = await prisma.produto.create({
     data: { nome: `PROD05 ${prefix}`, preco: 10, categoriaId: categoryId, marcaId: brandId },
   });
   const cert1 = await prisma.certificado.create({
-    data: { nome: `Certificado A ${prefix}`, orgaoEmissor: "Órgão A" },
+    data: { nome: `Certificate A ${prefix}`, orgaoEmissor: "Body A" },
   });
   const cert2 = await prisma.certificado.create({
-    data: { nome: `Certificado B ${prefix}`, orgaoEmissor: "Órgão B" },
+    data: { nome: `Certificate B ${prefix}`, orgaoEmissor: "Body B" },
   });
 
   const res1 = await atualizarProduto(
@@ -299,7 +299,7 @@ test("REQ-PROD-05: PUT com certificadoIds atualiza o vínculo produto↔certific
   assert.equal(body3.produto.certificados.length, 0);
 });
 
-test("REQ-PROD-05: certificadoId inexistente não é 500", async () => {
+test("REQ-PROD-05: an unknown certificadoId is not a 500", async () => {
   const product = await prisma.produto.create({
     data: { nome: `PROD05b ${prefix}`, preco: 10, categoriaId: categoryId, marcaId: brandId },
   });
@@ -315,7 +315,7 @@ test("REQ-PROD-05: certificadoId inexistente não é 500", async () => {
   assert.ok([404, 409].includes(res.status));
 });
 
-test("REQ-PROD-04: criar ou atualizar produto com categoria/marca inexistente não é 500", async () => {
+test("REQ-PROD-04: creating or updating a product with an unknown category/brand is not a 500", async () => {
   const created = await criarProduto(
     req("/api/produtos", {
       method: "POST",

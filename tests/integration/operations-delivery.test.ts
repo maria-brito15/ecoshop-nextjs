@@ -47,18 +47,18 @@ const PRODUCTION: Environment = {
   NEXT_PHASE: undefined,
 };
 
-test("REQ-OPS-06: validarJwtSecret aceita um segredo com 32+ caracteres que não é valor-exemplo", () => {
+test("REQ-OPS-06: validateJwtSecret accepts a secret with 32+ characters that is not a sample value", () => {
   assert.equal(validateJwtSecret(VALID_SECRET), null);
 });
 
-test("REQ-OPS-06: validarJwtSecret recusa segredo ausente, vazio ou curto", () => {
+test("REQ-OPS-06: validateJwtSecret refuses a missing, empty or short secret", () => {
   assert.notEqual(validateJwtSecret(undefined), null);
   assert.notEqual(validateJwtSecret(""), null);
   assert.notEqual(validateJwtSecret("a".repeat(31)), null);
   assert.equal(validateJwtSecret("a1B2".repeat(8)), null);
 });
 
-test("REQ-OPS-06: validarJwtSecret recusa os valores-exemplo conhecidos, mesmo com 32+ caracteres", () => {
+test("REQ-OPS-06: validateJwtSecret refuses the known sample values, even with 32+ characters", () => {
   // O .env.example antigo tinha 38 caracteres: só a regra de tamanho não o barraria.
   const examples = [
     "supersecretkeychangeinproduction",
@@ -67,12 +67,12 @@ test("REQ-OPS-06: validarJwtSecret recusa os valores-exemplo conhecidos, mesmo c
     "please-changeme-please-changeme-please",
   ];
   for (const example of examples) {
-    assert.ok(example.length >= 32, `precondição: "${example}" tem 32+ caracteres`);
+    assert.ok(example.length >= 32, `precondition: "${example}" has 32+ characters`);
     assert.notEqual(validateJwtSecret(example), null, example);
   }
 });
 
-test("REQ-OPS-06: a mensagem de erro nunca contém o valor do segredo", () => {
+test("REQ-OPS-06: the error message never contains the secret value", () => {
   const secret = "supersecretkeychangeinproduction";
   const error = validateJwtSecret(secret);
   assert.ok(error);
@@ -105,21 +105,21 @@ async function runRegister(): Promise<{ codigoDeSaida?: number; mensagem: string
   }
 }
 
-test("REQ-OPS-06: em produção, register() encerra o processo (código 1) com segredo inválido", async () => {
+test("REQ-OPS-06: in production, register() ends the process (code 1) with an invalid secret", async () => {
   for (const jwt of [undefined, "", "curto", "supersecretkeychangeinproduction"]) {
     await withEnvironment({ ...PRODUCTION, JWT_SECRET: jwt }, async () => {
       const r = await runRegister();
-      assert.equal(r.codigoDeSaida, 1, `JWT_SECRET=${jwt === undefined ? "(ausente)" : "inválido"}`);
+      assert.equal(r.codigoDeSaida, 1, `JWT_SECRET=${jwt === undefined ? "(ausente)" : "invalid"}`);
       assert.match(r.mensagem, /JWT_SECRET/);
       // só valores longos: "curto" é uma palavra que a própria mensagem usa
       if (jwt && jwt.length >= 20) {
-        assert.ok(!r.mensagem.includes(jwt), "a mensagem não pode revelar o segredo");
+        assert.ok(!r.mensagem.includes(jwt), "the message must not reveal the secret");
       }
     });
   }
 });
 
-test("REQ-OPS-18: em produção, register() encerra o processo se DATABASE_URL falta ou não é PostgreSQL, e a mensagem não vaza a URL", async () => {
+test("REQ-OPS-18: in production, register() ends the process if DATABASE_URL is missing or not PostgreSQL, and the message does not leak the URL", async () => {
   for (const url of [undefined, "", "mysql://u:p@h/db", "nao-e-url"]) {
     await withEnvironment({ ...PRODUCTION, JWT_SECRET: VALID_SECRET, DATABASE_URL: url }, async () => {
       const r = await runRegister();
@@ -130,7 +130,7 @@ test("REQ-OPS-18: em produção, register() encerra o processo se DATABASE_URL f
   }
 });
 
-test("REQ-OPS-18: todos os problemas aparecem de uma vez (segredo e banco), e o Redis é opcional", async () => {
+test("REQ-OPS-18: all problems show up at once (secret and database), and Redis is optional", async () => {
   await withEnvironment({ ...PRODUCTION, JWT_SECRET: "curto", DATABASE_URL: undefined, REDIS_URL: undefined }, async () => {
     const r = await runRegister();
     assert.equal(r.codigoDeSaida, 1);
@@ -143,13 +143,13 @@ test("REQ-OPS-18: todos os problemas aparecem de uma vez (segredo e banco), e o 
   });
 });
 
-test("REQ-OPS-06: em produção, register() inicia com segredo válido", async () => {
+test("REQ-OPS-06: in production, register() starts with a valid secret", async () => {
   await withEnvironment({ ...PRODUCTION, JWT_SECRET: VALID_SECRET }, async () => {
     assert.equal((await runRegister()).codigoDeSaida, undefined);
   });
 });
 
-test("REQ-OPS-06: fora de produção, register() não exige o segredo", async () => {
+test("REQ-OPS-06: outside production, register() does not require the secret", async () => {
   for (const nodeEnv of ["development", "test"]) {
     await withEnvironment({ ...PRODUCTION, NODE_ENV: nodeEnv, JWT_SECRET: undefined }, async () => {
       assert.equal((await runRegister()).codigoDeSaida, undefined);
@@ -157,7 +157,7 @@ test("REQ-OPS-06: fora de produção, register() não exige o segredo", async ()
   }
 });
 
-test("REQ-OPS-06: durante o build e no runtime edge, register() não valida (build do Docker não tem o segredo)", async () => {
+test("REQ-OPS-06: during the build and in the edge runtime, register() does not validate (the Docker build has no secret)", async () => {
   await withEnvironment(
     { ...PRODUCTION, NEXT_PHASE: "phase-production-build", JWT_SECRET: undefined },
     async () => {
@@ -192,32 +192,32 @@ function runSeed(file: string, environment: Environment) {
   });
 }
 
-test("REQ-OPS-09: seed.ts sem SEED_USER_PASSWORD ou com senha curta falha sem gravar nada", async () => {
+test("REQ-OPS-09: seed.ts without SEED_USER_PASSWORD or with a short password fails without writing anything", async () => {
   const before = await prisma.usuario.count();
   for (const password of ["", "curta-11chr"]) {
     const r = runSeed("prisma/seed.ts", { SEED_USER_PASSWORD: password });
-    assert.notEqual(r.status, 0, `senha "${password}" deveria falhar`);
+    assert.notEqual(r.status, 0, `password "${password}" should have failed`);
     assert.match(r.stderr, /SEED_USER_PASSWORD/);
   }
   assert.equal(await prisma.usuario.count(), before);
 });
 
-test("REQ-OPS-09: seed-admin.ts sem ADMIN_PASSWORD ou com senha curta falha sem gravar nada", async () => {
-  const mail = email("seedadmin-falha");
+test("REQ-OPS-09: seed-admin.ts without ADMIN_PASSWORD or with a short password fails without writing anything", async () => {
+  const mail = email("seedadmin-fail");
   const before = await prisma.usuario.count();
   for (const password of ["", "curta-11chr"]) {
     const r = runSeed("prisma/seed-admin.ts", {
       ADMIN_EMAIL: mail,
       ADMIN_PASSWORD: password,
     });
-    assert.notEqual(r.status, 0, `senha "${password}" deveria falhar`);
+    assert.notEqual(r.status, 0, `password "${password}" should have failed`);
     assert.match(r.stderr, /ADMIN_PASSWORD/);
   }
   assert.equal(await prisma.usuario.count(), before);
   assert.equal(await prisma.usuario.findUnique({ where: { email: mail } }), null);
 });
 
-test("REQ-OPS-09: seed-admin.ts com ADMIN_PASSWORD válida cria o ADMIN com senha utilizável", async () => {
+test("REQ-OPS-09: seed-admin.ts with a valid ADMIN_PASSWORD creates the ADMIN with a usable password", async () => {
   const mail = email("seedadmin-ok");
   const password = "SenhaForte-De-Teste-1";
   try {
@@ -234,15 +234,15 @@ test("REQ-OPS-09: seed-admin.ts com ADMIN_PASSWORD válida cria o ADMIN com senh
   }
 });
 
-test("REQ-OPS-09: nenhum arquivo de seed contém senha embutida", () => {
+test("REQ-OPS-09: no seed file contains a hard-coded password", () => {
   for (const file of ["prisma/seed.ts", "prisma/seed-admin.ts"]) {
     const text = readFileSync(file, "utf8");
-    assert.ok(!text.includes("EcoshopDemo@2026"), `${file} embute a senha de demo`);
-    assert.ok(!text.includes("Admin@123456"), `${file} embute a senha de admin`);
+    assert.ok(!text.includes("EcoshopDemo@2026"), `${file} hard-codes the demo password`);
+    assert.ok(!text.includes("Admin@123456"), `${file} hard-codes the admin password`);
   }
 });
 
-test("REQ-OPS-09: o seed-admin não imprime a senha do administrador no log", () => {
+test("REQ-OPS-09: the seed-admin does not print the administrator password to the log", () => {
   const text = readFileSync("prisma/seed-admin.ts", "utf8");
   // a linha que mostra a senha MASCARADA (`"•".repeat(...)`) é permitida
   assert.doesNotMatch(text, /Senha: \$\{(?!"•")/);

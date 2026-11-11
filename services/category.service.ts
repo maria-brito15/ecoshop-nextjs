@@ -145,7 +145,7 @@ export async function deleteCategory(id: number) {
   // Verifica se categoria existe antes de tentar deletar
   const category = await prisma.categoria.findUnique({ where: { id } });
   if (!category) {
-    throw new ResourceNotFound("Categoria");
+    throw new ResourceNotFound("Category");
   }
 
   await prisma.categoria.delete({ where: { id } });

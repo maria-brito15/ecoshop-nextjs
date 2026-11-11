@@ -29,14 +29,14 @@ const single = (base: string) => `${base}-${Date.now().toString(36)}-${Math.rand
 // REQ-OPS-14: Redis fora do ar falha rápido (não pendura a requisição)
 // ---------------------------------------------------------------------------
 
-test("REQ-OPS-14: comPrazo libera quem espera quando o comando não responde", async () => {
+test("REQ-OPS-14: withTimeout releases the waiter when the command does not respond", async () => {
   const start = Date.now();
-  await assert.rejects(() => withTimeout(new Promise(() => {}), 50), /sem resposta/);
+  await assert.rejects(() => withTimeout(new Promise(() => {}), 50), /did not respond/);
   assert.ok(Date.now() - start < 1000);
   assert.equal(await withTimeout(Promise.resolve("ok"), 50), "ok");
 });
 
-test("REQ-OPS-14: com o Redis fora do ar, cache e rate limit respondem rápido e sem lançar erro", () => {
+test("REQ-OPS-14: with Redis down, cache and rate limit respond fast and without throwing", () => {
   const child = spawnSync(
     process.execPath,
     ["--import", "tsx", "tests/integration/_redis-down.script.ts"],
@@ -45,23 +45,25 @@ test("REQ-OPS-14: com o Redis fora do ar, cache e rate limit respondem rápido e
   );
   assert.equal(child.status, 0, child.stderr);
   const line = child.stdout.split("\n").find((l) => l.startsWith("RESULTADO "));
-  assert.ok(line, `sem resultado:\n${child.stdout}\n${child.stderr}`);
+  assert.ok(line, `no result:
+${child.stdout}
+${child.stderr}`);
   const r = JSON.parse(line.slice("RESULTADO ".length));
 
-  assert.equal(r.get, null, "GET com Redis fora é um miss, não erro");
-  for (const ms of r.tempos) {
-    assert.ok(ms < 2500, `operação levou ${ms} ms: o Redis fora do ar não pode pendurar a requisição`);
+  assert.equal(r.get, null, "GET with Redis down is a miss, not an error");
+  for (const ms of r.times) {
+    assert.ok(ms < 2500, `operation took ${ms} ms: Redis being down must not hang the request`);
   }
   // REQ-OPS-15: sem Redis, o rate limit continua valendo (memória local)
-  assert.equal(r.limite1.bloqueado, false);
-  assert.equal(r.limite2.bloqueado, true, "o segundo acesso passa do limite 1 e precisa ser bloqueado");
+  assert.equal(r.limit1.blocked, false);
+  assert.equal(r.limit2.blocked, true, "the second access exceeds limit 1 and must be blocked");
 });
 
 // ---------------------------------------------------------------------------
 // REQ-OPS-15: rate limit atômico e com reserva em memória
 // ---------------------------------------------------------------------------
 
-test("REQ-OPS-15: a contagem no Redis nasce com validade (SET NX EX + INCR), sem chave imortal", async () => {
+test("REQ-OPS-15: the Redis count is born with a TTL (SET NX EX + INCR), no immortal key", async () => {
   const id = single("atomico");
   const config = { limit: 2, windowSeconds: 30 };
   assert.equal((await rateLimit(id, config)).blocked, false);
@@ -75,7 +77,7 @@ test("REQ-OPS-15: a contagem no Redis nasce com validade (SET NX EX + INCR), sem
   await redis.del(`rate_limit:${id}`);
 });
 
-test("REQ-OPS-15: se o contador principal falha, a reserva em memória mantém o limite", async () => {
+test("REQ-OPS-15: if the main counter fails, the in-memory fallback keeps the limit", async () => {
   const broken: WindowCounter = {
     increment: async () => {
       throw new Error("Redis fora");
@@ -90,7 +92,7 @@ test("REQ-OPS-15: se o contador principal falha, a reserva em memória mantém o
   assert.equal(r1.remainingAttempts, 1);
 });
 
-test("REQ-OPS-15: o contador em memória zera quando a janela acaba", async () => {
+test("REQ-OPS-15: the in-memory counter resets when the window ends", async () => {
   let now = 1_000_000;
   const counter = new InMemoryCounter(() => now);
   assert.equal(await counter.increment("k", 10), 1);
@@ -114,26 +116,26 @@ const request = (xff?: string, realIp?: string) =>
     },
   });
 
-test("REQ-OPS-16: com 1 proxy confiável, vale a última entrada de x-forwarded-for (a que o proxy escreveu)", () => {
+test("REQ-OPS-16: with 1 trusted proxy, the last x-forwarded-for entry counts (the one the proxy wrote)", () => {
   assert.equal(getClientIp(request("203.0.113.7"), 1), "203.0.113.7");
   // o cliente forjou 9.9.9.9; o proxy acrescentou o IP real no fim
   assert.equal(getClientIp(request("9.9.9.9, 203.0.113.7"), 1), "203.0.113.7");
   assert.equal(getClientIp(request("9.9.9.9, 8.8.8.8, 203.0.113.7"), 1), "203.0.113.7");
 });
 
-test("REQ-OPS-16: com 2 proxies confiáveis vale a penúltima entrada; com mais proxies que entradas, a primeira", () => {
+test("REQ-OPS-16: with 2 trusted proxies the second-to-last entry counts; with more proxies than entries, the first", () => {
   assert.equal(getClientIp(request("1.1.1.1, 2.2.2.2"), 2), "1.1.1.1");
   assert.equal(getClientIp(request("1.1.1.1"), 3), "1.1.1.1");
 });
 
-test("REQ-OPS-16: sem proxy confiável o cabeçalho é ignorado; sem cabeçalho cai em x-real-ip ou unknown", () => {
+test("REQ-OPS-16: without a trusted proxy the header is ignored; without a header it falls back to x-real-ip or unknown", () => {
   assert.equal(getClientIp(request("9.9.9.9"), 0), "unknown");
   assert.equal(getClientIp(request(undefined, "10.0.0.5"), 1), "10.0.0.5");
   assert.equal(getClientIp(request(), 1), "unknown");
   void comXff;
 });
 
-test("REQ-OPS-16: TRUST_PROXY_HOPS define o padrão e valor inválido volta para 1", () => {
+test("REQ-OPS-16: TRUST_PROXY_HOPS sets the default and an invalid value falls back to 1", () => {
   const env = process.env as Record<string, string | undefined>;
   const previous = env.TRUST_PROXY_HOPS;
   try {
@@ -156,15 +158,15 @@ test("REQ-OPS-16: TRUST_PROXY_HOPS define o padrão e valor inválido volta para
 const keyFor = (query: Record<string, string>) =>
   productListKey(listProductsQuerySchema.parse(query));
 
-test("REQ-CAT-10: a chave não depende da ordem dos parâmetros nem de parâmetros desconhecidos", () => {
+test("REQ-CAT-10: the key does not depend on parameter order or unknown parameters", () => {
   const a = keyFor({ sort: "preco_asc", page: "2", categoriaId: "3" });
   const b = keyFor({ categoriaId: "3", page: "2", sort: "preco_asc", lixo: "x", outro: "y" });
   assert.equal(a, b);
 });
 
-test("REQ-CAT-10: filtros diferentes geram chaves diferentes; os padrões entram na chave", () => {
+test("REQ-CAT-10: different filters generate different keys; the defaults are part of the key", () => {
   const base = keyFor({});
-  assert.match(base, /^produtos:page=1&size=12&/);
+  assert.match(base, /^products:page=1&size=12&/);
   assert.notEqual(base, keyFor({ page: "2" }));
   assert.notEqual(base, keyFor({ marcaId: "4" }));
   assert.notEqual(base, keyFor({ precoMax: "50" }));
@@ -172,12 +174,12 @@ test("REQ-CAT-10: filtros diferentes geram chaves diferentes; os padrões entram
   assert.notEqual(base, keyFor({ nome: "bambu" }));
 });
 
-test("REQ-CAT-10: a busca por nome ignora caixa e espaços nas pontas (mesma busca, mesma chave)", () => {
+test("REQ-CAT-10: name search ignores case and surrounding spaces (same search, same key)", () => {
   assert.equal(keyFor({ nome: "Bambu" }), keyFor({ nome: "  bambu " }));
   assert.equal(keyFor({ nome: "" }), keyFor({}));
 });
 
-test("REQ-CAT-10: nome com mais de 100 caracteres responde 400 (o tamanho da chave tem limite)", async () => {
+test("REQ-CAT-10: a nome above 100 characters returns 400 (the key size is bounded)", async () => {
   const res = await listarProdutosHandler(req(`/api/produtos?nome=${"a".repeat(101)}`));
   assert.equal(res.status, 400);
 });
@@ -186,28 +188,28 @@ test("REQ-CAT-10: nome com mais de 100 caracteres responde 400 (o tamanho da cha
 // REQ-OPS-17: single-flight
 // ---------------------------------------------------------------------------
 
-test("REQ-OPS-17: acessos simultâneos à mesma chave com cache vazio fazem uma só busca", async () => {
+test("REQ-OPS-17: simultaneous accesses to the same key with an empty cache do a single fetch", async () => {
   const key = `teste:${single("sf")}`;
   let fetches = 0;
   const fetcher = async () => {
     fetches++;
     await new Promise((r) => setTimeout(r, 40));
-    return { valor: 42 };
+    return { value: 42 };
   };
   const results = await Promise.all(Array.from({ length: 8 }, () => withCache(key, 5, fetcher)));
   assert.equal(fetches, 1, "as 8 chamadas deveriam dividir a mesma busca");
-  for (const r of results) assert.deepEqual(r, { valor: 42 });
+  for (const r of results) assert.deepEqual(r, { value: 42 });
   await redis.del(key).catch(() => {});
 });
 
-test("REQ-OPS-17: chaves diferentes não se misturam e uma busca que falha não fica presa", async () => {
+test("REQ-OPS-17: different keys do not mix and a failed fetch does not get stuck", async () => {
   const [a, b] = await Promise.all([
     withCache(`teste:${single("a")}`, 5, async () => "A"),
     withCache(`teste:${single("b")}`, 5, async () => "B"),
   ]);
   assert.deepEqual([a, b], ["A", "B"]);
 
-  const key = `teste:${single("falha")}`;
+  const key = `teste:${single("failure")}`;
   await assert.rejects(() => withCache(key, 5, async () => { throw new Error("banco caiu"); }), /banco caiu/);
   assert.equal(await withCache(key, 5, async () => "recuperou"), "recuperou");
   await redis.del(key).catch(() => {});
@@ -217,7 +219,7 @@ test("REQ-OPS-17: chaves diferentes não se misturam e uma busca que falha não 
 // REQ-OPS-01 (emenda): saúde com Redis opcional
 // ---------------------------------------------------------------------------
 
-test("REQ-OPS-01: banco e Redis no ar → ok (200); só o Redis fora → degradado (200); banco fora → indisponível (503)", () => {
+test("REQ-OPS-01: database and Redis up → ok (200); only Redis down → degraded (200); database down → unavailable (503)", () => {
   const ok = buildHealthReport({ database: true, redis: true });
   assert.equal(ok.httpStatus, 200);
   assert.equal(ok.relatorio.status, "ok");

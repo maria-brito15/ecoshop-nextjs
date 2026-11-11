@@ -17,9 +17,9 @@ type SessionUser = {
 };
 
 const NAV_ITEMS = [
-  { label: "Início", href: "/", page: "inicio" },
+  { label: "Home", href: "/", page: "inicio" },
   { label: "Produtos", href: "/produtos", page: "produtos" },
-  { label: "Educação", href: "/educacao", page: "educacao" },
+  { label: "Education", href: "/educacao", page: "educacao" },
   { label: "EcoScan IA", href: "/ia-scan", page: "ecoscan" },
   { label: "Sobre", href: "/about", page: "sobre" },
 ] as const;
@@ -187,7 +187,7 @@ export default function Header() {
                 <div ref={profileRef} className="relative">
                   <button
                     onClick={() => setProfileMenuOpen((prev) => !prev)}
-                    aria-label="Menu do perfil"
+                    aria-label="Profile menu"
                     title={user.nome}
                     className="
                       hidden sm:flex items-center gap-2
@@ -269,7 +269,7 @@ export default function Header() {
                           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                           <circle cx="12" cy="7" r="4" />
                         </svg>
-                        Meu Perfil
+                        My Profile
                       </Link>
                       {user.tipo === "ADMIN" && (
                         <Link
@@ -298,7 +298,7 @@ export default function Header() {
                             <rect x="14" y="14" width="7" height="7" />
                             <rect x="3" y="14" width="7" height="7" />
                           </svg>
-                          Painel Admin
+                          Admin Panel
                         </Link>
                       )}
                       <button
@@ -324,7 +324,7 @@ export default function Header() {
                           <polyline points="16 17 21 12 16 7" />
                           <line x1="21" y1="12" x2="9" y2="12" />
                         </svg>
-                        Sair
+                        Sign out
                       </button>
                     </div>
                   )}
@@ -344,7 +344,7 @@ export default function Header() {
                     transition-all
                   "
                 >
-                  Entrar
+                  Sign in
                 </Link>
               ))}
 
@@ -408,7 +408,7 @@ export default function Header() {
           transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
           ${mobileOpen ? "translate-x-0" : "translate-x-full"}
         `}
-        aria-label="Menu de navegação"
+        aria-label="Navigation menu"
       >
         <div
           className="
@@ -476,7 +476,7 @@ export default function Header() {
                 transition-all
               "
             >
-              Sair da conta
+              Sign out of your account
             </button>
           ) : (
             <Link
@@ -491,7 +491,7 @@ export default function Header() {
                 transition-all
               "
             >
-              Entrar na conta
+              Sign in to your account
             </Link>
           )}
         </div>

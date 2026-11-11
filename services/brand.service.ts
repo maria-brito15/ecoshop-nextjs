@@ -113,11 +113,11 @@ export async function createBrand(data: {
     where: { id: data.usuarioId },
   });
   if (!user) {
-    throw new ResourceNotFound("Usuário");
+    throw new ResourceNotFound("User");
   }
   if (user.tipo !== "MARCA" && user.tipo !== "ADMIN") {
     throw new BusinessConflict(
-      "O usuário responsável por uma marca precisa ser do tipo MARCA ou ADMIN",
+      "The user responsible for a brand must be of type MARCA or ADMIN",
     );
   }
 
@@ -143,10 +143,10 @@ export async function createBrand(data: {
 export async function approveBrand(id: number) {
   const brand = await prisma.marca.findUnique({ where: { id } });
   if (!brand) {
-    throw new ResourceNotFound("Marca");
+    throw new ResourceNotFound("Brand");
   }
   if (brand.status !== "PENDENTE") {
-    throw new BusinessConflict("Esta marca já não está pendente de aprovação");
+    throw new BusinessConflict("This brand is no longer pending approval");
   }
 
   const approved = await prisma.$transaction(async (tx) => {
@@ -216,7 +216,7 @@ export async function updateBrand(
 export async function deleteBrand(id: number) {
   const brand = await prisma.marca.findUnique({ where: { id } });
   if (!brand) {
-    throw new ResourceNotFound("Marca");
+    throw new ResourceNotFound("Brand");
   }
 
   await prisma.marca.delete({ where: { id } });

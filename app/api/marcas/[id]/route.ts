@@ -42,12 +42,12 @@ export async function GET(
 ) {
   try {
     const id = await routeId(params);
-    if (id === null) return ERRORS.invalidData("ID inválido");
+    if (id === null) return ERRORS.invalidData("Invalid ID");
     const brand = await getBrand(id);
-    if (!brand) return ERRORS.notFound("Marca");
+    if (!brand) return ERRORS.notFound("Brand");
     return NextResponse.json({ marca: brand });
   } catch (err) {
-    return ERRORS.internal("buscar marca", err);
+    return ERRORS.internal("fetch brand", err);
   }
 }
 
@@ -76,7 +76,7 @@ export async function PUT(
 
   try {
     const id = await routeId(params);
-    if (id === null) return ERRORS.invalidData("ID inválido");
+    if (id === null) return ERRORS.invalidData("Invalid ID");
     const body = await req.json();
     const parsed = updateBrandSchema.safeParse(body);
     if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
@@ -84,7 +84,7 @@ export async function PUT(
     const brand = await updateBrand(id, parsed.data);
     return NextResponse.json({ marca: brand });
   } catch (err) {
-    return mapError(err, "Marca") ?? ERRORS.internal("atualizar marca", err);
+    return mapError(err, "Brand") ?? ERRORS.internal("update brand", err);
   }
 }
 
@@ -112,10 +112,10 @@ export async function DELETE(
 
   try {
     const id = await routeId(params);
-    if (id === null) return ERRORS.invalidData("ID inválido");
+    if (id === null) return ERRORS.invalidData("Invalid ID");
     await deleteBrand(id);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return mapError(err, "Marca") ?? ERRORS.internal("deletar marca", err);
+    return mapError(err, "Brand") ?? ERRORS.internal("delete brand", err);
   }
 }

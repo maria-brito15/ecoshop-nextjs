@@ -50,7 +50,7 @@ function getPrisma(): PrismaClient {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error(
-      "[lib/db] DATABASE_URL não definida. Configure a variável de ambiente.",
+      "[lib/db] DATABASE_URL is not set. Configure the environment variable.",
     );
   }
 

@@ -26,14 +26,14 @@ const EXAMPLE_SNIPPETS = [
  */
 export function validateJwtSecret(value: string | undefined): string | null {
   if (!value) {
-    return "JWT_SECRET não definido. Gere um valor aleatório com 32+ caracteres.";
+    return "JWT_SECRET is not set. Generate a random value with 32+ characters.";
   }
   if (value.length < MIN_LENGTH) {
-    return `JWT_SECRET curto demais: use pelo menos ${MIN_LENGTH} caracteres.`;
+    return `JWT_SECRET is too short: use at least ${MIN_LENGTH} characters.`;
   }
   const lowercase = value.toLowerCase();
   if (EXAMPLE_SNIPPETS.some((snippet) => lowercase.includes(snippet))) {
-    return "JWT_SECRET parece um valor-exemplo. Gere um valor aleatório.";
+    return "JWT_SECRET looks like a sample value. Generate a random value.";
   }
   return null;
 }

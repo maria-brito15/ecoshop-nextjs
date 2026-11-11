@@ -6,7 +6,7 @@
  *
  * Chaves no Redis:
  * - `refresh:<hash>`           → id do usuário, com a validade do token;
- * - `refresh_usuario:<id>`     → conjunto dos hashes ativos do usuário (permite
+ * - `refresh_user:<id>`     → conjunto dos hashes ativos do usuário (permite
  *                                revogar todas as sessões de uma vez).
  *
  * `consumir` usa GETDEL: ler e apagar numa operação só. Dois pedidos simultâneos
@@ -38,7 +38,7 @@ export function generateRefreshToken(): string {
 const hashDoToken = (token: string) =>
   createHash("sha256").update(token).digest("hex");
 const tokenKey = (hash: string) => `refresh:${hash}`;
-const refreshUserKey = (userId: number) => `refresh_usuario:${userId}`;
+const refreshUserKey = (userId: number) => `refresh_user:${userId}`;
 
 const withShortTimeout = <T>(promise: Promise<T>) =>
   withTimeout(promise, COMMAND_TIMEOUT_MS);

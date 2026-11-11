@@ -53,7 +53,7 @@ function getSecret(): Uint8Array {
   const JWT_SECRET = process.env.JWT_SECRET;
   if (!JWT_SECRET) {
     throw new Error(
-      "[lib/auth] JWT_SECRET não definido. Configure a variável de ambiente.",
+      "[lib/auth] JWT_SECRET is not set. Configure the environment variable.",
     );
   }
   return new TextEncoder().encode(JWT_SECRET);

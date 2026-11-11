@@ -247,9 +247,9 @@ export default function ProductPage({ params }: Props) {
   if (!data?.produto) return null;
 
   const product = data.produto;
-  const categoryName = product.categoria?.nome ?? "Categoria";
+  const categoryName = product.categoria?.nome ?? "Category";
   const categoryDescription = product.categoria?.descricao;
-  const brandName = product.marca?.nome ?? "Marca";
+  const brandName = product.marca?.nome ?? "Brand";
   const brandDescription = product.marca?.descricao;
   const numericPrice = Number(product.preco);
   const formattedPrice = numericPrice.toLocaleString("pt-BR", {
@@ -482,8 +482,8 @@ export default function ProductPage({ params }: Props) {
                   <tbody>
                     {[
                       ["Nome", product.nome],
-                      ["Categoria", categoryName],
-                      ["Marca", brandName],
+                      ["Category", categoryName],
+                      ["Brand", brandName],
                       ...(categoryDescription
                         ? [["Sobre a Categoria", categoryDescription]]
                         : []),

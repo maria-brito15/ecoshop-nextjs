@@ -46,14 +46,14 @@ import { z } from "zod";
  * };
  */
 export const productSchema = z.object({
-  nome: z.string().min(1, "Nome do produto é obrigatório"),
+  nome: z.string().min(1, "Product name is required"),
   descricao: z
     .string()
-    .min(1, "Descrição deve ter pelo menos 1 caractere")
+    .min(1, "Description must have at least 1 character")
     .optional(),
-  preco: z.number().positive("Preço deve ser maior que zero"),
-  categoriaId: z.number().int("ID da categoria deve ser um número inteiro"),
-  marcaId: z.number().int("ID da marca deve ser um número inteiro"),
+  preco: z.number().positive("Price must be greater than zero"),
+  categoriaId: z.number().int("Category ID must be an integer"),
+  marcaId: z.number().int("Brand ID must be an integer"),
 });
 
 /**
@@ -85,16 +85,16 @@ export const productSchema = z.object({
  * const dados = { certificadoIds: [1, 2] };
  */
 export const updateProductSchema = z.object({
-  nome: z.string().min(1, "Nome não pode estar vazio").optional(),
-  descricao: z.string().min(1, "Descrição não pode estar vazia").optional(),
-  preco: z.number().positive("Preço deve ser maior que zero").optional(),
+  nome: z.string().min(1, "Name cannot be empty").optional(),
+  descricao: z.string().min(1, "Description cannot be empty").optional(),
+  preco: z.number().positive("Price must be greater than zero").optional(),
   categoriaId: z
     .number()
-    .int("ID da categoria deve ser um número inteiro")
+    .int("Category ID must be an integer")
     .optional(),
-  marcaId: z.number().int("ID da marca deve ser um número inteiro").optional(),
+  marcaId: z.number().int("Brand ID must be an integer").optional(),
   certificadoIds: z
-    .array(z.number().int("ID do certificado deve ser um número inteiro"))
+    .array(z.number().int("Certificate ID must be an integer"))
     .optional(),
 });
 
@@ -113,16 +113,16 @@ export const updateProductSchema = z.object({
  */
 export const listProductsQuerySchema = z.object({
   page: z.coerce
-    .number({ message: "page deve ser um número" })
-    .int("page deve ser um número inteiro")
-    .min(1, "page deve ser pelo menos 1")
+    .number({ message: "page must be a number" })
+    .int("page must be an integer")
+    .min(1, "page must be at least 1")
     .optional()
     .default(1),
   size: z.coerce
-    .number({ message: "size deve ser um número" })
-    .int("size deve ser um número inteiro")
-    .min(1, "size deve ser pelo menos 1")
-    .max(100, "size não pode passar de 100")
+    .number({ message: "size must be a number" })
+    .int("size must be an integer")
+    .min(1, "size must be at least 1")
+    .max(100, "size cannot exceed 100")
     .optional()
     .default(12),
   categoriaId: z.coerce
@@ -130,16 +130,16 @@ export const listProductsQuerySchema = z.object({
     .int()
     .optional(),
   marcaId: z.coerce
-    .number({ message: "marcaId deve ser um número" })
-    .int("marcaId deve ser um número inteiro")
+    .number({ message: "marcaId must be a number" })
+    .int("marcaId must be an integer")
     .optional(),
   precoMax: z.coerce
-    .number({ message: "precoMax deve ser um número" })
-    .positive("precoMax deve ser maior que zero")
+    .number({ message: "precoMax must be a number" })
+    .positive("precoMax must be greater than zero")
     .optional(),
   sort: z
     .enum(["relevancia", "preco_asc", "preco_desc", "nome_asc", "nome_desc"], {
-      message: "sort inválido",
+      message: "invalid sort",
     })
     .optional()
     .default("relevancia"),
@@ -148,7 +148,7 @@ export const listProductsQuerySchema = z.object({
   nome: z
     .string()
     .trim()
-    .max(100, "nome não pode passar de 100 caracteres")
+    .max(100, "nome cannot exceed 100 characters")
     .optional()
     .transform((value) => value || undefined),
 });

@@ -112,7 +112,7 @@ export function useMutation<TResponse, TBody = unknown>(options?: Options) {
 
       if (!res.ok) {
         const errData = responseData as ApiErrorResponse;
-        const message = errData.erro ?? errData.error ?? "Erro desconhecido";
+        const message = errData.erro ?? errData.error ?? "Unknown error";
         setError(message);
         setLoading(false);
         return null;
@@ -129,7 +129,7 @@ export function useMutation<TResponse, TBody = unknown>(options?: Options) {
 
       return responseData;
     } catch {
-      setError("Falha de conexão");
+      setError("Connection failure");
       setLoading(false);
       return null;
     }

@@ -42,12 +42,12 @@ export async function GET(
 ) {
   try {
     const id = await routeId(params);
-    if (id === null) return ERRORS.invalidData("ID inválido");
+    if (id === null) return ERRORS.invalidData("Invalid ID");
     const certificate = await getCertificate(id);
-    if (!certificate) return ERRORS.notFound("Certificado");
+    if (!certificate) return ERRORS.notFound("Certificate");
     return NextResponse.json({ certificado: certificate });
   } catch (err) {
-    return ERRORS.internal("buscar certificado", err);
+    return ERRORS.internal("fetch certificate", err);
   }
 }
 
@@ -75,7 +75,7 @@ export async function PUT(
 
   try {
     const id = await routeId(params);
-    if (id === null) return ERRORS.invalidData("ID inválido");
+    if (id === null) return ERRORS.invalidData("Invalid ID");
     const body = await req.json();
     const parsed = updateCertificateSchema.safeParse(body);
     if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
@@ -84,8 +84,8 @@ export async function PUT(
     return NextResponse.json({ certificado: certificate });
   } catch (err) {
     return (
-      mapError(err, "Certificado") ??
-      ERRORS.internal("atualizar certificado", err)
+      mapError(err, "Certificate") ??
+      ERRORS.internal("update certificate", err)
     );
   }
 }
@@ -114,13 +114,13 @@ export async function DELETE(
 
   try {
     const id = await routeId(params);
-    if (id === null) return ERRORS.invalidData("ID inválido");
+    if (id === null) return ERRORS.invalidData("Invalid ID");
     await deleteCertificate(id);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return (
-      mapError(err, "Certificado") ??
-      ERRORS.internal("deletar certificado", err)
+      mapError(err, "Certificate") ??
+      ERRORS.internal("delete certificate", err)
     );
   }
 }

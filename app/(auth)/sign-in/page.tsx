@@ -689,7 +689,7 @@ export default function AuthPage() {
                   </>
                 ) : mode === "login" ? (
                   <>
-                    Entrar
+                    Sign in
                     <svg
                       width="16"
                       height="16"

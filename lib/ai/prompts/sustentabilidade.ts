@@ -34,22 +34,22 @@
  */
 export function buildSustainabilityPrompt(material: string): string {
   return `
-Você é um especialista renomado em sustentabilidade ambiental e ecologia, com profundo conhecimento sobre gestão de resíduos e economia circular. Analise detalhadamente o seguinte material de reciclagem: ${material}
+You are a renowned expert in environmental sustainability and ecology, with deep knowledge of waste management and the circular economy. Analyze the following recyclable material in detail: ${material}
 
-Forneça uma análise COMPLETA em formato JSON com os seguintes campos:
+Provide a COMPLETE analysis in JSON format with the following fields:
 
-1. impacto_ambiental: Impactos da produção e descarte incorreto, consequências na fauna e flora, dados estatísticos. (4-5 frases)
-2. tempo_decomposicao: Tempo exato de decomposição na natureza, fatores que afetam, comparação com outros materiais.
-3. onde_descartar: Cor da lixeira específica, preparação antes do descarte, locais alternativos, o que NÃO fazer.
-4. reciclabilidade: Nível Alto/Médio/Baixo, percentual no Brasil e no mundo, processo resumido, limitações.
-5. dicas_sustentaveis: 4-5 dicas práticas de redução, reutilização e alternativas sustentáveis.
-6. beneficios_reciclagem: Economia de recursos (com números), redução de CO2, geração de empregos.
+1. impacto_ambiental: Impacts of production and incorrect disposal, consequences for fauna and flora, statistical data. (4-5 sentences)
+2. tempo_decomposicao: Exact decomposition time in nature, factors that affect it, comparison with other materials.
+3. onde_descartar: Specific bin color, preparation before disposal, alternative locations, what NOT to do.
+4. reciclabilidade: High/Medium/Low level, percentage in Brazil and worldwide, summarized process, limitations.
+5. dicas_sustentaveis: 4-5 practical tips on reduction, reuse and sustainable alternatives.
+6. beneficios_reciclagem: Resource savings (with numbers), CO2 reduction, job creation.
 
-REGRAS:
-- Responda APENAS com um objeto JSON válido, sem markdown, sem texto extra.
-- Use \\n para quebras de linha dentro das strings.
-- Foque no contexto brasileiro.
+RULES:
+- Answer ONLY with a valid JSON object, without markdown and without extra text.
+- Use \\n for line breaks inside the strings.
+- Focus on the Brazilian context.
 
-FORMATO: {"impacto_ambiental":"...","tempo_decomposicao":"...","onde_descartar":"...","reciclabilidade":"...","dicas_sustentaveis":"...","beneficios_reciclagem":"..."}
+FORMAT: {"impacto_ambiental":"...","tempo_decomposicao":"...","onde_descartar":"...","reciclabilidade":"...","dicas_sustentaveis":"...","beneficios_reciclagem":"..."}
 `.trim();
 }

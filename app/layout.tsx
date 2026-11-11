@@ -60,14 +60,14 @@ const plusJakarta = Plus_Jakarta_Sans({
  */
 export const metadata: Metadata = {
   title: {
-    default: "EcoShop — Sua escolha faz a diferença",
+    default: "EcoShop — Your choice makes a difference",
     template: "%s | EcoShop",
   },
   description:
-    "Descubra produtos sustentáveis que cuidam de você e do planeta.",
+    "Discover sustainable products that care for you and the planet.",
   openGraph: {
     title: "EcoShop",
-    description: "Produtos sustentáveis para um futuro melhor.",
+    description: "Sustainable products for a better future.",
     type: "website",
   },
 };

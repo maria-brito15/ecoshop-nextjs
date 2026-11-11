@@ -28,7 +28,7 @@ import { z } from "zod";
  * E-mail normalizado: sem espaços nas pontas e em minúsculas (REQ-AUTH-15).
  * A normalização acontece antes da checagem de formato.
  */
-const emailSchema = z.string().trim().toLowerCase().email("Email inválido");
+const emailSchema = z.string().trim().toLowerCase().email("Invalid email");
 
 /**
  * O bcrypt só usa os primeiros 72 bytes da senha: o resto seria ignorado em
@@ -38,10 +38,10 @@ const emailSchema = z.string().trim().toLowerCase().email("Email inválido");
 const PASSWORD_MAX_BYTES = 72;
 const passwordSchema = z
   .string()
-  .min(8, "Senha deve ter pelo menos 8 caracteres")
+  .min(8, "Password must have at least 8 characters")
   .refine(
     (password) => new TextEncoder().encode(password).length <= PASSWORD_MAX_BYTES,
-    `Senha deve ter no máximo ${PASSWORD_MAX_BYTES} bytes`,
+    `Password must have at most ${PASSWORD_MAX_BYTES} bytes`,
   );
 
 /**
@@ -57,7 +57,7 @@ const passwordSchema = z
  */
 export const loginSchema = z.object({
   email: emailSchema,
-  senha: z.string().min(1, "Senha é obrigatória"),
+  senha: z.string().min(1, "Password is required"),
 });
 
 /**
@@ -82,7 +82,7 @@ export const loginSchema = z.object({
  * };
  */
 export const adminRegistrationSchema = z.object({
-  nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
+  nome: z.string().min(3, "Name must have at least 3 characters"),
   email: emailSchema,
   telefone: z.string().optional(),
   senha: passwordSchema,
@@ -107,19 +107,19 @@ export const adminRegistrationSchema = z.object({
  */
 export const publicRegistrationSchema = z
   .object({
-    nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
+    nome: z.string().min(3, "Name must have at least 3 characters"),
     email: emailSchema,
     telefone: z.string().optional(),
     senha: passwordSchema,
     tipo: z.enum(["CLIENTE", "MARCA"]).default("CLIENTE"),
-    marcaNome: z.string().min(1, "Nome da marca é obrigatório").optional(),
+    marcaNome: z.string().min(1, "Brand name is required").optional(),
     marcaDescricao: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.tipo === "MARCA" && !data.marcaNome) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Nome da marca é obrigatório ao se cadastrar como MARCA",
+        message: "Brand name is required when registering as a brand (MARCA)",
         path: ["marcaNome"],
       });
     }
@@ -150,10 +150,10 @@ export const publicRegistrationSchema = z
  * const dados = { senha: "nova_senha_segura_123" };
  */
 export const updateUserSchema = z.object({
-  nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres").optional(),
+  nome: z.string().min(3, "Name must have at least 3 characters").optional(),
   email: emailSchema.optional(),
   telefone: z.string().optional(),
   senha: passwordSchema.optional(),
   // Obrigatória para trocar a PRÓPRIA senha (REQ-AUTH-21); o service decide.
-  senhaAtual: z.string().min(1, "Senha atual é obrigatória").optional(),
+  senhaAtual: z.string().min(1, "Current password is required").optional(),
 });

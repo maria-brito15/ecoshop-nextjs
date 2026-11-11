@@ -29,7 +29,7 @@ export function productionEnvironmentProblems(env: NodeJS.ProcessEnv): string[] 
 
   if (!env.DATABASE_URL || !URL_POSTGRES.test(env.DATABASE_URL)) {
     problems.push(
-      "DATABASE_URL ausente ou inválida: use uma URL postgresql://usuario:senha@host:porta/banco.",
+      "DATABASE_URL is missing or invalid: use a postgresql://user:password@host:port/database URL.",
     );
   }
 
@@ -46,6 +46,6 @@ export function requireProductionEnvironment(
   if (problems.length === 0) return;
 
   for (const problem of problems) console.error(`❌ [config] ${problem}`);
-  console.error("❌ [config] A aplicação não vai iniciar.");
+  console.error("❌ [config] The application will not start.");
   process.exit(1);
 }

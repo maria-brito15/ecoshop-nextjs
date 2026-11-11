@@ -42,9 +42,9 @@ import { z } from "zod";
  * };
  */
 export const certificateSchema = z.object({
-  nome: z.string().min(1, "Nome do certificado é obrigatório"),
+  nome: z.string().min(1, "Certificate name is required"),
   descricao: z.string().optional(),
-  orgaoEmissor: z.string().min(1, "Órgão emissor é obrigatório"),
+  orgaoEmissor: z.string().min(1, "Issuing body is required"),
 });
 
 /**
@@ -66,11 +66,11 @@ export const certificateSchema = z.object({
  * const dados = { descricao: "Certificação internacional de produtos orgânicos" };
  */
 export const updateCertificateSchema = z.object({
-  nome: z.string().min(1, "Nome não pode estar vazio").optional(),
+  nome: z.string().min(1, "Name cannot be empty").optional(),
   descricao: z.string().optional(),
   orgaoEmissor: z
     .string()
-    .min(1, "Órgão emissor não pode estar vazio")
+    .min(1, "Issuing body cannot be empty")
     .optional(),
 });
 

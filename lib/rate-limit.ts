@@ -43,7 +43,7 @@ class RedisCounter implements WindowCounter {
       COMMAND_TIMEOUT_MS,
     )) as unknown[];
     const total = Number(response[1]);
-    if (!Number.isFinite(total)) throw new Error("resposta inesperada do Redis");
+    if (!Number.isFinite(total)) throw new Error("unexpected Redis response");
     return total;
   }
 }
@@ -94,7 +94,7 @@ export async function rateLimit(
   try {
     attempts = await counter.increment(key, config.windowSeconds);
   } catch (err) {
-    warnRedisFailure("rate_limit.redis_indisponivel_usando_memoria_local", err);
+    warnRedisFailure("rate_limit.redis_unavailable_using_memory", err);
     attempts = await fallback.increment(key, config.windowSeconds);
   }
 

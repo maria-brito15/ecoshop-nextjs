@@ -40,7 +40,7 @@ import { z } from "zod";
  * };
  */
 export const categorySchema = z.object({
-  nome: z.string().min(1, "Nome da categoria é obrigatório"),
+  nome: z.string().min(1, "Category name is required"),
   descricao: z.string().optional(),
 });
 
@@ -62,7 +62,7 @@ export const categorySchema = z.object({
  * const dados = { descricao: "Vestuário ético e ecológico" };
  */
 export const updateCategorySchema = z.object({
-  nome: z.string().min(1, "Nome não pode estar vazio").optional(),
+  nome: z.string().min(1, "Name cannot be empty").optional(),
   descricao: z.string().optional(),
 });
 

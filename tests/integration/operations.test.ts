@@ -9,7 +9,7 @@ import { GET as health } from "@/app/api/health/route";
 
 after(closeConnections);
 
-test("REQ-OPS-01: /api/health responde 200 e indica banco e Redis quando ambos estão disponíveis", async () => {
+test("REQ-OPS-01: /api/health returns 200 and reports database and Redis when both are available", async () => {
   void req;
   const res = await health();
   assert.equal(res.status, 200);
@@ -32,7 +32,7 @@ const ENV_SEED = { ...process.env, SEED_USER_PASSWORD: SEED_PASSWORD };
  * teste — é o jeito mais fiel de verificar um script que o app não importa
  * (ele tem seu próprio PrismaClient). Pode demorar alguns segundos.
  */
-test("REQ-OPS-02: o seed cria usuários com senha utilizável para login (hash bcrypt real)", async () => {
+test("REQ-OPS-02: the seed creates users with a usable password for login (real bcrypt hash)", async () => {
   execFileSync("npx", ["tsx", "prisma/seed.ts"], {
     cwd: process.cwd(),
     env: ENV_SEED,
@@ -47,7 +47,7 @@ test("REQ-OPS-02: o seed cria usuários com senha utilizável para login (hash b
   assert.notEqual(admin.senha, "hash-seguro-aqui");
 });
 
-test("REQ-OPS-03: rodar o seed de novo não duplica nem apaga os produtos existentes", async () => {
+test("REQ-OPS-03: running the seed again neither duplicates nor deletes existing products", async () => {
   // garante que já existe ao menos 1 produto antes de medir idempotência
   execFileSync("npx", ["tsx", "prisma/seed.ts"], {
     cwd: process.cwd(),
@@ -56,7 +56,7 @@ test("REQ-OPS-03: rodar o seed de novo não duplica nem apaga os produtos existe
     shell: true,
   });
   const countBefore = await prisma.produto.count();
-  assert.ok(countBefore > 0, "esperava produtos após o primeiro seed");
+  assert.ok(countBefore > 0, "expected products after the first seed");
 
   execFileSync("npx", ["tsx", "prisma/seed.ts"], {
     cwd: process.cwd(),

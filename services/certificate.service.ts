@@ -124,7 +124,7 @@ export async function updateCertificate(
 export async function deleteCertificate(id: number) {
   const certificate = await prisma.certificado.findUnique({ where: { id } });
   if (!certificate) {
-    throw new ResourceNotFound("Certificado");
+    throw new ResourceNotFound("Certificate");
   }
 
   await prisma.certificado.delete({ where: { id } });

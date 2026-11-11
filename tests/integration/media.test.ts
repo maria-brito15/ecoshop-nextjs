@@ -33,16 +33,16 @@ const createdFiles: string[] = [];
 before(async () => {
   const admin = await createUserDirectly(email("midia-admin"), "ADMIN");
   adminCookie = await cookieDe(admin);
-  const owner = await createUserDirectly(email("midia-marca"), "MARCA");
+  const owner = await createUserDirectly(email("media-brand"), "MARCA");
   const category = await prisma.categoria.create({
-    data: { nome: `Categoria ${prefix}` },
+    data: { nome: `Category ${prefix}` },
   });
   const brand = await prisma.marca.create({
-    data: { nome: `Marca ${prefix}`, usuarioId: owner.id },
+    data: { nome: `Brand ${prefix}`, usuarioId: owner.id },
   });
   const product = await prisma.produto.create({
     data: {
-      nome: `Produto ${prefix}`,
+      nome: `Product ${prefix}`,
       preco: 10,
       categoriaId: category.id,
       marcaId: brand.id,
@@ -74,7 +74,7 @@ const upload = (file: File | null, name?: string) => {
   );
 };
 
-test("REQ-MIDIA-01: upload de imagem válida fica acessível por URL", async () => {
+test("REQ-MIDIA-01: upload of a valid image is reachable by URL", async () => {
   const file = new File([VALID_JPEG("conteudo-fake-jpg")], "foto.jpg", {
     type: "image/jpeg",
   });
@@ -90,23 +90,23 @@ test("REQ-MIDIA-01: upload de imagem válida fica acessível por URL", async () 
   assert.ok(list.fotos.some((f: { nome: string }) => f.nome === body.foto.nome));
 });
 
-test("REQ-MIDIA-02: arquivo que não é imagem permitida responde 400", async () => {
-  const file = new File(["não é imagem"], "documento.txt", {
+test("REQ-MIDIA-02: a file that is not an allowed image returns 400", async () => {
+  const file = new File(["not an image"], "documento.txt", {
     type: "text/plain",
   });
   const res = await upload(file);
   assert.equal(res.status, 400);
 });
 
-test("REQ-MIDIA-02: arquivo acima do limite de 5MB responde 400", async () => {
+test("REQ-MIDIA-02: a file above the 5MB limit returns 400", async () => {
   const large = Buffer.alloc(5 * 1024 * 1024 + 1, 1);
   const file = new File([large], "grande.jpg", { type: "image/jpeg" });
   const res = await upload(file);
   assert.equal(res.status, 400);
 });
 
-test("REQ-MIDIA-03: remover uma foto apaga o arquivo e ela some da listagem", async () => {
-  const file = new File([VALID_JPEG("outra-foto")], "foto2.jpg", {
+test("REQ-MIDIA-03: removing a photo deletes the file and it disappears from the list", async () => {
+  const file = new File([VALID_JPEG("another-photo")], "foto2.jpg", {
     type: "image/jpeg",
   });
   const sent = await (await upload(file, `remover_${RUN}`)).json();

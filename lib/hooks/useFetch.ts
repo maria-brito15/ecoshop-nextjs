@@ -157,13 +157,13 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
         credentials: "include", // envia cookie httpOnly com token JWT
         ...optionsRef.current,
       });
-      if (!res.ok) throw new Error(`Erro ${res.status}`);
+      if (!res.ok) throw new Error(`Error ${res.status}`);
       const data = (await res.json()) as T;
       setCached(urlToFetch, data);
       setState({ data, loading: false, error: null });
       return data;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro desconhecido";
+      const message = err instanceof Error ? err.message : "Unknown error";
       setState({ data: null, loading: false, error: message });
       return null;
     }
@@ -188,7 +188,7 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
         signal: controller.signal,
       })
         .then((res) => {
-          if (!res.ok) throw new Error(`erro ${res.status}`);
+          if (!res.ok) throw new Error(`error ${res.status}`);
           return res.json() as Promise<T>;
         })
         .then((fresh) => {
