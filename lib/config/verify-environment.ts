@@ -1,26 +1,26 @@
 // lib/config/verify-environment.ts
 
 /**
- * Verificação do ambiente na inicialização do servidor (REQ-OPS-06, REQ-OPS-18;
- * Constitution Art. XII.1 e XII.2).
+ * Environment check at server startup (REQ-OPS-06, REQ-OPS-18;
+ * Constitution Art. XII.1 and XII.2).
  *
- * Só roda em produção e fora do `next build` (o build do Docker não tem os
- * segredos). Reúne TODOS os problemas, registra-os e ENCERRA o processo: lançar
- * um erro no hook de inicialização não basta, porque o Next apenas o loga
- * ("Failed to prepare server") e o processo continua vivo.
+ * Only runs in production and outside `next build` (the Docker build has no
+ * secrets). Collects ALL problems, logs them and ENDS the process: throwing
+ * in the startup hook is not enough, because Next only logs it
+ * ("Failed to prepare server") and the process stays alive.
  *
- * Obrigatórios em produção: `JWT_SECRET` forte e `DATABASE_URL` (PostgreSQL).
- * O Redis é opcional (ADR-0020): `REDIS_URL` ausente não impede o início.
+ * Required in production: a strong `JWT_SECRET` and `DATABASE_URL` (PostgreSQL).
+ * Redis is optional (ADR-0020): a missing `REDIS_URL` does not prevent startup.
  *
- * Usa `process.exit`, API de Node: só pode ser carregado no runtime `nodejs`
- * (ver `instrumentation.ts`).
+ * Uses `process.exit`, a Node API: it may only be loaded in the `nodejs` runtime
+ * (see `instrumentation.ts`).
  */
 
 import { validateJwtSecret } from "./jwt-secret";
 
 const URL_POSTGRES = /^postgres(ql)?:\/\/\S+$/i;
 
-/** @returns a lista de problemas (vazia se o ambiente de produção está válido). Nunca inclui valores. */
+/** @returns the list of problems (empty if the production environment is valid). Never includes values. */
 export function productionEnvironmentProblems(env: NodeJS.ProcessEnv): string[] {
   const problems: string[] = [];
 

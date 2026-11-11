@@ -1,44 +1,42 @@
 // lib/api.ts
 
 /**
- * ============================================================================
  * API BASE URL
- * ============================================================================
- * Este módulo fornece a URL base para chamadas de API em diferentes ambientes.
  *
- * O desafio: Next.js roda tanto no servidor quanto no cliente.
- * - No cliente (browser): podemos usar URL relativa "/api"
- * - No servidor: precisamos da URL absoluta (ex: "https://meusite.com/api")
+ * Provides the base URL for API calls in different environments.
  *
- * Por que isso é necessário?
- * - fetch no servidor não resolve automaticamente URLs relativas
- * - A variável de ambiente NEXT_PUBLIC_SITE_URL permite configurar o domínio
- *   da aplicação (útil em deploys com múltiplos domínios)
- * ============================================================================
+ * The challenge: Next.js runs on both the server and the client.
+ * - On the client (browser): a relative URL "/api" works
+ * - On the server: an absolute URL is needed (e.g. "https://mysite.com/api")
+ *
+ * Why this is needed:
+ * - fetch on the server does not resolve relative URLs automatically
+ * - The NEXT_PUBLIC_SITE_URL environment variable configures the application
+ *   domain (useful for deployments with multiple domains)
  */
 
 /**
- * Retorna a URL base para chamadas de API.
+ * Returns the base URL for API calls.
  *
- * Comportamento:
- * - Cliente (typeof window !== "undefined"): retorna "/api"
- * - Servidor: retorna `{NEXT_PUBLIC_SITE_URL}/api` ou fallback "http://localhost:3000/api"
+ * Behavior:
+ * - Client (typeof window !== "undefined"): returns "/api"
+ * - Server: returns `{NEXT_PUBLIC_SITE_URL}/api` or the fallback "http://localhost:3000/api"
  *
- * @returns {string} URL base da API
+ * @returns {string} API base URL
  *
  * @example
  * const apiBase = getApiBase();
  * await fetch(`${apiBase}/auth/me`);
  */
 export function getApiBase(): string {
-  // Modo cliente: URL relativa ao domínio atual.
-  // O browser resolve automaticamente para o domínio correto.
+  // Client mode: URL relative to the current domain.
+  // The browser resolves it to the right domain automatically.
   if (typeof window !== "undefined") {
     return "/api";
   }
 
   // Modo servidor: precisa de URL absoluta.
-  // NEXT_PUBLIC_SITE_URL deve ser configurada no ambiente de produção.
+  // NEXT_PUBLIC_SITE_URL must be configured in the production environment.
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   return `${siteUrl}/api`;
 }

@@ -1,74 +1,72 @@
 // lib/cache/ttl.ts
 
 /**
- * ============================================================================
  * CACHE TTL (TIME-TO-LIVE) CONSTANTS
- * ============================================================================
- * Constantes de tempo de vida para diferentes tipos de cache.
  *
- * Por que TTLs diferentes?
- * - Dados estáticos (categorias, marcas, certificados): cache mais longo
- * - Listagens de produtos: cache médio (produtos mudam com frequência)
- * - Dados do usuário: cache curto (perfil pode ser atualizado)
- * - Fotos: cache médio (novas fotos podem ser adicionadas)
+ * Time-to-live constants for the different kinds of cache.
  *
- * Valores em segundos.
- * ============================================================================
+ * Why different TTLs?
+ * - Static data (categories, brands, certificates): longer cache
+ * - Product listings: medium cache (products change often)
+ * - User data: short cache (the profile can be updated)
+ * - Photos: medium cache (new photos can be added)
+ *
+ * Values in seconds.
  */
 
 export const TTL = {
   /**
-   * Cache para listagens curtas (categorias, marcas, certificados).
-   * 5 minutos = 300 segundos.
+   * Cache for short listings (categories, brands, certificates).
+   * 5 minutes = 300 seconds.
    *
-   * Por que 5 minutos?
-   * - Estas entidades mudam com pouca frequência (dias ou semanas)
-   * - Cache longo reduz carga no banco de dados
-   * - 5 minutos é seguro para consistência de dados
+   * Why 5 minutes?
+   * - These entities change rarely (days or weeks)
+   * - A long cache reduces database load
+   * - 5 minutes is safe for data consistency
    */
   SHORT_LIST: 5 * 60, // 300 segundos
 
   /**
-   * Cache para listagens de produtos (paginadas + filtros).
-   * 2 minutos = 120 segundos.
+   * Cache for product listings (paginated + filters).
+   * 2 minutes = 120 seconds.
    *
-   * Por que 2 minutos?
-   * - Produtos mudam com mais frequência (preços, estoque)
-   * - Usuários esperam ver mudanças relativamente rápido
-   * - 2 minutos equilibra performance e atualidade
+   * Why 2 minutes?
+   * - Products change more often (prices, stock)
+   * - Users expect to see changes relatively quickly
+   * - 2 minutes balances performance and freshness
    */
   PRODUCT_LIST: 2 * 60, // 120 segundos
 
   /**
-   * Cache para itens individuais (produto específico, categoria, marca).
-   * 3 minutos = 180 segundos.
+   * Cache for individual items (a specific product, category, brand).
+   * 3 minutes = 180 seconds.
    *
-   * Por que 3 minutos?
-   * - Visualização de detalhes é mais frequente que listagens
-   * - Cache ligeiramente mais longo que listagens
-   * - Garante que atualizações de preço sejam visíveis em até 3 minutos
+   * Why 3 minutes?
+   * - Detail views are more frequent than listings
+   * - Slightly longer cache than listings
+   * - Ensures price updates are visible within 3 minutes
    */
   ITEM: 3 * 60, // 180 segundos
 
   /**
-   * Cache para dados do usuário (perfil, sessão).
-   * 1 minuto = 60 segundos.
+   * Cache for user data (profile, session).
+   * 1 minute = 60 seconds.
    *
-   * Por que 1 minuto (mais curto)?
-   * - Usuários podem atualizar perfil (nome, telefone, senha)
-   * - Dados sensíveis devem ser atualizados rapidamente
-   * - Cache curto mas ainda reduz carga no banco
+   * Why 1 minute (shorter)?
+   * - Users can update their profile (name, phone, password)
+   * - Sensitive data must be refreshed quickly
+   * - A short cache still reduces database load
    */
   USER: 60, // 60 segundos
 
   /**
-   * Cache para listagens de fotos de produtos.
-   * 2 minutos = 120 segundos.
+   * Cache for product photo listings.
+   * 2 minutes = 120 seconds.
    *
-   * Por que 2 minutos?
-   * - Fotos mudam com pouca frequência
-   * - Upload de novas fotos invalida cache automaticamente
-   * - Mesmo TTL das listagens de produtos
+   * Why 2 minutes?
+   * - Photos change rarely
+   * - Uploading new photos invalidates the cache automatically
+   * - Same TTL as product listings
    */
   PHOTOS: 2 * 60, // 120 segundos
 } as const;

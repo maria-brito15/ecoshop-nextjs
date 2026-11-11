@@ -1,22 +1,20 @@
 // lib/rate-limit.ts
 
 /**
- * ============================================================================
  * RATE LIMITING
- * ============================================================================
- * Limita tentativas por identificador (IP, usuário) numa janela de tempo.
  *
- * - Contagem no Redis, de forma ATÔMICA (REQ-OPS-15): `SET chave 0 EX janela NX`
- *   seguido de `INCR` numa transação. O TTL nasce junto com a chave; antes, um
- *   `INCR` e um `EXPIRE` separados deixavam a chave sem validade se o processo
- *   caísse entre os dois, bloqueando o identificador para sempre.
- * - Sem Redis (ADR-0020, decisão do dono): usa um contador EM MEMÓRIA do próprio
- *   processo. O limite vale por instância (com várias instâncias, cada uma conta
- *   separado) e é perdido ao reiniciar — melhor que liberar tudo.
- * - IP do cliente (REQ-OPS-16): `x-forwarded-for` só é confiável a partir do
- *   proxy reverso; o primeiro valor é escrito pelo cliente e pode ser forjado.
- *   Pega-se o valor na posição indicada por `TRUST_PROXY_HOPS` (padrão 1).
- * ============================================================================
+ * Limits attempts per identifier (IP, user) within a time window.
+ *
+ * - Counting in Redis, ATOMICALLY (REQ-OPS-15): `SET key 0 EX window NX`
+ *   followed by `INCR` in a transaction. The TTL is born with the key; before, a
+ *   separate `INCR` and `EXPIRE` left the key without expiry if the process
+ *   died between the two, blocking the identifier forever.
+ * - Without Redis (ADR-0020, owner's decision): uses an IN-MEMORY counter in the
+ *   process itself. The limit applies per instance (with several instances, each
+ *   counts separately) and is lost on restart — better than letting everything through.
+ * - Client IP (REQ-OPS-16): `x-forwarded-for` is only trustworthy from the
+ *   reverse proxy onward; the first value is written by the client and can be forged.
+ *   The value at the position given by `TRUST_PROXY_HOPS` is used (default 1).
  */
 
 import { redis, withTimeout, COMMAND_TIMEOUT_MS, warnRedisFailure } from "@/lib/redis";
@@ -26,9 +24,9 @@ export interface RateLimitConfig {
   windowSeconds: number;
 }
 
-/** Conta ocorrências de uma chave dentro de uma janela. */
+/** Counts occurrences of a key within a window. */
 export interface WindowCounter {
-  /** Soma 1 à chave e devolve o total na janela atual. */
+  /** Adds 1 to the key and returns the total in the current window. */
   increment(key: string, windowSeconds: number): Promise<number>;
 }
 
@@ -48,7 +46,7 @@ class RedisCounter implements WindowCounter {
   }
 }
 
-/** Contador local do processo (reserva quando o Redis falha). */
+/** Process-local counter (fallback when Redis fails). */
 export class InMemoryCounter implements WindowCounter {
   private readonly entradas = new Map<string, { total: number; expiraEm: number }>();
 
@@ -66,7 +64,7 @@ export class InMemoryCounter implements WindowCounter {
     return current.total;
   }
 
-  /** Só varre quando o mapa cresce, para não custar nada no caso comum. */
+  /** Only sweeps when the map grows, so the common case costs nothing. */
   private purgeExpired(t: number) {
     if (this.entradas.size < 1000) return;
     for (const [key, e] of this.entradas) if (e.expiraEm <= t) this.entradas.delete(key);
@@ -77,10 +75,10 @@ const redisCounter = new RedisCounter();
 const localCounter = new InMemoryCounter();
 
 /**
- * Registra uma tentativa e informa se o identificador passou do limite.
+ * Records an attempt and reports whether the identifier went over the limit.
  *
- * @param counter - Contador principal (padrão: Redis)
- * @param fallback - Usado quando o principal falha (padrão: memória local)
+ * @param counter - Main counter (default: Redis)
+ * @param fallback - Used when the main one fails (default: local memory)
  */
 export async function rateLimit(
   identifier: string,
@@ -105,8 +103,8 @@ export async function rateLimit(
 }
 
 /**
- * Quantos proxies confiáveis existem à frente da aplicação (variável
- * `TRUST_PROXY_HOPS`; padrão 1: um proxy reverso, como no compose de publicação).
+ * How many trusted proxies sit in front of the application (variable
+ * `TRUST_PROXY_HOPS`; default 1: one reverse proxy, as in the publishing compose).
  */
 function proxyHops(): number {
   const value = Number(process.env.TRUST_PROXY_HOPS ?? 1);
@@ -114,12 +112,12 @@ function proxyHops(): number {
 }
 
 /**
- * IP do cliente para rate limit.
+ * Client IP for rate limiting.
  *
- * Com N proxies confiáveis, o IP real é a N-ésima entrada contada do FIM de
- * `x-forwarded-for` (cada proxy acrescenta a que viu); entradas anteriores são do
- * cliente e podem ser forjadas. Com 0 proxies o cabeçalho é ignorado (todos caem
- * no mesmo balde "unknown": mais restritivo, porém não burlável).
+ * With N trusted proxies, the real IP is the Nth entry counted from the END of
+ * `x-forwarded-for` (each proxy appends the one it saw); earlier entries come from
+ * the client and can be forged. With 0 proxies the header is ignored (everyone
+ * falls into the same "unknown" bucket: more restrictive, but not bypassable).
  */
 export function getClientIp(
   req: Request,

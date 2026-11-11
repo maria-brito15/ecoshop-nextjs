@@ -1,36 +1,36 @@
 // lib/auth/refresh.ts
 
 /**
- * Tokens de renovação (ADR-0021): valor aleatório e OPACO, guardado no Redis só
- * como hash SHA-256 (um vazamento do Redis não entrega tokens utilizáveis).
+ * Refresh tokens (ADR-0021): random, OPAQUE value, stored in Redis only as a
+ * SHA-256 hash (a Redis leak does not hand out usable tokens).
  *
- * Chaves no Redis:
- * - `refresh:<hash>`           → id do usuário, com a validade do token;
- * - `refresh_user:<id>`     → conjunto dos hashes ativos do usuário (permite
- *                                revogar todas as sessões de uma vez).
+ * Redis keys:
+ * - `refresh:<hash>`       → user id, with the token's validity;
+ * - `refresh_user:<id>`    → set of the user's active hashes (allows revoking
+ *                            all sessions at once).
  *
- * `consumir` usa GETDEL: ler e apagar numa operação só. Dois pedidos simultâneos
- * com o mesmo token não conseguem ambos renovar (rotação com uso único).
+ * `consume` uses GETDEL: read and delete in one operation. Two simultaneous requests
+ * with the same token cannot both refresh (single-use rotation).
  *
- * Só roda em Node (usa `node:crypto`); o middleware (edge) não importa este arquivo.
+ * Runs on Node only (uses `node:crypto`); the middleware (edge) does not import this file.
  */
 
 import { createHash, randomBytes } from "node:crypto";
 import { redis, withTimeout, COMMAND_TIMEOUT_MS } from "@/lib/redis";
 import { REFRESH_TOKEN_SECONDS } from "./constants";
 
-/** Onde os tokens de renovação ficam. Lança se o armazenamento está indisponível. */
+/** Where refresh tokens are kept. Throws if the storage is unavailable. */
 export interface RefreshTokenStore {
   create(token: string, userId: number): Promise<void>;
-  /** Remove o token e devolve o dono; `null` se não existe (inválido, expirado ou já usado). */
+  /** Removes the token and returns its owner; `null` if it does not exist (invalid, expired or already used). */
   consume(token: string): Promise<number | null>;
-  /** Remove um token (logout). */
+  /** Removes one token (logout). */
   revoke(token: string): Promise<void>;
-  /** Remove todos os tokens do usuário (troca de senha, exclusão). */
+  /** Removes all of the user's tokens (password change, deletion). */
   revokeAll(userId: number): Promise<void>;
 }
 
-/** 32 bytes aleatórios (256 bits) em base64url. */
+/** 32 random bytes (256 bits) in base64url. */
 export function generateRefreshToken(): string {
   return randomBytes(32).toString("base64url");
 }
@@ -66,7 +66,7 @@ class RedisRefreshTokenStore implements RefreshTokenStore {
 
     const userId = Number(owner);
     if (!Number.isInteger(userId)) return null;
-    // Limpeza do conjunto: se falhar, o hash vira lixo até o conjunto expirar.
+    // Set cleanup: if it fails, the hash becomes garbage until the set expires.
     await withShortTimeout(redis.sRem(refreshUserKey(userId), hash)).catch(() => undefined);
     return userId;
   }
@@ -84,5 +84,5 @@ class RedisRefreshTokenStore implements RefreshTokenStore {
   }
 }
 
-/** Armazém usado pela aplicação (Redis). */
+/** Store used by the application (Redis). */
 export const refreshTokenStore: RefreshTokenStore = new RedisRefreshTokenStore();

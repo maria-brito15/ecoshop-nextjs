@@ -1,15 +1,13 @@
 // lib/cache/index.ts
 
 /**
- * ============================================================================
  * CACHE MODULE
- * ============================================================================
- * Cache-aside sobre o Redis (ADR-0009), com invalidação por prefixo.
  *
- * REQ-OPS-17: acessos simultâneos à MESMA chave com cache vazio dividem uma
- * única chamada ao `fetcher` (single-flight), em vez de cada um ir ao banco
- * ("estouro de cache" quando uma chave popular expira). Vale por processo.
- * ============================================================================
+ * Cache-aside on top of Redis (ADR-0009), with prefix invalidation.
+ *
+ * REQ-OPS-17: simultaneous accesses to the SAME key with an empty cache share a
+ * single call to the `fetcher` (single-flight), instead of each one hitting the
+ * database ("cache stampede" when a popular key expires). Applies per process.
  */
 
 import { RedisCacheProvider } from "./redis-provider";
@@ -18,15 +16,15 @@ import type { CacheProvider } from "./contracts";
 
 const provider: CacheProvider = new RedisCacheProvider();
 
-/** Buscas em andamento, por chave. */
+/** In-flight fetches, by key. */
 const inFlight = new Map<string, Promise<unknown>>();
 
 /**
- * Cache-aside: devolve do cache; no miss executa `fetcher`, grava e devolve.
+ * Cache-aside: returns from the cache; on a miss runs `fetcher`, stores and returns.
  *
- * @param key - Chave do cache
- * @param ttl - Validade em segundos
- * @param fetcher - Busca a fonte de verdade (banco)
+ * @param key - Cache key
+ * @param ttl - Validity in seconds
+ * @param fetcher - Fetches the source of truth (database)
  */
 export async function withCache<T>(
   key: string,
@@ -58,14 +56,14 @@ export async function invalidateCache(
   await provider.delPattern(`${PREFIX[resource]}*`);
 }
 
-/** Invalida vários recursos em paralelo. */
+/** Invalidates several resources in parallel. */
 export async function invalidateCaches(
   resources: (keyof typeof PREFIX)[],
 ): Promise<void> {
   await Promise.all(resources.map(invalidateCache));
 }
 
-/** Invalida uma chave específica. */
+/** Invalidates a specific key. */
 export const invalidateKey = (key: string) => provider.del(key);
 
 export const redisDel = (key: string) => provider.del(key);

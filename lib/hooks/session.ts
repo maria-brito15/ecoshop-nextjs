@@ -1,16 +1,14 @@
 // lib/hooks/session.ts
 
 /**
- * Consulta única da sessão no cliente (`GET /api/auth/me`).
+ * Single client-side session query (`GET /api/auth/me`).
  *
- * Antes, `Header`, `ChatFlutuante`, a tela de login e o perfil chamavam
- * `/api/auth/me` cada um por conta própria. Agora:
- * - chamadas SIMULTÂNEAS dividem uma só requisição;
- * - o resultado NÃO é guardado entre chamadas (a sessão pode mudar a qualquer
- *   momento: login, logout, expiração), então não há cache que vaze para outro
- *   usuário;
- * - o logout (`encerrarSessaoNoCliente`) também esvazia o cache de dados do
- *   `useFetch`.
+ * Before, `Header`, `FloatingChat`, the login page and the profile each called
+ * `/api/auth/me` on their own. Now:
+ * - SIMULTANEOUS calls share a single request;
+ * - the result is NOT kept between calls (the session can change at any
+ *   moment: login, logout, expiration), so no cache can leak to another user;
+ * - logout (`endClientSession`) also empties the `useFetch` data cache.
  */
 
 import { clearClientCache } from "./useFetch";
@@ -24,7 +22,7 @@ export interface SessionUser {
 
 let inProgress: Promise<SessionUser | null> | null = null;
 
-/** @returns o usuário logado, ou `null` se não há sessão (ou se a consulta falhou). */
+/** @returns the signed-in user, or `null` if there is no session (or if the query failed). */
 export function fetchSession(): Promise<SessionUser | null> {
   if (inProgress) return inProgress;
 
@@ -42,7 +40,7 @@ export function fetchSession(): Promise<SessionUser | null> {
   return inProgress;
 }
 
-/** Logout: revoga a sessão no servidor e esvazia o cache de dados do cliente. */
+/** Logout: revokes the session on the server and empties the client data cache. */
 export async function endClientSession(): Promise<void> {
   try {
     await fetch("/api/auth", { method: "DELETE", credentials: "include" });

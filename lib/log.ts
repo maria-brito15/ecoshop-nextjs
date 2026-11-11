@@ -1,13 +1,13 @@
 // lib/log.ts
 
 /**
- * Log estruturado mínimo (Constitution, Art. XIII.1; REQ-OPS-19).
+ * Minimal structured log (Constitution, Art. XIII.1; REQ-OPS-19).
  *
- * Uma linha JSON por evento, com contexto (rota, dependência, duração...). Nada
- * de segredo: chaves sensíveis do contexto viram `[REDACTED]` e credenciais em
- * URLs dentro de textos (`redis://:senha@host`) são mascaradas.
+ * One JSON line per event, with context (route, dependency, duration...). No
+ * secrets: sensitive context keys become `[REDACTED]` and credentials in URLs
+ * inside texts (`redis://:password@host`) are masked.
  *
- * Proporcional ao projeto (Art. XIII): sem tracing distribuído nem APM.
+ * Proportional to the project (Art. XIII): no distributed tracing or APM.
  */
 
 type Level = "info" | "warn" | "error";
@@ -37,7 +37,7 @@ function redact(value: unknown, depth = 0): unknown {
   return output;
 }
 
-/** Erro → objeto serializável, sem segredos (a pilha é cortada em 6 linhas). */
+/** Error → serializable object, without secrets (the stack is cut to 6 lines). */
 export function serializeError(err: unknown): Record<string, unknown> {
   if (err instanceof Error) {
     const code = (err as { code?: unknown }).code;
@@ -75,8 +75,8 @@ export const log = {
 };
 
 /**
- * Cria uma função que só deixa passar uma chamada a cada `intervaloMs` por
- * `chave`: evita inundar o log quando uma dependência fica fora do ar.
+ * Creates a function that only lets one call through per `intervalMs` per
+ * `key`: avoids flooding the log when a dependency goes down.
  */
 export function throttle(intervalMs: number) {
   const last = new Map<string, number>();

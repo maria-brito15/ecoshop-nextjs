@@ -1,10 +1,10 @@
 // lib/http/fetch-with-timeout.ts
 
 /**
- * `fetch` com tempo limite (Constitution, Art. VIII.2; REQ-SCAN-09).
+ * `fetch` with a time limit (Constitution, Art. VIII.2; REQ-SCAN-09).
  *
- * Estourado o prazo, a promessa rejeita (TimeoutError); o chamador trata como
- * falha da dependência externa.
+ * When the time runs out, the promise rejects (TimeoutError); the caller treats it
+ * as a failure of the external dependency.
  */
 export function fetchWithTimeout(
   url: string,

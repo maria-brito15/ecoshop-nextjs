@@ -1,17 +1,17 @@
 // lib/config/jwt-secret.ts
 
 /**
- * Regra de aceitação do `JWT_SECRET` (Constitution, Art. XII.1; REQ-OPS-06).
+ * Acceptance rule for `JWT_SECRET` (Constitution, Art. XII.1; REQ-OPS-06).
  *
- * Função pura: não lê o ambiente nem lança. Quem decide quando validar é
- * `instrumentation.ts` (na inicialização do servidor em produção).
+ * Pure function: neither reads the environment nor throws. `instrumentation.ts`
+ * decides when to validate (at server startup in production).
  */
 
 const MIN_LENGTH = 32;
 
 /**
- * Trechos de valores-exemplo que já circularam no repositório ou em docs.
- * Só o tamanho não basta: o antigo exemplo do `.env.example` tinha 38 caracteres.
+ * Fragments of sample values that have circulated in the repository or docs.
+ * Length alone is not enough: the old `.env.example` sample had 38 characters.
  */
 const EXAMPLE_SNIPPETS = [
   "supersecretkey",
@@ -22,7 +22,7 @@ const EXAMPLE_SNIPPETS = [
 ];
 
 /**
- * @returns a mensagem do problema (sem nunca incluir o valor), ou `null` se o segredo é aceitável.
+ * @returns the problem message (never including the value), or `null` if the secret is acceptable.
  */
 export function validateJwtSecret(value: string | undefined): string | null {
   if (!value) {

@@ -1,11 +1,11 @@
 // lib/http/next-url.ts
 
 /**
- * Valida o parâmetro `?next=` da tela de login (REQ-AUTH-17).
+ * Validates the `?next=` parameter of the login page (REQ-AUTH-17).
  *
- * Aceita só caminho local: começa com UMA barra e não tem barra invertida nem
- * caractere de controle. Qualquer outra coisa (`//host`, `https://host`,
- * `/\host`, `javascript:`...) volta para `/`, evitando redirecionamento aberto.
+ * Accepts local paths only: starts with ONE slash and has no backslash or
+ * control character. Anything else (`//host`, `https://host`,
+ * `/\host`, `javascript:`...) goes back to `/`, preventing open redirects.
  */
 export function localPathOrRoot(value: string | null | undefined): string {
   if (!value) return "/";

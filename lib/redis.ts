@@ -1,30 +1,27 @@
 // lib/redis.ts
 
 /**
- * ============================================================================
  * REDIS CLIENT
- * ============================================================================
- * Cliente Redis compartilhado (cache e rate limit). O Redis é OPCIONAL: sem ele
- * a aplicação segue funcionando, com cache e rate limit degradados (ADR-0020).
  *
- * Falha rápida (REQ-OPS-14): o node-redis enfileira comandos enquanto está
- * desconectado e, sem limite, uma requisição ficaria pendurada até a
- * reconexão. Por isso:
- * - todo comando tem tempo limite (`comPrazo`); estourado, vale como falha;
- * - a fila offline tem tamanho máximo;
- * - a conexão tem tempo limite e a reconexão recua de 200 ms até 5 s.
+ * Shared Redis client (cache and rate limit). Redis is OPTIONAL: without it the
+ * application keeps working, with degraded cache and rate limit (ADR-0020).
  *
- * As funções `redisGet/Set/Del/DelPattern` nunca lançam: falha vira "miss"
- * (ou no-op) e é registrada no máximo uma vez a cada 30 s.
- * ============================================================================
+ * Fail fast (REQ-OPS-14): node-redis queues commands while disconnected and,
+ * without a limit, a request would hang until reconnection. Therefore:
+ * - every command has a time limit (`withTimeout`); on timeout it counts as a failure;
+ * - the offline queue has a maximum size;
+ * - the connection has a time limit and reconnection backs off from 200 ms to 5 s.
+ *
+ * The `redisGet/Set/Del/DelPattern` functions never throw: a failure becomes a
+ * "miss" (or no-op) and is logged at most once every 30 s.
  */
 
 import { createClient, RedisClientType } from "redis";
 import { log, serializeError, throttle } from "@/lib/log";
 
-/** Tempo limite de um comando comum (valor inicial, sem medição). */
+/** Time limit for an ordinary command (initial value, not measured). */
 export const COMMAND_TIMEOUT_MS = 300;
-/** Varrer chaves por padrão é mais lento: tem prazo próprio. */
+/** Scanning keys by pattern is slower: it has its own limit. */
 const SCAN_TIMEOUT_MS = 3000;
 const MAX_OFFLINE_QUEUE = 100;
 
@@ -34,7 +31,7 @@ const globalForRedis = globalThis as unknown as {
 
 const canWarn = throttle(30_000);
 
-/** Registra a falha do Redis, no máximo uma vez a cada 30 s por tipo. */
+/** Logs the Redis failure, at most once every 30 s per type. */
 export function warnRedisFailure(event: string, err: unknown) {
   if (canWarn(event)) log.warn(event, { error: serializeError(err) });
 }
@@ -66,8 +63,8 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 /**
- * Rejeita se `promessa` não terminar em `ms`. A promessa original continua (o
- * Redis não cancela comandos), mas quem espera é liberado.
+ * Rejects if `promise` does not finish within `ms`. The original promise keeps going
+ * (Redis does not cancel commands), but the waiter is released.
  */
 export function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -81,8 +78,8 @@ export function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 }
 
 /**
- * Lê e converte um valor do cache.
- * @returns o valor, ou `null` se não existe ou se o Redis falhou
+ * Reads and parses a cache value.
+ * @returns the value, or `null` if it does not exist or Redis failed
  */
 export async function redisGet<T>(key: string): Promise<T | null> {
   try {
@@ -95,7 +92,7 @@ export async function redisGet<T>(key: string): Promise<T | null> {
   }
 }
 
-/** Grava um valor com TTL. Falha do Redis não propaga. */
+/** Stores a value with a TTL. A Redis failure does not propagate. */
 export async function redisSet(
   key: string,
   value: unknown,
@@ -111,7 +108,7 @@ export async function redisSet(
   }
 }
 
-/** Remove uma chave. Falha do Redis não propaga. */
+/** Removes a key. A Redis failure does not propagate. */
 export async function redisDel(key: string): Promise<void> {
   try {
     await withTimeout(redis.del(key), COMMAND_TIMEOUT_MS);
@@ -120,7 +117,7 @@ export async function redisDel(key: string): Promise<void> {
   }
 }
 
-/** Remove todas as chaves que casam com o padrão (ex.: `produtos:*`). Falha não propaga. */
+/** Removes all keys matching the pattern (e.g. `products:*`). A failure does not propagate. */
 export async function redisDelPattern(pattern: string): Promise<void> {
   try {
     await withTimeout(

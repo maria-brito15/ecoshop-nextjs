@@ -3,9 +3,9 @@
 import { parseId } from "@/lib/schemas/id";
 
 /**
- * Lê e valida o `id` dos parâmetros de rota do Next (`{ params: Promise<{ id }> }`).
+ * Reads and validates the `id` from Next route params (`{ params: Promise<{ id }> }`).
  *
- * @returns o id, ou `null` se for inválido (o handler responde 400).
+ * @returns the id, or `null` if invalid (the handler responds 400).
  */
 export async function routeId(
   params: Promise<{ id: string }>,

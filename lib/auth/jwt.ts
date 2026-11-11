@@ -1,26 +1,24 @@
 // lib/auth/jwt.ts
 
 /**
- * ============================================================================
  * JWT SERVICE
- * ============================================================================
- * Implementação completa de autenticação JWT (JSON Web Tokens).
  *
- * Características:
- * - Tokens assinados com HS256 (HMAC-SHA256)
- * - Token de ACESSO curto (15 min); a renovação usa um token opaco revogável (ADR-0021)
- * - Cookies httpOnly (mais seguros que localStorage)
- * - Singleton pattern: uma instância reutilizada globalmente
+ * Complete JWT (JSON Web Token) authentication implementation.
  *
- * Segurança:
- * - Tokens são assinados com JWT_SECRET (variável de ambiente)
- * - Cookies httpOnly: inacessíveis via JavaScript (mitiga XSS)
- * - secure: true em produção (só envia via HTTPS)
- * - sameSite: "lax" (protege contra CSRF em métodos seguros)
+ * Features:
+ * - Tokens signed with HS256 (HMAC-SHA256)
+ * - Short-lived ACCESS token (15 min); renewal uses a revocable opaque token (ADR-0021)
+ * - httpOnly cookies (safer than localStorage)
+ * - Singleton pattern: one instance reused globally
  *
- * Variável de ambiente necessária:
- * - JWT_SECRET: chave secreta para assinatura dos tokens (mínimo 32 caracteres)
- * ============================================================================
+ * Security:
+ * - Tokens are signed with JWT_SECRET (environment variable)
+ * - httpOnly cookies: not reachable from JavaScript (mitigates XSS)
+ * - secure: true in production (sent over HTTPS only)
+ * - sameSite: "lax" (protects against CSRF on safe methods)
+ *
+ * Required environment variable:
+ * - JWT_SECRET: secret key used to sign tokens (minimum 32 characters)
  */
 
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
@@ -41,13 +39,13 @@ import type {
 } from "@/types/auth";
 
 /**
- * Recupera a chave secreta do ambiente e converte para Uint8Array.
+ * Reads the secret key from the environment and converts it to a Uint8Array.
  *
- * Formato esperado pela biblioteca jose:
- * - TextEncoder().encode() converte string para bytes UTF-8
+ * Format expected by the jose library:
+ * - TextEncoder().encode() converts a string to UTF-8 bytes
  *
- * @returns Chave secreta como Uint8Array
- * @throws Error se JWT_SECRET não estiver configurada
+ * @returns Secret key as a Uint8Array
+ * @throws Error if JWT_SECRET is not configured
  */
 function getSecret(): Uint8Array {
   const JWT_SECRET = process.env.JWT_SECRET;
@@ -60,25 +58,25 @@ function getSecret(): Uint8Array {
 }
 
 /**
- * Serviço de JWT que implementa as três interfaces de autenticação.
+ * JWT service implementing the three authentication interfaces.
  *
- * Responsabilidades:
- * - sign: criar tokens assinados
- * - verify: validar tokens e extrair payload
- * - getSession: extrair sessão de requisições Next.js
- * - setAuthCookie: definir cookie de autenticação na resposta
+ * Responsibilities:
+ * - sign: create signed tokens
+ * - verify: validate tokens and extract the payload
+ * - getSession: extract the session from Next.js requests
+ * - setAuthCookie: set the authentication cookie on the response
  */
 export class JwtService
   implements TokenIssuer, TokenVerifier, SessionReader
 {
   /**
-   * Gera um novo token JWT.
+   * Generates a new JWT.
    *
-   * Algoritmo: HS256 (HMAC com SHA-256)
-   * Expiração: TEMPO_DO_ACESSO_SEGUNDOS (15 minutos)
+   * Algorithm: HS256 (HMAC with SHA-256)
+   * Expiration: ACCESS_TOKEN_SECONDS (15 minutes)
    *
-   * @param payload - Dados a serem codificados no token
-   * @returns Token JWT compacto (string)
+   * @param payload - Data to encode in the token
+   * @returns Compact JWT (string)
    *
    * @example
    * const token = await jwtService.sign({ id: 1, email: "admin@ecoshop.com", tipo: "ADMIN" });
@@ -91,50 +89,50 @@ export class JwtService
   }
 
   /**
-   * Valida um token JWT e retorna o payload.
+   * Validates a JWT and returns the payload.
    *
-   * Validações realizadas automaticamente pelo jose:
-   * - Assinatura (token não foi adulterado)
-   * - Expiração (token ainda é válido)
-   * - Formato (estrutura JWT válida)
+   * Checks done automatically by jose:
+   * - Signature (the token was not tampered with)
+   * - Expiration (the token is still valid)
+   * - Format (valid JWT structure)
    *
-   * Validações adicionais:
-   * - Verifica se os campos obrigatórios (id, email, tipo) estão presentes
+   * Additional checks:
+   * - Verifies that the required fields (id, email, tipo) are present
    *
-   * @param token - Token JWT a ser validado
-   * @returns Payload decodificado ou null se inválido
+   * @param token - JWT to validate
+   * @returns Decoded payload, or null if invalid
    */
   async verify(token: string): Promise<JwtPayload | null> {
     try {
       const { payload } = await jwtVerify(token, getSecret());
       const typedPayload = payload as unknown as JwtPayload;
 
-      // Validação adicional: campos obrigatórios devem existir
+      // Additional validation: required fields must exist
       if (typedPayload.id && typedPayload.email && typedPayload.tipo) {
         return typedPayload;
       }
       return null;
     } catch {
-      // Qualquer erro (assinatura inválida, token expirado, malformado)
+      // Any error (invalid signature, expired token, malformed)
       return null;
     }
   }
 
   /**
-   * Extrai a sessão do usuário a partir da requisição Next.js.
+   * Extracts the user session from the Next.js request.
    *
-   * Fluxo:
-   * 1. Lê o cookie "token" da requisição
-   * 2. Se não existir → retorna null
-   * 3. Valida o token com verify()
-   * 4. Retorna o payload ou null
+   * Flow:
+   * 1. Reads the "token" cookie from the request
+   * 2. If it does not exist → returns null
+   * 3. Validates the token with verify()
+   * 4. Returns the payload or null
    *
-   * Usado em:
-   * - Middleware (proteção de rotas)
-   * - API Routes (autenticação)
+   * Used in:
+   * - Middleware (route protection)
+   * - API routes (authentication)
    *
-   * @param req - Requisição Next.js contendo os cookies
-   * @returns Payload do usuário autenticado ou null
+   * @param req - Next.js request containing the cookies
+   * @returns Authenticated user payload, or null
    */
   async getSession(req: NextRequest): Promise<JwtPayload | null> {
     const token = req.cookies.get(ACCESS_COOKIE)?.value;
@@ -143,12 +141,12 @@ export class JwtService
   }
 
   /**
-   * Extrai a sessão do usuário a partir dos cookies (em Server Components).
+   * Extracts the user session from cookies (in Server Components).
    *
-   * Alternativa ao getSession para uso em Server Components do Next.js
-   * (que não têm acesso direto ao objeto Request).
+   * Alternative to getSession for Next.js Server Components
+   * (which have no direct access to the Request object).
    *
-   * @returns Payload do usuário autenticado ou null
+   * @returns Authenticated user payload, or null
    */
   async getSessionFromCookies(): Promise<JwtPayload | null> {
     try {
@@ -162,17 +160,17 @@ export class JwtService
   }
 
   /**
-   * Define o cookie de autenticação na resposta HTTP.
+   * Sets the authentication cookie on the HTTP response.
    *
-   * Configurações de segurança:
-   * - httpOnly: true → inacessível via JavaScript (mitiga XSS)
-   * - secure: true em produção → só envia via HTTPS
-   * - sameSite: "lax" → protege contra CSRF em métodos seguros
-   * - maxAge: igual à duração do token de acesso
-   * - path: "/" → cookie disponível em toda aplicação
+   * Security settings:
+   * - httpOnly: true → not reachable from JavaScript (mitigates XSS)
+   * - secure: true in production → sent over HTTPS only
+   * - sameSite: "lax" → protects against CSRF on safe methods
+   * - maxAge: same as the access token lifetime
+   * - path: "/" → cookie available across the whole application
    *
-   * @param res - Resposta Next.js
-   * @param token - Token JWT a ser armazenado
+   * @param res - Next.js response
+   * @param token - JWT to store
    */
   setAuthCookie(res: NextResponse, token: string): void {
     res.cookies.set(ACCESS_COOKIE, token, {
@@ -185,9 +183,9 @@ export class JwtService
   }
 
   /**
-   * Define o cookie do token de renovação (opaco). Mesmas proteções do cookie de
-   * acesso; `path: "/"` porque o middleware precisa saber que ele existe para
-   * renovar o acesso expirado em navegações de página (ADR-0021).
+   * Sets the (opaque) refresh token cookie. Same protections as the access cookie;
+   * `path: "/"` because the middleware needs to know it exists in order to
+   * renew an expired access token on page navigations (ADR-0021).
    */
   setRefreshCookie(res: NextResponse, token: string): void {
     res.cookies.set(REFRESH_COOKIE, token, {
@@ -199,7 +197,7 @@ export class JwtService
     });
   }
 
-  /** Remove os dois cookies da sessão (logout, renovação recusada). */
+  /** Removes both session cookies (logout, refresh refused). */
   clearSessionCookies(res: NextResponse): void {
     res.cookies.delete(ACCESS_COOKIE);
     res.cookies.delete(REFRESH_COOKIE);
@@ -207,7 +205,7 @@ export class JwtService
 }
 
 /**
- * Instância singleton do serviço JWT.
- * Reutilizada em toda aplicação para consistência.
+ * Singleton instance of the JWT service.
+ * Reused across the whole application for consistency.
  */
 export const jwtService = new JwtService();

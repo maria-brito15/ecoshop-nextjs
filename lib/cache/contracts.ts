@@ -1,81 +1,79 @@
 // lib/cache/contracts.ts
 
 /**
- * ============================================================================
  * CACHE CONTRACTS
- * ============================================================================
- * Este arquivo define a interface abstrata para provedores de cache.
  *
- * O padrão de interface (Contract/Interface) permite:
- * - Trocar a implementação de cache facilmente (Redis, Memcached, In-Memory)
- * - Testar com um mock de cache sem depender de Redis real
- * - Desacoplar a lógica de negócio da implementação concreta
+ * Defines the abstract interface for cache providers.
  *
- * Implementações atuais:
- * - RedisCacheProvider (lib/cache/redis-provider.ts) → produção
+ * The interface (contract) pattern allows:
+ * - Swapping the cache implementation easily (Redis, Memcached, in-memory)
+ * - Testing with a cache mock without depending on a real Redis
+ * - Decoupling business logic from the concrete implementation
  *
- * Possíveis extensões futuras:
+ * Current implementations:
+ * - RedisCacheProvider (lib/cache/redis-provider.ts) → production
+ *
+ * Possible future extensions:
  * - MemcachedCacheProvider
- * - InMemoryCacheProvider (para desenvolvimento/testes)
+ * - InMemoryCacheProvider (for development/tests)
  * - CloudCacheProvider (AWS ElastiCache, GCP Memorystore)
- * ============================================================================
  */
 
 /**
- * Contrato para provedores de cache.
- * Qualquer implementação de cache deve seguir esta interface.
+ * Contract for cache providers.
+ * Any cache implementation must follow this interface.
  *
- * Operações suportadas:
- * - get: recuperar valor por chave
- * - set: armazenar valor com TTL
- * - del: remover chave específica
- * - delPattern: remover múltiplas chaves por padrão (glob pattern)
+ * Supported operations:
+ * - get: fetch a value by key
+ * - set: store a value with a TTL
+ * - del: remove a specific key
+ * - delPattern: remove multiple keys by pattern (glob pattern)
  */
 export interface CacheProvider {
   /**
-   * Recupera um valor do cache.
+   * Fetches a value from the cache.
    *
-   * @template T - Tipo esperado do valor armazenado
-   * @param key - Chave única no cache
-   * @returns Valor desserializado ou null se não existir/expirado
+   * @template T - Expected type of the stored value
+   * @param key - Unique cache key
+   * @returns Deserialized value, or null if missing/expired
    *
    * @example
-   * const usuario = await cache.get<Usuario>("usuario:1");
+   * const user = await cache.get<User>("users:1");
    */
   get<T>(key: string): Promise<T | null>;
 
   /**
-   * Armazena um valor no cache com TTL.
+   * Stores a value in the cache with a TTL.
    *
-   * @param key - Chave única no cache
-   * @param value - Valor a ser armazenado (serializado automaticamente)
-   * @param ttlSeconds - Tempo de vida em segundos
+   * @param key - Unique cache key
+   * @param value - Value to store (serialized automatically)
+   * @param ttlSeconds - Time to live in seconds
    *
    * @example
-   * await cache.set("usuario:1", usuario, 300); // expira em 5 minutos
+   * await cache.set("users:1", user, 300); // expires in 5 minutes
    */
   set(key: string, value: unknown, ttlSeconds: number): Promise<void>;
 
   /**
-   * Remove uma chave específica do cache.
-   * Útil para invalidar cache após update/delete.
+   * Removes a specific key from the cache.
+   * Useful to invalidate the cache after an update/delete.
    *
-   * @param key - Chave a ser removida
+   * @param key - Key to remove
    *
    * @example
-   * await cache.del("usuario:1");
+   * await cache.del("users:1");
    */
   del(key: string): Promise<void>;
 
   /**
-   * Remove todas as chaves que correspondem a um padrão (glob).
-   * Útil para invalidar caches relacionados (ex: todas as listagens de produtos).
+   * Removes all keys matching a pattern (glob).
+   * Useful to invalidate related caches (e.g. all product listings).
    *
-   @param pattern - Padrão glob (ex: "produtos:*", "categorias:*")
+   * @param pattern - Glob pattern (e.g. "products:*", "categories:*")
    *
    * @example
-   * // Invalida todos os caches de produtos
-   * await cache.delPattern("produtos:*");
+   * // Invalidates all product caches
+   * await cache.delPattern("products:*");
    */
   delPattern(pattern: string): Promise<void>;
 }

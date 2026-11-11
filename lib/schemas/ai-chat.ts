@@ -1,55 +1,53 @@
 // lib/schemas/ai-chat.ts
 
 /**
- * ============================================================================
- * IA CHAT SCHEMAS (Zod)
- * ============================================================================
- * Schema de validação para o endpoint de chat com IA (Gemini).
+ * AI CHAT SCHEMAS (Zod)
  *
- * O chat permite que usuários façam perguntas sobre sustentabilidade,
- * reciclagem, descarte correto de materiais, etc.
+ * Validation schema for the AI chat endpoint (Gemini).
  *
- * Características:
- * - Suporta conversas multi-turno via histórico
- * - Limita tamanho da mensagem (2000 caracteres) para evitar abuso
- * - Valida formato do histórico para compatibilidade com API Gemini
+ * The chat lets users ask questions about sustainability,
+ * recycling, proper disposal of materials, etc.
  *
- * Endpoint que usa este schema:
+ * Features:
+ * - Supports multi-turn conversations via history
+ * - Limits the message size (2000 characters) to prevent abuse
+ * - Validates the history format for compatibility with the Gemini API
+ *
+ * Endpoint that uses this schema:
  * - POST /api/ia/chat
- * ============================================================================
  */
 
 import { z } from "zod";
 
 /**
- * Schema para validação de requisições ao chat IA.
+ * Schema for validating AI chat requests.
  *
- * Regras:
- * - mensagem: obrigatória, mínimo 1 caractere, máximo 2000
- * - historico: opcional, array de mensagens anteriores
+ * Rules:
+ * - mensagem: required, minimum 1 character, maximum 2000
+ * - historico: optional, array of previous messages
  *
- * Formato do histórico segue o padrão da API Gemini:
- * - role: 'user' (mensagem do usuário) ou 'model' (resposta da IA)
- * - parts: array de objetos com campo 'text'
+ * The history format follows the Gemini API standard:
+ * - role: 'user' (user message) or 'model' (AI reply)
+ * - parts: array of objects with a 'text' field
  *
- * Por que validar o histórico?
- * - Evitar dados malformados que quebrariam a API do Gemini
- * - Prevenir injeção de mensagens com roles inválidas
- * - Limitar o tamanho do histórico (implicitamente pelo JSON size)
+ * Why validate the history?
+ * - Avoid malformed data that would break the Gemini API
+ * - Prevent injection of messages with invalid roles
+ * - Limit the history size (implicitly via JSON size)
  *
  * @example
- * // Requisição sem histórico (primeira mensagem)
+ * // Request without history (first message)
  * const body = {
- *   mensagem: "Como reciclar plástico?"
+ *   mensagem: "How do I recycle plastic?"
  * };
  *
  * @example
- * // Requisição com histórico (continuando conversa)
+ * // Request with history (continuing the conversation)
  * const body = {
- *   mensagem: "E o vidro?",
+ *   mensagem: "And glass?",
  *   historico: [
- *     { role: "user", parts: [{ text: "Como reciclar plástico?" }] },
- *     { role: "model", parts: [{ text: "O plástico deve ser lavado..." }] }
+ *     { role: "user", parts: [{ text: "How do I recycle plastic?" }] },
+ *     { role: "model", parts: [{ text: "Plastic should be washed..." }] }
  *   ]
  * };
  */
@@ -58,9 +56,9 @@ export const chatSchema = z.object({
     .string()
     .min(1, "Message cannot be empty")
     .max(2000, "Message too long (maximum 2000 characters)"),
-  // REQ-CHAT-08: limites do histórico (escolhidos pela spec 009: espelham o
-  // limite de `mensagem`); sem eles um cliente poderia mandar centenas de
-  // turnos enormes e gastar tokens à custa do projeto.
+  // REQ-CHAT-08: history limits (chosen by spec 009: they mirror the
+  // `mensagem` limit); without them a client could send hundreds of
+  // huge turns and spend tokens at the project's expense.
   historico: z
     .array(
       z.object({
@@ -83,5 +81,5 @@ export const chatSchema = z.object({
     .default([]),
 });
 
-// Tipo inferido para uso na rota da API
+// Inferred type for use in the API route
 export type ChatInput = z.infer<typeof chatSchema>;

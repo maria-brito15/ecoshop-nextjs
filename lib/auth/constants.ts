@@ -1,25 +1,25 @@
 // lib/auth/constants.ts
 
 /**
- * Constantes da sessão (ADR-0021). Sem dependências de Node: o middleware (runtime
- * edge) também importa este arquivo.
+ * Session constants (ADR-0021). No Node dependencies: the middleware (edge runtime)
+ * also imports this file.
  *
- * Sessão = token de ACESSO curto (JWT, cookie `token`) + token de RENOVAÇÃO opaco
- * guardado no Redis (cookie `refresh`), que pode ser revogado.
+ * Session = short-lived ACCESS token (JWT, `token` cookie) + opaque REFRESH token
+ * stored in Redis (`refresh` cookie), which can be revoked.
  */
 
-/** Cookie com o JWT de acesso. */
+/** Cookie holding the access JWT. */
 export const ACCESS_COOKIE = "token";
 
-/** Cookie com o token de renovação (valor opaco; a prova de validade está no Redis). */
+/** Cookie holding the refresh token (opaque value; proof of validity lives in Redis). */
 export const REFRESH_COOKIE = "refresh";
 
 /**
- * Duração do token de acesso. Curta de propósito: é o intervalo máximo em que um
- * acesso revogado continua valendo, já que o JWT é verificado sem consultar o
- * Redis. Valor inicial escolhido pela spec 010, sem medição de uso ❔.
+ * Access token lifetime. Short on purpose: it is the maximum interval in which a revoked
+ * access keeps working, since the JWT is verified without querying Redis.
+ * Initial value chosen by spec 010, without usage measurements ❔.
  */
 export const ACCESS_TOKEN_SECONDS = 15 * 60;
 
-/** Duração máxima de uma sessão sem novo login (mantém os 7 dias do ADR-0007). */
+/** Maximum session length without a new login (keeps the 7 days from ADR-0007). */
 export const REFRESH_TOKEN_SECONDS = 7 * 24 * 60 * 60;

@@ -1,54 +1,52 @@
 // lib/auth/index.ts
 
 /**
- * ============================================================================
  * AUTH MODULE EXPORTS
- * ============================================================================
- * Ponto de entrada centralizado para todas as funcionalidades de autenticação.
  *
- * Este módulo exporta:
- * - Funções de alto nível para sign/verify de tokens
- * - Funções para obter sessão (request ou cookies)
- * - Função para definir cookie de autenticação
- * - Tipos relacionados (JwtPayload)
+ * Single entry point for all authentication features.
  *
- * Uso típico em API Routes:
+ * This module exports:
+ * - High-level functions to sign/verify tokens
+ * - Functions to get the session (request or cookies)
+ * - Function to set the authentication cookie
+ * - Related types (JwtPayload)
+ *
+ * Typical usage in API routes:
  * ```ts
  * import { getSession, signToken, setAuthCookie } from "@/lib/auth";
  *
  * const session = await getSession(req);
- * if (!session) return ERROS.naoAutorizado();
+ * if (!session) return ERRORS.unauthorized();
  *
- * const token = await signToken({ id: usuario.id, email, tipo });
+ * const token = await signToken({ id: user.id, email, tipo });
  * setAuthCookie(res, token);
  * ```
  *
- * Uso típico em middleware:
+ * Typical usage in middleware:
  * ```ts
  * import { getSession } from "@/lib/auth";
  *
  * const session = await getSession(req);
  * ```
- * ============================================================================
  */
 
 import type { NextRequest, NextResponse } from "next/server";
 import { jwtService } from "./jwt";
 import type { JwtPayload } from "@/types/auth";
 
-// Funções principais de token (wrappers do jwtService)
+// Main token functions (jwtService wrappers)
 export const signToken = (payload: JwtPayload) => jwtService.sign(payload);
 export const verifyToken = (token: string) => jwtService.verify(token);
 
-// Funções de sessão a partir de requisição ou cookies
+// Session functions from a request or cookies
 export const getSession = (req: NextRequest) => jwtService.getSession(req);
 export const getSessionFromCookies = () => jwtService.getSessionFromCookies();
 
-// Função para definir cookie de autenticação na resposta
+// Function to set the authentication cookie on the response
 export const setAuthCookie = (res: NextResponse, token: string) =>
   jwtService.setAuthCookie(res, token);
 
-// Re-exporta o tipo JwtPayload para conveniência
+// Re-exports the JwtPayload type for convenience
 export const setRefreshCookie = (res: NextResponse, token: string) =>
   jwtService.setRefreshCookie(res, token);
 

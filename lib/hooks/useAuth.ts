@@ -1,26 +1,24 @@
 // lib/hooks/useAuth.ts
 
 /**
- * ============================================================================
  * AUTH HOOKS
- * ============================================================================
- * Hooks especializados para autenticação de usuários.
  *
- * Utilizam o useMutation genérico por baixo dos panos para:
+ * Specialized hooks for user authentication.
+ *
+ * They use the generic useMutation under the hood for:
  * - Login: POST /api/auth
  * - Logout: DELETE /api/auth
- * - Registro público: POST /api/users
+ * - Public registration: POST /api/users
  *
- * Por que hooks separados?
- * - Tipagem específica para cada operação
- * - Centraliza URLs dos endpoints de auth
- * - Facilita manutenção (mudar URL em um único lugar)
+ * Why separate hooks?
+ * - Specific typing for each operation
+ * - Centralizes the auth endpoint URLs
+ * - Easier maintenance (change a URL in a single place)
  *
- * IMPORTANTE:
- * - O token JWT é armazenado em cookie httpOnly (gerenciado automaticamente)
- * - Os hooks não precisam manipular o token manualmente
- * - O cookie é enviado automaticamente via credentials: "include"
- * ============================================================================
+ * IMPORTANT:
+ * - The JWT is stored in an httpOnly cookie (managed automatically)
+ * - The hooks do not need to handle the token manually
+ * - The cookie is sent automatically via credentials: "include"
  */
 
 import { useMutation } from "./useMutation";
@@ -33,19 +31,19 @@ import type {
 } from "@/types/api";
 
 /**
- * Hook para login de usuário.
+ * Hook for user login.
  *
- * Envia email e senha para /api/auth.
- * Em caso de sucesso, o cookie httpOnly com o JWT é setado automaticamente.
+ * Sends email and password to /api/auth.
+ * On success, the httpOnly cookie with the JWT is set automatically.
  *
- * @returns Mutation hook tipado para login
+ * @returns Typed mutation hook for login
  *
  * @example
  * const login = useLogin();
  *
  * const handleSubmit = async (e) => {
  *   e.preventDefault();
- *   const result = await login.executar("/api/auth", { email, senha });
+ *   const result = await login.execute("/api/auth", { email, senha });
  *   if (result) router.push("/");
  * };
  */
@@ -54,17 +52,17 @@ export function useLogin() {
 }
 
 /**
- * Hook para logout de usuário.
+ * Hook for user logout.
  *
- * Chama DELETE /api/auth que remove o cookie de autenticação.
+ * Calls DELETE /api/auth, which removes the authentication cookie.
  *
- * @returns Mutation hook tipado para logout
+ * @returns Typed mutation hook for logout
  *
  * @example
  * const logout = useLogout();
  *
  * const handleLogout = async () => {
- *   await logout.executar("/api/auth");
+ *   await logout.execute("/api/auth");
  *   router.push("/sign-in");
  * };
  */
@@ -73,18 +71,18 @@ export function useLogout() {
 }
 
 /**
- * Hook para registro público de novos usuários.
+ * Hook for public registration of new users.
  *
- * Envia dados para /api/users.
- * Em caso de sucesso, o usuário é automaticamente logado (cookie JWT setado).
+ * Sends data to /api/users.
+ * On success, the user is logged in automatically (JWT cookie set).
  *
- * @returns Mutation hook tipado para registro
+ * @returns Typed mutation hook for registration
  *
  * @example
- * const registro = useRegistro();
+ * const registration = useRegistration();
  *
- * const handleRegister = async (dados) => {
- *   const result = await registro.executar("/api/users", dados);
+ * const handleRegister = async (data) => {
+ *   const result = await registration.execute("/api/users", data);
  *   if (result) router.push("/");
  * };
  */

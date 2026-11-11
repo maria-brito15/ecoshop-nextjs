@@ -1,18 +1,18 @@
 // lib/errors/dominio.ts
 
 /**
- * Erros de domínio tipados (Constitution, Art. VII.1).
+ * Typed domain errors (Constitution, Art. VII.1).
  *
- * Services lançam estes erros; o mapeador único (`mapeiaErro`, em
- * `lib/http/responses.ts`) os converte em resposta HTTP. Nunca se decide a
- * resposta pelo texto da mensagem (Art. VII.2).
+ * Services throw these errors; the single mapper (`mapError`, in
+ * `lib/http/responses.ts`) converts them into an HTTP response. The response is
+ * never decided from the message text (Art. VII.2).
  *
- * São duas classes porque os casos atuais só pedem dois desfechos: recurso que
- * não existe (404) e conflito com o estado atual (409: e-mail repetido, marca que
- * já não está pendente, vínculo que impede a operação...).
+ * There are two classes because the current cases only call for two outcomes: a
+ * resource that does not exist (404) and a conflict with the current state (409:
+ * duplicate email, brand no longer pending, a link that blocks the operation...).
  */
 
-/** O recurso pedido não existe. Vira 404 com a mensagem `<recurso> não encontrado`. */
+/** The requested resource does not exist. Becomes 404 with the message `<resource> not found`. */
 export class ResourceNotFound extends Error {
   constructor(readonly resource: string) {
     super(`${resource} not found`);
@@ -20,7 +20,7 @@ export class ResourceNotFound extends Error {
   }
 }
 
-/** A operação conflita com o estado atual. Vira 409 com a própria mensagem (já pensada para o usuário). */
+/** The operation conflicts with the current state. Becomes 409 with its own message (already written for the user). */
 export class BusinessConflict extends Error {
   constructor(message: string) {
     super(message);
@@ -28,7 +28,7 @@ export class BusinessConflict extends Error {
   }
 }
 
-/** A pessoa está autenticada mas não pode fazer ISTO (ex.: senha atual incorreta). Vira 403 com a própria mensagem. */
+/** The person is authenticated but cannot do THIS (e.g. wrong current password). Becomes 403 with its own message. */
 export class OperationNotAllowed extends Error {
   constructor(message: string) {
     super(message);
