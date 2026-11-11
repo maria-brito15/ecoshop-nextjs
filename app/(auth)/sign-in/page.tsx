@@ -44,7 +44,7 @@ import { localPathOrRoot } from "@/lib/http/next-url";
 import { fetchSession } from "@/lib/hooks/session";
 import type { LoginBody, RegistrationBody } from "@/types/api";
 
-type Mode = "login" | "cadastro";
+type Mode = "login" | "register";
 
 type Form = {
   nome: string;
@@ -211,15 +211,15 @@ export default function AuthPage() {
     } else {
       // Validações do registro
       if (form.senha !== form.senhaConfirm) {
-        setPasswordError("As senhas não coincidem.");
+        setPasswordError("Passwords do not match.");
         return;
       }
       if (form.senha.length < 8) {
-        setPasswordError("A senha deve ter pelo menos 8 caracteres.");
+        setPasswordError("Password must have at least 8 characters.");
         return;
       }
       if (form.isLoja && !form.marcaNome.trim()) {
-        setPasswordError("Informe o nome da marca.");
+        setPasswordError("Enter the brand name.");
         return;
       }
 
@@ -301,7 +301,7 @@ export default function AuthPage() {
               className="text-3xl font-extrabold tracking-tight"
               style={{ color: "var(--color-text-primary)" }}
             >
-              {mode === "login" ? "Bem-vindo" : "Criar Conta"}
+              {mode === "login" ? "Bem-vindo" : "Create Account"}
             </h1>
             <p
               className="mt-1.5 text-sm"
@@ -309,7 +309,7 @@ export default function AuthPage() {
             >
               {mode === "login"
                 ? "Acesse sua conta EcoShop"
-                : "Junte-se à comunidade sustentável"}
+                : "Join the sustainable community"}
             </p>
           </div>
 
@@ -321,7 +321,7 @@ export default function AuthPage() {
               border: "1px solid var(--color-border)",
             }}
           >
-            {(["login", "cadastro"] as Mode[]).map((m) => (
+            {(["login", "register"] as Mode[]).map((m) => (
               <button
                 key={m}
                 type="button"
@@ -342,7 +342,7 @@ export default function AuthPage() {
                       }
                 }
               >
-                {m === "login" ? "Login" : "Criar Conta"}
+                {m === "login" ? "Login" : "Create Account"}
               </button>
             ))}
           </div>
@@ -386,9 +386,7 @@ export default function AuthPage() {
                 animation: "fadeSlide 0.3s ease",
               }}
             >
-              Seu cadastro como marca parceira está em análise; por enquanto
-              você tem acesso como cliente. Avisaremos quando um
-              administrador aprovar.
+              Your registration as a partner brand is under review; for now you have customer access. We will let you know when an administrator approves it.
             </div>
           ) : (
           <form
@@ -398,7 +396,7 @@ export default function AuthPage() {
           >
             <div className="flex flex-col gap-5">
               {/* Campo Nome (apenas cadastro) */}
-              {mode === "cadastro" && (
+              {mode === "register" && (
                 <div>
                   <label
                     className="block text-sm font-semibold mb-2"
@@ -466,7 +464,7 @@ export default function AuthPage() {
                     id="email"
                     value={form.email}
                     onChange={handleChange}
-                    placeholder="seu@email.com"
+                    placeholder="you@email.com"
                     required
                     className={inputCls}
                   />
@@ -474,7 +472,7 @@ export default function AuthPage() {
               </div>
 
               {/* Campo Telefone (apenas cadastro) */}
-              {mode === "cadastro" && (
+              {mode === "register" && (
                 <div>
                   <label
                     className="block text-sm font-semibold mb-2"
@@ -522,13 +520,13 @@ export default function AuthPage() {
                   className="block text-sm font-semibold mb-2"
                   style={{ color: "var(--color-text-primary)" }}
                 >
-                  Senha *{" "}
-                  {mode === "cadastro" && (
+                  Password *{" "}
+                  {mode === "register" && (
                     <span
                       className="font-normal text-xs"
                       style={{ color: "var(--color-text-tertiary)" }}
                     >
-                      (mín. 8 caracteres)
+                      (min. 8 characters)
                     </span>
                   )}
                 </label>
@@ -556,20 +554,20 @@ export default function AuthPage() {
                     onChange={handleChange}
                     placeholder="••••••••"
                     required
-                    minLength={mode === "cadastro" ? 8 : undefined}
+                    minLength={mode === "register" ? 8 : undefined}
                     className={inputCls}
                   />
                 </div>
               </div>
 
               {/* Campo Confirmar Senha (apenas cadastro) */}
-              {mode === "cadastro" && (
+              {mode === "register" && (
                 <div>
                   <label
                     className="block text-sm font-semibold mb-2"
                     style={{ color: "var(--color-text-primary)" }}
                   >
-                    Confirmar Senha *
+                    Confirm Password *
                   </label>
                   <div className="relative">
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)]">
@@ -593,7 +591,7 @@ export default function AuthPage() {
                       id="senhaConfirm"
                       value={form.senhaConfirm}
                       onChange={handleChange}
-                      placeholder="Repita a senha"
+                      placeholder="Repeat the password"
                       required
                       className={inputCls}
                     />
@@ -602,7 +600,7 @@ export default function AuthPage() {
               )}
 
               {/* Checkbox para se cadastrar como loja/parceiro */}
-              {mode === "cadastro" && (
+              {mode === "register" && (
                 <div
                   className="flex flex-col gap-2.5 p-4 rounded-xl transition-all duration-200 cursor-pointer"
                   style={{
@@ -625,15 +623,14 @@ export default function AuthPage() {
                       className="text-sm font-semibold"
                       style={{ color: "var(--color-text-primary)" }}
                     >
-                      Sou uma Loja / Parceiro
+                      I am a Store / Partner
                     </span>
                   </label>
                   <p
                     className="text-xs pl-8"
                     style={{ color: "var(--color-text-tertiary)" }}
                   >
-                    Marque se deseja gerenciar e vender produtos. O cadastro
-                    como marca fica pendente até um administrador aprovar.
+                    Check this if you want to manage and sell products. A brand registration stays pending until an administrator approves it.
                   </p>
                   {form.isLoja && (
                     <input
@@ -641,7 +638,7 @@ export default function AuthPage() {
                       name="marcaNome"
                       value={form.marcaNome}
                       onChange={handleChange}
-                      placeholder="Nome da marca"
+                      placeholder="Brand name"
                       required
                       onClick={(e) => e.stopPropagation()}
                       className={inputCls}
@@ -685,7 +682,7 @@ export default function AuthPage() {
                     >
                       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                     </svg>
-                    Aguarde...
+                    Please wait...
                   </>
                 ) : mode === "login" ? (
                   <>
@@ -705,7 +702,7 @@ export default function AuthPage() {
                   </>
                 ) : (
                   <>
-                    Criar Conta
+                    Create Account
                     <svg
                       width="16"
                       height="16"
@@ -737,7 +734,7 @@ export default function AuthPage() {
               className="text-sm font-semibold transition-colors duration-200 hover:underline"
               style={{ color: "var(--color-primary)" }}
             >
-              Esqueceu a senha?
+              Forgot your password?
             </a>
           </div>
         </div>

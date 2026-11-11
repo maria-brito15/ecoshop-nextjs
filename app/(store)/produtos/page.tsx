@@ -326,7 +326,7 @@ export default function ProductsPage() {
               href="/"
               className="flex items-center gap-1.5 hover:text-[var(--color-primary)] transition-colors"
             >
-              🏠 Início
+              🏠 Home
             </Link>
             <span className="text-[var(--color-border)]">›</span>
             <span className="font-semibold text-[var(--color-text-primary)]">
@@ -338,7 +338,7 @@ export default function ProductsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="font-display text-3xl md:text-4xl font-extrabold text-[var(--color-text-primary)]">
-                Produtos <span className="text-gradient-eco">Sustentáveis</span>
+                Produtos <span className="text-gradient-eco">Sustainable</span>
               </h1>
               {!loading && (
                 <p className="text-[var(--color-text-secondary)] mt-1 text-sm">
@@ -347,11 +347,11 @@ export default function ProductsPage() {
                       <span className="font-bold text-[var(--color-primary)]">
                         {total}
                       </span>{" "}
-                      produto{total !== 1 ? "s" : ""}{" "}
+                      product{total !== 1 ? "s" : ""}{" "}
                       encontrado{total !== 1 ? "s" : ""}
                     </>
                   ) : (
-                    "Nenhum produto encontrado"
+                    "No products found"
                   )}
                 </p>
               )}
@@ -364,7 +364,7 @@ export default function ProductsPage() {
             >
               <input
                 type="text"
-                placeholder="Buscar produto..."
+                placeholder="Search product..."
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className={`
@@ -389,7 +389,7 @@ export default function ProductsPage() {
                   transition-all
                 `}
               >
-                Buscar
+                Search
               </button>
             </form>
           </div>
@@ -557,7 +557,7 @@ export default function ProductsPage() {
             {/* Filtro por faixa de preço (slider) */}
             <div className="px-4 py-5 border-b border-[var(--color-border)]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-4 flex items-center gap-2">
-                <span>💰</span> Faixa de Preço
+                <span>💰</span> Price Range
               </p>
               <input
                 type="range"
@@ -585,7 +585,7 @@ export default function ProductsPage() {
               />
               <div className="flex justify-between items-center mt-3">
                 <span className="text-xs text-[var(--color-text-tertiary)] font-medium">
-                  Até
+                  Up to
                 </span>
                 <span className="text-lg font-extrabold font-display text-[var(--color-primary)]">
                   R$ {priceInput.toLocaleString("pt-BR")}
@@ -650,13 +650,13 @@ export default function ProductsPage() {
                 <p className="text-sm font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
                   <span className="text-[var(--color-primary)]">📦</span>
                   {loading ? (
-                    "Carregando..."
+                    "Loading..."
                   ) : (
                     <>
                       <span className="font-extrabold text-[var(--color-primary)]">
                         {total}
                       </span>{" "}
-                      produto{total !== 1 ? "s" : ""}
+                      product{total !== 1 ? "s" : ""}
                     </>
                   )}
                 </p>
@@ -690,9 +690,9 @@ export default function ProductsPage() {
                     backgroundPosition: "right 10px center",
                   }}
                 >
-                  <option value="relevancia">Relevância</option>
-                  <option value="preco_asc">Menor Preço</option>
-                  <option value="preco_desc">Maior Preço</option>
+                  <option value="relevancia">Relevance</option>
+                  <option value="preco_asc">Lowest Price</option>
+                  <option value="preco_desc">Highest Price</option>
                   <option value="nome_asc">Nome (A-Z)</option>
                   <option value="nome_desc">Nome (Z-A)</option>
                 </select>
@@ -721,7 +721,7 @@ export default function ProductsPage() {
                   onClick={() => window.location.reload()}
                   className="btn-primary text-sm"
                 >
-                  Tentar novamente
+                  Try again
                 </button>
               </div>
             )}
@@ -748,11 +748,10 @@ export default function ProductsPage() {
               >
                 <span className="text-6xl mb-4 opacity-40">🔍</span>
                 <h3 className="font-display font-bold text-xl text-[var(--color-text-primary)] mb-2">
-                  Nenhum produto encontrado
+                  No products found
                 </h3>
                 <p className="text-[var(--color-text-secondary)] text-sm mb-6 max-w-sm">
-                  Não encontramos produtos que correspondam aos filtros
-                  aplicados.
+                  We found no products matching the applied filters.
                 </p>
                 <button onClick={clearFilters} className="btn-primary">
                   🔄 Limpar Filtros
@@ -826,7 +825,7 @@ export default function ProductsPage() {
                     transition-all
                   `}
                 >
-                  Próxima →
+                  Next →
                 </button>
               </div>
             )}
@@ -954,7 +953,7 @@ export default function ProductsPage() {
             {/* Slider de preço (mobile) */}
             <div className="px-4 py-5">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-4">
-                💰 Faixa de Preço
+                💰 Price Range
               </p>
               <input
                 type="range"
@@ -970,7 +969,7 @@ export default function ProductsPage() {
               />
               <div className="flex justify-between items-center mt-3">
                 <span className="text-xs text-[var(--color-text-tertiary)]">
-                  Até
+                  Up to
                 </span>
                 <span className="text-lg font-extrabold font-display text-[var(--color-primary)]">
                   R$ {priceInput.toLocaleString("pt-BR")}

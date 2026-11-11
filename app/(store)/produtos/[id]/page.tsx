@@ -122,8 +122,8 @@ function ImpactCard({ preco: price }: { preco: number }) {
       <div className="grid grid-cols-3 gap-3">
         {[
           { value: co2, label: "CO₂ Evitado" },
-          { value: water, label: "Água Poupada" },
-          { value: trees, label: "Árvores" },
+          { value: water, label: "Water Saved" },
+          { value: trees, label: "Trees" },
         ].map(({ value, label }) => (
           <div
             key={label}
@@ -139,8 +139,7 @@ function ImpactCard({ preco: price }: { preco: number }) {
         ))}
       </div>
       <p className="text-[10px] text-[var(--color-text-tertiary)] italic mt-3">
-        Estimativa ilustrativa calculada a partir do preço — ainda não há
-        fonte de dado real por produto (REQ-CONT-05).
+        Illustrative estimate calculated from the price — there is no real data source per product yet (REQ-CONT-05).
       </p>
     </div>
   );
@@ -159,8 +158,8 @@ function Tabs({
   hasCerts: boolean;
 }) {
   const tabs: { id: Tab; label: string }[] = [
-    { id: "sobre", label: "Sobre o Produto" },
-    { id: "specs", label: "Ficha Técnica" },
+    { id: "sobre", label: "About the Product" },
+    { id: "specs", label: "Technical Sheet" },
     ...(hasCerts ? [{ id: "certificados" as Tab, label: "Certificados" }] : []),
   ];
 
@@ -233,11 +232,11 @@ export default function ProductPage({ params }: Props) {
         <div className="text-center p-8 max-w-md">
           <div className="text-6xl mb-4">🌿</div>
           <h2 className="font-display text-2xl font-bold text-[var(--color-text-primary)] mb-2">
-            Produto não encontrado
+            Product not found
           </h2>
           <p className="text-[var(--color-text-secondary)] mb-6">{error}</p>
           <Link href="/produtos" className="btn-primary">
-            ← Voltar para produtos
+            ← Back to products
           </Link>
         </div>
       </main>
@@ -280,7 +279,7 @@ export default function ProductPage({ params }: Props) {
           >
             ←
           </span>
-          Voltar para produtos
+          Back to products
         </Link>
       </div>
 
@@ -316,7 +315,7 @@ export default function ProductPage({ params }: Props) {
               <div className="absolute top-5 left-5 flex flex-col gap-2 z-10">
                 {hasCerts && (
                   <span className="badge-eco text-[11px] py-1 px-3 backdrop-blur-md bg-[rgba(209,250,229,0.92)] text-[#065f46] border border-[#a7f3d0] font-bold uppercase tracking-wide shadow-sm">
-                    ✦ Certificado
+                    ✦ Certificate
                   </span>
                 )}
                 <span className="badge-eco text-[11px] py-1 px-3 backdrop-blur-md bg-[rgba(224,242,254,0.92)] text-[#075985] border border-[#bae6fd] font-bold uppercase tracking-wide shadow-sm">
@@ -336,7 +335,7 @@ export default function ProductPage({ params }: Props) {
                       setImgLoaded(false);
                       setSelectedPhoto(photo.url);
                     }}
-                    aria-label={`Ver foto ${photo.nome}`}
+                    aria-label={`View photo ${photo.nome}`}
                     className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors ${
                       mainImage === photo.url
                         ? "border-[var(--color-primary)]"
@@ -377,7 +376,7 @@ export default function ProductPage({ params }: Props) {
                 ★★★★★
               </span>
               <span className="text-xs text-[var(--color-text-tertiary)]">
-                (produto verificado)
+                (verified product)
               </span>
             </div>
 
@@ -387,24 +386,23 @@ export default function ProductPage({ params }: Props) {
                 {formattedPrice}
               </p>
               <p className="text-sm text-[var(--color-text-secondary)]">
-                em até{" "}
+                up to{" "}
                 <strong className="text-[var(--color-text-primary)]">
-                  {installments}x de {installmentValue}
+                  {installments}x of {installmentValue}
                 </strong>{" "}
-                sem juros
+                interest-free
               </p>
             </div>
 
             {/* Botão de compra */}
             <div className="flex flex-col gap-3">
               <button className="w-full py-4 rounded-full font-bold text-base text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] flex items-center justify-center gap-3 shadow-[var(--shadow-btn)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(45,149,105,0.4)] active:translate-y-0">
-                <span>Comprar na Loja Parceira</span>
+                <span>Buy at the Partner Store</span>
                 <span className="text-sm opacity-80">↗</span>
               </button>
               <div className="flex items-center justify-center gap-5 text-xs text-[var(--color-text-tertiary)]">
                 <span className="flex items-center gap-1.5">
-                  <span className="text-[var(--color-primary)]">✓</span> Produto
-                  Verificado
+                  <span className="text-[var(--color-primary)]">✓</span> Verified Product
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="text-[var(--color-primary)]">🔒</span> Compra
@@ -444,7 +442,7 @@ export default function ProductPage({ params }: Props) {
                   </p>
                 ) : (
                   <p className="text-[var(--color-text-tertiary)] italic mb-8">
-                    Descrição não disponível.
+                    Description not available.
                   </p>
                 )}
                 <div>
@@ -454,11 +452,11 @@ export default function ProductPage({ params }: Props) {
                   </h4>
                   <ul className="flex flex-col gap-3">
                     {[
-                      "Produção ética e responsável",
-                      "Material reciclável e sustentável",
-                      "Sem componentes prejudiciais ao meio ambiente",
-                      `Categoria: ${categoryName}`,
-                      `Marca: ${brandName}`,
+                      "Ethical and responsible production",
+                      "Recyclable and sustainable material",
+                      "No components harmful to the environment",
+                      `Category: ${categoryName}`,
+                      `Brand: ${brandName}`,
                     ].map((item) => (
                       <li
                         key={item}
@@ -485,14 +483,14 @@ export default function ProductPage({ params }: Props) {
                       ["Category", categoryName],
                       ["Brand", brandName],
                       ...(categoryDescription
-                        ? [["Sobre a Categoria", categoryDescription]]
+                        ? [["About the Category", categoryDescription]]
                         : []),
                       ...(brandDescription
-                        ? [["Sobre a Marca", brandDescription]]
+                        ? [["About the Brand", brandDescription]]
                         : []),
-                      ["Preço", formattedPrice],
+                      ["Price", formattedPrice],
                       [
-                        "Adicionado em",
+                        "Added on",
                         new Date(product.criadoEm).toLocaleDateString("pt-BR", {
                           year: "numeric",
                           month: "long",
@@ -524,12 +522,11 @@ export default function ProductPage({ params }: Props) {
                 <div className="animate-[fadeSlideUp_0.4s_ease_forwards]">
                   <div className="mb-6">
                     <h4 className="font-display font-bold text-[var(--color-text-primary)] text-lg mb-1">
-                      Certificações & Selos
+                      Certifications & Seals
                     </h4>
                     <p className="text-sm text-[var(--color-text-secondary)]">
-                      Este produto possui {product.certificados.length}{" "}
-                      certificado{product.certificados.length > 1 ? "s" : ""} de
-                      sustentabilidade reconhecido
+                      This product has {product.certificados.length}{" "}
+                      recognized sustainability certificate
                       {product.certificados.length > 1 ? "s" : ""}.
                     </p>
                   </div>
@@ -540,10 +537,7 @@ export default function ProductPage({ params }: Props) {
                   </div>
                   <div className="mt-6 p-5 rounded-2xl border border-dashed border-[var(--color-primary)] bg-[var(--color-primary-light)]">
                     <p className="text-sm text-[var(--color-primary-dark)] leading-relaxed font-medium">
-                      🌿 Todos os certificados são verificados e emitidos por
-                      órgãos reconhecidos internacionalmente. Eles garantem que
-                      este produto atende a padrões rigorosos de
-                      sustentabilidade e responsabilidade ambiental.
+                      🌿 All certificates are verified and issued by internationally recognized bodies. They ensure that this product meets strict sustainability and environmental responsibility standards.
                     </p>
                   </div>
                 </div>

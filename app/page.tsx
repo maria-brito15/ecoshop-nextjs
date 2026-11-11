@@ -214,18 +214,17 @@ export default function HomePage() {
               <span className="badge-eco w-fit">🌿 Compras conscientes</span>
               <h1 className="font-display text-5xl md:text-6xl font-extrabold leading-[1.05]">
                 Sua escolha{" "}
-                <span className="text-gradient-eco">faz a diferença</span>
+                <span className="text-gradient-eco">makes a difference</span>
               </h1>
               <p className="text-xl text-[var(--color-text-secondary)] max-w-lg">
-                Descubra produtos sustentáveis que cuidam de você e do planeta,
-                com entrega rápida e propósito real.
+                Discover sustainable products that care for you and the planet, with fast delivery and real purpose.
               </p>
               <div className="flex flex-wrap gap-4 pt-2">
                 <Link href="/produtos" className="btn-primary">
                   Explorar Produtos
                 </Link>
                 <Link href="/educacao" className="btn-secondary">
-                  Aprender mais
+                  Learn more
                 </Link>
               </div>
 
@@ -233,7 +232,7 @@ export default function HomePage() {
               <div className="flex gap-8 pt-6 border-t border-[var(--color-border)]">
                 {[
                   { valor: "2k+", label: "Produtos eco" },
-                  { valor: "98%", label: "Satisfação" },
+                  { valor: "98%", label: "Satisfaction" },
                   { valor: "0 CO₂", label: "Entregas neutras" },
                 ].map((s) => (
                   <div key={s.label} className="flex flex-col">
@@ -247,8 +246,7 @@ export default function HomePage() {
                 ))}
               </div>
               <p className="text-xs text-[var(--color-text-tertiary)] italic pt-1">
-                Números ilustrativos — ainda sem fonte de dados real
-                (REQ-CONT-02).
+                Illustrative numbers — no real data source yet (REQ-CONT-02).
               </p>
             </div>
 
@@ -260,7 +258,7 @@ export default function HomePage() {
                 className="absolute inset-0 w-full h-full object-cover"
               />
               <div className="absolute bottom-6 left-6 flex items-center gap-3 px-4 py-3 bg-[var(--color-bg-surface)]/90 backdrop-blur-md rounded-2xl border border-[var(--color-border)]">
-                ✅ Certificado Eco-Friendly
+                ✅ Eco-Friendly Certificate
               </div>
             </div>
           </div>
@@ -281,7 +279,7 @@ export default function HomePage() {
               Melhores Produtos
             </h2>
             <p className="text-[var(--color-text-secondary)]">
-              Selecionados com cuidado para você e para o planeta.
+              Carefully selected for you and for the planet.
             </p>
           </div>
 
@@ -308,7 +306,7 @@ export default function HomePage() {
                 onClick={() => window.location.reload()}
                 className="mt-4 text-[var(--color-primary)] hover:underline font-medium"
               >
-                Tentar novamente
+                Try again
               </button>
             </div>
           ) : products.length > 0 ? (
@@ -320,13 +318,13 @@ export default function HomePage() {
             </div>
           ) : (
             <p className="text-center text-[var(--color-text-tertiary)] py-12">
-              Nenhum produto encontrado.
+              No products found.
             </p>
           )}
 
           <div className="text-center mt-10">
             <Link href="/produtos" className="btn-secondary">
-              Ver todos os produtos →
+              See all products →
             </Link>
           </div>
         </div>
@@ -377,13 +375,13 @@ export default function HomePage() {
               {[
                 {
                   icon: "📖",
-                  title: "Guias Práticos",
-                  desc: "Aprenda a reduzir seu lixo doméstico.",
+                  title: "Practical Guides",
+                  desc: "Learn how to reduce your household waste.",
                 },
                 {
                   icon: "🌱",
                   title: "Sustentabilidade",
-                  desc: "Entenda o impacto real de cada material.",
+                  desc: "Understand the real impact of each material.",
                 },
               ].map((f) => (
                 <div key={f.title} className="flex gap-4 items-start">
@@ -395,7 +393,7 @@ export default function HomePage() {
                 </div>
               ))}
               <Link href="/educacao" className="btn-primary w-fit mt-2">
-                Acessar Conteúdo Educativo
+                Go to Educational Content
               </Link>
             </div>
             <div className="animate-on-scroll hidden lg:flex items-center justify-center h-80 rounded-3xl text-9xl bg-white/5 border border-white/10 visible">
@@ -415,14 +413,13 @@ export default function HomePage() {
             <div className="absolute inset-0 opacity-10 [background-image:radial-gradient(circle_at_80%_50%,white_0%,transparent_60%)] pointer-events-none" />
             <div className="relative z-10 flex flex-col gap-3 text-white">
               <span className="text-sm font-bold uppercase tracking-widest opacity-80">
-                Inteligência Artificial
+                Artificial Intelligence
               </span>
               <h2 className="font-display text-3xl md:text-4xl font-extrabold">
                 EcoScan IA
               </h2>
               <p className="text-white/80 max-w-md">
-                Use nossa IA para identificar resíduos e descobrir o descarte
-                correto.
+                Use our AI to identify waste and find the right way to dispose of it.
               </p>
             </div>
             <Link
@@ -447,8 +444,7 @@ export default function HomePage() {
                 🍃 EcoShop
               </span>
               <p className="text-[var(--color-text-secondary)] max-w-sm">
-                Conectamos pessoas a produtos sustentáveis, facilitando escolhas
-                conscientes.
+                We connect people to sustainable products, making conscious choices easier.
               </p>
               <div className="flex gap-3">
                 {["Instagram", "Twitter", "YouTube"].map((r) => (
@@ -476,7 +472,7 @@ export default function HomePage() {
               {
                 title: "Empresa",
                 links: [
-                  { label: "Sobre nós", href: "/about" },
+                  { label: "About us", href: "/about" },
                   { label: "Education", href: "/educacao" },
                   { label: "EcoScan IA", href: "/ia-scan" },
                 ],
@@ -504,8 +500,7 @@ export default function HomePage() {
 
           <div className="border-t border-[var(--color-border)] pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-[var(--color-text-tertiary)]">
             <span>
-              © {new Date().getFullYear()} EcoShop. Todos os direitos
-              reservados.
+              © {new Date().getFullYear()} EcoShop. All rights reserved.
             </span>
             <span className="flex gap-2 text-xl opacity-60">💳 🔒 ♻️</span>
           </div>

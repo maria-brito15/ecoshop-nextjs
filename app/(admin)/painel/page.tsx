@@ -69,18 +69,18 @@ const TAB_CONFIG: Record<Tab, { label: string; icon: string; desc: string }> = {
   produtos: {
     label: "Produtos",
     icon: "📦",
-    desc: "Gerencie o catálogo de produtos",
+    desc: "Manage the product catalog",
   },
   categorias: {
     label: "Categorias",
     icon: "🏷️",
-    desc: "Organize os produtos em categorias",
+    desc: "Organize products into categories",
   },
   marcas: { label: "Marcas", icon: "🤝", desc: "Gerencie as marcas parceiras" },
   certificados: {
     label: "Certificados",
     icon: "🌿",
-    desc: "Gerencie certificações de sustentabilidade",
+    desc: "Manage sustainability certifications",
   },
 };
 
@@ -303,12 +303,12 @@ function PhotosModal({
       onPhotoAdded();
       if (fileInputRef.current) fileInputRef.current.value = "";
     } else {
-      setUploadError(uploadMutation.erro ?? "Erro ao fazer upload");
+      setUploadError(uploadMutation.erro ?? "Error uploading");
     }
   };
 
   const handleDeletePhoto = async (fileName: string) => {
-    if (!confirm("Tem certeza que deseja deletar esta foto?")) return;
+    if (!confirm("Are you sure you want to delete this photo?")) return;
 
     setUploadError(null);
     const result = await deleteMutation.executar(
@@ -316,7 +316,7 @@ function PhotosModal({
     );
 
     if (!result) {
-      setUploadError(deleteMutation.erro ?? "Erro ao deletar foto");
+      setUploadError(deleteMutation.erro ?? "Error deleting photo");
     }
   };
 
@@ -329,7 +329,7 @@ function PhotosModal({
         <div className="sticky top-0 bg-white border-b border-[var(--color-border)] px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-[var(--color-text-primary)]">
-              Fotos do Produto
+              Product Photos
             </h2>
             <p className="text-sm text-[var(--color-text-secondary)]">
               {product.nome}
@@ -347,7 +347,7 @@ function PhotosModal({
           {/* Área de upload */}
           <div>
             <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-3">
-              Adicionar Nova Foto
+              Add New Photo
             </label>
             <div className="relative">
               <input
@@ -384,10 +384,10 @@ function PhotosModal({
                     <span className="text-2xl">📸</span>
                     <div>
                       <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-                        Clique para selecionar uma imagem
+                        Click to select an image
                       </p>
                       <p className="text-xs text-[var(--color-text-secondary)]">
-                        JPG, PNG, WebP ou GIF (máx. 5MB)
+                        JPG, PNG, WebP or GIF (max. 5MB)
                       </p>
                     </div>
                   </>
@@ -412,7 +412,7 @@ function PhotosModal({
               </div>
             ) : photos.length === 0 ? (
               <p className="text-center py-8 text-[var(--color-text-secondary)]">
-                Nenhuma foto ainda. Adicione uma acima!
+                No photos yet. Add one above!
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-4">
@@ -434,14 +434,14 @@ function PhotosModal({
                         target="_blank"
                         rel="noopener noreferrer"
                         className="hidden group-hover:flex items-center justify-center w-9 h-9 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-                        title="Abrir em nova aba"
+                        title="Open in new tab"
                       >
                         🔗
                       </a>
                       <button
                         onClick={() => handleDeletePhoto(photo.nome)}
                         className="hidden group-hover:flex items-center justify-center w-9 h-9 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors"
-                        title="Deletar foto"
+                        title="Delete photo"
                       >
                         🗑️
                       </button>
@@ -543,7 +543,7 @@ function ProductsSection() {
 
   const handleSave = async () => {
     if (!form.nome || !form.preco || !form.categoriaId || !form.marcaId) {
-      alert("Preencha todos os campos obrigatórios");
+      alert("Fill in all required fields");
       return;
     }
 
@@ -570,7 +570,7 @@ function ProductsSection() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Tem certeza?")) return;
+    if (!confirm("Are you sure?")) return;
     await remove.executar(`/api/produtos/${id}`);
   };
 
@@ -584,7 +584,7 @@ function ProductsSection() {
       <SectionHeader
         title="Produtos"
         onAdd={() => handleOpenModal()}
-        addLabel="Novo Produto"
+        addLabel="New Product"
       />
 
       {error && <ErrorMessage message={error} />}
@@ -594,10 +594,10 @@ function ProductsSection() {
           <thead>
             <tr>
               <Th>Nome</Th>
-              <Th>Preço</Th>
+              <Th>Price</Th>
               <Th>Category</Th>
               <Th>Brand</Th>
-              <Th>Ações</Th>
+              <Th>Actions</Th>
             </tr>
           </thead>
           <tbody>
@@ -609,14 +609,14 @@ function ProductsSection() {
           <thead>
             <tr>
               <Th>Nome</Th>
-              <Th>Preço</Th>
+              <Th>Price</Th>
               <Th>Category</Th>
               <Th>Brand</Th>
-              <Th>Ações</Th>
+              <Th>Actions</Th>
             </tr>
           </thead>
           <tbody>
-            <EmptyRow cols={5} message="Nenhum produto cadastrado" />
+            <EmptyRow cols={5} message="No products registered" />
           </tbody>
         </TableContainer>
       ) : (
@@ -624,10 +624,10 @@ function ProductsSection() {
           <thead>
             <tr>
               <Th>Nome</Th>
-              <Th>Preço</Th>
+              <Th>Price</Th>
               <Th>Category</Th>
               <Th>Brand</Th>
-              <Th>Ações</Th>
+              <Th>Actions</Th>
             </tr>
           </thead>
           <tbody>
@@ -640,14 +640,14 @@ function ProductsSection() {
                     currency: "BRL",
                   }).format(Number(product.preco))}
                 </Td>
-                <Td>{product.categoria?.nome || "Categoria não definida"}</Td>
-                <Td>{product.marca?.nome || "Marca não definida"}</Td>
+                <Td>{product.categoria?.nome || "Category not set"}</Td>
+                <Td>{product.marca?.nome || "Brand not set"}</Td>
                 <Td className="space-x-2">
                   <ActionButton
                     variant="edit"
                     onClick={() => handleOpenModal(product)}
                   >
-                    ✏️ Editar
+                    ✏️ Edit
                   </ActionButton>
                   <ActionButton
                     variant="edit"
@@ -671,7 +671,7 @@ function ProductsSection() {
       {/* Modal de criação/edição */}
       {modalOpen && (
         <Modal
-          title={editing ? "Editar Produto" : "Novo Produto"}
+          title={editing ? "Edit Product" : "New Product"}
           onClose={() => setModalOpen(false)}
         >
           <div className="space-y-4">
@@ -679,17 +679,17 @@ function ProductsSection() {
               label="Nome"
               value={form.nome}
               onChange={(e) => setForm({ ...form, nome: e.target.value })}
-              placeholder="Nome do produto"
+              placeholder="Product name"
             />
             <Field
-              label="Descrição"
+              label="Description"
               value={form.descricao}
               onChange={(e) => setForm({ ...form, descricao: e.target.value })}
-              placeholder="Descrição"
+              placeholder="Description"
               type="textarea"
             />
             <Field
-              label="Preço"
+              label="Price"
               value={form.preco}
               onChange={(e) => setForm({ ...form, preco: e.target.value })}
               placeholder="0.00"
@@ -718,7 +718,7 @@ function ProductsSection() {
                 </label>
                 {certificates.length === 0 ? (
                   <p className="text-sm text-[var(--color-text-tertiary)]">
-                    Nenhum certificado cadastrado ainda.
+                    No certificates registered yet.
                   </p>
                 ) : (
                   <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
@@ -746,14 +746,14 @@ function ProductsSection() {
                 className="flex-1 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-hover)] disabled:opacity-50"
               >
                 {" "}
-                {editing ? "Atualizar" : "Criar"}{" "}
+                {editing ? "Atualizar" : "Create"}{" "}
               </button>
               <button
                 onClick={() => setModalOpen(false)}
                 className="flex-1 px-4 py-2 bg-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-border-hover)]"
               >
                 {" "}
-                Cancelar{" "}
+                Cancel{" "}
               </button>
             </div>
           </div>
@@ -830,7 +830,7 @@ function CategoriesSection() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Tem certeza que deseja deletar esta categoria?")) return;
+    if (!confirm("Are you sure you want to delete this category?")) return;
     await remove.executar(`/api/categorias/${id}`);
   }
 
@@ -841,26 +841,26 @@ function CategoriesSection() {
     <section className="animate-[fadeIn_0.4s_ease]">
       {mutationError && <ErrorMessage message={mutationError} />}
       <SectionHeader
-        title="Lista de Categorias"
+        title="Category List"
         onAdd={openCreate}
-        addLabel="Nova Categoria"
+        addLabel="New Category"
       />
       <TableContainer>
         <thead>
           <tr>
             <Th>ID</Th>
             <Th>Nome</Th>
-            <Th>Descrição</Th>
-            <Th>Ações</Th>
+            <Th>Description</Th>
+            <Th>Actions</Th>
           </tr>
         </thead>
         <tbody>
           {loading ? (
             <LoadingRow cols={4} />
           ) : error ? (
-            <EmptyRow cols={4} message={`Erro ao carregar: ${error}`} />
+            <EmptyRow cols={4} message={`Error loading: ${error}`} />
           ) : categories.length === 0 ? (
-            <EmptyRow cols={4} message="Nenhuma categoria cadastrada ainda." />
+            <EmptyRow cols={4} message="No categories registered yet." />
           ) : (
             categories.map((c) => (
               <tr
@@ -881,7 +881,7 @@ function CategoriesSection() {
                 <Td>
                   <div className="flex gap-2">
                     <ActionButton variant="edit" onClick={() => openEdit(c)}>
-                      ✏️ Editar
+                      ✏️ Edit
                     </ActionButton>
                     <ActionButton
                       variant="delete"
@@ -898,7 +898,7 @@ function CategoriesSection() {
       </TableContainer>
       <Modal
         open={modalOpen}
-        title={editing ? "Editar Categoria" : "Nova Categoria"}
+        title={editing ? "Edit Category" : "New Category"}
         onClose={close}
         onSubmit={handleSubmit}
         loading={mutating}
@@ -909,17 +909,17 @@ function CategoriesSection() {
             name="nome"
             value={form.nome}
             onChange={handleChange}
-            placeholder="Nome da categoria"
+            placeholder="Category name"
             required
             className={inputCls}
           />
         </Field>
-        <Field label="Descrição">
+        <Field label="Description">
           <input
             name="descricao"
             value={form.descricao}
             onChange={handleChange}
-            placeholder="Descrição opcional"
+            placeholder="Optional description"
             className={inputCls}
           />
         </Field>
@@ -989,7 +989,7 @@ function BrandsSection() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Tem certeza que deseja deletar esta marca?")) return;
+    if (!confirm("Are you sure you want to delete this brand?")) return;
     await remove.executar(`/api/marcas/${id}`);
   }
 
@@ -1005,28 +1005,28 @@ function BrandsSection() {
     <section className="animate-[fadeIn_0.4s_ease]">
       {mutationError && <ErrorMessage message={mutationError} />}
       <SectionHeader
-        title="Lista de Marcas"
+        title="Brand List"
         onAdd={openCreate}
-        addLabel="Nova Marca"
+        addLabel="New Brand"
       />
       <TableContainer>
         <thead>
           <tr>
             <Th>ID</Th>
             <Th>Nome</Th>
-            <Th>Descrição</Th>
-            <Th>Responsável</Th>
+            <Th>Description</Th>
+            <Th>Owner</Th>
             <Th>Status</Th>
-            <Th>Ações</Th>
+            <Th>Actions</Th>
           </tr>
         </thead>
         <tbody>
           {loading ? (
             <LoadingRow cols={6} />
           ) : error ? (
-            <EmptyRow cols={6} message={`Erro ao carregar: ${error}`} />
+            <EmptyRow cols={6} message={`Error loading: ${error}`} />
           ) : brands.length === 0 ? (
-            <EmptyRow cols={6} message="Nenhuma marca cadastrada ainda." />
+            <EmptyRow cols={6} message="No brands registered yet." />
           ) : (
             brands.map((m) => (
               <tr
@@ -1050,7 +1050,7 @@ function BrandsSection() {
                       {m.usuario?.nome.charAt(0).toUpperCase() || "?"}
                     </div>
                     <span className="text-sm">
-                      {m.usuario?.nome || "Usuário não definido"}
+                      {m.usuario?.nome || "User not set"}
                     </span>
                   </div>
                 </Td>
@@ -1068,7 +1068,7 @@ function BrandsSection() {
                       </ActionButton>
                     )}
                     <ActionButton variant="edit" onClick={() => openEdit(m)}>
-                      ✏️ Editar
+                      ✏️ Edit
                     </ActionButton>
                     <ActionButton
                       variant="delete"
@@ -1085,7 +1085,7 @@ function BrandsSection() {
       </TableContainer>
       <Modal
         open={modalOpen}
-        title={editing ? "Editar Marca" : "Nova Marca"}
+        title={editing ? "Edit Brand" : "New Brand"}
         onClose={close}
         onSubmit={handleSubmit}
         loading={mutating}
@@ -1096,22 +1096,22 @@ function BrandsSection() {
             name="nome"
             value={form.nome}
             onChange={handleChange}
-            placeholder="Nome da marca"
+            placeholder="Brand name"
             required
             className={inputCls}
           />
         </Field>
-        <Field label="Descrição">
+        <Field label="Description">
           <input
             name="descricao"
             value={form.descricao}
             onChange={handleChange}
-            placeholder="Descrição opcional"
+            placeholder="Optional description"
             className={inputCls}
           />
         </Field>
         {!editing && (
-          <Field label="ID do Usuário Responsável">
+          <Field label="Owner User ID">
             <input
               name="usuarioId"
               type="number"
@@ -1194,7 +1194,7 @@ function CertificatesSection() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Tem certeza que deseja deletar este certificado?")) return;
+    if (!confirm("Are you sure you want to delete this certificate?")) return;
     await remove.executar(`/api/certificados/${id}`);
   }
 
@@ -1205,27 +1205,27 @@ function CertificatesSection() {
     <section className="animate-[fadeIn_0.4s_ease]">
       {mutationError && <ErrorMessage message={mutationError} />}
       <SectionHeader
-        title="Lista de Certificados"
+        title="Certificate List"
         onAdd={openCreate}
-        addLabel="Novo Certificado"
+        addLabel="New Certificate"
       />
       <TableContainer>
         <thead>
           <tr>
             <Th>ID</Th>
             <Th>Nome</Th>
-            <Th>Órgão Emissor</Th>
-            <Th>Descrição</Th>
-            <Th>Ações</Th>
+            <Th>Issuing Body</Th>
+            <Th>Description</Th>
+            <Th>Actions</Th>
           </tr>
         </thead>
         <tbody>
           {loading ? (
             <LoadingRow cols={5} />
           ) : error ? (
-            <EmptyRow cols={5} message={`Erro ao carregar: ${error}`} />
+            <EmptyRow cols={5} message={`Error loading: ${error}`} />
           ) : certificates.length === 0 ? (
-            <EmptyRow cols={5} message="Nenhum certificado cadastrado ainda." />
+            <EmptyRow cols={5} message="No certificates registered yet." />
           ) : (
             certificates.map((c) => (
               <tr
@@ -1256,7 +1256,7 @@ function CertificatesSection() {
                 <Td>
                   <div className="flex gap-2">
                     <ActionButton variant="edit" onClick={() => openEdit(c)}>
-                      ✏️ Editar
+                      ✏️ Edit
                     </ActionButton>
                     <ActionButton
                       variant="delete"
@@ -1273,7 +1273,7 @@ function CertificatesSection() {
       </TableContainer>
       <Modal
         open={modalOpen}
-        title={editing ? "Editar Certificado" : "Novo Certificado"}
+        title={editing ? "Edit Certificate" : "New Certificate"}
         onClose={close}
         onSubmit={handleSubmit}
         loading={mutating}
@@ -1284,12 +1284,12 @@ function CertificatesSection() {
             name="nome"
             value={form.nome}
             onChange={handleChange}
-            placeholder="Nome do certificado"
+            placeholder="Certificate name"
             required
             className={inputCls}
           />
         </Field>
-        <Field label="Órgão Emissor">
+        <Field label="Issuing Body">
           <input
             name="orgaoEmissor"
             value={form.orgaoEmissor}
@@ -1299,12 +1299,12 @@ function CertificatesSection() {
             className={inputCls}
           />
         </Field>
-        <Field label="Descrição">
+        <Field label="Description">
           <input
             name="descricao"
             value={form.descricao}
             onChange={handleChange}
-            placeholder="Descrição opcional"
+            placeholder="Optional description"
             className={inputCls}
           />
         </Field>
@@ -1428,7 +1428,7 @@ function LoadingRow({ cols }: { cols: number }) {
       <td colSpan={cols} className="px-4 py-8 text-center">
         <div className="flex items-center justify-center gap-2 text-[var(--color-text-secondary)]">
           <div className="w-4 h-4 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm">Carregando...</span>
+          <span className="text-sm">Loading...</span>
         </div>
       </td>
     </tr>
@@ -1497,14 +1497,14 @@ function Modal({
                   disabled={loading}
                   className="flex-1 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-hover)] disabled:opacity-50 font-semibold"
                 >
-                  {loading ? "Salvando..." : "Salvar"}
+                  {loading ? "Salvando..." : "Save"}
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
                   className="flex-1 px-4 py-2 bg-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-border-hover)]"
                 >
-                  Cancelar
+                  Cancel
                 </button>
               </div>
             )}

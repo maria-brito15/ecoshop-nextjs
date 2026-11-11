@@ -112,7 +112,7 @@ function InfoCard({ icon, title, colorClass, children, fullWidth }: CardProps) {
 
 function SustainabilityText({ value }: { value: unknown }) {
   if (!value)
-    return <p className="italic opacity-60">Informação não disponível.</p>;
+    return <p className="italic opacity-60">Information not available.</p>;
   const text =
     typeof value === "string" ? value : JSON.stringify(value, null, 2);
   const paras = text.split(/\n\n+/).filter(Boolean);
@@ -198,13 +198,13 @@ function SuccessResult({
             borderColor: colors.border,
           }}
         >
-          ✅ Confiança: {conf.toFixed(1)}%
+          ✅ Confidence: {conf.toFixed(1)}%
         </span>
         <h2 className="font-display text-5xl font-extrabold text-[var(--color-text-primary)] mb-2 leading-tight">
           {formattedMaterial}
         </h2>
         <p className="text-[var(--color-text-secondary)] text-base">
-          Identificação concluída com sucesso
+          Identification completed successfully
         </p>
       </div>
 
@@ -218,7 +218,7 @@ function SuccessResult({
         </InfoCard>
         <InfoCard
           icon="⏳"
-          title="Decomposição"
+          title="Decomposition"
           colorClass="bg-amber-50 text-amber-500 dark:bg-amber-500/15"
         >
           <SustainabilityText value={a.tempo_decomposicao} />
@@ -239,7 +239,7 @@ function SuccessResult({
         </InfoCard>
         <InfoCard
           icon="💡"
-          title="Dicas Sustentáveis"
+          title="Sustainable Tips"
           colorClass="bg-purple-50 text-purple-600 dark:bg-purple-500/15"
           fullWidth
         >
@@ -247,7 +247,7 @@ function SuccessResult({
         </InfoCard>
         <InfoCard
           icon="❤️"
-          title="Por que reciclar este item?"
+          title="Why recycle this item?"
           colorClass="bg-red-50 text-red-500 dark:bg-red-500/15"
           fullWidth
         >
@@ -266,7 +266,7 @@ function SuccessResult({
           href="/produtos"
           className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold text-sm bg-[var(--color-primary)] text-white shadow-[var(--shadow-btn)] hover:bg-[var(--color-primary-hover)] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(45,149,105,0.4)] transition-all duration-200"
         >
-          🛍️ Ver Alternativas Sustentáveis
+          🛍️ See Sustainable Alternatives
         </Link>
       </div>
     </div>
@@ -295,15 +295,15 @@ function InsufficientResult({
     >
       <span className="text-5xl mb-4 block">🔍</span>
       <h3 className="text-xl font-bold text-amber-800 dark:text-amber-300 mb-2">
-        Não foi possível identificar com segurança
+        Could not identify it reliably
       </h3>
       <p className="text-amber-700 dark:text-amber-400 mb-4 max-w-md mx-auto">
         {data.mensagem}
       </p>
       <div className="inline-block bg-white dark:bg-white/10 rounded-xl px-6 py-3 mb-4 text-sm border border-amber-200 dark:border-amber-500/20">
         <span className="text-amber-600 dark:text-amber-400">
-          Confiança obtida: <strong>{data.confianca.toFixed(1)}%</strong>{" "}
-          (mínimo: {data.confianca_minima_requerida}%)
+          Confidence obtained: <strong>{data.confianca.toFixed(1)}%</strong>{" "}
+          (minimum: {data.confianca_minima_requerida}%)
         </span>
       </div>
       <p className="text-amber-600 dark:text-amber-400 text-sm mb-6">
@@ -313,7 +313,7 @@ function InsufficientResult({
         onClick={onReset}
         className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold text-sm bg-[var(--color-primary)] text-white shadow-[var(--shadow-btn)] hover:bg-[var(--color-primary-hover)] hover:-translate-y-0.5 transition-all duration-200"
       >
-        📷 Tentar Novamente
+        📷 Try Again
       </button>
     </div>
   );
@@ -332,8 +332,8 @@ export default function IaScanPage() {
 
   function validateFile(file: File): string | null {
     if (!VALID_TYPES.includes(file.type))
-      return `Formato inválido. Use: JPG, PNG, GIF ou WebP`;
-    if (file.size > MAX_SIZE) return `Arquivo muito grande. Máximo: 10 MB`;
+      return `Invalid format. Use: JPG, PNG, GIF or WebP`;
+    if (file.size > MAX_SIZE) return `File too large. Maximum: 10 MB`;
     return null;
   }
 
@@ -395,14 +395,13 @@ export default function IaScanPage() {
       <section className="text-center py-16 md:py-24 bg-[var(--color-bg-body)] [background-image:radial-gradient(circle_at_50%_0%,rgba(45,149,105,0.06)_0%,transparent_50%)] border-b border-[var(--color-border)] mb-10">
         <div className="container-eco">
           <span className="badge-eco mb-6 mx-auto">
-            🤖 Inteligência Artificial
+            🤖 Artificial Intelligence
           </span>
           <h1 className="font-display text-5xl md:text-6xl font-extrabold leading-tight mb-4">
             EcoScan <span className="text-gradient-eco">IA</span>
           </h1>
           <p className="text-[var(--color-text-secondary)] text-lg max-w-xl mx-auto">
-            Use nossa tecnologia para identificar resíduos e descobrir o
-            descarte correto em segundos.
+            Use our technology to identify waste and find the right way to dispose of it in seconds.
           </p>
         </div>
       </section>
@@ -430,7 +429,7 @@ export default function IaScanPage() {
             <div
               role="button"
               tabIndex={0}
-              aria-label="Área de upload de imagem"
+              aria-label="Image upload area"
               onDragOver={onDragOver}
               onDragLeave={onDragLeave}
               onDrop={onDrop}
@@ -459,14 +458,14 @@ export default function IaScanPage() {
               </div>
               <div className="text-center">
                 <h3 className="font-display text-xl font-bold text-[var(--color-text-primary)] mb-1">
-                  Arraste uma foto ou clique para selecionar
+                  Drag a photo or click to select
                 </h3>
                 <p className="text-[var(--color-text-secondary)] text-sm">
-                  Suporta JPG, PNG, GIF, WebP &mdash; máx. 10 MB
+                  Supports JPG, PNG, GIF, WebP &mdash; max. 10 MB
                 </p>
               </div>
               <span className="px-6 py-2.5 rounded-full text-sm font-semibold bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors pointer-events-none">
-                Selecionar Arquivo
+                Select File
               </span>
             </div>
           </div>
@@ -488,7 +487,7 @@ export default function IaScanPage() {
                   {file.name}
                 </p>
                 <p className="text-sm text-[var(--color-primary)] font-medium mt-0.5 flex items-center gap-1.5">
-                  <span>✅</span> Pronto para análise &bull; {file.size}
+                  <span>✅</span> Ready for analysis &bull; {file.size}
                 </p>
               </div>
             </div>
@@ -497,7 +496,7 @@ export default function IaScanPage() {
                 onClick={reset}
                 className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold border-2 border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-primary)] hover:text-[var(--color-text-primary)] hover:-translate-y-0.5 transition-all duration-200"
               >
-                🗑️ Cancelar
+                🗑️ Cancel
               </button>
               <button
                 onClick={analyze}
@@ -521,8 +520,7 @@ export default function IaScanPage() {
               Analisando imagem...
             </h3>
             <p className="text-[var(--color-text-secondary)] max-w-sm text-sm">
-              Nossa IA está identificando o material e calculando o impacto
-              ambiental.
+              Our AI is identifying the material and calculating the environmental impact.
             </p>
           </div>
         )}

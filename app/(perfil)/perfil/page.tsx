@@ -281,7 +281,7 @@ function EditModal({
             className="text-xl font-extrabold"
             style={{ color: "var(--color-text-primary)" }}
           >
-            Editar Perfil
+            Edit Profile
           </h2>
           <button
             type="button"
@@ -403,7 +403,7 @@ function EditModal({
                 border: "2px solid var(--color-border)",
               }}
             >
-              Cancelar
+              Cancel
             </button>
             <button
               type="submit"
@@ -444,7 +444,7 @@ function EditModal({
                   <polyline points="7 3 7 8 15 8" />
                 </svg>
               )}
-              {saving ? "Salvando..." : "Salvar Alterações"}
+              {saving ? "Salvando..." : "Save Changes"}
             </button>
           </div>
         </form>
@@ -509,7 +509,7 @@ export default function ProfilePage() {
         const res = await fetch(`/api/usuarios/${id}`, {
           credentials: "include",
         });
-        if (!res.ok) throw new Error("Erro ao buscar perfil");
+        if (!res.ok) throw new Error("Error fetching profile");
         const data = await res.json();
         setUser(data.usuario);
         setForm({
@@ -517,7 +517,7 @@ export default function ProfilePage() {
           telefone: data.usuario.telefone ?? "",
         });
       } catch {
-        setError("Não foi possível carregar o perfil.");
+        setError("Could not load the profile.");
       } finally {
         setLoading(false);
       }
@@ -531,7 +531,7 @@ export default function ProfilePage() {
   }
 
   async function handleLogout() {
-    if (!confirm("Deseja realmente sair?")) return;
+    if (!confirm("Do you really want to sign out?")) return;
     await endClientSession();
     router.push("/sign-in");
   }
@@ -557,15 +557,15 @@ export default function ProfilePage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        setEditError(data.erro ?? "Erro ao salvar.");
+        setEditError(data.erro ?? "Error saving.");
         return;
       }
       const data = await res.json();
       setUser((prev) => (prev ? { ...prev, ...data.usuario } : prev));
       setEditing(false);
-      showNotification("Perfil atualizado com sucesso!", "success");
+      showNotification("Profile updated successfully!", "success");
     } catch {
-      setEditError("Erro de conexão. Tente novamente.");
+      setEditError("Connection error. Try again.");
     } finally {
       setSaving(false);
     }
@@ -602,7 +602,7 @@ export default function ProfilePage() {
             className="text-sm font-medium"
             style={{ color: "var(--color-text-secondary)" }}
           >
-            Carregando perfil...
+            Loading profile...
           </p>
         </div>
       </div>
@@ -621,7 +621,7 @@ export default function ProfilePage() {
             className="font-semibold"
             style={{ color: "var(--color-text-primary)" }}
           >
-            {error ?? "Perfil não encontrado."}
+            {error ?? "Profile not found."}
           </p>
           <a
             href="/sign-in"
@@ -751,7 +751,7 @@ export default function ProfilePage() {
                       border: "1px solid var(--color-border)",
                     }}
                   >
-                    🌱 Iniciante Sustentável
+                    🌱 Sustainable Beginner
                   </span>
                   <span
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold"
@@ -814,7 +814,7 @@ export default function ProfilePage() {
                     <path d="M12 20h9" />
                     <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
                   </svg>
-                  Preferências
+                  Preferences
                 </button>
                 <button
                   type="button"
@@ -922,7 +922,7 @@ export default function ProfilePage() {
                   className="text-base"
                   style={{ color: "var(--color-text-secondary)" }}
                 >
-                  Itens que você visualizou recentemente.
+                  Items you viewed recently.
                 </p>
               </div>
               {history.length === 0 ? (
@@ -938,13 +938,13 @@ export default function ProfilePage() {
                     className="text-2xl font-bold mb-3"
                     style={{ color: "var(--color-text-primary)" }}
                   >
-                    Nada por aqui ainda
+                    Nothing here yet
                   </h3>
                   <p
                     className="text-base mb-8"
                     style={{ color: "var(--color-text-secondary)" }}
                   >
-                    Você ainda não visualizou nenhum produto.
+                    You have not viewed any product yet.
                   </p>
                   <a
                     href="/produtos"
@@ -956,7 +956,7 @@ export default function ProfilePage() {
                       textDecoration: "none",
                     }}
                   >
-                    Começar a Explorar
+                    Start Exploring
                     <svg
                       width="15"
                       height="15"
@@ -1010,7 +1010,7 @@ export default function ProfilePage() {
                           className="text-sm"
                           style={{ color: "var(--color-text-tertiary)" }}
                         >
-                          Visitado em{" "}
+                          Visited on{" "}
                           {new Date(item.visitadoEm).toLocaleDateString(
                             "pt-BR",
                           )}
@@ -1046,7 +1046,7 @@ export default function ProfilePage() {
                   className="text-base"
                   style={{ color: "var(--color-text-secondary)" }}
                 >
-                  O seu engajamento com produtos sustentáveis.
+                  Your engagement with sustainable products.
                 </p>
               </div>
               <div
@@ -1061,23 +1061,23 @@ export default function ProfilePage() {
                   value={historyCount}
                   color="linear-gradient(135deg, var(--color-primary-light), var(--color-primary))"
                   delay={100}
-                  fonte="Contagem real do seu histórico de produtos visitados."
+                  fonte="Actual count of your visited-products history."
                 />
                 <ImpactCard
                   icon="💧"
-                  label="Potencial de Economia"
+                  label="Savings Potential"
                   value={`${historyCount * 50}L`}
                   color="linear-gradient(135deg, #bae6fd, #0ea5e9)"
                   delay={200}
-                  fonte="Estimativa ilustrativa: 50L por produto visitado — ainda não há fonte de dado real por produto (REQ-PERF-06)."
+                  fonte="Illustrative estimate: 50L per visited product — there is no real data source per product yet (REQ-PERF-06)."
                 />
                 <ImpactCard
                   icon="♻️"
-                  label="Zero Plástico"
+                  label="Zero Plastic"
                   value={Math.floor(historyCount * 0.3)}
                   color="linear-gradient(135deg, #fde68a, #f59e0b)"
                   delay={300}
-                  fonte="Estimativa ilustrativa: 0,3 por produto visitado — ainda não há fonte de dado real por produto (REQ-PERF-06)."
+                  fonte="Illustrative estimate: 0.3 per visited product — there is no real data source per product yet (REQ-PERF-06)."
                 />
               </div>
               <div
@@ -1099,9 +1099,7 @@ export default function ProfilePage() {
                     className="text-sm"
                     style={{ color: "var(--color-primary)" }}
                   >
-                    Cada produto visitado representa seu interesse em um consumo
-                    mais consciente. Explore mais produtos e aumente seu impacto
-                    positivo.
+                    Each visited product represents your interest in more conscious consumption. Explore more products and increase your positive impact.
                   </p>
                 </div>
               </div>
