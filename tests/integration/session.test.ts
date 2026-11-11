@@ -31,7 +31,7 @@ import { mapError } from "@/lib/http/responses";
 import { OperationNotAllowed } from "@/lib/errors/dominio";
 import { updateUserSchema } from "@/lib/schemas/user";
 import { POST as login } from "@/app/api/auth/route";
-import { PUT as atualizarUsuario } from "@/app/api/usuarios/[id]/route";
+import { PUT as updateUser } from "@/app/api/usuarios/[id]/route";
 import { middleware } from "@/middleware";
 import { NextRequest } from "next/server";
 
@@ -252,16 +252,16 @@ test("REQ-AUTH-21: changing your OWN password requires the correct current passw
   const cookie = await cookieDe(u);
   const fresh = "NovaSenha456";
 
-  const without = await atualizarUsuario(req(`/api/usuarios/${u.id}`, { method: "PUT", cookie, body: { senha: fresh } }), ctx(u.id));
+  const without = await updateUser(req(`/api/usuarios/${u.id}`, { method: "PUT", cookie, body: { senha: fresh } }), ctx(u.id));
   assert.equal(without.status, 403);
-  const wrong = await atualizarUsuario(req(`/api/usuarios/${u.id}`, { method: "PUT", cookie, body: { senha: fresh, senhaAtual: "errada-errada" } }), ctx(u.id));
+  const wrong = await updateUser(req(`/api/usuarios/${u.id}`, { method: "PUT", cookie, body: { senha: fresh, senhaAtual: "errada-errada" } }), ctx(u.id));
   assert.equal(wrong.status, 403);
-  const correct = await atualizarUsuario(req(`/api/usuarios/${u.id}`, { method: "PUT", cookie, body: { senha: fresh, senhaAtual: PASSWORD } }), ctx(u.id));
+  const correct = await updateUser(req(`/api/usuarios/${u.id}`, { method: "PUT", cookie, body: { senha: fresh, senhaAtual: PASSWORD } }), ctx(u.id));
   assert.equal(correct.status, 200);
 
   const admin = await cookieDe(await createUserDirectly(email("sess-adm"), "ADMIN"));
   const other = await userWithPassword("sess-outro");
-  const byAdmin = await atualizarUsuario(req(`/api/usuarios/${other.id}`, { method: "PUT", cookie: admin, body: { senha: fresh } }), ctx(other.id));
+  const byAdmin = await updateUser(req(`/api/usuarios/${other.id}`, { method: "PUT", cookie: admin, body: { senha: fresh } }), ctx(other.id));
   assert.equal(byAdmin.status, 200);
 });
 

@@ -42,7 +42,7 @@ export type ProductOrder =
   | "nome_asc"
   | "nome_desc";
 
-/** Filtros adicionais de `useListarProdutos` (REQ-CAT-06/07), todos opcionais. */
+/** Filtros adicionais de `useListProducts` (REQ-CAT-06/07), todos opcionais. */
 export interface ListProductsFilters {
   marcaId?: number;
   precoMax?: number;

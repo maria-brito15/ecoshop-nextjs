@@ -14,10 +14,10 @@ import assert from "node:assert/strict";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { POST as login, DELETE as logout } from "@/app/api/auth/route";
-import { POST as registrar } from "@/app/api/users/route";
+import { POST as register } from "@/app/api/users/route";
 import { GET as me } from "@/app/api/auth/me/route";
-import { POST as criarUsuarioAdmin } from "@/app/api/usuarios/route";
-import { PUT as atualizarUsuario } from "@/app/api/usuarios/[id]/route";
+import { POST as createUserAsAdmin } from "@/app/api/usuarios/route";
+import { PUT as updateUser } from "@/app/api/usuarios/[id]/route";
 
 after(closeConnections);
 
@@ -99,7 +99,7 @@ test("REQ-AUTH-04: more than 10 login attempts per minute from the same IP retur
 test("REQ-AUTH-05: valid public registration creates a CLIENTE (default) and starts the session", async () => {
   const mail = email("auth05");
   await prisma.usuario.deleteMany({ where: { email: mail } });
-  const res = await registrar(
+  const res = await register(
     req("/api/users", {
       method: "POST",
       body: { nome: "Pessoa Teste", email: mail, senha: PASSWORD },
@@ -114,7 +114,7 @@ test("REQ-AUTH-05: valid public registration creates a CLIENTE (default) and sta
 
 test("REQ-AUTH-06: registration with an existing email returns 409", async () => {
   const u = await userWithPassword("auth06");
-  const res = await registrar(
+  const res = await register(
     req("/api/users", {
       method: "POST",
       body: { nome: "Outra Pessoa", email: u.email, senha: PASSWORD },
@@ -128,7 +128,7 @@ test("REQ-AUTH-07: no user response exposes the password (create and update by a
   const cookie = await cookieDe(admin);
   const newMail = email("auth07-novo");
   await prisma.usuario.deleteMany({ where: { email: newMail } });
-  const created = await criarUsuarioAdmin(
+  const created = await createUserAsAdmin(
     req("/api/usuarios", {
       method: "POST",
       cookie,
@@ -142,7 +142,7 @@ test("REQ-AUTH-07: no user response exposes the password (create and update by a
     false,
     "POST /api/usuarios must not return the password",
   );
-  const updated = await atualizarUsuario(
+  const updated = await updateUser(
     req(`/api/usuarios/${c.usuario.id}`, {
       method: "PUT",
       cookie,
@@ -161,7 +161,7 @@ test("REQ-AUTH-07: no user response exposes the password (create and update by a
 });
 
 test("REQ-AUTH-08: public registration cannot create an ADMIN", async () => {
-  const res = await registrar(
+  const res = await register(
     req("/api/users", {
       method: "POST",
       body: {
@@ -195,7 +195,7 @@ test("REQ-AUTH-10: /api/auth/me returns the session user, or 401 without a sessi
 
 test("REQ-AUTH-11: registering as a brand (MARCA) stays pending until an ADMIN approves it", async () => {
   const mail = email("auth11");
-  const res = await registrar(
+  const res = await register(
     req("/api/users", {
       method: "POST",
       body: {
@@ -224,7 +224,7 @@ test("REQ-AUTH-11: registering as a brand (MARCA) stays pending until an ADMIN a
 });
 
 test("REQ-AUTH-14: registering as a brand (MARCA) without the brand name returns 400", async () => {
-  const res = await registrar(
+  const res = await register(
     req("/api/users", {
       method: "POST",
       body: {

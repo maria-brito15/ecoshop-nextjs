@@ -1,6 +1,6 @@
 /**
  * Spec 014: product media — real image content and exclusive write.
- * Needs no database: uses `gravarFoto` with a temporary folder.
+ * Needs no database: uses `savePhoto` with a temporary folder.
  */
 import { closeConnections } from "./helpers";
 import { test, after } from "node:test";

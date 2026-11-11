@@ -11,15 +11,15 @@ import {
 import { test, after, before } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "@/lib/db";
-import { GET as listar, POST as criarProduto } from "@/app/api/produtos/route";
+import { GET as listProductsRoute, POST as createProduct } from "@/app/api/produtos/route";
 import {
-  GET as detalhe,
-  PUT as atualizarProduto,
+  GET as detail,
+  PUT as updateProduct,
 } from "@/app/api/produtos/[id]/route";
-import { POST as criarCategoria } from "@/app/api/categorias/route";
-import { DELETE as excluirCategoria } from "@/app/api/categorias/[id]/route";
-import { POST as criarMarca } from "@/app/api/marcas/route";
-import { PUT as atualizarMarca } from "@/app/api/marcas/[id]/route";
+import { POST as createCategory } from "@/app/api/categorias/route";
+import { DELETE as deleteCategory } from "@/app/api/categorias/[id]/route";
+import { POST as createBrand } from "@/app/api/marcas/route";
+import { PUT as updateBrand } from "@/app/api/marcas/[id]/route";
 
 after(async () => {
   await closeConnections();
@@ -53,7 +53,7 @@ before(async () => {
 });
 
 const list = async (query: string) =>
-  (await listar(req(`/api/produtos?${query}`))).json();
+  (await listProductsRoute(req(`/api/produtos?${query}`))).json();
 
 test("REQ-CAT-01: the catalog lists 12 products per page, with the total number of results", async () => {
   const p1 = await list(`nome=${prefix}`);
@@ -81,16 +81,16 @@ test("REQ-CAT-03: the category filter returns only its products", async () => {
 
 test("REQ-CAT-04: unknown product returns 404", async () => {
   assert.equal(
-    (await detalhe(req("/api/produtos/99999999"), ctx(99999999))).status,
+    (await detail(req("/api/produtos/99999999"), ctx(99999999))).status,
     404,
   );
 });
 
 test("REQ-CAT-05: invalid page or size, or size above 100, return 400", async () => {
-  assert.equal((await listar(req("/api/produtos?size=1000"))).status, 400);
-  assert.equal((await listar(req("/api/produtos?page=abc"))).status, 400);
+  assert.equal((await listProductsRoute(req("/api/produtos?size=1000"))).status, 400);
+  assert.equal((await listProductsRoute(req("/api/produtos?page=abc"))).status, 400);
   // the panel asks for size=100 (spec edge case): it must remain accepted
-  assert.equal((await listar(req("/api/produtos?size=100"))).status, 200);
+  assert.equal((await listProductsRoute(req("/api/produtos?size=100"))).status, 200);
 });
 
 test("REQ-CAT-06: sorting by price applies to the whole catalog, not just the page", async () => {
@@ -141,7 +141,7 @@ test("REQ-CAT-07: the brand filter returns only its products", async () => {
 test("REQ-PROD-01: a product created by ADMIN shows up in the catalog right away (cache invalidated)", async () => {
   const name = `Novo ${prefix}`;
   assert.equal((await list(`nome=${encodeURIComponent(name)}`)).total, 0);
-  const res = await criarProduto(
+  const res = await createProduct(
     req("/api/produtos", {
       method: "POST",
       cookie: adminCookie,
@@ -157,10 +157,10 @@ test("REQ-PROD-02: renaming a brand is reflected in the product detail without w
     where: { marcaId: brandId },
   });
   const detailBefore = await (
-    await detalhe(req(`/api/produtos/${product.id}`), ctx(product.id))
+    await detail(req(`/api/produtos/${product.id}`), ctx(product.id))
   ).json();
   assert.equal(detailBefore.produto.marca.nome, `Brand ${prefix}`);
-  await atualizarMarca(
+  await updateBrand(
     req(`/api/marcas/${brandId}`, {
       method: "PUT",
       cookie: adminCookie,
@@ -169,13 +169,13 @@ test("REQ-PROD-02: renaming a brand is reflected in the product detail without w
     ctx(brandId),
   );
   const detailAfter = await (
-    await detalhe(req(`/api/produtos/${product.id}`), ctx(product.id))
+    await detail(req(`/api/produtos/${product.id}`), ctx(product.id))
   ).json();
   assert.equal(detailAfter.produto.marca.nome, `Brand ${prefix} v2`);
 });
 
 test("REQ-REF-01: ADMIN creates a category (201)", async () => {
-  const res = await criarCategoria(
+  const res = await createCategory(
     req("/api/categorias", {
       method: "POST",
       cookie: adminCookie,
@@ -186,7 +186,7 @@ test("REQ-REF-01: ADMIN creates a category (201)", async () => {
 });
 
 test("REQ-REF-02: creating a category with an existing name returns 409", async () => {
-  const res = await criarCategoria(
+  const res = await createCategory(
     req("/api/categorias", {
       method: "POST",
       cookie: adminCookie,
@@ -197,7 +197,7 @@ test("REQ-REF-02: creating a category with an existing name returns 409", async 
 });
 
 test("REQ-REF-03: deleting a category that has products returns 409", async () => {
-  const res = await excluirCategoria(
+  const res = await deleteCategory(
     req(`/api/categorias/${categoryId}`, {
       method: "DELETE",
       cookie: adminCookie,
@@ -210,7 +210,7 @@ test("REQ-REF-03: deleting a category that has products returns 409", async () =
 test("REQ-REF-04: creating a brand for a CLIENTE user is refused; for MARCA it is accepted", async () => {
   const client = await createUserDirectly(email("ref04-cliente"), "CLIENTE");
   const withoutBrand = await createUserDirectly(email("ref04-brand"), "MARCA");
-  const res1 = await criarMarca(
+  const res1 = await createBrand(
     req("/api/marcas", {
       method: "POST",
       cookie: adminCookie,
@@ -219,7 +219,7 @@ test("REQ-REF-04: creating a brand for a CLIENTE user is refused; for MARCA it i
   );
   assert.equal(res1.status, 409);
 
-  const res2 = await criarMarca(
+  const res2 = await createBrand(
     req("/api/marcas", {
       method: "POST",
       cookie: adminCookie,
@@ -230,7 +230,7 @@ test("REQ-REF-04: creating a brand for a CLIENTE user is refused; for MARCA it i
 });
 
 test("REQ-PROD-03: updating an unknown product returns 404", async () => {
-  const res = await atualizarProduto(
+  const res = await updateProduct(
     req("/api/produtos/99999999", {
       method: "PUT",
       cookie: adminCookie,
@@ -252,7 +252,7 @@ test("REQ-PROD-05: PUT with certificadoIds updates the product↔certificate lin
     data: { nome: `Certificate B ${prefix}`, orgaoEmissor: "Body B" },
   });
 
-  const res1 = await atualizarProduto(
+  const res1 = await updateProduct(
     req(`/api/produtos/${product.id}`, {
       method: "PUT",
       cookie: adminCookie,
@@ -270,7 +270,7 @@ test("REQ-PROD-05: PUT with certificadoIds updates the product↔certificate lin
   );
 
   // Replaces the link: removes cert2, keeps only cert1
-  const res2 = await atualizarProduto(
+  const res2 = await updateProduct(
     req(`/api/produtos/${product.id}`, {
       method: "PUT",
       cookie: adminCookie,
@@ -287,7 +287,7 @@ test("REQ-PROD-05: PUT with certificadoIds updates the product↔certificate lin
   );
 
   // certificadoIds: [] remove todos
-  const res3 = await atualizarProduto(
+  const res3 = await updateProduct(
     req(`/api/produtos/${product.id}`, {
       method: "PUT",
       cookie: adminCookie,
@@ -303,7 +303,7 @@ test("REQ-PROD-05: an unknown certificadoId is not a 500", async () => {
   const product = await prisma.produto.create({
     data: { nome: `PROD05b ${prefix}`, preco: 10, categoriaId: categoryId, marcaId: brandId },
   });
-  const res = await atualizarProduto(
+  const res = await updateProduct(
     req(`/api/produtos/${product.id}`, {
       method: "PUT",
       cookie: adminCookie,
@@ -316,7 +316,7 @@ test("REQ-PROD-05: an unknown certificadoId is not a 500", async () => {
 });
 
 test("REQ-PROD-04: creating or updating a product with an unknown category/brand is not a 500", async () => {
-  const created = await criarProduto(
+  const created = await createProduct(
     req("/api/produtos", {
       method: "POST",
       cookie: adminCookie,
@@ -334,7 +334,7 @@ test("REQ-PROD-04: creating or updating a product with an unknown category/brand
   const existingProduct = await prisma.produto.findFirstOrThrow({
     where: { marcaId: brandId },
   });
-  const updated = await atualizarProduto(
+  const updated = await updateProduct(
     req(`/api/produtos/${existingProduct.id}`, {
       method: "PUT",
       cookie: adminCookie,

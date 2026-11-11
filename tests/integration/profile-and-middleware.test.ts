@@ -13,8 +13,8 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { middleware } from "@/middleware";
 import {
-  GET as buscarUsuario,
-  PUT as atualizarUsuario,
+  GET as getUser,
+  PUT as updateUser,
 } from "@/app/api/usuarios/[id]/route";
 
 after(closeConnections);
@@ -36,7 +36,7 @@ test("REQ-PERF-01: the authenticated user accesses their own profile (middleware
     true,
     `the middleware blocked the user themselves (status ${mw.status})`,
   );
-  const res = await buscarUsuario(
+  const res = await getUser(
     req(`/api/usuarios/${u.id}`, { cookie }),
     ctx(u.id),
   );
@@ -48,7 +48,7 @@ test("REQ-PERF-01: the authenticated user accesses their own profile (middleware
 
 test("REQ-PERF-02: the user edits the name and phone of their own profile", async () => {
   const u = await createUserDirectly(email("perf02"), "CLIENTE");
-  const res = await atualizarUsuario(
+  const res = await updateUser(
     req(`/api/usuarios/${u.id}`, {
       method: "PUT",
       cookie: await cookieDe(u),
@@ -64,7 +64,7 @@ test("REQ-PERF-02: the user edits the name and phone of their own profile", asyn
 
 test("REQ-PERF-03: the user cannot change their own type", async () => {
   const u = await createUserDirectly(email("perf03"), "CLIENTE");
-  await atualizarUsuario(
+  await updateUser(
     req(`/api/usuarios/${u.id}`, {
       method: "PUT",
       cookie: await cookieDe(u),

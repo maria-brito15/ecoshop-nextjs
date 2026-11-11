@@ -133,5 +133,5 @@ export function useMutation<TResponse, TBody = unknown>(options?: Options) {
     }
   }
 
-  return { data, carregando: loading, erro: error, executar: execute };
+  return { data, carregando: loading, erro: error, execute: execute };
 }

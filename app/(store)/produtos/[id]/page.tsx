@@ -216,7 +216,7 @@ export default function ProductPage({ params }: Props) {
       ].slice(0, 50);
       localStorage.setItem("ecoshop_history", JSON.stringify(updated));
     } catch {
-      // localStorage indisponível (ex.: modo privado); histórico não é crítico
+      // localStorage unavailable (e.g. private mode); history is not critical
     }
   }, [data?.produto]);
 
@@ -281,7 +281,7 @@ export default function ProductPage({ params }: Props) {
         </Link>
       </div>
 
-      {/* CONTEÚDO PRINCIPAL */}
+      {/* MAIN CONTENT */}
       <div
         className="container-eco"
         style={{
@@ -292,7 +292,7 @@ export default function ProductPage({ params }: Props) {
         }}
       >
         <section className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-10 lg:gap-16 mt-4 mb-10 lg:items-start">
-          {/* IMAGEM DO PRODUTO */}
+          {/* PRODUCT IMAGE */}
           <div className="relative">
             <div className="relative bg-[var(--color-bg-surface)] rounded-[2rem] overflow-hidden border border-[var(--color-border)] shadow-[var(--shadow-card)] aspect-square flex items-center justify-center p-8 group">
               {mainImage ? (
@@ -322,7 +322,7 @@ export default function ProductPage({ params }: Props) {
               </div>
             </div>
 
-            {/* GALERIA DE FOTOS (REQ-MIDIA-04) */}
+            {/* PHOTO GALLERY (REQ-MIDIA-04) */}
             {photos.length > 0 && (
               <div className="flex gap-3 mt-4 overflow-x-auto pb-1">
                 {photos.map((photo) => (
@@ -351,7 +351,7 @@ export default function ProductPage({ params }: Props) {
             )}
           </div>
 
-          {/* INFORMAÇÕES DO PRODUTO */}
+          {/* PRODUCT INFORMATION */}
           <div className="flex flex-col gap-5">
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-2">
@@ -368,7 +368,7 @@ export default function ProductPage({ params }: Props) {
               </p>
             </div>
 
-            {/* Avaliação estática */}
+            {/* Static rating */}
             <div className="flex items-center gap-2">
               <span className="text-[#f59e0b] text-base tracking-tight">
                 ★★★★★
@@ -378,7 +378,7 @@ export default function ProductPage({ params }: Props) {
               </span>
             </div>
 
-            {/* Preço */}
+            {/* Price */}
             <div className="py-5 border-t border-b border-[var(--color-border)]">
               <p className="font-display text-4xl font-extrabold text-[var(--color-text-primary)] leading-none mb-1">
                 {formattedPrice}
@@ -392,7 +392,7 @@ export default function ProductPage({ params }: Props) {
               </p>
             </div>
 
-            {/* Botão de compra */}
+            {/* Buy button */}
             <div className="flex flex-col gap-3">
               <button className="w-full py-4 rounded-full font-bold text-base text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] flex items-center justify-center gap-3 shadow-[var(--shadow-btn)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(45,149,105,0.4)] active:translate-y-0">
                 <span>Buy at the Partner Store</span>
@@ -409,12 +409,12 @@ export default function ProductPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Impacto ambiental */}
+            {/* Environmental impact */}
             <ImpactCard preco={product.preco} />
           </div>
         </section>
 
-        {/* TABS COM CONTEÚDO DETALHADO */}
+        {/* TABS WITH DETAILED CONTENT */}
         <section
           className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[1.5rem] overflow-hidden shadow-[var(--shadow-card)]"
           style={{
@@ -431,7 +431,7 @@ export default function ProductPage({ params }: Props) {
           />
 
           <div className="p-6 md:p-10">
-            {/* TAB: SOBRE O PRODUTO */}
+            {/* TAB: ABOUT THE PRODUCT */}
             {activeTab === "sobre" && (
               <div className="animate-[fadeSlideUp_0.4s_ease_forwards]">
                 {product.descricao ? (
@@ -471,7 +471,7 @@ export default function ProductPage({ params }: Props) {
               </div>
             )}
 
-            {/* TAB: FICHA TÉCNICA */}
+            {/* TAB: TECHNICAL SHEET */}
             {activeTab === "specs" && (
               <div className="animate-[fadeSlideUp_0.4s_ease_forwards]">
                 <table className="w-full border-collapse">
@@ -513,7 +513,7 @@ export default function ProductPage({ params }: Props) {
               </div>
             )}
 
-            {/* TAB: CERTIFICADOS */}
+            {/* TAB: CERTIFICATES */}
             {activeTab === "certificados" &&
               hasCerts &&
               product.certificados && (

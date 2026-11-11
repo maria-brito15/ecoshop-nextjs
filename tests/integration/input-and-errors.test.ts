@@ -37,37 +37,37 @@ import { classifyImage } from "@/lib/ai/providers/azure-vision";
 import { generateText } from "@/lib/ai/providers/gemini-chat";
 import { analisarImagem } from "@/lib/ai";
 import {
-  GET as produtoGet,
-  PUT as produtoPut,
-  DELETE as produtoDelete,
+  GET as productGet,
+  PUT as productPut,
+  DELETE as productDelete,
 } from "@/app/api/produtos/[id]/route";
 import {
-  GET as categoriaGet,
-  PUT as categoriaPut,
-  DELETE as categoriaDelete,
+  GET as categoryGet,
+  PUT as categoryPut,
+  DELETE as categoryDelete,
 } from "@/app/api/categorias/[id]/route";
 import {
-  GET as marcaGet,
-  PUT as marcaPut,
-  DELETE as marcaDelete,
+  GET as brandGet,
+  PUT as brandPut,
+  DELETE as brandDelete,
 } from "@/app/api/marcas/[id]/route";
 import {
-  GET as certificadoGet,
-  PUT as certificadoPut,
-  DELETE as certificadoDelete,
+  GET as certificateGet,
+  PUT as certificatePut,
+  DELETE as certificateDelete,
 } from "@/app/api/certificados/[id]/route";
 import {
-  GET as fotosGet,
-  DELETE as fotosDelete,
+  GET as photosGet,
+  DELETE as photosDelete,
 } from "@/app/api/produtos/[id]/fotos/route";
 import {
-  GET as usuarioGet,
-  PUT as usuarioPut,
-  DELETE as usuarioDelete,
+  GET as userGet,
+  PUT as userPut,
+  DELETE as userDelete,
 } from "@/app/api/usuarios/[id]/route";
-import { POST as aprovarMarca } from "@/app/api/marcas/[id]/aprovar/route";
+import { POST as approveBrand } from "@/app/api/marcas/[id]/aprovar/route";
 import { POST as chat } from "@/app/api/ia/chat/route";
-import { POST as cadastrar } from "@/app/api/users/route";
+import { POST as register } from "@/app/api/users/route";
 import { POST as login } from "@/app/api/auth/route";
 
 after(closeConnections);
@@ -128,7 +128,7 @@ test("REQ-REF-05: parseId accepts only positive integers up to 4 bytes, no sign,
 
 test("REQ-CAT-09: GET /api/produtos/[id] with an invalid id returns 400", async () => {
   for (const id of INVALID_IDS.filter((i) => i !== "")) {
-    const res = await produtoGet(req(`/api/produtos/${id}`), ctx(id));
+    const res = await productGet(req(`/api/produtos/${id}`), ctx(id));
     assert.equal(res.status, 400, `id=${JSON.stringify(id)}`);
   }
 });
@@ -136,12 +136,12 @@ test("REQ-CAT-09: GET /api/produtos/[id] with an invalid id returns 400", async 
 test("REQ-PROD-06: PUT and DELETE /api/produtos/[id] with an invalid id return 400 (valid body)", async () => {
   const cookie = await admin();
   for (const id of ["abc", "0", "1.5"]) {
-    const put = await produtoPut(
+    const put = await productPut(
       req(`/api/produtos/${id}`, { method: "PUT", cookie, body: { nome: "New name" } }),
       ctx(id),
     );
     assert.equal(put.status, 400, `PUT id=${id}`);
-    const del = await produtoDelete(
+    const del = await productDelete(
       req(`/api/produtos/${id}`, { method: "DELETE", cookie }),
       ctx(id),
     );
@@ -152,9 +152,9 @@ test("REQ-PROD-06: PUT and DELETE /api/produtos/[id] with an invalid id return 4
 test("REQ-REF-05: categories, brands and certificates with an invalid id return 400 on GET, PUT and DELETE", async () => {
   const cookie = await admin();
   const resources = [
-    ["categorias", categoriaGet, categoriaPut, categoriaDelete],
-    ["marcas", marcaGet, marcaPut, marcaDelete],
-    ["certificados", certificadoGet, certificadoPut, certificadoDelete],
+    ["categorias", categoryGet, categoryPut, categoryDelete],
+    ["marcas", brandGet, brandPut, brandDelete],
+    ["certificados", certificateGet, certificatePut, certificateDelete],
   ] as const;
   for (const [name, get, put, del] of resources) {
     for (const id of ["abc", "0", "1.5"]) {
@@ -178,12 +178,12 @@ test("REQ-MIDIA-05: photo routes with an invalid id return 400", async () => {
   const cookie = await admin();
   for (const id of ["abc", "1.5", "0", "-3", "1e3"]) {
     assert.equal(
-      (await fotosGet(req(`/api/produtos/${id}/fotos`), ctx(id))).status,
+      (await photosGet(req(`/api/produtos/${id}/fotos`), ctx(id))).status,
       400,
       `GET id=${id}`,
     );
     assert.equal(
-      (await fotosDelete(req(`/api/produtos/${id}/fotos?nome=1_x.png`, { method: "DELETE", cookie }), ctx(id))).status,
+      (await photosDelete(req(`/api/produtos/${id}/fotos?nome=1_x.png`, { method: "DELETE", cookie }), ctx(id))).status,
       400,
       `DELETE id=${id}`,
     );
@@ -193,19 +193,19 @@ test("REQ-MIDIA-05: photo routes with an invalid id return 400", async () => {
 test("REQ-USR-06: /api/usuarios/[id] and approve brand with an invalid id return 400 for ADMIN", async () => {
   const cookie = await admin();
   for (const id of ["abc", "0", "1.5"]) {
-    assert.equal((await usuarioGet(req(`/api/usuarios/${id}`, { cookie }), ctx(id))).status, 400, `GET ${id}`);
+    assert.equal((await userGet(req(`/api/usuarios/${id}`, { cookie }), ctx(id))).status, 400, `GET ${id}`);
     assert.equal(
-      (await usuarioPut(req(`/api/usuarios/${id}`, { method: "PUT", cookie, body: { nome: "Valid name" } }), ctx(id))).status,
+      (await userPut(req(`/api/usuarios/${id}`, { method: "PUT", cookie, body: { nome: "Valid name" } }), ctx(id))).status,
       400,
       `PUT ${id}`,
     );
     assert.equal(
-      (await usuarioDelete(req(`/api/usuarios/${id}`, { method: "DELETE", cookie }), ctx(id))).status,
+      (await userDelete(req(`/api/usuarios/${id}`, { method: "DELETE", cookie }), ctx(id))).status,
       400,
       `DELETE ${id}`,
     );
     assert.equal(
-      (await aprovarMarca(req(`/api/marcas/${id}/aprovar`, { method: "POST", cookie }), ctx(id))).status,
+      (await approveBrand(req(`/api/marcas/${id}/aprovar`, { method: "POST", cookie }), ctx(id))).status,
       400,
       `aprovar ${id}`,
     );
@@ -215,7 +215,7 @@ test("REQ-USR-06: /api/usuarios/[id] and approve brand with an invalid id return
 test("REQ-USR-08: an ADMIN who tries to delete their own account gets 409 (the rule applies before any database access)", async () => {
   const me = { id: 424242, email: "auto-del@test.local", tipo: "ADMIN" as const };
   const cookie = await cookieDe(me);
-  const res = await usuarioDelete(
+  const res = await userDelete(
     req(`/api/usuarios/${me.id}`, { method: "DELETE", cookie }),
     ctx(me.id),
   );
@@ -224,7 +224,7 @@ test("REQ-USR-08: an ADMIN who tries to delete their own account gets 409 (the r
 });
 
 test("REQ-USR-06: the session is checked before the id (a visitor gets 403, not 400)", async () => {
-  const res = await usuarioGet(req("/api/usuarios/abc"), ctx("abc"));
+  const res = await userGet(req("/api/usuarios/abc"), ctx("abc"));
   assert.equal(res.status, 403);
 });
 
@@ -431,7 +431,7 @@ test("REQ-SCAN-05: if the Gemini network fails, the scan returns the fallback an
 
 test("REQ-USR-07: PUT of an unknown user by ADMIN returns 404", async () => {
   const cookie = await cookieDe(await createUserDirectly(email("e404-admin"), "ADMIN"));
-  const res = await usuarioPut(
+  const res = await userPut(
     req("/api/usuarios/2147000000", { method: "PUT", cookie, body: { nome: "Valid name" } }),
     ctx(2147000000),
   );
@@ -442,7 +442,7 @@ test("REQ-USR-07: PUT with another user's email returns 409", async () => {
   const cookie = await cookieDe(await createUserDirectly(email("e409-admin"), "ADMIN"));
   const other = await createUserDirectly(email("e409-outro"));
   const target = await createUserDirectly(email("e409-alvo"));
-  const res = await usuarioPut(
+  const res = await userPut(
     req(`/api/usuarios/${target.id}`, { method: "PUT", cookie, body: { email: other.email } }),
     ctx(target.id),
   );
@@ -453,7 +453,7 @@ test("REQ-USR-07: DELETE of a user that has a brand returns 409 and keeps the us
   const cookie = await cookieDe(await createUserDirectly(email("fk-admin"), "ADMIN"));
   const owner = await createUserDirectly(email("fk-dono"), "MARCA");
   await prisma.marca.create({ data: { nome: `Brand FK ${owner.email}`, usuarioId: owner.id, status: "APROVADA" } });
-  const res = await usuarioDelete(req(`/api/usuarios/${owner.id}`, { method: "DELETE", cookie }), ctx(owner.id));
+  const res = await userDelete(req(`/api/usuarios/${owner.id}`, { method: "DELETE", cookie }), ctx(owner.id));
   assert.equal(res.status, 409);
   assert.ok(await prisma.usuario.findUnique({ where: { id: owner.id } }));
 });
@@ -464,11 +464,11 @@ test("REQ-AUTH-15: registration stores the email in lowercase and refuses the sa
   await prisma.usuario.deleteMany({ where: { email: lowercase } });
   const fresh = { nome: "Case User", senha: "Senha12345" };
 
-  const first = await cadastrar(req("/api/users", { method: "POST", body: { ...fresh, email: mixed } }));
+  const first = await register(req("/api/users", { method: "POST", body: { ...fresh, email: mixed } }));
   assert.equal(first.status, 201);
   assert.ok(await prisma.usuario.findUnique({ where: { email: lowercase } }), "stored in lowercase");
 
-  const repeated = await cadastrar(req("/api/users", { method: "POST", body: { ...fresh, email: lowercase } }));
+  const repeated = await register(req("/api/users", { method: "POST", body: { ...fresh, email: lowercase } }));
   assert.equal(repeated.status, 409);
 });
 

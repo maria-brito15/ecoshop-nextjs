@@ -53,7 +53,7 @@ export default function FloatingChat() {
     setMessages((prev) => [...prev, { role: "user", texto: message }]);
     setText("");
 
-    const result = await chat.executar("/api/ia/chat", {
+    const result = await chat.execute("/api/ia/chat", {
       mensagem: message,
       historico: history,
     });

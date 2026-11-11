@@ -672,7 +672,7 @@ export default function ProfilePage() {
           paddingTop: "100px",
         }}
       >
-        {/* HEADER DO PERFIL */}
+        {/* PROFILE HEADER */}
         <section
           className="mb-12"
           style={{ animation: "fadeInUp 0.6s ease-out both" }}
@@ -718,7 +718,7 @@ export default function ProfilePage() {
                 />
               </div>
 
-              {/* Informações do usuário */}
+              {/* User information */}
               <div className="flex-1 min-w-0">
                 <h1
                   className="text-3xl font-extrabold tracking-tight mb-1.5"
@@ -779,7 +779,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Botões de ação */}
+              {/* Action buttons */}
               <div className="flex flex-col gap-3 ml-auto">
                 <button
                   type="button"
@@ -906,7 +906,7 @@ export default function ProfilePage() {
             </TabBtn>
           </div>
 
-          {/* HISTÓRICO (produtos visitados) */}
+          {/* HISTORY (visited products) */}
           {tab === "historico" && (
             <div style={{ animation: "fadeInUp 0.4s ease both" }}>
               <div className="mb-8">
@@ -1030,7 +1030,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* IMPACTO AMBIENTAL (métricas) */}
+          {/* ENVIRONMENTAL IMPACT (metrics) */}
           {tab === "impacto" && (
             <div style={{ animation: "fadeInUp 0.4s ease both" }}>
               <div className="mb-8">

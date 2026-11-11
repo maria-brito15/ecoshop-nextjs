@@ -14,9 +14,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "@/lib/db";
 import {
-  GET as listarFotos,
-  POST as uploadFoto,
-  DELETE as deletarFoto,
+  GET as listPhotos,
+  POST as uploadPhoto,
+  DELETE as deletePhoto,
 } from "@/app/api/produtos/[id]/fotos/route";
 
 /** Bytes that start with a JPEG signature (REQ-MIDIA-06 validates the content, not just the extension). */
@@ -64,7 +64,7 @@ const upload = (file: File | null, name?: string) => {
   const form = new FormData();
   if (file) form.set("arquivo", file);
   if (name) form.set("nome", name);
-  return uploadFoto(
+  return uploadPhoto(
     req(`/api/produtos/${productId}/fotos`, {
       method: "POST",
       cookie: adminCookie,
@@ -85,7 +85,7 @@ test("REQ-MIDIA-01: upload of a valid image is reachable by URL", async () => {
   createdFiles.push(body.foto.nome);
 
   const list = await (
-    await listarFotos(req(`/api/produtos/${productId}/fotos`), ctx(productId))
+    await listPhotos(req(`/api/produtos/${productId}/fotos`), ctx(productId))
   ).json();
   assert.ok(list.fotos.some((f: { nome: string }) => f.nome === body.foto.nome));
 });
@@ -112,7 +112,7 @@ test("REQ-MIDIA-03: removing a photo deletes the file and it disappears from the
   const sent = await (await upload(file, `remover_${RUN}`)).json();
   const name = sent.foto.nome;
 
-  const res = await deletarFoto(
+  const res = await deletePhoto(
     req(`/api/produtos/${productId}/fotos?nome=${name}`, {
       method: "DELETE",
       cookie: adminCookie,
@@ -122,7 +122,7 @@ test("REQ-MIDIA-03: removing a photo deletes the file and it disappears from the
   assert.equal(res.status, 200);
 
   const list = await (
-    await listarFotos(req(`/api/produtos/${productId}/fotos`), ctx(productId))
+    await listPhotos(req(`/api/produtos/${productId}/fotos`), ctx(productId))
   ).json();
   assert.ok(!list.fotos.some((f: { nome: string }) => f.nome === name));
 

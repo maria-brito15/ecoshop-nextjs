@@ -697,7 +697,7 @@ export default function EducationPage() {
       </section>
 
       <div className="container-eco pb-24">
-        {/* SEÇÃO: O QUE É ECOLOGIA? */}
+        {/* SECTION: WHAT IS ECOLOGY? */}
         <section className="animate-on-scroll mb-20">
           <div className="flex items-center gap-5 mb-4">
             <div className="w-14 h-14 rounded-2xl bg-[var(--color-primary-light)] flex items-center justify-center text-2xl flex-shrink-0">
@@ -768,7 +768,7 @@ export default function EducationPage() {
           </div>
         </section>
 
-        {/* SEÇÃO: PILARES DA SUSTENTABILIDADE */}
+        {/* SECTION: PILLARS OF SUSTAINABILITY */}
         <section className="animate-on-scroll mb-20">
           <div className="flex items-center gap-5 mb-4">
             <div className="w-14 h-14 rounded-2xl bg-[var(--color-primary-light)] flex items-center justify-center text-2xl flex-shrink-0">
@@ -847,7 +847,7 @@ export default function EducationPage() {
           </div>
         </section>
 
-        {/* SEÇÃO: ARTIGOS / DICAS / QUIZ (TABS) */}
+        {/* SECTION: ARTICLES / TIPS / QUIZ (TABS) */}
         <section className="animate-on-scroll">
           <div className="flex items-center gap-2 mb-8 flex-wrap">
             {TABS.map((a) => (
@@ -874,7 +874,7 @@ export default function EducationPage() {
           </div>
         </section>
 
-        {/* CALL-TO-ACTION FINAL */}
+        {/* FINAL CALL-TO-ACTION */}
         <section className="animate-on-scroll mt-20">
           <div className="text-center p-12 rounded-3xl bg-[var(--color-primary-light)] border border-dashed border-[var(--color-primary)]/50 dark:bg-[rgba(45,149,105,0.1)]">
             <h2 className="font-display text-3xl font-extrabold text-[var(--color-text-primary)] mb-3">

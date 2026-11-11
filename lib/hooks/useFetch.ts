@@ -133,7 +133,7 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
   const initialData = url ? getCached<T>(url) : null;
   const [state, setState] = useState<State<T>>({
     data: initialData,
-    loading: !!url && initialData === null, // carrega se não tem cache
+    loading: !!url && initialData === null, // loads if there is no cache
     error: null,
   });
 
@@ -197,8 +197,8 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
           }
         })
         .catch(() => {
-          // Silencia erro na revalidação em background
-          // O usuário já vê os dados do cache, então falha não é crítica
+          // Silence errors on background revalidation
+          // The user already sees the cached data, so a failure is not critical
         });
       return () => {
         active = false;
@@ -212,11 +212,11 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
     return () => {
       active = false;
     };
-    // `executar` e `options` ficam de fora de propósito: `options` costuma ser um
-    // objeto literal novo a cada render (incluí-lo refaria a requisição sem parar);
-    // a versão mais recente dele é lida por `optionsRef`.
+    // `execute` and `options` are left out on purpose: `options` is usually a
+    // new object literal on every render (including it would refetch endlessly);
+    // its latest version is read through `optionsRef`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]); // Re-executa se a URL mudar
 
-  return { ...state, executar: execute };
+  return { ...state, execute: execute };
 }

@@ -197,8 +197,8 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
       {/* --------------------------------------------------------------------
-        SEÇÃO 1: HERO SECTION
-        Apresentação principal da plataforma com CTA
+        SECTION 1: HERO SECTION
+        Main presentation of the platform with a CTA
       -------------------------------------------------------------------- */}
       <section
         className="
@@ -226,7 +226,7 @@ export default function HomePage() {
                 </Link>
               </div>
 
-              {/* Métricas de impacto */}
+              {/* Impact metrics */}
               <div className="flex gap-8 pt-6 border-t border-[var(--color-border)]">
                 {[
                   { valor: "2k+", label: "Eco products" },
@@ -248,7 +248,7 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* Imagem/ilustração do lado direito */}
+            {/* Image/illustration on the right side */}
             <div className="hidden lg:flex items-center justify-center h-96 rounded-3xl overflow-hidden relative bg-[var(--color-primary-light)] border border-[var(--color-border)]">
               <img
                 src="/banner.png"
@@ -264,8 +264,8 @@ export default function HomePage() {
       </section>
 
       {/* --------------------------------------------------------------------
-        SEÇÃO 2: PRODUTOS EM DESTAQUE
-        Grid com os 4 primeiros produtos do catálogo
+        SECTION 2: FEATURED PRODUCTS
+        Grid with the first 4 products of the catalog
       -------------------------------------------------------------------- */}
       <section id="produtos" className="py-20 bg-[var(--color-bg-surface)]">
         <div className="container-eco">
@@ -281,7 +281,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Estado de carregamento */}
+          {/* Loading state */}
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {Array.from({ length: 4 }).map((_, i) => (
@@ -329,8 +329,8 @@ export default function HomePage() {
       </section>
 
       {/* --------------------------------------------------------------------
-        SEÇÃO 3: CATEGORIAS
-        Grade com as principais categorias do catálogo
+        SECTION 3: CATEGORIES
+        Grid with the main catalog categories
       -------------------------------------------------------------------- */}
       {categories.length > 0 && (
         <section className="py-20 bg-[var(--color-bg-body)]">
@@ -353,8 +353,8 @@ export default function HomePage() {
       )}
 
       {/* --------------------------------------------------------------------
-        SEÇÃO 4: CENTRO EDUCATIVO
-        Call-to-action para a seção de educação ambiental
+        SECTION 4: EDUCATION CENTER
+        Call-to-action for the environmental education section
       -------------------------------------------------------------------- */}
       <section className="py-20 bg-[linear-gradient(135deg,#1a3a2e_0%,#0f2419_100%)] text-white">
         <div className="container-eco">
@@ -401,8 +401,8 @@ export default function HomePage() {
       </section>
 
       {/* --------------------------------------------------------------------
-        SEÇÃO 5: ECOSCAN IA
-        Banner promocional da funcionalidade de IA
+        SECTION 5: ECOSCAN AI
+        Promotional banner for the AI feature
       -------------------------------------------------------------------- */}
       <section className="py-20 bg-[var(--color-bg-surface)]">
         <div className="container-eco">
@@ -431,7 +431,7 @@ export default function HomePage() {
 
       {/* --------------------------------------------------------------------
         FOOTER
-        Rodapé com links institucionais e redes sociais
+        Footer with institutional links and social networks
       -------------------------------------------------------------------- */}
       <footer className="bg-[var(--color-bg-surface)] border-t border-[var(--color-border)] py-16">
         <div className="container-eco">

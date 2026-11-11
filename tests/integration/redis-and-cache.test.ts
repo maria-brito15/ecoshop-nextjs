@@ -19,7 +19,7 @@ import { withCache } from "@/lib/cache";
 import { productListKey } from "@/lib/cache/keys";
 import { listProductsQuerySchema } from "@/lib/schemas/product";
 import { buildHealthReport } from "@/services/health.service";
-import { GET as listarProdutosHandler } from "@/app/api/produtos/route";
+import { GET as listProductsHandler } from "@/app/api/produtos/route";
 
 after(closeConnections);
 
@@ -180,7 +180,7 @@ test("REQ-CAT-10: name search ignores case and surrounding spaces (same search, 
 });
 
 test("REQ-CAT-10: a nome above 100 characters returns 400 (the key size is bounded)", async () => {
-  const res = await listarProdutosHandler(req(`/api/produtos?nome=${"a".repeat(101)}`));
+  const res = await listProductsHandler(req(`/api/produtos?nome=${"a".repeat(101)}`));
   assert.equal(res.status, 400);
 });
 

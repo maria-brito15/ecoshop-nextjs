@@ -326,7 +326,7 @@ export default function IaScanPage() {
   const [dragover, setDragover] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const { data, carregando: loading, erro: hookError, executar: execute } = useScan();
+  const { data, carregando: loading, erro: hookError, execute: execute } = useScan();
 
   function validateFile(file: File): string | null {
     if (!VALID_TYPES.includes(file.type))
@@ -405,7 +405,7 @@ export default function IaScanPage() {
       </section>
 
       <div className="container-eco pb-24">
-        {/* MENSAGENS DE ERRO */}
+        {/* ERROR MESSAGES */}
         {(localError || hookError) && (
           <div
             className="flex items-start gap-4 p-5 rounded-xl mb-8 bg-red-50 border border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800/40 dark:text-red-300"
@@ -421,7 +421,7 @@ export default function IaScanPage() {
           </div>
         )}
 
-        {/* ÁREA DE UPLOAD */}
+        {/* UPLOAD AREA */}
         {!file && !showResult && (
           <div className="max-w-2xl mx-auto bg-[var(--color-bg-surface)] rounded-2xl p-3 border border-[var(--color-border)] shadow-[var(--shadow-card)]">
             <div
@@ -469,7 +469,7 @@ export default function IaScanPage() {
           </div>
         )}
 
-        {/* PREVIEW DA IMAGEM (antes da análise) */}
+        {/* IMAGE PREVIEW (before the analysis) */}
         {file && !loading && !showResult && (
           <div className="max-w-2xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 bg-[var(--color-bg-surface)] rounded-2xl p-6 border border-[var(--color-border)] shadow-[var(--shadow-card)] animate-[fadeSlideUp_0.4s_ease]">
             <div className="flex items-center gap-5">
@@ -506,7 +506,7 @@ export default function IaScanPage() {
           </div>
         )}
 
-        {/* LOADING (processamento) */}
+        {/* LOADING (processing) */}
         {loading && (
           <div
             className="flex flex-col items-center justify-center py-20 text-center animate-[fadeSlideUp_0.4s_ease]"
@@ -523,7 +523,7 @@ export default function IaScanPage() {
           </div>
         )}
 
-        {/* RESULTADOS */}
+        {/* RESULTS */}
         {success && data && (
           <SuccessResult data={data as any} onReset={reset} />
         )}

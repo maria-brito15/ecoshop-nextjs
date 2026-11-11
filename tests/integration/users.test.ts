@@ -10,9 +10,9 @@ import {
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "@/lib/db";
-import { GET as listar, POST as criar } from "@/app/api/usuarios/route";
-import { GET as listarMarcas } from "@/app/api/marcas/route";
-import { POST as aprovarMarca } from "@/app/api/marcas/[id]/aprovar/route";
+import { GET as list, POST as create } from "@/app/api/usuarios/route";
+import { GET as listBrands } from "@/app/api/marcas/route";
+import { POST as approveBrand } from "@/app/api/marcas/[id]/aprovar/route";
 
 after(closeConnections);
 
@@ -20,7 +20,7 @@ test("REQ-USR-01: the admin's user listing does not expose the password", async 
   const cookie = await cookieDe(
     await createUserDirectly(email("usr01-admin"), "ADMIN"),
   );
-  const res = await listar(req("/api/usuarios?page=1&size=5", { cookie }));
+  const res = await list(req("/api/usuarios?page=1&size=5", { cookie }));
   assert.equal(res.status, 200);
   const body = JSON.stringify(await res.json());
   assert.equal(
@@ -35,7 +35,7 @@ test("REQ-USR-02: creating a user as admin stores a bcrypt hash and returns 201"
     await createUserDirectly(email("usr02-admin"), "ADMIN"),
   );
   const fresh = email("usr02-novo");
-  const res = await criar(
+  const res = await create(
     req("/api/usuarios", {
       method: "POST",
       cookie,
@@ -70,7 +70,7 @@ test("REQ-USR-03: ADMIN approves a pending brand and the associated user becomes
   );
   const { usuario: user, marca: brand } = await pendingBrand("usr03");
 
-  const res = await aprovarMarca(
+  const res = await approveBrand(
     req(`/api/marcas/${brand.id}/aprovar`, { method: "POST", cookie }),
     ctx(brand.id),
   );
@@ -90,11 +90,11 @@ test("REQ-USR-03: approving a brand that is no longer pending returns 409", asyn
   );
   const { marca: brand } = await pendingBrand("usr03b");
 
-  await aprovarMarca(
+  await approveBrand(
     req(`/api/marcas/${brand.id}/aprovar`, { method: "POST", cookie }),
     ctx(brand.id),
   );
-  const second = await aprovarMarca(
+  const second = await approveBrand(
     req(`/api/marcas/${brand.id}/aprovar`, { method: "POST", cookie }),
     ctx(brand.id),
   );
@@ -103,7 +103,7 @@ test("REQ-USR-03: approving a brand that is no longer pending returns 409", asyn
 
 test("REQ-USR-05: the brand listing includes each brand's status", async () => {
   await pendingBrand("usr05");
-  const res = await listarMarcas();
+  const res = await listBrands();
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.ok(body.marcas.length > 0);

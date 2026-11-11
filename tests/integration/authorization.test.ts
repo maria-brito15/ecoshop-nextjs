@@ -10,22 +10,22 @@ import {
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import {
-  POST as criarCategoria,
-  GET as listarCategorias,
+  POST as createCategory,
+  GET as listCategories,
 } from "@/app/api/categorias/route";
-import { DELETE as deletarProduto } from "@/app/api/produtos/[id]/route";
+import { DELETE as deleteProduct } from "@/app/api/produtos/[id]/route";
 import {
-  POST as criarProduto,
-  GET as listarProdutos,
+  POST as createProduct,
+  GET as listProducts,
 } from "@/app/api/produtos/route";
-import { POST as criarMarca } from "@/app/api/marcas/route";
-import { POST as criarCertificado } from "@/app/api/certificados/route";
-import { POST as uploadFoto } from "@/app/api/produtos/[id]/fotos/route";
-import { GET as listarUsuarios } from "@/app/api/usuarios/route";
+import { POST as createBrand } from "@/app/api/marcas/route";
+import { POST as createCertificate } from "@/app/api/certificados/route";
+import { POST as uploadPhoto } from "@/app/api/produtos/[id]/fotos/route";
+import { GET as listUsers } from "@/app/api/usuarios/route";
 import {
-  GET as buscarUsuario,
-  PUT as atualizarUsuario,
-  DELETE as excluirUsuario,
+  GET as getUser,
+  PUT as updateUser,
+  DELETE as deleteUser,
 } from "@/app/api/usuarios/[id]/route";
 import { POST as scan } from "@/app/api/ia/scan/route";
 import { POST as chat } from "@/app/api/ia/chat/route";
@@ -43,17 +43,17 @@ test("REQ-AUTZ-01: writing to the catalog requires ADMIN (401 without login, 403
     string,
     unknown,
   ][] = [
-    ["categorias", criarCategoria, "POST", { nome: "x" }],
-    ["marcas", criarMarca, "POST", { nome: "x", usuarioId: 1 }],
+    ["categorias", createCategory, "POST", { nome: "x" }],
+    ["marcas", createBrand, "POST", { nome: "x", usuarioId: 1 }],
     [
       "certificados",
-      criarCertificado,
+      createCertificate,
       "POST",
       { nome: "x", orgaoEmissor: "y" },
     ],
     [
       "produtos",
-      criarProduto,
+      createProduct,
       "POST",
       { nome: "x", preco: 1, categoriaId: 1, marcaId: 1 },
     ],
@@ -71,14 +71,14 @@ test("REQ-AUTZ-01: writing to the catalog requires ADMIN (401 without login, 403
     );
   }
   const del = (c?: string) =>
-    deletarProduto(
+    deleteProduct(
       req("/api/produtos/1", { method: "DELETE", cookie: c }),
       ctx(1),
     );
   assert.equal((await del()).status, 401);
   assert.equal((await del(cookie)).status, 403);
   const photo = (c?: string) =>
-    uploadFoto(
+    uploadPhoto(
       req("/api/produtos/1/fotos", {
         method: "POST",
         cookie: c,
@@ -91,8 +91,8 @@ test("REQ-AUTZ-01: writing to the catalog requires ADMIN (401 without login, 403
 });
 
 test("REQ-AUTZ-02: reading the catalog (products and categories) is public", async () => {
-  assert.equal((await listarProdutos(req("/api/produtos"))).status, 200);
-  assert.equal((await listarCategorias()).status, 200);
+  assert.equal((await listProducts(req("/api/produtos"))).status, 200);
+  assert.equal((await listCategories()).status, 200);
 });
 
 test("REQ-AUTZ-03: AI scan and chat require an authenticated user", async () => {
@@ -113,10 +113,10 @@ test("REQ-AUTZ-03: AI scan and chat require an authenticated user", async () => 
 
 test("REQ-AUTZ-04: listing and creating users is ADMIN-only", async () => {
   const client = await createUserDirectly(email("authz04"), "CLIENTE");
-  assert.equal((await listarUsuarios(req("/api/usuarios"))).status, 401);
+  assert.equal((await listUsers(req("/api/usuarios"))).status, 401);
   assert.equal(
     (
-      await listarUsuarios(
+      await listUsers(
         req("/api/usuarios", { cookie: await cookieDe(client) }),
       )
     ).status,
@@ -131,7 +131,7 @@ test("REQ-AUTZ-05: /api/usuarios/[id]: the user themselves or ADMIN; deleting is
   const ca = await cookieDe(a);
   assert.equal(
     (
-      await buscarUsuario(
+      await getUser(
         req(`/api/usuarios/${a.id}`, { cookie: ca }),
         ctx(a.id),
       )
@@ -140,7 +140,7 @@ test("REQ-AUTZ-05: /api/usuarios/[id]: the user themselves or ADMIN; deleting is
   );
   assert.equal(
     (
-      await buscarUsuario(
+      await getUser(
         req(`/api/usuarios/${b.id}`, { cookie: ca }),
         ctx(b.id),
       )
@@ -149,7 +149,7 @@ test("REQ-AUTZ-05: /api/usuarios/[id]: the user themselves or ADMIN; deleting is
   );
   assert.equal(
     (
-      await buscarUsuario(
+      await getUser(
         req(`/api/usuarios/${a.id}`, { cookie: await cookieDe(admin) }),
         ctx(a.id),
       )
@@ -158,7 +158,7 @@ test("REQ-AUTZ-05: /api/usuarios/[id]: the user themselves or ADMIN; deleting is
   );
   assert.equal(
     (
-      await atualizarUsuario(
+      await updateUser(
         req(`/api/usuarios/${b.id}`, {
           method: "PUT",
           cookie: ca,
@@ -171,7 +171,7 @@ test("REQ-AUTZ-05: /api/usuarios/[id]: the user themselves or ADMIN; deleting is
   );
   assert.equal(
     (
-      await excluirUsuario(
+      await deleteUser(
         req(`/api/usuarios/${a.id}`, { method: "DELETE", cookie: ca }),
         ctx(a.id),
       )

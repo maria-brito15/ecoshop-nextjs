@@ -174,12 +174,12 @@ function DashboardPage() {
         </div>
       </aside>
 
-      {/* CONTEÚDO PRINCIPAL */}
+      {/* MAIN CONTENT */}
       <main className="flex-1 min-w-0 bg-[var(--color-bg-body)]">
-        {/* Header fixo com título da aba atual */}
+        {/* Fixed header with the current tab title */}
         <div className="sticky top-[var(--spacing-header)] z-10 bg-[var(--color-bg-surface)] border-b border-[var(--color-border)] px-6 py-4">
           <div className="flex items-center justify-between gap-4">
-            {/* Tabs mobile (scroll horizontal) */}
+            {/* Mobile tabs (horizontal scroll) */}
             <div className="flex gap-2 lg:hidden overflow-x-auto pb-0.5 scrollbar-hide">
               {(
                 Object.entries(TAB_CONFIG) as [Tab, (typeof TAB_CONFIG)[Tab]][]
@@ -204,7 +204,7 @@ function DashboardPage() {
               ))}
             </div>
 
-            {/* Título desktop */}
+            {/* Desktop title */}
             <div className="hidden lg:block">
               <h1
                 className="text-xl font-bold text-[var(--color-text-primary)]"
@@ -219,7 +219,7 @@ function DashboardPage() {
           </div>
         </div>
 
-        {/* Conteúdo da aba selecionada */}
+        {/* Selected tab content */}
         <div className="p-6">
           {tab === "produtos" && <ProductsSection />}
           {tab === "categorias" && <CategoriesSection />}
@@ -257,14 +257,14 @@ interface PhotosModalProps {
   produto: Produto;
   isOpen: boolean;
   onClose: () => void;
-  onFotoAdicionada: () => void;
+  onPhotoAdded: () => void;
 }
 
 function PhotosModal({
   produto: product,
   isOpen,
   onClose,
-  onFotoAdicionada: onPhotoAdded,
+  onPhotoAdded,
 }: PhotosModalProps) {
   const {
     data: photosData,
@@ -292,7 +292,7 @@ function PhotosModal({
     const formData = new FormData();
     formData.append("arquivo", file);
 
-    const result = await uploadMutation.executar(
+    const result = await uploadMutation.execute(
       `/api/produtos/${product.id}/fotos`,
       formData,
     );
@@ -309,7 +309,7 @@ function PhotosModal({
     if (!confirm("Are you sure you want to delete this photo?")) return;
 
     setUploadError(null);
-    const result = await deleteMutation.executar(
+    const result = await deleteMutation.execute(
       `/api/produtos/${product.id}/fotos?nome=${encodeURIComponent(fileName)}`,
     );
 
@@ -342,7 +342,7 @@ function PhotosModal({
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Área de upload */}
+          {/* Upload area */}
           <div>
             <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-3">
               Add New Photo
@@ -398,7 +398,7 @@ function PhotosModal({
             {error && <p className="text-sm text-red-600 mt-2">❌ {error}</p>}
           </div>
 
-          {/* Galeria de fotos existentes */}
+          {/* Gallery of existing photos */}
           <div>
             <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-3">
               Existing Photos ({photos.length})
@@ -425,7 +425,7 @@ function PhotosModal({
                       className="w-full h-40 object-cover"
                     />
 
-                    {/* Overlay com ações ao hover */}
+                    {/* Overlay with actions on hover */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center gap-2">
                       <a
                         href={photo.url}
@@ -445,7 +445,7 @@ function PhotosModal({
                       </button>
                     </div>
 
-                    {/* Nome do arquivo */}
+                    {/* File name */}
                     <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1">
                       <p className="text-xs text-white truncate">{photo.nome}</p>
                     </div>
@@ -546,7 +546,7 @@ function ProductsSection() {
     }
 
     if (editing) {
-      await update.executar(`/api/produtos/${editing.id}`, {
+      await update.execute(`/api/produtos/${editing.id}`, {
         nome: form.nome,
         descricao: form.descricao || undefined,
         preco: parseFloat(form.preco),
@@ -555,7 +555,7 @@ function ProductsSection() {
         certificadoIds: certificateIds,
       });
     } else {
-      await create.executar("/api/produtos", {
+      await create.execute("/api/produtos", {
         nome: form.nome,
         descricao: form.descricao || undefined,
         preco: parseFloat(form.preco),
@@ -569,7 +569,7 @@ function ProductsSection() {
 
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure?")) return;
-    await remove.executar(`/api/produtos/${id}`);
+    await remove.execute(`/api/produtos/${id}`);
   };
 
   const handleOpenPhotos = (product: Produto) => {
@@ -666,7 +666,7 @@ function ProductsSection() {
         </TableContainer>
       )}
 
-      {/* Modal de criação/edição */}
+      {/* Create/edit modal */}
       {modalOpen && (
         <Modal
           title={editing ? "Edit Product" : "New Product"}
@@ -758,7 +758,7 @@ function ProductsSection() {
         </Modal>
       )}
 
-      {/* Modal de gerenciamento de fotos */}
+      {/* Photo management modal */}
       {selectedProduct && (
         <PhotosModal
           produto={selectedProduct}
@@ -767,7 +767,7 @@ function ProductsSection() {
             setPhotosModalOpen(false);
             setSelectedProduct(null);
           }}
-          onFotoAdicionada={() => {}}
+          onPhotoAdded={() => {}}
         />
       )}
     </>
@@ -816,20 +816,20 @@ function CategoriesSection() {
     const body = { nome: form.nome, descricao: form.descricao || undefined };
 
     if (editing) {
-      const ok = await update.executar(
+      const ok = await update.execute(
         `/api/categorias/${editing.id}`,
         body,
       );
       if (ok) close();
     } else {
-      const ok = await create.executar("/api/categorias", body);
+      const ok = await create.execute("/api/categorias", body);
       if (ok) close();
     }
   }
 
   async function handleDelete(id: number) {
     if (!confirm("Are you sure you want to delete this category?")) return;
-    await remove.executar(`/api/categorias/${id}`);
+    await remove.execute(`/api/categorias/${id}`);
   }
 
   const mutating = create.carregando || update.carregando;
@@ -973,7 +973,7 @@ function BrandsSection() {
 
     if (editing) {
       const body = { nome: form.nome, descricao: form.descricao || undefined };
-      const ok = await update.executar(`/api/marcas/${editing.id}`, body);
+      const ok = await update.execute(`/api/marcas/${editing.id}`, body);
       if (ok) close();
     } else {
       const body = {
@@ -981,18 +981,18 @@ function BrandsSection() {
         descricao: form.descricao || undefined,
         usuarioId: Number(form.usuarioId),
       };
-      const ok = await create.executar("/api/marcas", body);
+      const ok = await create.execute("/api/marcas", body);
       if (ok) close();
     }
   }
 
   async function handleDelete(id: number) {
     if (!confirm("Are you sure you want to delete this brand?")) return;
-    await remove.executar(`/api/marcas/${id}`);
+    await remove.execute(`/api/marcas/${id}`);
   }
 
   async function handleApprove(id: number) {
-    await approve.executar(`/api/marcas/${id}/aprovar`);
+    await approve.execute(`/api/marcas/${id}/aprovar`);
   }
 
   const mutating = create.carregando || update.carregando;
@@ -1180,20 +1180,20 @@ function CertificatesSection() {
     };
 
     if (editing) {
-      const ok = await update.executar(
+      const ok = await update.execute(
         `/api/certificados/${editing.id}`,
         body,
       );
       if (ok) close();
     } else {
-      const ok = await create.executar("/api/certificados", body);
+      const ok = await create.execute("/api/certificados", body);
       if (ok) close();
     }
   }
 
   async function handleDelete(id: number) {
     if (!confirm("Are you sure you want to delete this certificate?")) return;
-    await remove.executar(`/api/certificados/${id}`);
+    await remove.execute(`/api/certificados/${id}`);
   }
 
   const mutating = create.carregando || update.carregando;

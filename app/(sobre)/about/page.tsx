@@ -214,7 +214,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* RECONHECIMENTO ACADÊMICO */}
+      {/* ACADEMIC RECOGNITION */}
       <section className="bg-[linear-gradient(135deg,#1a3a2e_0%,#0f2419_100%)] py-16">
         <div className="container-eco">
           <div className="animate-on-scroll flex flex-col lg:flex-row items-center justify-between gap-10 p-10 rounded-3xl border border-white/10 relative overflow-hidden">
@@ -256,7 +256,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* O PROBLEMA */}
+      {/* THE PROBLEM */}
       <section className="py-20 bg-[var(--color-bg-surface)]">
         <div className="container-eco">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
@@ -387,7 +387,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* EVOLUÇÃO TÉCNICA (JAVA vs NEXT.JS) */}
+      {/* TECHNICAL EVOLUTION (JAVA vs NEXT.JS) */}
       <section className="py-20 bg-[var(--color-bg-surface)]">
         <div className="container-eco">
           <div className="text-center max-w-xl mx-auto mb-14">
@@ -402,7 +402,7 @@ export default function AboutPage() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-start">
-            {/* Versão Original */}
+            {/* Original version */}
             <div className="animate-on-scroll flex flex-col gap-5 p-8 rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg-body)]">
               <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[var(--color-bg-surface-hover)] text-[var(--color-text-tertiary)] border border-[var(--color-border)] w-fit">
                 Original Version · Team
@@ -432,7 +432,7 @@ export default function AboutPage() {
               </p>
             </div>
 
-            {/* Setinha */}
+            {/* Arrow */}
             <div className="hidden md:flex flex-col items-center justify-center gap-2 pt-12 text-[var(--color-primary)]">
               <div className="w-px h-8 bg-[var(--color-primary)] opacity-30" />
               <svg
@@ -451,7 +451,7 @@ export default function AboutPage() {
               <div className="w-px h-8 bg-[var(--color-primary)] opacity-30" />
             </div>
 
-            {/* Versão Refatorada */}
+            {/* Refactored version */}
             <div
               className="animate-on-scroll flex flex-col gap-5 p-8 rounded-3xl border-2 border-[var(--color-primary)] bg-[var(--color-primary-light)]"
               style={{ transitionDelay: "120ms" }}
@@ -490,7 +490,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* MELHORIAS */}
+      {/* IMPROVEMENTS */}
       <section className="py-20 bg-[var(--color-bg-body)]">
         <div className="container-eco">
           <div className="text-center max-w-xl mx-auto mb-14">
@@ -523,7 +523,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* EQUIPE */}
+      {/* TEAM */}
       <section className="py-20 bg-[var(--color-bg-surface)]">
         <div className="container-eco">
           <div className="text-center max-w-xl mx-auto mb-14">
@@ -610,7 +610,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* CALL-TO-ACTION FINAL */}
+      {/* FINAL CALL-TO-ACTION */}
       <section className="py-20 bg-[var(--color-bg-body)]">
         <div className="container-eco">
           <div className="animate-on-scroll flex flex-col md:flex-row items-center justify-between gap-8 p-10 rounded-3xl bg-[var(--color-primary)] relative overflow-hidden">

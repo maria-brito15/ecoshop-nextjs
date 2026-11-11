@@ -204,7 +204,7 @@ export default function AuthPage() {
 
     if (mode === "login") {
       const body: LoginBody = { email: form.email, senha: form.senha };
-      const data = await login.executar("/api/auth", body);
+      const data = await login.execute("/api/auth", body);
       if (data) router.push(nextUrl);
     } else {
       // Registration validations
@@ -231,7 +231,7 @@ export default function AuthPage() {
           : {}),
       };
 
-      const data = await record.executar("/api/users", body);
+      const data = await record.execute("/api/users", body);
       if (!data) return;
       if (data.marcaPendente) {
         setPendingBrandMessage(true);
@@ -311,7 +311,7 @@ export default function AuthPage() {
             </p>
           </div>
 
-          {/* Toggle entre Login e Cadastro */}
+          {/* Toggle between Login and Registration */}
           <div
             className="grid grid-cols-2 gap-2.5 mb-8 p-2 rounded-2xl"
             style={{
@@ -345,7 +345,7 @@ export default function AuthPage() {
             ))}
           </div>
 
-          {/* Exibição de erro */}
+          {/* Error display */}
           {error && (
             <div
               className="mb-5 px-4 py-3.5 rounded-xl text-sm font-medium flex items-center gap-2.5"
@@ -393,7 +393,7 @@ export default function AuthPage() {
             key={mode}
           >
             <div className="flex flex-col gap-5">
-              {/* Campo Nome (apenas cadastro) */}
+              {/* Name field (registration only) */}
               {mode === "register" && (
                 <div>
                   <label
@@ -432,7 +432,7 @@ export default function AuthPage() {
                 </div>
               )}
 
-              {/* Campo Email */}
+              {/* Email field */}
               <div>
                 <label
                   className="block text-sm font-semibold mb-2"
@@ -469,7 +469,7 @@ export default function AuthPage() {
                 </div>
               </div>
 
-              {/* Campo Telefone (apenas cadastro) */}
+              {/* Phone field (registration only) */}
               {mode === "register" && (
                 <div>
                   <label
@@ -512,7 +512,7 @@ export default function AuthPage() {
                 </div>
               )}
 
-              {/* Campo Senha */}
+              {/* Password field */}
               <div>
                 <label
                   className="block text-sm font-semibold mb-2"
@@ -558,7 +558,7 @@ export default function AuthPage() {
                 </div>
               </div>
 
-              {/* Campo Confirmar Senha (apenas cadastro) */}
+              {/* Confirm Password field (registration only) */}
               {mode === "register" && (
                 <div>
                   <label
@@ -597,7 +597,7 @@ export default function AuthPage() {
                 </div>
               )}
 
-              {/* Checkbox para se cadastrar como loja/parceiro */}
+              {/* Checkbox to register as a store/partner */}
               {mode === "register" && (
                 <div
                   className="flex flex-col gap-2.5 p-4 rounded-xl transition-all duration-200 cursor-pointer"
@@ -645,7 +645,7 @@ export default function AuthPage() {
                 </div>
               )}
 
-              {/* Botão de submit */}
+              {/* Submit button */}
               <button
                 type="submit"
                 disabled={loading}

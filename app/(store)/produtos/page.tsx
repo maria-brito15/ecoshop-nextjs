@@ -102,7 +102,7 @@ function ProductCard({ produto: product, index }: { produto: Produto; index: num
         href={`/produtos/${product.id}`}
         className="group block rounded-[var(--radius-card)] overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-surface)] transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-[var(--shadow-xl)] hover:border-[var(--color-primary)] h-full flex flex-col"
       >
-        {/* Área da imagem */}
+        {/* Image area */}
         <div className="relative h-56 bg-[var(--color-bg-body)] flex items-center justify-center overflow-hidden">
           {product.fotoUrl ? (
             <Image
@@ -121,7 +121,7 @@ function ProductCard({ produto: product, index }: { produto: Produto; index: num
             </span>
           )}
 
-          {/* Badge da categoria */}
+          {/* Category badge */}
           <span
             className={`
               absolute top-3 left-3
@@ -135,7 +135,7 @@ function ProductCard({ produto: product, index }: { produto: Produto; index: num
             {categoryName}
           </span>
 
-          {/* Overlay com "Ver detalhes" que aparece no hover */}
+          {/* Overlay with "View details" that appears on hover */}
           <div
             className={`
               absolute inset-0 flex items-center justify-center
@@ -158,7 +158,7 @@ function ProductCard({ produto: product, index }: { produto: Produto; index: num
           </div>
         </div>
 
-        {/* Conteúdo textual do card */}
+        {/* Card text content */}
         <div className="p-5 flex flex-col gap-2 flex-1">
           <span className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-tertiary)]">
             {brandName}
@@ -175,14 +175,14 @@ function ProductCard({ produto: product, index }: { produto: Produto; index: num
             {product.nome}
           </h3>
 
-          {/* Descrição (limitada a 2 linhas) */}
+          {/* Description (limited to 2 lines) */}
           {product.descricao && (
             <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">
               {product.descricao}
             </p>
           )}
 
-          {/* Certificados do produto (máximo 2) */}
+          {/* Product certificates (maximum 2) */}
           {product.certificados && product.certificados.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1">
               {product.certificados
@@ -203,7 +203,7 @@ function ProductCard({ produto: product, index }: { produto: Produto; index: num
             </div>
           )}
 
-          {/* Preço e selo Eco */}
+          {/* Price and Eco badge */}
           <div
             className={`
               mt-auto pt-4
@@ -309,7 +309,7 @@ export default function ProductsPage() {
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
-      {/* HEADER DA PÁGINA COM BREADCRUMB */}
+      {/* PAGE HEADER WITH BREADCRUMB */}
       <div
         className={`
           border-b border-[var(--color-border)]
@@ -318,7 +318,7 @@ export default function ProductsPage() {
         `}
       >
         <div className="container-eco">
-          {/* Breadcrumb de navegação */}
+          {/* Navigation breadcrumb */}
           <nav className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] mb-5">
             <Link
               href="/"
@@ -332,7 +332,7 @@ export default function ProductsPage() {
             </span>
           </nav>
 
-          {/* Título e contador */}
+          {/* Title and counter */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="font-display text-3xl md:text-4xl font-extrabold text-[var(--color-text-primary)]">
@@ -355,7 +355,7 @@ export default function ProductsPage() {
               )}
             </div>
 
-            {/* Barra de busca */}
+            {/* Search bar */}
             <form
               onSubmit={handleSearch}
               className="flex gap-2 w-full sm:w-auto sm:min-w-[320px]"
@@ -394,11 +394,11 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* CONTEÚDO PRINCIPAL COM SIDEBAR */}
+      {/* MAIN CONTENT WITH SIDEBAR */}
       <div className="container-eco py-8">
         <div className="flex gap-8 items-start">
           {/* ================================================================ */}
-          {/* SIDEBAR DESKTOP */}
+          {/* DESKTOP SIDEBAR */}
           {/* ================================================================ */}
           <aside
             className={`
@@ -417,7 +417,7 @@ export default function ProductsPage() {
               scrollbarColor: "var(--color-border) transparent",
             }}
           >
-            {/* Header do sidebar com botão limpar */}
+            {/* Sidebar header with clear button */}
             <div
               className={`
                 flex items-center justify-between
@@ -442,7 +442,7 @@ export default function ProductsPage() {
               </button>
             </div>
 
-            {/* Filtro por categorias */}
+            {/* Category filter */}
             <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3 flex items-center gap-2">
                 <span>🏷</span> Categorias
@@ -497,7 +497,7 @@ export default function ProductsPage() {
               </ul>
             </div>
 
-            {/* Filtro por marca */}
+            {/* Brand filter */}
             {brands.length > 0 && (
               <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3 flex items-center gap-2">
@@ -552,7 +552,7 @@ export default function ProductsPage() {
               </div>
             )}
 
-            {/* Filtro por faixa de preço (slider) */}
+            {/* Price range filter (slider) */}
             <div className="px-4 py-5 border-b border-[var(--color-border)]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-4 flex items-center gap-2">
                 <span>💰</span> Price Range
@@ -591,7 +591,7 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Botão limpar (mobile) */}
+            {/* Clear button (mobile) */}
             <div className="px-4 py-4">
               <button
                 onClick={clearFilters}
@@ -610,10 +610,10 @@ export default function ProductsPage() {
           </aside>
 
           {/* ================================================================ */}
-          {/* ÁREA DE LISTAGEM DOS PRODUTOS */}
+          {/* PRODUCT LISTING AREA */}
           {/* ================================================================ */}
           <div className="flex-1 min-w-0">
-            {/* Barra de ordenação e filtro mobile */}
+            {/* Sort bar and mobile filter */}
             <div
               className={`
                 flex flex-col sm:flex-row sm:items-center justify-between gap-3
@@ -624,7 +624,7 @@ export default function ProductsPage() {
               `}
             >
               <div className="flex items-center gap-3">
-                {/* Botão para abrir sidebar no mobile */}
+                {/* Button to open the sidebar on mobile */}
                 <button
                   onClick={() => setSidebarOpen(true)}
                   className={`
@@ -644,7 +644,7 @@ export default function ProductsPage() {
                   )}
                 </button>
 
-                {/* Contador de resultados */}
+                {/* Result counter */}
                 <p className="text-sm font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
                   <span className="text-[var(--color-primary)]">📦</span>
                   {loading ? (
@@ -660,7 +660,7 @@ export default function ProductsPage() {
                 </p>
               </div>
 
-              {/* Seletor de ordenação */}
+              {/* Sort selector */}
               <div className="flex items-center gap-3">
                 <label className="text-sm font-semibold text-[var(--color-text-secondary)] whitespace-nowrap hidden sm:block">
                   Sort by:
@@ -697,7 +697,7 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Estado de erro */}
+            {/* Error state */}
             {error && (
               <div
                 className={`
@@ -733,7 +733,7 @@ export default function ProductsPage() {
               </div>
             )}
 
-            {/* Nenhum produto encontrado */}
+            {/* No products found */}
             {!loading && !error && products.length === 0 && (
               <div
                 className={`
@@ -757,7 +757,7 @@ export default function ProductsPage() {
               </div>
             )}
 
-            {/* Grid de produtos */}
+            {/* Product grid */}
             {!loading && !error && products.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                 {products.map((product, i) => (
@@ -766,7 +766,7 @@ export default function ProductsPage() {
               </div>
             )}
 
-            {/* Paginação */}
+            {/* Pagination */}
             {totalPages > 1 && !loading && (
               <div className="flex items-center justify-center gap-3 mt-10">
                 <button
@@ -832,16 +832,16 @@ export default function ProductsPage() {
       </div>
 
       {/* ================================================================ */}
-      {/* SIDEBAR MOBILE (OVERLAY) */}
+      {/* MOBILE SIDEBAR (OVERLAY) */}
       {/* ================================================================ */}
       {sidebarOpen && (
         <>
-          {/* Backdrop escuro */}
+          {/* Dark backdrop */}
           <div
             onClick={() => setSidebarOpen(false)}
             className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
           />
-          {/* Menu lateral */}
+          {/* Side menu */}
           <aside
             className={`
               fixed top-0 left-0 bottom-0 z-50 w-[300px]
@@ -853,7 +853,7 @@ export default function ProductsPage() {
             `}
             style={{ animation: "slideInLeft 0.3s ease" }}
           >
-            {/* Header do mobile */}
+            {/* Mobile header */}
             <div
               className={`
                 flex items-center justify-between
@@ -876,7 +876,7 @@ export default function ProductsPage() {
               </button>
             </div>
 
-            {/* Filtros (versão mobile) */}
+            {/* Filters (mobile version) */}
             <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3">
                 🏷 Categorias
@@ -911,7 +911,7 @@ export default function ProductsPage() {
               </ul>
             </div>
 
-            {/* Filtro por marca (mobile) */}
+            {/* Brand filter (mobile) */}
             {brands.length > 0 && (
               <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3">
@@ -948,7 +948,7 @@ export default function ProductsPage() {
               </div>
             )}
 
-            {/* Slider de preço (mobile) */}
+            {/* Price slider (mobile) */}
             <div className="px-4 py-5">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-4">
                 💰 Price Range
@@ -975,7 +975,7 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Botão limpar (mobile) */}
+            {/* Clear button (mobile) */}
             <div className="px-4 py-4 mt-auto border-t border-[var(--color-border)]">
               <button
                 onClick={() => {
@@ -991,7 +991,7 @@ export default function ProductsPage() {
         </>
       )}
 
-      {/* Estilos para animação do slide-in no mobile */}
+      {/* Styles for the slide-in animation on mobile */}
       <style jsx>{`
         @keyframes slideInLeft {
           from {
