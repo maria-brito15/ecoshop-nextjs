@@ -124,11 +124,11 @@
 
 ## Artigo XIV · Convenções de código e linguagem
 
-1. Linguagem ubíqua em **português** para domínio (entidades, services, mensagens), como já é hoje; termos técnicos de framework em inglês. O glossário fica em `docs/product/glossario.md`.
+1. **Inglês** é o idioma único do projeto: identificadores, arquivos e pastas, comentários, mensagens (log, erro, validação, interface), testes e documentação (ADR-0022). Ficam como estão, por serem contrato externo ou dado existente: caminhos e chaves JSON da API, modelos/campos/tabelas do banco, valores de enum, nomes próprios e os códigos de capacidade/IDs de requisito. O glossário fica em `docs/product/glossario.md`.
 2. Um componente/página não passa de ~300 linhas sem justificativa; páginas são compostas de componentes por capacidade.
 3. ESLint + Prettier obrigatórios no CI.
 
-**Por quê:** o código já é consistente no idioma; páginas de 900–1.500 linhas impedem testar e especificar por partes.
+**Por quê:** um único idioma deixa o código consistente e aberto a quem trabalha em inglês, sem quebrar o contrato externo; páginas de 900–1.500 linhas impedem testar e especificar por partes.
 **Verificação:** lint (CI); limite de tamanho como aviso.
 
 ## Artigo XV · Uso de agentes de IA

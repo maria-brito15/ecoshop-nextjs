@@ -1,6 +1,6 @@
 # CONT · Conteúdo institucional e educativo
 
-> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-10. ADRs: ADR-0014
+> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-10. ADRs: ADR-0022 (substitui o ADR-0014)
 
 ## Objetivo
 

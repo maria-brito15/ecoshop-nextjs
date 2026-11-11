@@ -18,7 +18,7 @@
 | [ADR-0011](docs\architecture\adr\0011-fotos-de-produto-no-filesystem-local-sem-metadados-no-b.md) | Fotos de produto no filesystem local, sem metadados no banco | Aceito |  |
 | [ADR-0012](docs\architecture\adr\0012-ia-em-duas-etapas-azure-custom-vision-classifica-e-gemi.md) | IA em duas etapas: Azure Custom Vision classifica e Gemini explica, com fallback estático | Inferido |  |
 | [ADR-0013](docs\architecture\adr\0013-entrega-por-imagem-docker-no-ghcr-io-e-vps-via-ssh-com-.md) | Entrega por imagem Docker no ghcr.io e VPS via SSH com Compose | Substituído | substituído por ADR-0019 |
-| [ADR-0014](docs\architecture\adr\0014-dominio-codigo-e-mensagens-em-portugues-termos-de-frame.md) | Domínio, código e mensagens em português; termos de framework em inglês | Inferido |  |
+| [ADR-0014](docs\architecture\adr\0014-dominio-codigo-e-mensagens-em-portugues-termos-de-frame.md) | Domínio, código e mensagens em português; termos de framework em inglês | Substituído | substituído por ADR-0022 |
 | [ADR-0015](docs\architecture\adr\0015-eslint-9-flat-config-e-prettier-no-lugar-de-next-lint.md) | ESLint 9 (flat config) e Prettier, no lugar de `next lint` | Aceito |  |
 | [ADR-0016](docs\architecture\adr\0016-testes-com-o-runner-nativo-do-node-via-tsx-contra-postg.md) | Testes com o runner nativo do Node (via tsx) contra Postgres e Redis reais | Aceito |  |
 | [ADR-0017](docs\architecture\adr\0017-autorizacao-decidida-no-handler-por-politica-declarada-.md) | Autorização decidida no handler por política declarada; middleware só filtra páginas e rotas só-admin | Aceito | substitui ADR-0008 |
@@ -26,3 +26,4 @@
 | [ADR-0019](docs\architecture\adr\0019-entrega-por-imagem-no-ghcr-com-compose-versionado-migrate-antes-saude-e-reversao.md) | Entrega por imagem no GHCR com compose versionado; migrations antes, verificação de saúde e reversão | Aceito | substitui ADR-0013 |
 | [ADR-0020](docs\architecture\adr\0020-redis-opcional-falha-rapida-rate-limit-em-memoria-sem-redis-e-saude-degradada.md) | Redis opcional com falha rápida, rate limit em memória sem Redis e saúde "degradada" | Aceito | substitui ADR-0010 |
 | [ADR-0021](docs\architecture\adr\0021-sessao-com-acesso-curto-e-renovacao-revogavel-no-redis.md) | Sessão com acesso curto (JWT, 15 min) e renovação opaca e revogável no Redis | Aceito | substitui ADR-0007 |
+| [ADR-0022](docs\architecture\adr\0022-english-as-the-single-project-language.md) | English as the single language of code, comments, messages and documentation | Aceito | substitui ADR-0014 |

@@ -1,27 +1,32 @@
-# EcoShop — contexto para o Claude
+# EcoShop — context for Claude
 
-Vitrine/catálogo de produtos sustentáveis (sem carrinho, pedido ou pagamento). Next.js 15 (App Router), React 19, TypeScript strict, Prisma 7 + Postgres, Redis, jose (JWT), Zod, Azure Custom Vision + Gemini.
+Showcase/catalog of sustainable products (no cart, order or payment). Next.js 15 (App Router), React 19, TypeScript strict, Prisma 7 + Postgres, Redis, jose (JWT), Zod, Azure Custom Vision + Gemini.
 
-## Fontes de verdade (leia antes de mudar comportamento)
-- Regras do projeto: `.specify/memory/constitution.md` (não repita aqui).
-- Comportamento atual por capacidade: `docs/capabilities/<cap>/spec.md` + `status.md`. Índice: `docs/capabilities/README.md`.
-- Decisões: `docs/architecture/adr/` (índice no README; pendentes em `pendentes.md`).
-- Contexto do sistema: `docs/product/`, `docs/architecture/overview.md`.
-- Mudanças em andamento ou passadas: `specs/NNN-*/` (Spec Kit; imutáveis após o merge).
-- Mapa código → capacidade e caminhos sensíveis → ADR: `sdd.config.json`.
+## Sources of truth (read before changing behavior)
+- Project rules: `.specify/memory/constitution.md` (do not repeat them here).
+- Current behavior per capability: `docs/capabilities/<cap>/spec.md` + `status.md`. Index: `docs/capabilities/README.md`.
+- Decisions: `docs/architecture/adr/` (index in the README; pending ones in `pendentes.md`).
+- System context: `docs/product/`, `docs/architecture/overview.md`.
+- Changes in progress or past: `specs/NNN-*/` (Spec Kit; immutable after the merge).
+- Code → capability map and sensitive paths → ADR: `sdd.config.json`.
 
-## Fluxo
-1. Classifique a trilha (completa / correção / correção com mudança de regra / sem comportamento) — ver `docs/guides/fluxo-sdd.md`.
-2. Trilha completa: `specs/NNN-*/{spec,plan,tasks}.md`, com aprovação do dono nos gates G1 (spec) e G2 (plano/ADR).
-3. Teste primeiro, com o ID no título: `test("REQ-XXX-NN: ...")`.
-4. Ao final: consolidar `spec.md`/`status.md` da capacidade.
+## Language (ADR-0022)
+- English is the single language: identifiers, files, comments, messages, tests and docs.
+- Kept as they are (external contract or existing data): API route paths and JSON keys (`/api/produtos`, `nome`, `preco`, …), Prisma models/fields and DB names, enum values (`CLIENTE`, `MARCA`, `ADMIN`, `PENDENTE`, …), proper nouns, and capability codes/requirement IDs (`REQ-AUTZ-07`).
+- UI copy is English for now; i18n comes later. Docs under `docs/` and `specs/` and the vocabulary read by `scripts/sdd/*` are still being migrated.
 
-## Comandos
-`npm run lint` · `npx tsc --noEmit` · `npm run test:file -- tests/integration/<cap>.test.ts` (um arquivo, saída curta) · `npm run test:quiet` (suíte toda, saída curta) · `npm test` (como no CI; precisa de Postgres e Redis; ver `docs/guides/rodar-e-testar.md`) · `npm run sdd:check` · `node scripts/sdd/impact-map.mjs --worktree`.
+## Flow
+1. Classify the track (full / fix / fix with a rule change / no behavior) — see `docs/guides/fluxo-sdd.md`.
+2. Full track: `specs/NNN-*/{spec,plan,tasks}.md`, with the owner's approval at gates G1 (spec) and G2 (plan/ADR).
+3. Test first, with the ID in the title: `test("REQ-XXX-NN: ...")`.
+4. At the end: consolidate the capability's `spec.md`/`status.md`.
 
-## Regras rápidas
-- Não invente fatos nem números; marque o que não sabe como ❔ e pergunte.
-- Preserve o comportamento atual salvo mudança aprovada em spec.
-- Handlers de API chamam `services/`, não `lib/db` direto; decisão de acesso fica no handler (ADR-0017).
-- Escreva docs em português. Não edite a Constitution nem ADR Aceito sem pedido explícito do dono.
-- Não leia `docs/discovery/` sem pedido (retrato congelado). Em arquivos grandes, use Grep e Read com offset/limit.
+## Commands
+`npm run lint` · `npx tsc --noEmit` · `npm run test:file -- tests/integration/<cap>.test.ts` (one file, short output) · `npm run test:quiet` (whole suite, short output) · `npm test` (as in CI; needs Postgres and Redis; see `docs/guides/rodar-e-testar.md`) · `npm run sdd:check` · `node scripts/sdd/impact-map.mjs --worktree`.
+
+## Quick rules
+- Do not invent facts or numbers; mark what you do not know as ❔ and ask.
+- Preserve current behavior unless a change is approved in a spec.
+- API handlers call `services/`, not `lib/db` directly; the access decision stays in the handler (ADR-0017).
+- Write code, comments and docs in English. Do not edit the Constitution or an Accepted ADR without an explicit request from the owner.
+- Do not read `docs/discovery/` unless asked (frozen snapshot). For large files, use Grep and Read with offset/limit.

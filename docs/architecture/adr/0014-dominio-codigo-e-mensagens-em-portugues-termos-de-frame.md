@@ -1,6 +1,7 @@
 # ADR-0014: Domínio, código e mensagens em português; termos de framework em inglês
 
-- Status: Inferido
+- Status: Substituído
+- Substituído por: ADR-0022
 - Data: desconhecida (sem histórico git no pacote analisado)
 - Decisores: desconhecido (decisão histórica)
 - Origem: inferida do código
