@@ -43,7 +43,7 @@
 ### D4. Deploy com ordem, saúde e reversão (REQ-OPS-10)
 
 - `scripts/deploy/deploy.sh` (POSIX, `set -eu`), executado no servidor com `APP_TAG`:
-  1. guarda a tag em uso (arquivo `.deploy/tag-atual` do servidor);
+  1. guarda a tag em uso (arquivo `.deploy/current-tag` do servidor);
   2. `pull` das imagens da app e do migrator;
   3. `run --rm migrate`; se falhar, **sai com erro sem tocar a app antiga**;
   4. `up -d --no-deps app` com a tag nova;

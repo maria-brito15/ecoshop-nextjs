@@ -1,7 +1,7 @@
 name: CI/CD
 
-# roda em todo push e pull request nas branches principais
-# PRs de forks também passam pelo CI, mas o job de docker não roda (sem acesso a secrets)
+# runs on every push and pull request on the main branches
+# PRs from forks also go through CI, but the docker job does not run (no access to secrets)
 on:
   push:
     branches: [main, develop]
@@ -10,18 +10,18 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # github.repository resolve para "usuario/ecoshop" — usado como nome da imagem no registry
+  # github.repository resolves to "user/ecoshop" — used as the image name in the registry
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   # --- 1. CI
-  # valida que o código compila e passa no lint antes de qualquer coisa
-  # roda em todo PR para dar feedback rápido antes do merge
+  # validates that the code compiles and passes lint before anything else
+  # runs on every PR to give quick feedback before the merge
   lint-and-build:
     name: Lint, Test & Build
     runs-on: ubuntu-latest
 
-    # Serviços reais para os testes de integração (Constitution, Art. II).
+    # Real services for the integration tests (Constitution, Art. II).
     services:
       postgres:
         image: postgres:16-alpine
@@ -54,7 +54,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          # Mesma versão do Dockerfile e do .nvmrc (Constitution, Art. XII.3)
+          # Same version as the Dockerfile and .nvmrc (Constitution, Art. XII.3)
           node-version-file: .nvmrc
           cache: npm
 
@@ -62,21 +62,21 @@ jobs:
         run: npm ci --frozen-lockfile
 
       - name: Generate Prisma Client
-        # o prisma client precisa existir para o tsc e o next build resolverem os imports
+        # the prisma client must exist so tsc and next build can resolve the imports
         run: npx prisma generate
 
       - name: Lint
-        # ESLint 9 (flat config); `next lint` está depreciado (ADR-0015).
-        # O teto de avisos só pode DESCER: ao corrigir avisos, reduza o número;
+        # ESLint 9 (flat config); `next lint` is deprecated (ADR-0015).
+        # The warning ceiling can only GO DOWN: when fixing warnings, lower the number;
         # novo aviso quebra o CI. Meta: 0 (REQ-OPS-20).
         run: npx eslint . --max-warnings 16
 
-      - name: Auditoria de dependências de produção
-        # REQ-OPS-20. Em 2026-11-11 a auditoria achou 15 vulnerabilidades (1 crítica em
-        # `next`, 11 altas), quase todas com correção sem quebra, mas a atualização
-        # troca muitas dependências e ainda não foi validada com a suíte completa.
+      - name: Production dependency audit
+        # REQ-OPS-20. On 2026-11-11 the audit found 15 vulnerabilities (1 critical in
+        # `next`, 11 high), almost all with a non-breaking fix, but the update
+        # changes many dependencies and has not yet been validated with the full suite.
         # Por isso NÃO bloqueia por enquanto (continue-on-error). Depois de atualizar,
-        # remova a linha `continue-on-error` para o gate passar a valer.
+        # remove the `continue-on-error` line so the gate takes effect.
         continue-on-error: true
         run: npm audit --omit=dev --audit-level=high
 
@@ -89,11 +89,11 @@ jobs:
       - name: Integration tests
         run: npm test
 
-      - name: SDD checks (specs, rastreabilidade, ADRs)
-        # spec-lint + trace-check + adr-index: a spec é executável em parte (Art. XVI)
+      - name: SDD checks (specs, traceability, ADRs)
+        # spec-lint + trace-check + adr-index: the spec is partly executable (Art. XVI)
         run: npm run sdd:check
 
-      - name: Impacto em capacidades e ADRs (falha se caminho sensível mudou sem citar o ADR no PR)
+      - name: Impact on capabilities and ADRs (fails if a sensitive path changed without citing the ADR in the PR)
         if: github.event_name == 'pull_request'
         run: node scripts/sdd/impact-map.mjs --base origin/${{ github.base_ref }} --exige-adr >> "$GITHUB_STEP_SUMMARY"
 
@@ -104,14 +104,14 @@ jobs:
           AZURE_VISION_ENDPOINT: https://placeholder.cognitiveservices.azure.com/
           AZURE_VISION_KEY: ci-placeholder
 
-      - name: Servidor recusa iniciar com JWT_SECRET inválido (REQ-OPS-06)
+      - name: Server refuses to start with an invalid JWT_SECRET (REQ-OPS-06)
         # usa o servidor standalone gerado pelo build acima
         run: node scripts/ops/check-boot.mjs
 
-      - name: Compose exige os segredos e é válido (REQ-OPS-07/08/11)
-        # valores descartáveis, só para validar a sintaxe; sem eles a validação deve FALHAR
+      - name: Compose requires the secrets and is valid (REQ-OPS-07/08/11)
+        # throwaway values, only to validate the syntax; without them the validation must FAIL
         env:
-          VARIAVEIS: >-
+          VARS: >-
             JWT_SECRET=x7Qm2LbR9vTn4KcE8wYpZa3JdHfUg6Nz
             POSTGRES_PASSWORD=pgci123 REDIS_PASSWORD=rdci123
             ADMIN_PASSWORD=AdminDeTeste-123 SEED_USER_PASSWORD=SeedDeTeste-123
@@ -119,19 +119,19 @@ jobs:
             NEXT_PUBLIC_SITE_URL=https://exemplo.test
         run: |
           set -eu
-          VAZIO="$(mktemp)"
-          for arquivos in "" "-f docker-compose.yml" "-f docker-compose.prod.yml"; do
-            # com as variáveis: válido
-            env -i PATH="$PATH" HOME="$HOME" $VARIAVEIS docker compose --env-file "$VAZIO" $arquivos config -q
-            # sem as variáveis: deve falhar
-            if env -i PATH="$PATH" HOME="$HOME" docker compose --env-file "$VAZIO" $arquivos config -q 2>/dev/null; then
-              echo "::error::compose ${arquivos:-base+override} subiu sem os segredos obrigatórios"
+          EMPTY="$(mktemp)"
+          for files in "" "-f docker-compose.yml" "-f docker-compose.prod.yml"; do
+            # with the variables: valid
+            env -i PATH="$PATH" HOME="$HOME" $VARS docker compose --env-file "$EMPTY" $files config -q
+            # without the variables: must fail
+            if env -i PATH="$PATH" HOME="$HOME" docker compose --env-file "$EMPTY" $files config -q 2>/dev/null; then
+              echo "::error::compose ${files:-base+override} started without the required secrets"
               exit 1
             fi
           done
 
-  # --- 2. build & push da imagem docker
-  # só roda em push — PRs não publicam imagem porque podem vir de forks sem acesso a secrets
+  # --- 2. build & push the docker image
+  # only runs on push — PRs do not publish an image because they may come from forks without access to secrets
   docker:
     name: Docker Build & Push
     runs-on: ubuntu-latest
@@ -139,15 +139,15 @@ jobs:
     if: github.event_name == 'push'
 
     outputs:
-      tag: ${{ steps.tag.outputs.valor }}
-      imagem: ${{ steps.tag.outputs.imagem }}
+      tag: ${{ steps.tag.outputs.value }}
+      image: ${{ steps.tag.outputs.image }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        # buildx habilita builds multi-plataforma e o cache do github actions (type=gha)
+        # buildx enables multi-platform builds and the github actions cache (type=gha)
         uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
@@ -155,29 +155,29 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          # GITHUB_TOKEN é gerado automaticamente pelo actions — não precisa configurar nenhum secret
+          # GITHUB_TOKEN is generated automatically by actions — no secret needs to be configured
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Definir tag e nome da imagem
+      - name: Define the image tag and name
         id: tag
-        # a tag é calculada UMA vez aqui e repassada ao job de deploy (REQ-OPS-10/11);
-        # o nome da imagem precisa estar em minúsculas para o ghcr.io
+        # the tag is computed ONCE here and passed on to the deploy job (REQ-OPS-10/11);
+        # the image name must be lowercase for ghcr.io
         run: |
-          echo "valor=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-          echo "imagem=${REGISTRY}/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+          echo "value=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "image=${REGISTRY}/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
       - name: Extract image metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ steps.tag.outputs.imagem }}
+          images: ${{ steps.tag.outputs.image }}
           tags: |
-            # sha-<commit> permite rastrear exatamente qual commit gerou cada imagem
-            type=raw,value=${{ steps.tag.outputs.valor }}
-            # tag latest só é atualizada em pushes na main, nunca em develop
+            # sha-<commit> lets you trace exactly which commit produced each image
+            type=raw,value=${{ steps.tag.outputs.value }}
+            # the latest tag is only updated on pushes to main, never on develop
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
-      - name: Build & Push (aplicação)
+      - name: Build & Push (application)
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -185,34 +185,34 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # cache-from/to reutiliza as camadas do build anterior armazenadas no github actions cache
-          # reduz o tempo de build significativamente quando só o código da app muda
+          # cache-from/to reuses the layers of the previous build stored in the github actions cache
+          # significantly reduces build time when only the app code changes
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Build & Push (migrations)
-        # o alvo "runner" não tem o CLI do Prisma; o deploy aplica as migrations com esta imagem
+        # the "runner" target has no Prisma CLI; the deploy applies the migrations with this image
         uses: docker/build-push-action@v6
         with:
           context: .
           target: migrator
           push: true
-          tags: ${{ steps.tag.outputs.imagem }}:${{ steps.tag.outputs.valor }}-migrator
+          tags: ${{ steps.tag.outputs.image }}:${{ steps.tag.outputs.value }}-migrator
           cache-from: type=gha,scope=migrator
           cache-to: type=gha,mode=max,scope=migrator
 
   # --- 3. CD — deploy no vps via ssh
-  # só executa em push na main — develop não deploya para produção automaticamente
-  # depende do job docker para garantir que a imagem já foi publicada no registry
+  # only runs on push to main — develop does not deploy to production automatically
+  # depends on the docker job to ensure the image has already been published to the registry
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: docker
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
-    # environment: production habilita proteções extras no github (ex: aprovação manual)
-    # e exibe a url do ambiente na interface do actions
-    # APP_URL deve ser configurado em: Settings → Environments → production → Variables
+    # environment: production enables extra protections on github (e.g. manual approval)
+    # and shows the environment url in the actions interface
+    # APP_URL must be configured in: Settings → Environments → production → Variables
     environment:
       name: production
       url: ${{ vars.APP_URL }}
@@ -221,17 +221,17 @@ jobs:
       SSH_HOST: ${{ secrets.SSH_HOST }}
       SSH_USER: ${{ secrets.SSH_USER }}
       TAG: ${{ needs.docker.outputs.tag }}
-      IMAGEM: ${{ needs.docker.outputs.imagem }}
+      IMAGE: ${{ needs.docker.outputs.image }}
 
     steps:
-      - name: Checkout (arquivos de deploy)
+      - name: Checkout (deploy files)
         uses: actions/checkout@v4
 
-      - name: Configurar SSH
-        # ssh/scp nativos do runner, sem action de terceiros na cadeia de entrega (REQ-OPS-10).
-        # SSH_KNOWN_HOSTS (saída de `ssh-keyscan <host>` conferida por uma pessoa) permite
-        # verificar a chave do servidor; sem ela o deploy falha em vez de confiar em qualquer host.
-        # A chave pública correspondente a SSH_PRIVATE_KEY precisa estar no authorized_keys do servidor.
+      - name: Configure SSH
+        # native ssh/scp from the runner, with no third-party action in the delivery chain (REQ-OPS-10).
+        # SSH_KNOWN_HOSTS (output of `ssh-keyscan <host>` checked by a person) allows
+        # verifying the server key; without it the deploy fails instead of trusting any host.
+        # The public key matching SSH_PRIVATE_KEY must be in the server's authorized_keys.
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
@@ -241,15 +241,15 @@ jobs:
           chmod 600 ~/.ssh/id_deploy
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
 
-      - name: Copiar compose e script de deploy
+      - name: Copy the compose file and deploy script
         run: |
           scp -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes -o BatchMode=yes \
             docker-compose.prod.yml scripts/deploy/deploy.sh \
             "$SSH_USER@$SSH_HOST:/opt/ecoshop/"
 
-      - name: Deploy (migra, sobe, verifica a saúde e reverte se falhar)
-        # o .env com os segredos fica só no servidor (/opt/ecoshop/.env), fora do repositório
+      - name: Deploy (migrates, starts, checks health and rolls back on failure)
+        # the .env with the secrets lives only on the server (/opt/ecoshop/.env), outside the repository
         run: |
           ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes -o BatchMode=yes \
             "$SSH_USER@$SSH_HOST" \
-            "cd /opt/ecoshop && ECOSHOP_IMAGE='$IMAGEM' APP_TAG='$TAG' sh ./deploy.sh"
+            "cd /opt/ecoshop && ECOSHOP_IMAGE='$IMAGE' APP_TAG='$TAG' sh ./deploy.sh"

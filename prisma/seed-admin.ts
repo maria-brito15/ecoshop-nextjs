@@ -42,7 +42,7 @@ import { requireSeedPassword } from "./seed-password";
 const ADMIN_CONFIG = {
   email: process.env.ADMIN_EMAIL || "admin@ecoshop.com",
   senha: requireSeedPassword("ADMIN_PASSWORD", process.env.ADMIN_PASSWORD),
-  nome: process.env.ADMIN_NAME || "Administrador EcoShop",
+  nome: process.env.ADMIN_NAME || "EcoShop Administrator",
   telefone: process.env.ADMIN_PHONE || "(11) 99999-8888",
 };
 
@@ -182,7 +182,7 @@ async function main() {
     await listAdmins();
 
     // The password is NEVER printed: Docker and CI logs are retained (REQ-OPS-09).
-    console.log("\n🔐 Administrador pronto.");
+    console.log("\n🔐 Administrator ready.");
     console.log(`   📧 Email: ${ADMIN_CONFIG.email}`);
     console.log("   🔑 Password: the one set in ADMIN_PASSWORD (not shown).");
     console.log("   Open the panel at /painel.\n");

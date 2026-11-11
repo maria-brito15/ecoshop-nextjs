@@ -1,77 +1,78 @@
 #!/bin/sh
 # =============================================================================
-# DEPLOY - ECOSHOP (executa NO SERVIDOR; REQ-OPS-10)
+# DEPLOY - ECOSHOP (runs ON THE SERVER; REQ-OPS-10)
 # =============================================================================
-# Publica a versão APP_TAG: baixa as imagens, aplica as migrations, sobe a app,
-# verifica a saúde e, se a verificação falhar, volta à versão anterior.
+# Publishes the APP_TAG version: pulls the images, applies the migrations,
+# starts the app, checks its health and, if the check fails, goes back to the
+# previous version.
 #
-# Uso (o job de deploy do CI faz isto por ssh):
+# Usage (the CI deploy job does this over ssh):
 #   APP_TAG=sha-1a2b3c4 ./deploy.sh
 #
-# Pré-requisitos no servidor, na mesma pasta deste script:
-#   docker-compose.prod.yml e um .env com as variáveis obrigatórias
-#   (ver o cabeçalho de docker-compose.prod.yml); curl instalado.
+# Prerequisites on the server, in the same folder as this script:
+#   docker-compose.prod.yml and a .env with the required variables
+#   (see the header of docker-compose.prod.yml); curl installed.
 #
-# Garantias e limites:
-# - Qualquer comando que falhe aborta o script (set -e).
-# - Se as migrations falharem, a app antiga NÃO é tocada.
-# - A reversão troca só a imagem da app. Ela NÃO desfaz migrations: por isso toda
-#   migration precisa ser compatível com a versão anterior da aplicação
-#   (adicione antes de remover).
-# - No primeiro deploy não há versão anterior: se a saúde falhar, o script sai
-#   com erro e deixa a app como está, para inspeção.
+# Guarantees and limits:
+# - Any command that fails aborts the script (set -e).
+# - If the migrations fail, the old app is NOT touched.
+# - The rollback swaps only the app image. It does NOT undo migrations: so every
+#   migration must be compatible with the previous version of the application
+#   (add before removing).
+# - On the first deploy there is no previous version: if the health check fails,
+#   the script exits with an error and leaves the app as it is, for inspection.
 # =============================================================================
 
 set -eu
 
-: "${APP_TAG:?defina APP_TAG com a tag da imagem, por exemplo sha-1a2b3c4}"
+: "${APP_TAG:?set APP_TAG to the image tag, for example sha-1a2b3c4}"
 
 cd "$(dirname "$0")"
 
 COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env"
-ARQUIVO_TAG_ATUAL=.deploy/tag-atual
-URL_SAUDE=http://127.0.0.1:3000/api/health
-TENTATIVAS=12   # 12 tentativas x 5 s = 60 s, acima do start_period de 40 s do healthcheck
-INTERVALO=5
+CURRENT_TAG_FILE=.deploy/current-tag
+HEALTH_URL=http://127.0.0.1:3000/api/health
+ATTEMPTS=12   # 12 attempts x 5 s = 60 s, above the 40 s start_period of the healthcheck
+INTERVAL=5
 
 mkdir -p .deploy
-TAG_ANTERIOR=""
-if [ -f "$ARQUIVO_TAG_ATUAL" ]; then
-  TAG_ANTERIOR="$(cat "$ARQUIVO_TAG_ATUAL")"
+PREVIOUS_TAG=""
+if [ -f "$CURRENT_TAG_FILE" ]; then
+  PREVIOUS_TAG="$(cat "$CURRENT_TAG_FILE")"
 fi
 
-echo "==> 1/4 baixando as imagens ($APP_TAG)"
+echo "==> 1/4 pulling the images ($APP_TAG)"
 $COMPOSE pull app migrate
 
-echo "==> 2/4 aplicando as migrations (a app antiga continua no ar)"
+echo "==> 2/4 applying the migrations (the old app keeps running)"
 $COMPOSE run --rm migrate
 
-echo "==> 3/4 subindo a aplicação nova"
+echo "==> 3/4 starting the new application"
 $COMPOSE up -d --no-deps app
 
-echo "==> 4/4 verificando a saúde em $URL_SAUDE"
-saudavel=0
-tentativa=0
-while [ "$tentativa" -lt "$TENTATIVAS" ]; do
-  if curl -fsS "$URL_SAUDE" >/dev/null 2>&1; then
-    saudavel=1
+echo "==> 4/4 checking health at $HEALTH_URL"
+healthy=0
+attempt=0
+while [ "$attempt" -lt "$ATTEMPTS" ]; do
+  if curl -fsS "$HEALTH_URL" >/dev/null 2>&1; then
+    healthy=1
     break
   fi
-  tentativa=$((tentativa + 1))
-  sleep "$INTERVALO"
+  attempt=$((attempt + 1))
+  sleep "$INTERVAL"
 done
 
-if [ "$saudavel" -ne 1 ]; then
-  echo "!! a aplicação não ficou saudável em $((TENTATIVAS * INTERVALO)) s" >&2
-  if [ -n "$TAG_ANTERIOR" ]; then
-    echo "!! revertendo para a versão anterior ($TAG_ANTERIOR)" >&2
-    APP_TAG="$TAG_ANTERIOR" $COMPOSE up -d --no-deps app
+if [ "$healthy" -ne 1 ]; then
+  echo "!! the application did not become healthy within $((ATTEMPTS * INTERVAL)) s" >&2
+  if [ -n "$PREVIOUS_TAG" ]; then
+    echo "!! rolling back to the previous version ($PREVIOUS_TAG)" >&2
+    APP_TAG="$PREVIOUS_TAG" $COMPOSE up -d --no-deps app
   else
-    echo "!! não há versão anterior para voltar (primeiro deploy)" >&2
+    echo "!! there is no previous version to go back to (first deploy)" >&2
   fi
   exit 1
 fi
 
-echo "$APP_TAG" > "$ARQUIVO_TAG_ATUAL"
+echo "$APP_TAG" > "$CURRENT_TAG_FILE"
 docker image prune -f >/dev/null
-echo "==> deploy concluído: $APP_TAG"
+echo "==> deploy finished: $APP_TAG"

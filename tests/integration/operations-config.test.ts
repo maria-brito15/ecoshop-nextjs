@@ -99,12 +99,12 @@ test("REQ-OPS-10: the script applies migrations before starting the app, checks 
   const start = DEPLOY.indexOf("up -d --no-deps app");
   const health = DEPLOY.indexOf("curl ");
   const revert = DEPLOY.lastIndexOf("up -d --no-deps app");
-  assert.match(DEPLOY, /URL_SAUDE=http:\/\/127\.0\.0\.1:3000\/api\/health/);
+  assert.match(DEPLOY, /HEALTH_URL=http:\/\/127\.0\.0\.1:3000\/api\/health/);
   assert.ok(migrate >= 0 && start >= 0 && health >= 0, "script steps are missing");
   assert.ok(migrate < start, "migrations must run before starting the app");
   assert.ok(start < health, "health is checked after starting the app");
   assert.ok(revert > health, "the rollback comes after the health check");
-  assert.match(DEPLOY, /APP_TAG="\$TAG_ANTERIOR"/);
+  assert.match(DEPLOY, /APP_TAG="\$PREVIOUS_TAG"/);
   assert.match(DEPLOY, /exit 1/);
 });
 

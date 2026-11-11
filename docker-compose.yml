@@ -1,50 +1,50 @@
 # =============================================================================
-# DOCKER COMPOSE - ECOSHOP (base e desenvolvimento)
+# DOCKER COMPOSE - ECOSHOP (base and development)
 # =============================================================================
-# Serviços:
-# - app: aplicação Next.js (build local)
-# - postgres: banco de dados PostgreSQL
-# - redis: cache e rate limiting (com senha)
-# - migrate: job único de migrations (executa antes do app)
-# - seed: job único que cria o ADMIN (prisma/seed-admin.ts), após o migrate
+# Services:
+# - app: Next.js application (local build)
+# - postgres: PostgreSQL database
+# - redis: cache and rate limiting (with a password)
+# - migrate: one-off migrations job (runs before the app)
+# - seed: one-off job that creates the ADMIN (prisma/seed-admin.ts), after migrate
 #
-# Em desenvolvimento o Docker Compose também carrega, sozinho,
-# docker-compose.override.yml: ele publica as portas do banco e do Redis em
-# 127.0.0.1 e acrescenta o seed de demonstração (REQ-OPS-08/09).
-# Para publicar em servidor use docker-compose.prod.yml (REQ-OPS-11).
+# In development Docker Compose also loads, on its own,
+# docker-compose.override.yml: it publishes the database and Redis ports on
+# 127.0.0.1 and adds the demo seed (REQ-OPS-08/09).
+# To publish on a server use docker-compose.prod.yml (REQ-OPS-11).
 #
-# Como usar:
-#   cp .env.example .env     # e preencha as variáveis obrigatórias
+# How to use:
+#   cp .env.example .env     # and fill in the required variables
 #   docker compose up --build
 #
-# Variáveis OBRIGATÓRIAS (a subida falha nomeando a que faltar; REQ-OPS-07):
-#   JWT_SECRET         32+ caracteres aleatórios, sem valor-exemplo
-#   POSTGRES_PASSWORD  senha do banco (use só letras e números: vai dentro de uma URL)
-#   REDIS_PASSWORD     senha do Redis (idem)
-#   ADMIN_PASSWORD     senha do ADMIN criado pelo seed (12+ caracteres)
-# Opcionais: ADMIN_EMAIL, ADMIN_NAME, GEMINI_KEY, AZURE_VISION_*, AI_CONFIDENCE_THRESHOLD
+# REQUIRED variables (startup fails naming the missing one; REQ-OPS-07):
+#   JWT_SECRET         32+ random characters, no example value
+#   POSTGRES_PASSWORD  database password (use only letters and numbers: it goes inside a URL)
+#   REDIS_PASSWORD     Redis password (same)
+#   ADMIN_PASSWORD     password of the ADMIN created by the seed (12+ characters)
+# Optional: ADMIN_EMAIL, ADMIN_NAME, GEMINI_KEY, AZURE_VISION_*, AI_CONFIDENCE_THRESHOLD
 # =============================================================================
 
 services:
   # ---------------------------------------------------------------------------
-  # SERVIÇO: APLICAÇÃO NEXT.JS
+  # SERVICE: NEXT.JS APPLICATION
   # ---------------------------------------------------------------------------
   app:
     build:
       context: .
       dockerfile: Dockerfile
-      target: runner # Usa o estágio runner (produção)
+      target: runner # Uses the runner stage (production)
     container_name: ecoshop-app
     ports:
       - "3000:3000"
     environment:
       HOSTNAME: "0.0.0.0"
 
-      DATABASE_URL: postgresql://ecoshop:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@postgres:5432/ecoshop
-      REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD no .env}@redis:6379
+      DATABASE_URL: postgresql://ecoshop:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/ecoshop
+      REDIS_URL: redis://:${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}@redis:6379
 
-      # Em produção a aplicação recusa iniciar sem um segredo forte (REQ-OPS-06).
-      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env (32+ caracteres aleatórios)}
+      # In production the application refuses to start without a strong secret (REQ-OPS-06).
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (32+ random characters)}
 
       GEMINI_KEY: ${GEMINI_KEY}
 
@@ -79,14 +79,14 @@ services:
       start_period: 40s
 
   # ---------------------------------------------------------------------------
-  # SERVIÇO: POSTGRESQL (sem porta publicada no host; ver o override de dev)
+  # SERVICE: POSTGRESQL (no port published on the host; see the dev override)
   # ---------------------------------------------------------------------------
   postgres:
     image: postgres:16-alpine@sha256:aa6cb33cf4c19c765cefcf48d96176258800870a9a1e930ad126200f9d825139
     container_name: ecoshop-postgres
     environment:
       POSTGRES_USER: ecoshop
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ecoshop
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -98,14 +98,14 @@ services:
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
-  # SERVIÇO: REDIS (com senha; sem porta publicada no host)
+  # SERVICE: REDIS (with a password; no port published on the host)
   # ---------------------------------------------------------------------------
   redis:
     image: redis:7-alpine@sha256:7b1753b4c5ad8458906c272a8132b8c15f5557b000379eb115fb239706a384b7
     container_name: ecoshop-redis
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?defina REDIS_PASSWORD no .env}"]
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}"]
     environment:
-      # O redis-cli lê a senha desta variável (evita a senha na linha de comando).
+      # redis-cli reads the password from this variable (keeps it off the command line).
       REDISCLI_AUTH: ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
@@ -126,28 +126,28 @@ services:
       target: migrator
     container_name: ecoshop-migrate
     environment:
-      DATABASE_URL: postgresql://ecoshop:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@postgres:5432/ecoshop
+      DATABASE_URL: postgresql://ecoshop:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/ecoshop
     depends_on:
       postgres:
         condition: service_healthy
     restart: "no"
 
   # ---------------------------------------------------------------------------
-  # JOB: CRIA O ADMIN (REQ-OPS-02/09)
-  # Sem senha embutida: ADMIN_PASSWORD é obrigatória. Este seed cria ou ATUALIZA
-  # o ADMIN de ADMIN_EMAIL, redefinindo a senha para o valor do .env a cada subida.
+  # JOB: CREATES THE ADMIN (REQ-OPS-02/09)
+  # No embedded password: ADMIN_PASSWORD is required. This seed creates or UPDATES
+  # the ADMIN of ADMIN_EMAIL, resetting the password to the .env value on every start.
   # ---------------------------------------------------------------------------
   seed:
     build:
       context: .
       dockerfile: Dockerfile
-      target: migrator # Reutiliza o estágio migrator (tem tsx e prisma)
+      target: migrator # Reuses the migrator stage (has tsx and prisma)
     container_name: ecoshop-seed
     environment:
-      DATABASE_URL: postgresql://ecoshop:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@postgres:5432/ecoshop
+      DATABASE_URL: postgresql://ecoshop:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/ecoshop
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@ecoshop.com}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?defina ADMIN_PASSWORD no .env (12+ caracteres)}
-      ADMIN_NAME: ${ADMIN_NAME:-Administrador EcoShop}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env (12+ characters)}
+      ADMIN_NAME: ${ADMIN_NAME:-EcoShop Administrator}
     command: npx tsx prisma/seed-admin.ts
     depends_on:
       migrate:

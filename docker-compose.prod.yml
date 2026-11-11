@@ -1,39 +1,39 @@
 # =============================================================================
-# DOCKER COMPOSE - PUBLICAÇÃO (servidor)
+# DOCKER COMPOSE - PUBLISHING (server)
 # =============================================================================
-# Usa as imagens publicadas no GHCR pelo CI (REQ-OPS-11); nada é construído no
-# servidor. Use SEMPRE com -f (assim o override de desenvolvimento não entra):
+# Uses the images published to GHCR by CI (REQ-OPS-11); nothing is built on the
+# server. ALWAYS use it with -f (so the development override is not included):
 #
 #   docker compose -f docker-compose.prod.yml --env-file .env ...
 #
-# O deploy normal é feito por scripts/deploy/deploy.sh (migra, sobe, verifica a
-# saúde e reverte se falhar). Variáveis OBRIGATÓRIAS, definidas no .env do
-# servidor (nunca no repositório):
-#   ECOSHOP_IMAGE      ex.: ghcr.io/<dono>/<repositorio> (minúsculas)
-#   APP_TAG            tag da imagem, ex.: sha-1a2b3c4 (o script de deploy a define)
-#   JWT_SECRET         32+ caracteres aleatórios; sem isso a app não inicia
-#   POSTGRES_PASSWORD, REDIS_PASSWORD   só letras e números (vão dentro de URLs)
-#   ADMIN_PASSWORD     12+ caracteres (usada só no passo único de bootstrap)
+# The normal deploy is done by scripts/deploy/deploy.sh (migrates, starts, checks
+# health and rolls back on failure). REQUIRED variables, set in the server's .env
+# (never in the repository):
+#   ECOSHOP_IMAGE      e.g.: ghcr.io/<owner>/<repository> (lowercase)
+#   APP_TAG            image tag, e.g.: sha-1a2b3c4 (the deploy script sets it)
+#   JWT_SECRET         32+ random characters; without it the app does not start
+#   POSTGRES_PASSWORD, REDIS_PASSWORD   only letters and numbers (they go inside URLs)
+#   ADMIN_PASSWORD     12+ characters (used only in the one-off bootstrap step)
 #
-# A porta da app só escuta em 127.0.0.1: o TLS termina num proxy reverso que
-# fica FORA deste compose e aponta para 127.0.0.1:3000. Postgres e Redis não
-# publicam porta alguma.
+# The app port only listens on 127.0.0.1: TLS terminates at a reverse proxy that
+# lives OUTSIDE this compose and points to 127.0.0.1:3000. Postgres and Redis
+# publish no port at all.
 #
-# O catálogo começa vazio. Para criar o ADMIN (passo único, a pedido):
+# The catalog starts empty. To create the ADMIN (one-off step, on demand):
 #   docker compose -f docker-compose.prod.yml --profile bootstrap run --rm seed-admin
 # =============================================================================
 
 services:
   app:
-    image: ${ECOSHOP_IMAGE:?defina ECOSHOP_IMAGE no .env}:${APP_TAG:?defina APP_TAG}
+    image: ${ECOSHOP_IMAGE:?set ECOSHOP_IMAGE in .env}:${APP_TAG:?set APP_TAG}
     container_name: ecoshop-app
     ports:
       - "127.0.0.1:3000:3000"
     environment:
       HOSTNAME: "0.0.0.0"
-      DATABASE_URL: postgresql://ecoshop:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@postgres:5432/ecoshop
-      REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD no .env}@redis:6379
-      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env (32+ caracteres aleatórios)}
+      DATABASE_URL: postgresql://ecoshop:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/ecoshop
+      REDIS_URL: redis://:${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}@redis:6379
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (32+ random characters)}
       GEMINI_KEY: ${GEMINI_KEY}
       AZURE_VISION_ENDPOINT: ${AZURE_VISION_ENDPOINT}
       AZURE_VISION_KEY: ${AZURE_VISION_KEY}
@@ -66,7 +66,7 @@ services:
     container_name: ecoshop-postgres
     environment:
       POSTGRES_USER: ecoshop
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ecoshop
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -80,7 +80,7 @@ services:
   redis:
     image: redis:7-alpine@sha256:7b1753b4c5ad8458906c272a8132b8c15f5557b000379eb115fb239706a384b7
     container_name: ecoshop-redis
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?defina REDIS_PASSWORD no .env}"]
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}"]
     environment:
       REDISCLI_AUTH: ${REDIS_PASSWORD}
     volumes:
@@ -92,27 +92,27 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # Job de migrations: imagem do alvo "migrator" do Dockerfile (tem o CLI do Prisma).
+  # Migrations job: image of the Dockerfile "migrator" target (has the Prisma CLI).
   migrate:
-    image: ${ECOSHOP_IMAGE:?defina ECOSHOP_IMAGE no .env}:${APP_TAG:?defina APP_TAG}-migrator
+    image: ${ECOSHOP_IMAGE:?set ECOSHOP_IMAGE in .env}:${APP_TAG:?set APP_TAG}-migrator
     container_name: ecoshop-migrate
     environment:
-      DATABASE_URL: postgresql://ecoshop:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@postgres:5432/ecoshop
+      DATABASE_URL: postgresql://ecoshop:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/ecoshop
     depends_on:
       postgres:
         condition: service_healthy
     restart: "no"
 
-  # Passo único e explícito (perfil "bootstrap"): não roda em `up` nem no deploy.
+  # One-off, explicit step ("bootstrap" profile): does not run on `up` or on deploy.
   seed-admin:
-    image: ${ECOSHOP_IMAGE:?defina ECOSHOP_IMAGE no .env}:${APP_TAG:?defina APP_TAG}-migrator
+    image: ${ECOSHOP_IMAGE:?set ECOSHOP_IMAGE in .env}:${APP_TAG:?set APP_TAG}-migrator
     container_name: ecoshop-seed-admin
     profiles: ["bootstrap"]
     environment:
-      DATABASE_URL: postgresql://ecoshop:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@postgres:5432/ecoshop
+      DATABASE_URL: postgresql://ecoshop:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/ecoshop
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@ecoshop.com}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?defina ADMIN_PASSWORD no .env (12+ caracteres)}
-      ADMIN_NAME: ${ADMIN_NAME:-Administrador EcoShop}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env (12+ characters)}
+      ADMIN_NAME: ${ADMIN_NAME:-EcoShop Administrator}
     command: npx tsx prisma/seed-admin.ts
     depends_on:
       postgres:
