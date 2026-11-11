@@ -1,24 +1,22 @@
 // app/api/auth/route.ts
 
 /**
- * ============================================================================
- * AUTH API ROUTES - LOGIN E LOGOUT
- * ============================================================================
+ * AUTH API ROUTES - LOGIN AND LOGOUT
+ *
  * POST /api/auth - Login
- * DELETE /api/auth - Logout (revoga a renovação e remove os cookies)
+ * DELETE /api/auth - Logout (revokes the refresh token and removes the cookies)
  *
- * Fluxo de login:
- * 1. Rate limiting por IP (10 tentativas/minuto)
- * 2. Validação do corpo (email + senha)
- * 3. `verificarCredenciais`: bcrypt SEMPRE executado, com ou sem conta (REQ-AUTH-23)
- * 4. `iniciarSessao`: JWT de acesso (15 min) + token de renovação no Redis (ADR-0021)
- * 5. Cookies httpOnly `token` e `refresh`
+ * Login flow:
+ * 1. Rate limiting by IP (10 attempts/minute)
+ * 2. Body validation (email + password)
+ * 3. `verifyCredentials`: bcrypt ALWAYS runs, with or without an account (REQ-AUTH-23)
+ * 4. `startSession`: access JWT (15 min) + refresh token in Redis (ADR-0021)
+ * 5. httpOnly cookies `token` and `refresh`
  *
- * Sem Redis o login continua: só não há token de renovação (REQ-AUTH-19).
+ * Without Redis the login still works: there is just no refresh token (REQ-AUTH-19).
  *
- * @see services/session.service.ts - Sessão
+ * @see services/session.service.ts - Session
  * @see lib/rate-limit.ts - Rate limiting
- * ============================================================================
  */
 
 export const dynamic = "force-dynamic";
@@ -36,15 +34,15 @@ const ATTEMPT_LIMIT = 10;
 const WINDOW_SECONDS = 60;
 
 /**
- * POST /api/auth - Login de usuário
+ * POST /api/auth - User login
  *
  * @body { email: string, senha: string }
- * @returns { ok: true, usuario: { id, email, tipo } } + cookies httpOnly
- * @status 200 - Login bem-sucedido
- * @status 400 - Dados inválidos (email ou senha faltando)
- * @status 401 - Credenciais inválidas
- * @status 429 - Muitas tentativas (rate limit)
- * @status 500 - Erro interno no servidor
+ * @returns { ok: true, usuario: { id, email, tipo } } + httpOnly cookies
+ * @status 200 - Login successful
+ * @status 400 - Invalid data (email or password missing)
+ * @status 401 - Invalid credentials
+ * @status 429 - Too many attempts (rate limit)
+ * @status 500 - Internal server error
  */
 export async function POST(req: NextRequest) {
   try {
@@ -89,12 +87,12 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * DELETE /api/auth - Logout de usuário
+ * DELETE /api/auth - User logout
  *
- * Revoga o token de renovação (REQ-AUTH-20) e remove os dois cookies.
+ * Revokes the refresh token (REQ-AUTH-20) and removes both cookies.
  *
  * @returns { ok: true }
- * @status 200 - Logout bem-sucedido
+ * @status 200 - Logout successful
  */
 export async function DELETE(req: NextRequest) {
   await endSession(req.cookies.get(REFRESH_COOKIE)?.value);

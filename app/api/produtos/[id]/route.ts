@@ -1,17 +1,15 @@
 // app/api/produtos/[id]/route.ts
 
 /**
- * ============================================================================
- * PRODUTO BY ID API ROUTES
- * ============================================================================
- * Endpoints para operações em um produto específico.
+ * PRODUCT BY ID API ROUTES
  *
- * GET /api/produtos/{id} - Busca produto por ID (público)
- * PUT /api/produtos/{id} - Atualiza produto (requer ADMIN)
- * DELETE /api/produtos/{id} - Deleta produto (requer ADMIN)
+ * Endpoints for operations on a specific product.
  *
- * @see services/product.service.ts - Lógica de negócio
- * ============================================================================
+ * GET /api/produtos/{id} - Fetch product by ID (public)
+ * PUT /api/produtos/{id} - Update product (requires ADMIN)
+ * DELETE /api/produtos/{id} - Delete product (requires ADMIN)
+ *
+ * @see services/product.service.ts - Business logic
  */
 
 export const dynamic = "force-dynamic";
@@ -28,13 +26,13 @@ import {
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/produtos/{id} - Busca produto por ID
+ * GET /api/produtos/{id} - Fetch product by ID
  *
- * @param id - ID do produto na URL
- * @returns { produto: Produto }
- * @status 200 - Produto encontrado
- * @status 404 - Produto não existe
- * @status 500 - Erro ao buscar produto
+ * @param id - Product ID in the URL
+ * @returns { produto: Product }
+ * @status 200 - Product found
+ * @status 404 - Product does not exist
+ * @status 500 - Error fetching product
  */
 export async function GET(
   _req: NextRequest,
@@ -52,19 +50,19 @@ export async function GET(
 }
 
 /**
- * PUT /api/produtos/{id} - Atualiza produto
+ * PUT /api/produtos/{id} - Update product
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
- * @param id - ID do produto na URL
+ * @param id - Product ID in the URL
  * @body { nome?: string, descricao?: string, preco?: number, categoriaId?: number, marcaId?: number, certificadoIds?: number[] }
- * @returns { produto: Produto }
- * @status 200 - Produto atualizado
- * @status 400 - Dados inválidos
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 404 - Produto não existe
- * @status 500 - Erro ao atualizar produto
+ * @returns { produto: Product }
+ * @status 200 - Product updated
+ * @status 400 - Invalid data
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 404 - Product does not exist
+ * @status 500 - Error updating product
  */
 export async function PUT(
   req: NextRequest,
@@ -90,17 +88,18 @@ export async function PUT(
 }
 
 /**
- * DELETE /api/produtos/{id} - Deleta produto
+ * DELETE /api/produtos/{id} - Delete product
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
- * @param id - ID do produto na URL
+ * @param id - Product ID in the URL
  * @returns { ok: true }
- * @status 200 - Produto deletado
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 404 - Produto não existe
- * @status 500 - Erro ao deletar produto
+ * @status 200 - Product deleted
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 404 - Product does not exist
+ * @status 409 - Product has linked certificates (REQ-PROD-07)
+ * @status 500 - Error deleting product
  */
 export async function DELETE(
   req: NextRequest,

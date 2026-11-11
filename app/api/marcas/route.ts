@@ -1,19 +1,17 @@
 // app/api/marcas/route.ts
 
 /**
- * ============================================================================
- * MARCAS API ROUTES
- * ============================================================================
- * Endpoints para gerenciamento de marcas.
+ * BRANDS API ROUTES
  *
- * GET /api/marcas - Lista todas as marcas (público)
- * POST /api/marcas - Cria nova marca (requer ADMIN)
+ * Endpoints for managing brands.
  *
- * Marcas representam fabricantes/empresas parceiras.
- * Cada marca está associada a um usuário do tipo MARCA ou ADMIN.
+ * GET /api/marcas - List all brands (public)
+ * POST /api/marcas - Create a new brand (requires ADMIN)
  *
- * @see services/brand.service.ts - Lógica de negócio
- * ============================================================================
+ * Brands represent partner manufacturers/companies.
+ * Each brand is associated with a user of type MARCA or ADMIN.
+ *
+ * @see services/brand.service.ts - Business logic
  */
 
 export const dynamic = "force-dynamic";
@@ -25,11 +23,11 @@ import { listBrands, createBrand } from "@/services/brand.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/marcas - Lista todas as marcas
+ * GET /api/marcas - List all brands
  *
- * @returns { marcas: Marca[] }
- * @status 200 - Lista retornada com sucesso
- * @status 500 - Erro ao buscar marcas
+ * @returns { marcas: Brand[] }
+ * @status 200 - List returned successfully
+ * @status 500 - Error fetching brands
  */
 export async function GET() {
   try {
@@ -41,17 +39,17 @@ export async function GET() {
 }
 
 /**
- * POST /api/marcas - Cria nova marca
+ * POST /api/marcas - Create a new brand
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
  * @body { nome: string, descricao?: string, usuarioId: number }
- * @returns { marca: Marca }
- * @status 201 - Marca criada
- * @status 400 - Dados inválidos
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 500 - Erro ao criar marca
+ * @returns { marca: Brand }
+ * @status 201 - Brand created
+ * @status 400 - Invalid data
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 500 - Error creating brand
  */
 export async function POST(req: NextRequest) {
   const authError = await requireAdmin(req);

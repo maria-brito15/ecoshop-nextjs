@@ -1,25 +1,23 @@
 // app/api/auth/refresh/route.ts
 
 /**
- * ============================================================================
- * AUTH REFRESH API ROUTE - RENOVAÇÃO DA SESSÃO (ADR-0021)
- * ============================================================================
- * POST /api/auth/refresh        - Renova a sessão (usado pelo front-end; JSON)
- * GET  /api/auth/refresh?next=  - Renova e REDIRECIONA (usado pelo middleware
- *                                 quando uma navegação de página chega com o
- *                                 acesso expirado e a renovação ainda válida)
+ * AUTH REFRESH API ROUTE - SESSION RENEWAL (ADR-0021)
  *
- * Com cookie `refresh` (REQ-AUTH-19):
- * - o token é GASTO (uso único) e um par novo é emitido, com o papel relido do banco;
- * - token inválido, expirado, já usado ou de usuário excluído → 401 e cookies removidos;
- * - Redis indisponível → 503 (a renovação é negada; o usuário entra de novo).
+ * POST /api/auth/refresh        - Renews the session (used by the front end; JSON)
+ * GET  /api/auth/refresh?next=  - Renews and REDIRECTS (used by the middleware
+ *                                 when a page navigation arrives with an
+ *                                 expired access token and a still-valid refresh token)
  *
- * Sem cookie `refresh` (sessões anteriores ao ADR-0021, ou abertas sem Redis):
- * mantém o comportamento antigo — com um acesso válido, reemite o JWT se o papel
- * do usuário mudou no banco.
+ * With the `refresh` cookie (REQ-AUTH-19):
+ * - the token is SPENT (single use) and a new pair is issued, with the role reread from the database;
+ * - invalid, expired, already-used token or one from a deleted user → 401 and cookies removed;
+ * - Redis unavailable → 503 (refresh is denied; the user signs in again).
+ *
+ * Without the `refresh` cookie (sessions from before ADR-0021, or opened without Redis):
+ * keeps the old behavior — with a valid access token, reissues the JWT if the user's
+ * role changed in the database.
  *
  * @see services/session.service.ts
- * ============================================================================
  */
 
 export const dynamic = "force-dynamic";
@@ -39,7 +37,7 @@ import { localPathOrRoot } from "@/lib/http/next-url";
 import { getIdentity } from "@/services/user.service";
 import { refreshSession, type IssuedSession } from "@/services/session.service";
 
-/** Cookies da renovação concluída. */
+/** Cookies of the completed renewal. */
 function applySession(
   res: NextResponse,
   session: IssuedSession,
@@ -52,10 +50,10 @@ function applySession(
  * POST /api/auth/refresh
  *
  * @returns { ok: true, tipo }
- * @status 200 - Sessão renovada (ou ainda válida, no modo antigo)
- * @status 401 - Sem sessão, ou renovação inválida
- * @status 404 - Usuário da sessão não existe mais (modo antigo)
- * @status 503 - Renovação indisponível (Redis fora)
+ * @status 200 - Session renewed (or still valid, in old mode)
+ * @status 401 - No session, or invalid refresh
+ * @status 404 - Session user no longer exists (old mode)
+ * @status 503 - Refresh unavailable (Redis down)
  */
 export async function POST(req: NextRequest) {
   try {
@@ -79,7 +77,7 @@ export async function POST(req: NextRequest) {
       return res;
     }
 
-    // Modo antigo: sem token de renovação.
+    // Old mode: no refresh token.
     const session = await getSession(req);
     if (!session) return ERRORS.unauthorized();
 
@@ -100,10 +98,10 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * GET /api/auth/refresh?next=/caminho
+ * GET /api/auth/refresh?next=/path
  *
- * Renova e redireciona para `next` (só caminho local; REQ-AUTH-17). Se a renovação
- * falha, remove os cookies e leva ao login, com `next` preservado.
+ * Renews and redirects to `next` (local path only; REQ-AUTH-17). If the renewal
+ * fails, removes the cookies and goes to login, with `next` preserved.
  */
 export async function GET(req: NextRequest) {
   const destination = localPathOrRoot(req.nextUrl.searchParams.get("next"));

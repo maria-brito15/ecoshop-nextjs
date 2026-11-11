@@ -1,33 +1,31 @@
 // app/api/auth/me/route.ts
 
 /**
- * ============================================================================
- * AUTH ME API ROUTE - USUÁRIO ATUAL
- * ============================================================================
- * Endpoint para obter os dados do usuário atualmente autenticado.
+ * AUTH ME API ROUTE - CURRENT USER
  *
- * GET /api/auth/me - Retorna dados do usuário da sessão atual
+ * Endpoint to get the data of the currently authenticated user.
  *
- * Fluxo:
- * 1. Extrai sessão do cookie via getSession()
- * 2. Se não autenticado → retorna 401 com { usuario: null }
- * 3. Busca usuário no banco (com cache via Redis)
- * 4. Retorna dados públicos do usuário (exclui senha)
+ * GET /api/auth/me - Returns the current session user's data
  *
- * Cache: 1 minuto (TTL.USUARIO)
- * Chave: "usuarios:me:{id}"
+ * Flow:
+ * 1. Extracts the session from the cookie via getSession()
+ * 2. If not authenticated → returns 401 with { usuario: null }
+ * 3. Fetches the user from the database (with a Redis cache)
+ * 4. Returns the user's public data (excludes the password)
  *
- * Uso no frontend:
+ * Cache: 1 minute (TTL.USER)
+ * Key: "users:me:{id}"
+ *
+ * Usage in the frontend:
  * ```ts
  * const { data } = useFetch<AuthMeResponse>("/api/auth/me");
  * if (data?.usuario) {
- *   // Usuário está logado
+ *   // User is signed in
  * }
  * ```
  *
  * @see lib/auth/jwt.ts - getSession()
- * @see lib/cache - comCache()
- * ============================================================================
+ * @see lib/cache - withCache()
  */
 
 export const dynamic = "force-dynamic";
@@ -38,11 +36,11 @@ import { ERRORS } from "@/lib/http/responses";
 import { getSessionProfile } from "@/services/user.service";
 
 /**
- * GET /api/auth/me - Obtém usuário atual
+ * GET /api/auth/me - Gets the current user
  *
- * @returns { usuario: UsuarioResumido | null }
- * @status 200 - Sempre retorna 200 com usuario: null se não autenticado
- * @status 401 - Retornado quando não autenticado (mas com corpo { usuario: null })
+ * @returns { usuario: UserSummary | null }
+ * @status 200 - Always returns 200 with usuario: null if not authenticated
+ * @status 401 - Returned when not authenticated (but with the body { usuario: null })
  */
 export async function GET(req: NextRequest) {
   const session = await getSession(req);

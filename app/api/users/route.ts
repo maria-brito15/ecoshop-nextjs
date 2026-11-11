@@ -1,27 +1,25 @@
 // app/api/users/route.ts
 
 /**
- * ============================================================================
- * USERS API ROUTE - REGISTRO PÚBLICO
- * ============================================================================
- * Endpoint para registro público de novos usuários.
+ * USERS API ROUTE - PUBLIC REGISTRATION
  *
- * POST /api/users - Cria nova conta de usuário (público)
+ * Endpoint for public registration of new users.
  *
- * Diferencia do POST /api/usuarios (admin):
- * - Este é público (qualquer pessoa pode criar conta)
- * - Tipo de usuário é restrito a CLIENTE ou MARCA (não ADMIN)
+ * POST /api/users - Creates a new user account (public)
  *
- * Fluxo:
- * 1. Rate limiting por IP (5 tentativas/hora)
- * 2. Validação dos dados de registro
- * 3. Verifica se email já está cadastrado
- * 4. Cria usuário com senha hasheada (bcrypt)
- * 5. Gera token JWT e define cookie
- * 6. Retorna dados do usuário (exclui senha)
+ * Difference from POST /api/usuarios (admin):
+ * - This one is public (anyone can create an account)
+ * - The user type is restricted to CLIENTE or MARCA (not ADMIN)
  *
- * @see services/user.service.ts - criarUsuario()
- * ============================================================================
+ * Flow:
+ * 1. Rate limiting by IP (5 attempts/hour)
+ * 2. Validation of the registration data
+ * 3. The service checks whether the email is already registered
+ * 4. Creates the user with a hashed password (bcrypt)
+ * 5. Starts the session (access JWT + refresh token) and sets the cookies
+ * 6. Returns the user's data (excludes the password)
+ *
+ * @see services/user.service.ts - createUser()
  */
 
 export const dynamic = "force-dynamic";
@@ -38,15 +36,15 @@ const REGISTRATION_LIMIT = 5;
 const REGISTRATION_WINDOW = 3600;
 
 /**
- * POST /api/users - Registro público de usuário
+ * POST /api/users - Public user registration
  *
  * @body { nome: string, email: string, telefone?: string, senha: string }
- * @returns { ok: true, usuario: { id, email, nome, tipo } } + cookie httpOnly
- * @status 201 - Usuário criado com sucesso
- * @status 400 - Dados inválidos
- * @status 409 - Email já cadastrado
- * @status 429 - Muitas tentativas (rate limit)
- * @status 500 - Erro interno
+ * @returns { ok: true, usuario: { id, email, nome, tipo } } + httpOnly cookies
+ * @status 201 - User created successfully
+ * @status 400 - Invalid data
+ * @status 409 - Email already registered
+ * @status 429 - Too many attempts (rate limit)
+ * @status 500 - Internal error
  */
 export async function POST(req: NextRequest) {
   try {
@@ -71,7 +69,7 @@ export async function POST(req: NextRequest) {
     const { nome: name, email, telefone: phone, senha: password, tipo: type, marcaNome: brandName, marcaDescricao: brandDescription } =
       parsed.data;
 
-    // A duplicidade de e-mail é decidida pelo service (ConflitoDeNegocio → 409).
+    // Email duplication is decided by the service (BusinessConflict → 409).
     const user = await createUser({
       nome: name,
       email,
@@ -82,7 +80,7 @@ export async function POST(req: NextRequest) {
       marcaDescricao: brandDescription,
     });
 
-    // criarUsuario já invalida o cache de usuários.
+    // createUser already invalidates the users cache.
     const session = await startSession({
       id: user.id,
       email: user.email,

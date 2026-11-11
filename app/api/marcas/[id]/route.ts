@@ -1,17 +1,15 @@
 // app/api/marcas/[id]/route.ts
 
 /**
- * ============================================================================
- * MARCA BY ID API ROUTES
- * ============================================================================
- * Endpoints para operações em uma marca específica.
+ * BRAND BY ID API ROUTES
  *
- * GET /api/marcas/{id} - Busca marca por ID (público)
- * PUT /api/marcas/{id} - Atualiza marca (requer ADMIN)
- * DELETE /api/marcas/{id} - Deleta marca (requer ADMIN)
+ * Endpoints for operations on a specific brand.
  *
- * @see services/brand.service.ts - Lógica de negócio
- * ============================================================================
+ * GET /api/marcas/{id} - Fetch brand by ID (public)
+ * PUT /api/marcas/{id} - Update brand (requires ADMIN)
+ * DELETE /api/marcas/{id} - Delete brand (requires ADMIN)
+ *
+ * @see services/brand.service.ts - Business logic
  */
 
 export const dynamic = "force-dynamic";
@@ -28,13 +26,13 @@ import {
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/marcas/{id} - Busca marca por ID
+ * GET /api/marcas/{id} - Fetch brand by ID
  *
- * @param id - ID da marca na URL
- * @returns { marca: Marca }
- * @status 200 - Marca encontrada
- * @status 404 - Marca não existe
- * @status 500 - Erro ao buscar marca
+ * @param id - Brand ID in the URL
+ * @returns { marca: Brand }
+ * @status 200 - Brand found
+ * @status 404 - Brand does not exist
+ * @status 500 - Error fetching brand
  */
 export async function GET(
   _req: NextRequest,
@@ -52,20 +50,20 @@ export async function GET(
 }
 
 /**
- * PUT /api/marcas/{id} - Atualiza marca
+ * PUT /api/marcas/{id} - Update brand
  *
- * Requer autenticação ADMIN.
- * NOTA: usuarioId NÃO pode ser alterado após criação.
+ * Requires ADMIN authentication.
+ * NOTE: usuarioId CANNOT be changed after creation.
  *
- * @param id - ID da marca na URL
+ * @param id - Brand ID in the URL
  * @body { nome?: string, descricao?: string }
- * @returns { marca: Marca }
- * @status 200 - Marca atualizada
- * @status 400 - Dados inválidos
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 404 - Marca não existe
- * @status 500 - Erro ao atualizar marca
+ * @returns { marca: Brand }
+ * @status 200 - Brand updated
+ * @status 400 - Invalid data
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 404 - Brand does not exist
+ * @status 500 - Error updating brand
  */
 export async function PUT(
   req: NextRequest,
@@ -89,19 +87,19 @@ export async function PUT(
 }
 
 /**
- * DELETE /api/marcas/{id} - Deleta marca
+ * DELETE /api/marcas/{id} - Delete brand
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
- * ATENÇÃO: Marcas com produtos associados não podem ser deletadas.
+ * ATTENTION: Brands with associated products cannot be deleted.
  *
- * @param id - ID da marca na URL
+ * @param id - Brand ID in the URL
  * @returns { ok: true }
- * @status 200 - Marca deletada
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 404 - Marca não existe
- * @status 500 - Erro ao deletar marca
+ * @status 200 - Brand deleted
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 404 - Brand does not exist
+ * @status 500 - Error deleting brand
  */
 export async function DELETE(
   req: NextRequest,

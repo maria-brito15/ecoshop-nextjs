@@ -1,22 +1,20 @@
 // app/api/usuarios/[id]/route.ts
 
 /**
- * ============================================================================
- * USUARIO BY ID API ROUTES
- * ============================================================================
- * Endpoints para operações em um usuário específico.
+ * USER BY ID API ROUTES
  *
- * GET /api/usuarios/{id} - Busca usuário por ID
- * PUT /api/usuarios/{id} - Atualiza usuário
- * DELETE /api/usuarios/{id} - Deleta usuário (requer ADMIN)
+ * Endpoints for operations on a specific user.
  *
- * Regras de permissão:
- * - GET: Usuário pode ver apenas seu próprio perfil (ou ADMIN vê qualquer um)
- * - PUT: Usuário pode editar apenas seu próprio perfil (ou ADMIN edita qualquer um)
- * - DELETE: Apenas ADMIN pode deletar usuários
+ * GET /api/usuarios/{id} - Fetch user by ID
+ * PUT /api/usuarios/{id} - Update user
+ * DELETE /api/usuarios/{id} - Delete user (requires ADMIN)
  *
- * @see services/user.service.ts - Lógica de negócio
- * ============================================================================
+ * Permission rules:
+ * - GET: A user can only see their own profile (or ADMIN sees anyone)
+ * - PUT: A user can only edit their own profile (or ADMIN edits anyone)
+ * - DELETE: Only ADMIN can delete users
+ *
+ * @see services/user.service.ts - Business logic
  */
 
 export const dynamic = "force-dynamic";
@@ -33,18 +31,18 @@ import {
 } from "@/services/user.service";
 
 /**
- * GET /api/usuarios/{id} - Busca usuário por ID
+ * GET /api/usuarios/{id} - Fetch user by ID
  *
- * Permissão: Usuário pode ver apenas seu próprio perfil.
- * ADMIN pode ver qualquer usuário.
+ * Permission: A user can only see their own profile.
+ * ADMIN can see any user.
  *
- * @param id - ID do usuário na URL
- * @returns { usuario: Usuario }
- * @status 200 - Usuário encontrado
- * @status 401 - Não autenticado
- * @status 403 - Acesso negado (tentando ver outro usuário sem ser ADMIN)
- * @status 404 - Usuário não encontrado
- * @status 500 - Erro ao buscar usuário
+ * @param id - User ID in the URL
+ * @returns { usuario: User }
+ * @status 200 - User found
+ * @status 401 - Not authenticated
+ * @status 403 - Access denied (trying to see another user without being ADMIN)
+ * @status 404 - User not found
+ * @status 500 - Error fetching user
  */
 export async function GET(
   req: NextRequest,
@@ -68,22 +66,21 @@ export async function GET(
 }
 
 /**
- * PUT /api/usuarios/{id} - Atualiza usuário
+ * PUT /api/usuarios/{id} - Update user
  *
- * Permissão: Usuário pode editar apenas seu próprio perfil.
- * ADMIN pode editar qualquer usuário.
+ * Permission: A user can only edit their own profile.
+ * ADMIN can edit any user.
  *
- * @param id - ID do usuário na URL
- * @body { nome?: string, email?: string, telefone?: string, senha?: string }
- * @returns { usuario: Usuario }
- * @status 200 - Usuário atualizado
- * @status 400 - Dados inválidos
- * @status 401 - Não autenticado
- * @status 403 - Acesso negado
- * @status 403 - Acesso negado, ou senha atual incorreta ao trocar a própria senha
- * @status 404 - Usuário não encontrado
- * @status 409 - E-mail já cadastrado
- * @status 500 - Erro ao atualizar usuário
+ * @param id - User ID in the URL
+ * @body { nome?: string, email?: string, telefone?: string, senha?: string, senhaAtual?: string }
+ * @returns { usuario: User }
+ * @status 200 - User updated
+ * @status 400 - Invalid data
+ * @status 401 - Not authenticated
+ * @status 403 - Access denied, or wrong current password when changing your own password
+ * @status 404 - User not found
+ * @status 409 - Email already registered
+ * @status 500 - Error updating user
  */
 export async function PUT(
   req: NextRequest,
@@ -110,18 +107,18 @@ export async function PUT(
 }
 
 /**
- * DELETE /api/usuarios/{id} - Deleta usuário
+ * DELETE /api/usuarios/{id} - Delete user
  *
- * Permissão: Apenas ADMIN pode deletar usuários.
+ * Permission: Only ADMIN can delete users.
  *
- * @param id - ID do usuário na URL
+ * @param id - User ID in the URL
  * @returns { ok: true }
- * @status 200 - Usuário deletado
- * @status 401 - Não autenticado
- * @status 403 - Acesso negado (não é ADMIN)
- * @status 404 - Usuário não encontrado
- * @status 409 - Conta do próprio ADMIN, ou usuário com vínculos (ex.: marca)
- * @status 500 - Erro ao deletar usuário
+ * @status 200 - User deleted
+ * @status 401 - Not authenticated
+ * @status 403 - Access denied (not ADMIN)
+ * @status 404 - User not found
+ * @status 409 - The ADMIN's own account, or a user with links (e.g. brand)
+ * @status 500 - Error deleting user
  */
 export async function DELETE(
   req: NextRequest,

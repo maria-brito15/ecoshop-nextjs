@@ -1,25 +1,23 @@
 // app/api/produtos/route.ts
 
 /**
- * ============================================================================
- * PRODUTOS API ROUTES
- * ============================================================================
- * Endpoints para gerenciamento de produtos.
+ * PRODUCTS API ROUTES
  *
- * GET /api/produtos - Lista produtos com paginação e filtros (público)
- * POST /api/produtos - Cria novo produto (requer ADMIN)
+ * Endpoints for managing products.
  *
- * Filtros suportados no GET:
- * - page: número da página (padrão: 1)
- * - size: itens por página (padrão: 12)
- * - categoriaId: filtrar por categoria
- * - marcaId: filtrar por marca (REQ-CAT-07)
- * - precoMax: preço máximo (REQ-CAT-06)
- * - sort: relevancia (padrão) | preco_asc | preco_desc | nome_asc | nome_desc (REQ-CAT-06)
- * - nome: busca textual por nome
+ * GET /api/produtos - List products with pagination and filters (public)
+ * POST /api/produtos - Create a new product (requires ADMIN)
  *
- * @see services/product.service.ts - Lógica de negócio
- * ============================================================================
+ * Filters supported on GET:
+ * - page: page number (default: 1)
+ * - size: items per page (default: 12)
+ * - categoriaId: filter by category
+ * - marcaId: filter by brand (REQ-CAT-07)
+ * - precoMax: maximum price (REQ-CAT-06)
+ * - sort: relevancia (default) | preco_asc | preco_desc | nome_asc | nome_desc (REQ-CAT-06)
+ * - nome: text search by name
+ *
+ * @see services/product.service.ts - Business logic
  */
 
 export const dynamic = "force-dynamic";
@@ -31,18 +29,18 @@ import { listProducts, createProduct } from "@/services/product.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/produtos - Lista produtos com paginação e filtros
+ * GET /api/produtos - List products with pagination and filters
  *
- * @query page - Número da página (default: 1)
- * @query size - Itens por página (default: 12)
- * @query categoriaId - Filtrar por categoria (opcional)
- * @query marcaId - Filtrar por marca (opcional, REQ-CAT-07)
- * @query precoMax - Preço máximo (opcional, REQ-CAT-06)
+ * @query page - Page number (default: 1)
+ * @query size - Items per page (default: 12)
+ * @query categoriaId - Filter by category (optional)
+ * @query marcaId - Filter by brand (optional, REQ-CAT-07)
+ * @query precoMax - Maximum price (optional, REQ-CAT-06)
  * @query sort - relevancia (default) | preco_asc | preco_desc | nome_asc | nome_desc (REQ-CAT-06)
- * @query nome - Busca textual (opcional, case-insensitive)
- * @returns { produtos: Produto[], page: number, size: number, total: number }
- * @status 200 - Lista retornada com sucesso
- * @status 500 - Erro ao listar produtos
+ * @query nome - Text search (optional, case-insensitive)
+ * @returns { produtos: Product[], page: number, size: number, total: number }
+ * @status 200 - List returned successfully
+ * @status 500 - Error listing products
  */
 export async function GET(req: NextRequest) {
   try {
@@ -60,17 +58,17 @@ export async function GET(req: NextRequest) {
 }
 
 /**
- * POST /api/produtos - Cria novo produto
+ * POST /api/produtos - Create a new product
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
  * @body { nome: string, descricao?: string, preco: number, categoriaId: number, marcaId: number }
- * @returns { produto: Produto }
- * @status 201 - Produto criado
- * @status 400 - Dados inválidos
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 500 - Erro ao criar produto
+ * @returns { produto: Product }
+ * @status 201 - Product created
+ * @status 400 - Invalid data
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 500 - Error creating product
  */
 export async function POST(req: NextRequest) {
   const authError = await requireAdmin(req);

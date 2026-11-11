@@ -1,20 +1,18 @@
 // app/api/categorias/route.ts
 
 /**
- * ============================================================================
- * CATEGORIAS API ROUTES
- * ============================================================================
- * Endpoints para gerenciamento de categorias de produtos.
+ * CATEGORIES API ROUTES
  *
- * GET /api/categorias - Lista todas as categorias (público)
- * POST /api/categorias - Cria nova categoria (requer ADMIN)
+ * Endpoints for managing product categories.
  *
- * Permissões:
- * - GET: Público (qualquer usuário pode ver categorias)
- * - POST: Apenas ADMIN
+ * GET /api/categorias - List all categories (public)
+ * POST /api/categorias - Create a new category (requires ADMIN)
  *
- * @see services/category.service.ts - Lógica de negócio
- * ============================================================================
+ * Permissions:
+ * - GET: Public (any user can see categories)
+ * - POST: ADMIN only
+ *
+ * @see services/category.service.ts - Business logic
  */
 
 export const dynamic = "force-dynamic";
@@ -26,11 +24,11 @@ import { listCategories, createCategory } from "@/services/category.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/categorias - Lista todas as categorias
+ * GET /api/categorias - List all categories
  *
- * @returns { categorias: Categoria[] }
- * @status 200 - Lista retornada com sucesso (pode ser vazia)
- * @status 500 - Erro ao buscar categorias
+ * @returns { categorias: Category[] }
+ * @status 200 - List returned successfully (may be empty)
+ * @status 500 - Error fetching categories
  */
 export async function GET() {
   try {
@@ -42,17 +40,17 @@ export async function GET() {
 }
 
 /**
- * POST /api/categorias - Cria nova categoria
+ * POST /api/categorias - Create a new category
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
  * @body { nome: string, descricao?: string }
- * @returns { categoria: Categoria }
- * @status 201 - Categoria criada com sucesso
- * @status 400 - Dados inválidos
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 500 - Erro ao criar categoria
+ * @returns { categoria: Category }
+ * @status 201 - Category created successfully
+ * @status 400 - Invalid data
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 500 - Error creating category
  */
 export async function POST(req: NextRequest) {
   const authError = await requireAdmin(req);

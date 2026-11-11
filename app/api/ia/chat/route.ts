@@ -1,31 +1,29 @@
 // app/api/ia/chat/route.ts
 
 /**
- * ============================================================================
- * IA CHAT API ROUTE - GEMINI
- * ============================================================================
- * Rota de API para chat com IA (Gemini) sobre sustentabilidade e reciclagem.
+ * AI CHAT API ROUTE - GEMINI
  *
- * POST /api/ia/chat - Envia mensagem e recebe resposta da IA
+ * API route for chatting with the AI (Gemini) about sustainability and recycling.
  *
- * Endpoint público - não requer autenticação.
- * Utiliza modelo Gemini 2.0 Flash do Google.
+ * POST /api/ia/chat - Sends a message and receives the AI reply
  *
- * Fluxo:
- * 1. Valida entrada do usuário (mensagem e histórico)
- * 2. Verifica se API key do Gemini está configurada
- * 3. Constrói o histórico completo com system prompt
- * 4. Chama a API do Gemini com configurações de temperatura
- * 5. Retorna a resposta gerada
+ * Requires authentication and applies a per-user rate limit.
+ * Uses Google's Gemini 2.0 Flash model.
  *
- * Parâmetros de geração (generationConfig):
- * - temperature: 0.8 → controla criatividade
- * - topK: 40 → número de palavras candidatas consideradas
+ * Flow:
+ * 1. Validates the user input (message and history)
+ * 2. Checks that the Gemini API key is configured
+ * 3. Builds the full history with the system prompt
+ * 4. Calls the Gemini API with temperature settings
+ * 5. Returns the generated reply
+ *
+ * Generation parameters (generationConfig):
+ * - temperature: 0.8 → controls creativity
+ * - topK: 40 → number of candidate words considered
  * - topP: 0.95 → nucleus sampling
- * - maxOutputTokens: 1024 → limite máximo da resposta
+ * - maxOutputTokens: 1024 → maximum response length
  *
- * @see lib/ai/providers/gemini-chat.ts - Cliente Gemini
- * ============================================================================
+ * @see lib/ai/providers/gemini-chat.ts - Gemini client
  */
 
 export const dynamic = "force-dynamic";
@@ -44,17 +42,19 @@ import { rateLimit } from "@/lib/rate-limit";
 const SYSTEM_PROMPT = `You are an expert assistant in sustainability and recycling for EcoShop. Answer in English. Be objective and informative. Give practical tips on proper disposal, recycling and sustainable alternatives.`;
 
 /**
- * POST /api/ia/chat - Chat com assistente IA
+ * POST /api/ia/chat - Chat with the AI assistant
  *
  * @body { mensagem: string, historico?: ChatMessage[] }
  * @returns { resposta: string }
- * @status 200 - Resposta gerada com sucesso
- * @status 400 - Dados inválidos
- * @status 503 - IA não configurada (chave ausente)
- * @status 502 - IA retornou erro
- * @status 500 - Erro interno no servidor
+ * @status 200 - Reply generated successfully
+ * @status 400 - Invalid data
+ * @status 401 - Not authenticated
+ * @status 429 - Too many messages (rate limit)
+ * @status 503 - AI not configured (missing key)
+ * @status 502 - AI returned an error
+ * @status 500 - Internal server error
  */
-// Limite por usuário: o chat consome a cota paga do Gemini (D3).
+// Per-user limit: the chat consumes the paid Gemini quota (D3).
 const MESSAGE_LIMIT = 20;
 const WINDOW_SECONDS = 60;
 
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
       { role: "user", parts: [{ text: message }] },
     ];
 
-    // Nunca lança: falha, tempo esgotado ou resposta inválida viram `null` (502).
+    // Never throws: failure, timeout or invalid response become `null` (502).
     const response = await generateWithHistory(contents, {
       temperature: 0.8,
       maxOutputTokens: 1024,

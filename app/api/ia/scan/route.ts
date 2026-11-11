@@ -1,29 +1,27 @@
 // app/api/ia/scan/route.ts
 
 /**
- * ============================================================================
- * IA SCAN API ROUTE - ECOSCAN
- * ============================================================================
- * Rota de API para análise de imagens com IA (reconhecimento de produtos recicláveis).
+ * AI SCAN API ROUTE - ECOSCAN
  *
- * POST /api/ia/scan - Analisa imagem e retorna informações de reciclagem
+ * API route for AI image analysis (recognition of recyclable items).
  *
- * Endpoint privado - requer autenticação (usuário logado).
+ * POST /api/ia/scan - Analyzes an image and returns recycling information
  *
- * Fluxo:
- * 1. Verifica autenticação do usuário (requireAuth)
- * 2. Extrai arquivo do FormData
- * 3. Valida tipo e tamanho do arquivo
- * 4. Converte para Buffer para processamento
- * 5. Chama serviço de IA para análise da imagem
- * 6. Retorna resultado (sucesso com dados ou erro)
+ * Private endpoint - requires authentication (signed-in user).
  *
- * Limites:
- * - Tamanho máximo: 10MB
- * - Formatos aceitos: JPG, PNG, GIF, WebP
+ * Flow:
+ * 1. Checks the user's authentication (requireAuth)
+ * 2. Extracts the file from the FormData
+ * 3. Validates the file type and size
+ * 4. Converts it to a Buffer for processing
+ * 5. Calls the AI service to analyze the image
+ * 6. Returns the result (success with data or error)
  *
- * @see lib/ai/analyze-image.ts - Orquestração da análise
- * ============================================================================
+ * Limits:
+ * - Maximum size: 10MB
+ * - Accepted formats: JPG, PNG, GIF, WebP
+ *
+ * @see lib/ai/analyze-image.ts - Analysis orchestration
  */
 
 export const dynamic = "force-dynamic";
@@ -37,17 +35,17 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
 /**
- * POST /api/ia/scan - Analisa imagem
+ * POST /api/ia/scan - Analyzes an image
  *
- * Requer autenticação (usuário logado).
+ * Requires authentication (signed-in user).
  *
- * @body FormData com campo 'image' (arquivo)
- * @returns ResultadoScan (sucesso ou falha)
- * @status 200 - Análise bem-sucedida
- * @status 401 - Não autenticado
- * @status 400 - Dados inválidos (arquivo ausente, tipo errado, tamanho excedido)
- * @status 422 - Imagem não pôde ser analisada (formato não suportado pela IA)
- * @status 500 - Erro interno
+ * @body FormData with an 'image' field (file)
+ * @returns ScanResult (success or failure)
+ * @status 200 - Analysis successful
+ * @status 401 - Not authenticated
+ * @status 400 - Invalid data (missing file, wrong type, size exceeded)
+ * @status 422 - The image could not be analyzed (format not supported by the AI)
+ * @status 500 - Internal error
  */
 export async function POST(req: NextRequest) {
   const authError = await requireAuth(req);

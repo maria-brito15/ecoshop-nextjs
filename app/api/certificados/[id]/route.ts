@@ -1,17 +1,15 @@
 // app/api/certificados/[id]/route.ts
 
 /**
- * ============================================================================
- * CERTIFICADO BY ID API ROUTES
- * ============================================================================
- * Endpoints para operações em um certificado específico.
+ * CERTIFICATE BY ID API ROUTES
  *
- * GET /api/certificados/{id} - Busca certificado por ID (público)
- * PUT /api/certificados/{id} - Atualiza certificado (requer ADMIN)
- * DELETE /api/certificados/{id} - Deleta certificado (requer ADMIN)
+ * Endpoints for operations on a specific certificate.
  *
- * @see services/certificate.service.ts - Lógica de negócio
- * ============================================================================
+ * GET /api/certificados/{id} - Fetch certificate by ID (public)
+ * PUT /api/certificados/{id} - Update certificate (requires ADMIN)
+ * DELETE /api/certificados/{id} - Delete certificate (requires ADMIN)
+ *
+ * @see services/certificate.service.ts - Business logic
  */
 
 export const dynamic = "force-dynamic";
@@ -28,13 +26,13 @@ import {
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/certificados/{id} - Busca certificado por ID
+ * GET /api/certificados/{id} - Fetch certificate by ID
  *
- * @param id - ID do certificado na URL
- * @returns { certificado: Certificado }
- * @status 200 - Certificado encontrado
- * @status 404 - Certificado não existe
- * @status 500 - Erro ao buscar certificado
+ * @param id - Certificate ID in the URL
+ * @returns { certificado: Certificate }
+ * @status 200 - Certificate found
+ * @status 404 - Certificate does not exist
+ * @status 500 - Error fetching certificate
  */
 export async function GET(
   _req: NextRequest,
@@ -52,19 +50,19 @@ export async function GET(
 }
 
 /**
- * PUT /api/certificados/{id} - Atualiza certificado
+ * PUT /api/certificados/{id} - Update certificate
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
- * @param id - ID do certificado na URL
+ * @param id - Certificate ID in the URL
  * @body { nome?: string, descricao?: string, orgaoEmissor?: string }
- * @returns { certificado: Certificado }
- * @status 200 - Certificado atualizado
- * @status 400 - Dados inválidos
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 404 - Certificado não existe
- * @status 500 - Erro ao atualizar certificado
+ * @returns { certificado: Certificate }
+ * @status 200 - Certificate updated
+ * @status 400 - Invalid data
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 404 - Certificate does not exist
+ * @status 500 - Error updating certificate
  */
 export async function PUT(
   req: NextRequest,
@@ -91,19 +89,19 @@ export async function PUT(
 }
 
 /**
- * DELETE /api/certificados/{id} - Deleta certificado
+ * DELETE /api/certificados/{id} - Delete certificate
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
- * ATENÇÃO: Certificados associados a produtos não podem ser deletados.
+ * ATTENTION: Certificates linked to products cannot be deleted.
  *
- * @param id - ID do certificado na URL
+ * @param id - Certificate ID in the URL
  * @returns { ok: true }
- * @status 200 - Certificado deletado
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 404 - Certificado não existe
- * @status 500 - Erro ao deletar certificado
+ * @status 200 - Certificate deleted
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 404 - Certificate does not exist
+ * @status 500 - Error deleting certificate
  */
 export async function DELETE(
   req: NextRequest,

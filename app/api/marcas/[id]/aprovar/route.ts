@@ -1,14 +1,12 @@
 // app/api/marcas/[id]/aprovar/route.ts
 
 /**
- * ============================================================================
- * APROVAÇÃO DE MARCA PENDENTE
- * ============================================================================
- * POST /api/marcas/{id}/aprovar - Aprova um pedido de marca pendente (ADMIN)
+ * PENDING BRAND APPROVAL
+ *
+ * POST /api/marcas/{id}/aprovar - Approves a pending brand request (ADMIN)
  *
  * REQ-USR-03, ADR-0018.
- * @see services/brand.service.ts - aprovarMarca()
- * ============================================================================
+ * @see services/brand.service.ts - approveBrand()
  */
 
 export const dynamic = "force-dynamic";
@@ -20,19 +18,19 @@ import { approveBrand } from "@/services/brand.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * POST /api/marcas/{id}/aprovar - Aprova uma marca pendente
+ * POST /api/marcas/{id}/aprovar - Approves a pending brand
  *
- * Requer autenticação ADMIN. Muda `Marca.status` para APROVADA e concede
- * o tipo MARCA ao usuário associado.
+ * Requires ADMIN authentication. Sets `Marca.status` to APROVADA and grants
+ * the MARCA type to the associated user.
  *
- * @param id - ID da marca na URL
- * @returns { marca: Marca }
- * @status 200 - Marca aprovada
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 404 - Marca não existe
- * @status 409 - Marca não está pendente
- * @status 500 - Erro ao aprovar marca
+ * @param id - Brand ID in the URL
+ * @returns { marca: Brand }
+ * @status 200 - Brand approved
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 404 - Brand does not exist
+ * @status 409 - Brand is not pending
+ * @status 500 - Error approving brand
  */
 export async function POST(
   req: NextRequest,

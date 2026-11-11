@@ -1,19 +1,17 @@
 // app/api/produtos/[id]/fotos/route.ts
 
 /**
- * ============================================================================
- * PRODUTO FOTOS API ROUTES
- * ============================================================================
- * Endpoints para gerenciamento de fotos de um produto.
+ * PRODUCT PHOTOS API ROUTES
  *
- * GET /api/produtos/{id}/fotos - Lista fotos do produto (público)
- * POST /api/produtos/{id}/fotos - Upload de nova foto (requer ADMIN)
- * DELETE /api/produtos/{id}/fotos?nome={nome} - Deleta foto (requer ADMIN)
+ * Endpoints for managing a product's photos.
  *
- * As fotos são armazenadas no sistema de arquivos (public/data_fotos/).
+ * GET /api/produtos/{id}/fotos - List the product's photos (public)
+ * POST /api/produtos/{id}/fotos - Upload a new photo (requires ADMIN)
+ * DELETE /api/produtos/{id}/fotos?nome={name} - Delete a photo (requires ADMIN)
  *
- * @see services/photo.service.ts - Lógica de negócio
- * ============================================================================
+ * Photos are stored on the file system (public/data_fotos/).
+ *
+ * @see services/photo.service.ts - Business logic
  */
 
 export const dynamic = "force-dynamic";
@@ -30,13 +28,13 @@ import {
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/produtos/{id}/fotos - Lista fotos do produto
+ * GET /api/produtos/{id}/fotos - List the product's photos
  *
- * @param id - ID do produto na URL
- * @returns { fotos: Foto[], total: number, produtoId: number }
- * @status 200 - Lista retornada
- * @status 400 - ID inválido
- * @status 500 - Erro ao buscar fotos
+ * @param id - Product ID in the URL
+ * @returns { fotos: Photo[], total: number, produtoId: number }
+ * @status 200 - List returned
+ * @status 400 - Invalid ID
+ * @status 500 - Error fetching photos
  */
 export async function GET(
   _req: NextRequest,
@@ -57,22 +55,22 @@ export async function GET(
 }
 
 /**
- * POST /api/produtos/{id}/fotos - Upload de foto
+ * POST /api/produtos/{id}/fotos - Photo upload
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
- * @param id - ID do produto na URL
- * @body FormData com campos:
- *   - arquivo: File (obrigatório)
- *   - nome: string (opcional, nome personalizado)
- * @returns { ok: true, foto: Foto, mensagem: string }
- * @status 201 - Upload realizado
- * @status 400 - Dados inválidos (arquivo ausente, extensão não permitida, arquivo grande)
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 404 - Produto não encontrado
- * @status 409 - Nome de arquivo já existe
- * @status 500 - Erro no upload
+ * @param id - Product ID in the URL
+ * @body FormData with fields:
+ *   - arquivo: File (required)
+ *   - nome: string (optional, custom name)
+ * @returns { ok: true, foto: Photo, mensagem: string }
+ * @status 201 - Upload done
+ * @status 400 - Invalid data (missing file, disallowed extension, file too large)
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 404 - Product not found
+ * @status 409 - File name already exists
+ * @status 500 - Upload error
  */
 export async function POST(
   req: NextRequest,
@@ -132,19 +130,19 @@ export async function POST(
 }
 
 /**
- * DELETE /api/produtos/{id}/fotos?nome={nome} - Deleta foto
+ * DELETE /api/produtos/{id}/fotos?nome={name} - Delete a photo
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
- * @param id - ID do produto na URL
- * @query nome - Nome do arquivo a ser deletado
+ * @param id - Product ID in the URL
+ * @query nome - Name of the file to delete
  * @returns { ok: true, mensagem: string }
- * @status 200 - Foto deletada
- * @status 400 - Dados inválidos (ID inválido, nome ausente)
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 404 - Arquivo não encontrado
- * @status 500 - Erro ao deletar foto
+ * @status 200 - Photo deleted
+ * @status 400 - Invalid data (invalid ID, missing name)
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 404 - File not found
+ * @status 500 - Error deleting photo
  */
 export async function DELETE(
   req: NextRequest,
