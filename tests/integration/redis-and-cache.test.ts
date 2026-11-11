@@ -197,7 +197,7 @@ test("REQ-OPS-17: simultaneous accesses to the same key with an empty cache do a
     return { value: 42 };
   };
   const results = await Promise.all(Array.from({ length: 8 }, () => withCache(key, 5, fetcher)));
-  assert.equal(fetches, 1, "as 8 chamadas deveriam dividir a mesma busca");
+  assert.equal(fetches, 1, "the 8 calls should share the same fetch");
   for (const r of results) assert.deepEqual(r, { value: 42 });
   await redis.del(key).catch(() => {});
 });

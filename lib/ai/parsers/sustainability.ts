@@ -1,4 +1,4 @@
-// lib/ai/parsers/sustentabilidade.ts
+// lib/ai/parsers/sustainability.ts
 
 /**
  * ============================================================================

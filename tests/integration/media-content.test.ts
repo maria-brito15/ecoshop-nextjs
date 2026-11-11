@@ -26,7 +26,7 @@ function withFolder<T>(fn: (dir: string) => Promise<T>) {
   return fn(join(dir, "data_fotos")).finally(() => rmSync(dir, { recursive: true, force: true }));
 }
 
-test("REQ-MIDIA-06: detectarTipoDeImagem reconhece JPEG, PNG, GIF e WebP pela assinatura dos bytes", () => {
+test("REQ-MIDIA-06: detectImageType recognizes JPEG, PNG, GIF and WebP by byte signature", () => {
   assert.equal(detectImageType(JPEG), "jpeg");
   assert.equal(detectImageType(PNG), "png");
   assert.equal(detectImageType(GIF), "gif");

@@ -87,39 +87,39 @@ const prisma = new PrismaClient({ adapter });
  * 7. Associa certificados aos produtos
  */
 async function main() {
-  console.log("Iniciando o povoamento (seed) do banco de dados...\n");
+  console.log("Starting database seeding...\n");
 
   // ---------------------------------------------------------------------------
   // STEP 2: CATEGORIAS
   // ---------------------------------------------------------------------------
   // Categorias organizam produtos por tipo.
   // Usa upsert para não duplicar se já existirem (idempotência).
-  console.log("Criando categorias...");
+  console.log("Creating categories...");
   const categoriesInput = [
     {
-      nome: "Roupas Sustentáveis",
+      nome: "Sustainable Clothing",
       descricao:
-        "Vestuário feito com materiais ecológicos, algodão orgânico e tecidos reciclados.",
+        "Clothing made from eco-friendly materials, organic cotton and recycled fabrics.",
     },
     {
-      nome: "Alimentos Orgânicos",
+      nome: "Organic Food",
       descricao:
-        "Alimentos livres de agrotóxicos, conservantes e cultivados com respeito ao solo.",
+        "Food free of pesticides and preservatives, grown with respect for the soil.",
     },
     {
-      nome: "Cosméticos Naturais",
+      nome: "Natural Cosmetics",
       descricao:
-        "Maquiagens e cremes veganos, sem parabenos e não testados em animais.",
+        "Vegan makeup and creams, paraben-free and not tested on animals.",
     },
     {
-      nome: "Casa e Decoração",
+      nome: "Home and Decor",
       descricao:
-        "Itens para o lar feitos de bambu, cerâmica artesanal e materiais biodegradáveis.",
+        "Home items made of bamboo, handmade ceramics and biodegradable materials.",
     },
     {
-      nome: "Calçados Ecológicos",
+      nome: "Eco-Friendly Footwear",
       descricao:
-        "Tênis e sapatos feitos de borracha reciclada e couro vegetal.",
+        "Sneakers and shoes made of recycled rubber and vegan leather.",
     },
   ];
 
@@ -137,34 +137,34 @@ async function main() {
   // STEP 3: CERTIFICADOS
   // ---------------------------------------------------------------------------
   // Certificados atestam práticas sustentáveis dos produtos.
-  console.log("Criando certificados...");
+  console.log("Creating certificates...");
   const certificatesInput = [
     {
       nome: "Cruelty Free",
       orgaoEmissor: "PETA",
       descricao:
-        "Garante que o produto não foi testado em animais em nenhuma etapa.",
+        "Ensures the product was not tested on animals at any stage.",
     },
     {
-      nome: "Orgânico Brasil",
+      nome: "Organic Brazil",
       orgaoEmissor: "SisOrg",
-      descricao: "Certificação nacional oficial para produtos orgânicos.",
+      descricao: "Official national certification for organic products.",
     },
     {
       nome: "FSC",
       orgaoEmissor: "Forest Stewardship Council",
       descricao:
-        "Garante que a madeira/papel provém de florestas bem manejadas.",
+        "Ensures the wood/paper comes from well-managed forests.",
     },
     {
       nome: "Eureciclo",
       orgaoEmissor: "Instituto Eureciclo",
-      descricao: "Compensação ambiental das embalagens.",
+      descricao: "Environmental offsetting of packaging.",
     },
     {
-      nome: "IBD Ingredientes Naturais",
-      orgaoEmissor: "IBD Certificações",
-      descricao: "Auditoria de ingredientes naturais em cosméticos.",
+      nome: "IBD Natural Ingredients",
+      orgaoEmissor: "IBD Certifications",
+      descricao: "Audit of natural ingredients in cosmetics.",
     },
   ];
 
@@ -185,7 +185,7 @@ async function main() {
   // Todos compartilham SEED_USER_PASSWORD (ver topo do arquivo) com hash bcrypt
   // real — antes, a senha era o placeholder "hash-seguro-aqui" e ninguém
   // conseguia logar com nenhum desses usuários (REQ-OPS-02).
-  console.log("Criando usuários...");
+  console.log("Creating users...");
   const passwordHash = await bcrypt.hash(SEED_USER_PASSWORD, SALT_ROUNDS);
   const usersInput = [
     {
@@ -196,7 +196,7 @@ async function main() {
     },
     {
       email: "joao@cliente.com",
-      nome: "João Silva",
+      nome: "John Smith",
       senha: passwordHash,
       telefone: "11999998888",
       tipo: TipoUsuario.CLIENTE,
@@ -242,21 +242,21 @@ async function main() {
   // STEP 5: MARCAS
   // ---------------------------------------------------------------------------
   // Cada marca está associada a um usuário (relacionamento 1:1).
-  console.log("Criando marcas...");
+  console.log("Creating brands...");
   const brandsInput = [
     {
       nome: "EcoBrand",
-      descricao: "A melhor marca sustentável de roupas do mercado nacional.",
+      descricao: "The best sustainable clothing brand in the national market.",
       usuarioId: users["contato@ecobrand.com"],
     },
     {
       nome: "Pureza Naturais",
-      descricao: "Cosméticos e alimentos 100% orgânicos e saudáveis.",
+      descricao: "100% organic and healthy cosmetics and food.",
       usuarioId: users["falecom@pureza.com"],
     },
     {
       nome: "Bambu Home",
-      descricao: "Decore sua casa sem destruir o planeta.",
+      descricao: "Decorate your home without destroying the planet.",
       usuarioId: users["vendas@bambuhome.com"],
     },
   ];
@@ -275,90 +275,90 @@ async function main() {
   // STEP 6: PRODUTOS
   // ---------------------------------------------------------------------------
   // Catálogo de produtos sustentáveis com certificações associadas.
-  console.log("Criando catálogo de produtos...");
+  console.log("Creating product catalog...");
   const productsInput = [
     // EcoBrand - Roupas Sustentáveis
     {
-      nome: "Camiseta Básica Orgânica",
-      descricao: "100% algodão orgânico, tingimento natural.",
+      nome: "Organic Basic T-Shirt",
+      descricao: "100% organic cotton, natural dyeing.",
       preco: 89.9,
-      categoria: "Roupas Sustentáveis",
+      categoria: "Sustainable Clothing",
       marca: "EcoBrand",
-      certs: ["Orgânico Brasil", "Eureciclo"],
+      certs: ["Organic Brazil", "Eureciclo"],
     },
     {
-      nome: "Calça Jeans Reciclada",
-      descricao: "Feita a partir de retalhos e plástico retirado do oceano.",
+      nome: "Recycled Jeans",
+      descricao: "Made from scraps and plastic taken from the ocean.",
       preco: 199.5,
-      categoria: "Roupas Sustentáveis",
+      categoria: "Sustainable Clothing",
       marca: "EcoBrand",
       certs: ["Eureciclo"],
     },
     {
-      nome: "Tênis de Couro Vegetal",
-      descricao: "Estiloso, durável e feito de casca de abacaxi.",
+      nome: "Vegan Leather Sneakers",
+      descricao: "Stylish, durable and made from pineapple peel.",
       preco: 350.0,
-      categoria: "Calçados Ecológicos",
+      categoria: "Eco-Friendly Footwear",
       marca: "EcoBrand",
       certs: ["Cruelty Free"],
     },
 
     // Pureza Naturais - Cosméticos e Alimentos
     {
-      nome: "Shampoo Sólido de Alecrim",
-      descricao: "Rende até 60 lavagens. Zero plástico.",
+      nome: "Rosemary Solid Shampoo",
+      descricao: "Lasts up to 60 washes. Zero plastic.",
       preco: 35.9,
-      categoria: "Cosméticos Naturais",
+      categoria: "Natural Cosmetics",
       marca: "Pureza Naturais",
-      certs: ["Cruelty Free", "IBD Ingredientes Naturais"],
+      certs: ["Cruelty Free", "IBD Natural Ingredients"],
     },
     {
-      nome: "Creme Facial Vegano",
-      descricao: "Hidratação profunda com ácido hialurônico vegetal.",
+      nome: "Vegan Face Cream",
+      descricao: "Deep hydration with plant-based hyaluronic acid.",
       preco: 120.0,
-      categoria: "Cosméticos Naturais",
+      categoria: "Natural Cosmetics",
       marca: "Pureza Naturais",
       certs: ["Cruelty Free", "Eureciclo"],
     },
     {
-      nome: "Granola Orgânica Premium",
-      descricao: "Mix de castanhas e sementes sem adição de açúcar.",
+      nome: "Premium Organic Granola",
+      descricao: "Mix of nuts and seeds with no added sugar.",
       preco: 45.0,
-      categoria: "Alimentos Orgânicos",
+      categoria: "Organic Food",
       marca: "Pureza Naturais",
-      certs: ["Orgânico Brasil"],
+      certs: ["Organic Brazil"],
     },
     {
-      nome: "Café Torrado Especial",
-      descricao: "Grãos selecionados de agricultura familiar.",
+      nome: "Special Roasted Coffee",
+      descricao: "Selected beans from family farming.",
       preco: 28.5,
-      categoria: "Alimentos Orgânicos",
+      categoria: "Organic Food",
       marca: "Pureza Naturais",
-      certs: ["Orgânico Brasil", "FSC"],
+      certs: ["Organic Brazil", "FSC"],
     },
 
     // Bambu Home - Casa e Decoração
     {
-      nome: "Kit Escovas de Dente de Bambu",
-      descricao: "Pack com 4 escovas 100% biodegradáveis.",
+      nome: "Bamboo Toothbrush Kit",
+      descricao: "Pack of 4 100% biodegradable brushes.",
       preco: 40.0,
-      categoria: "Casa e Decoração",
+      categoria: "Home and Decor",
       marca: "Bambu Home",
       certs: ["FSC", "Eureciclo"],
     },
     {
-      nome: "Copo Sustentável de Fibra",
-      descricao: "Leve seu café para qualquer lugar sem gerar lixo.",
+      nome: "Sustainable Fiber Cup",
+      descricao: "Take your coffee anywhere without creating waste.",
       preco: 55.9,
-      categoria: "Casa e Decoração",
+      categoria: "Home and Decor",
       marca: "Bambu Home",
       certs: ["Eureciclo"],
     },
     {
-      nome: "Organizador de Mesa em Madeira",
-      descricao: "Design minimalista feito com madeira de reflorestamento.",
+      nome: "Wooden Desk Organizer",
+      descricao: "Minimalist design made with reforestation wood.",
       preco: 110.0,
-      categoria: "Casa e Decoração",
+      categoria: "Home and Decor",
       marca: "Bambu Home",
       certs: ["FSC"],
     },
@@ -367,8 +367,8 @@ async function main() {
   const existingProductsTotal = await prisma.produto.count();
   if (existingProductsTotal > 0) {
     console.log(
-      `Catálogo já tem ${existingProductsTotal} produto(s); pulando a criação ` +
-        "(seed idempotente, REQ-OPS-03 — produtos existentes nunca são apagados).",
+      `Catalog already has ${existingProductsTotal} product(s); skipping creation ` +
+        "(idempotent seed, REQ-OPS-03 — existing products are never deleted).",
     );
   } else {
     for (const prod of productsInput) {
@@ -392,7 +392,7 @@ async function main() {
   }
 
   console.log(
-    "\nSeed concluído. Login de demonstração: qualquer e-mail acima + a senha definida em SEED_USER_PASSWORD.",
+    "(idempotent seed, REQ-OPS-03 — existing products are never deleted).",
   );
 }
 
@@ -403,7 +403,7 @@ async function main() {
  */
 main()
   .catch((e) => {
-    console.error("Erro ao executar o seed:", e);
+    console.error("Error running the seed:", e);
     process.exit(1);
   })
   .finally(async () => {

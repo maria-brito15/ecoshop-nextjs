@@ -213,7 +213,7 @@ export default function HomePage() {
             <div className="flex flex-col gap-6">
               <span className="badge-eco w-fit">🌿 Compras conscientes</span>
               <h1 className="font-display text-5xl md:text-6xl font-extrabold leading-[1.05]">
-                Sua escolha{" "}
+                Your choice{" "}
                 <span className="text-gradient-eco">makes a difference</span>
               </h1>
               <p className="text-xl text-[var(--color-text-secondary)] max-w-lg">
@@ -221,7 +221,7 @@ export default function HomePage() {
               </p>
               <div className="flex flex-wrap gap-4 pt-2">
                 <Link href="/produtos" className="btn-primary">
-                  Explorar Produtos
+                  Explore Products
                 </Link>
                 <Link href="/educacao" className="btn-secondary">
                   Learn more
@@ -231,7 +231,7 @@ export default function HomePage() {
               {/* Métricas de impacto */}
               <div className="flex gap-8 pt-6 border-t border-[var(--color-border)]">
                 {[
-                  { valor: "2k+", label: "Produtos eco" },
+                  { valor: "2k+", label: "Eco products" },
                   { valor: "98%", label: "Satisfaction" },
                   { valor: "0 CO₂", label: "Entregas neutras" },
                 ].map((s) => (
@@ -276,7 +276,7 @@ export default function HomePage() {
               Destaques
             </span>
             <h2 className="font-display text-4xl font-extrabold mb-3">
-              Melhores Produtos
+              Best Products
             </h2>
             <p className="text-[var(--color-text-secondary)]">
               Carefully selected for you and for the planet.
@@ -339,7 +339,7 @@ export default function HomePage() {
           <div className="container-eco">
             <div className="text-center max-w-xl mx-auto mb-12">
               <span className="block text-sm font-bold uppercase tracking-widest text-[var(--color-primary)] mb-2">
-                Navegue por
+                Browse by
               </span>
               <h2 className="font-display text-4xl font-extrabold">
                 Categorias
@@ -369,8 +369,7 @@ export default function HomePage() {
                 Centro Educativo EcoShop
               </h2>
               <p className="text-[#a5c3b6] text-lg">
-                Acesse nossos guias e aprenda como suas pequenas atitudes
-                transformam o mundo.
+                Access our guides and learn how your small actions transform the world.
               </p>
               {[
                 {

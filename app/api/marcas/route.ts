@@ -36,7 +36,7 @@ export async function GET() {
     const brands = await listBrands();
     return NextResponse.json({ marcas: brands });
   } catch (err) {
-    return ERRORS.internal("listar marcas", err);
+    return ERRORS.internal("list brands", err);
   }
 }
 

@@ -152,7 +152,7 @@ export default function FloatingChat() {
               type="text"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Digite sua pergunta..."
+              placeholder="Type your question..."
               maxLength={2000}
               disabled={chat.carregando}
               className="flex-1 px-3 py-2 rounded-full text-sm border focus:outline-none"
@@ -165,7 +165,7 @@ export default function FloatingChat() {
             <button
               type="submit"
               disabled={chat.carregando || !text.trim()}
-              aria-label="Enviar mensagem"
+              aria-label="Send message"
               className="w-9 h-9 rounded-full flex items-center justify-center text-white disabled:opacity-50"
               style={{ background: "var(--color-primary)" }}
             >

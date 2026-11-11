@@ -1,4 +1,4 @@
-// lib/ai/analisar-imagem.ts
+// lib/ai/analyze-image.ts
 
 /**
  * ============================================================================
@@ -26,9 +26,9 @@
 
 import { classifyImage } from "./providers/azure-vision";
 import { generateText } from "./providers/gemini-chat";
-import { buildSustainabilityPrompt } from "./prompts/sustentabilidade";
-import { parseAnalysis } from "./parsers/sustentabilidade";
-import { fallbackAnalysis } from "./fallbacks/sustentabilidade";
+import { buildSustainabilityPrompt } from "./prompts/sustainability";
+import { parseAnalysis } from "./parsers/sustainability";
+import { fallbackAnalysis } from "./fallbacks/sustainability";
 import type { ScanResult } from "@/types/ai";
 
 /**

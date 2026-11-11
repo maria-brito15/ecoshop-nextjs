@@ -9,7 +9,7 @@
 > **Decisão inferida:** o código mostra este estado; não há prova de que foi uma escolha formal. As alternativas foram reconstruídas. Pode ser ratificada (novo ADR Aceito) ou substituída.
 
 ## Contexto
-Evidência: `lib/ai/analisar-imagem.ts`; `providers/azure-vision.ts`, `providers/gemini-chat.ts`; limiar `AI_CONFIDENCE_THRESHOLD` (0,7) e tag `outros`; fallback `analiseBasica`. O modelo Azure e suas tags são artefatos externos ao repositório (poucas tags hoje, segundo o dono).
+Evidência: `lib/ai/analyze-image.ts`; `providers/azure-vision.ts`, `providers/gemini-chat.ts`; limiar `AI_CONFIDENCE_THRESHOLD` (0,7) e tag `outros`; fallback `analiseBasica`. O modelo Azure e suas tags são artefatos externos ao repositório (poucas tags hoje, segundo o dono).
 
 ## Problema
 Como identificar o material de uma foto e explicar o descarte?

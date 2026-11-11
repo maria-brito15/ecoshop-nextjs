@@ -314,7 +314,7 @@ function EditModal({
                 className="block text-sm font-semibold mb-2"
                 style={{ color: "var(--color-text-primary)" }}
               >
-                Nome Completo *
+                Full Name *
               </label>
               <input
                 type="text"
@@ -323,7 +323,7 @@ function EditModal({
                 onChange={onChange}
                 required
                 className={inputCls}
-                placeholder="Seu nome"
+                placeholder="Your name"
               />
             </div>
             <div>
@@ -774,7 +774,7 @@ export default function ProfilePage() {
                     >
                       🏪{" "}
                       {user.tipo === "MARCA"
-                        ? "Loja Parceira"
+                        ? "Partner Store"
                         : "Administrador"}
                     </span>
                   )}
@@ -916,7 +916,7 @@ export default function ProfilePage() {
                   className="text-2xl font-bold mb-2"
                   style={{ color: "var(--color-text-primary)" }}
                 >
-                  Produtos Visitados
+                  Visited Products
                 </h2>
                 <p
                   className="text-base"

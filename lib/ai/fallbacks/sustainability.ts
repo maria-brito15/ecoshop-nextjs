@@ -1,4 +1,4 @@
-// lib/ai/fallbacks/sustentabilidade.ts
+// lib/ai/fallbacks/sustainability.ts
 
 /**
  * ============================================================================

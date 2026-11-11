@@ -137,7 +137,7 @@ test("REQ-PROD-06: PUT and DELETE /api/produtos/[id] with an invalid id return 4
   const cookie = await admin();
   for (const id of ["abc", "0", "1.5"]) {
     const put = await produtoPut(
-      req(`/api/produtos/${id}`, { method: "PUT", cookie, body: { nome: "Novo nome" } }),
+      req(`/api/produtos/${id}`, { method: "PUT", cookie, body: { nome: "New name" } }),
       ctx(id),
     );
     assert.equal(put.status, 400, `PUT id=${id}`);

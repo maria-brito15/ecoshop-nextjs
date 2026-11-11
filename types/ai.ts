@@ -15,7 +15,7 @@
 
 /**
  * Análise completa gerada pela IA para um material reciclável.
- * Retornado pelo Gemini com base no prompt em lib/ai/prompts/sustentabilidade.ts
+ * Retornado pelo Gemini com base no prompt em lib/ai/prompts/sustainability.ts
  *
  * TODOS os campos são strings obrigatórios (mínimo 1 caractere)
  * para garantir que o frontend sempre tenha conteúdo para exibir.

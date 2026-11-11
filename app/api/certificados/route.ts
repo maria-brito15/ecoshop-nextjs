@@ -38,7 +38,7 @@ export async function GET() {
     const certificates = await listCertificates();
     return NextResponse.json({ certificados: certificates });
   } catch (err) {
-    return ERRORS.internal("listar certificados", err);
+    return ERRORS.internal("list certificates", err);
   }
 }
 

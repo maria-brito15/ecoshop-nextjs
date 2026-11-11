@@ -665,7 +665,7 @@ export default function ProductsPage() {
               {/* Seletor de ordenação */}
               <div className="flex items-center gap-3">
                 <label className="text-sm font-semibold text-[var(--color-text-secondary)] whitespace-nowrap hidden sm:block">
-                  Ordenar por:
+                  Sort by:
                 </label>
                 <select
                   value={sortBy}
@@ -693,8 +693,8 @@ export default function ProductsPage() {
                   <option value="relevancia">Relevance</option>
                   <option value="preco_asc">Lowest Price</option>
                   <option value="preco_desc">Highest Price</option>
-                  <option value="nome_asc">Nome (A-Z)</option>
-                  <option value="nome_desc">Nome (Z-A)</option>
+                  <option value="nome_asc">Name (A-Z)</option>
+                  <option value="nome_desc">Name (Z-A)</option>
                 </select>
               </div>
             </div>
@@ -917,7 +917,7 @@ export default function ProductsPage() {
             {brands.length > 0 && (
               <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3">
-                  🤝 Marcas
+                  🤝 Brands
                 </p>
                 <ul className="flex flex-col gap-0.5">
                   <li>

@@ -308,7 +308,7 @@ export default function AuthPage() {
               style={{ color: "var(--color-text-secondary)" }}
             >
               {mode === "login"
-                ? "Acesse sua conta EcoShop"
+                ? "Access your EcoShop account"
                 : "Join the sustainable community"}
             </p>
           </div>
@@ -402,7 +402,7 @@ export default function AuthPage() {
                     className="block text-sm font-semibold mb-2"
                     style={{ color: "var(--color-text-primary)" }}
                   >
-                    Nome Completo *
+                    Full Name *
                   </label>
                   <div className="relative">
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)]">
@@ -426,7 +426,7 @@ export default function AuthPage() {
                       id="nome"
                       value={form.nome}
                       onChange={handleChange}
-                      placeholder="Seu nome completo"
+                      placeholder="Your full name"
                       required
                       className={inputCls}
                     />

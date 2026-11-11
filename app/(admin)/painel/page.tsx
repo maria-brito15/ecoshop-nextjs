@@ -76,7 +76,7 @@ const TAB_CONFIG: Record<Tab, { label: string; icon: string; desc: string }> = {
     icon: "🏷️",
     desc: "Organize products into categories",
   },
-  marcas: { label: "Marcas", icon: "🤝", desc: "Gerencie as marcas parceiras" },
+  marcas: { label: "Marcas", icon: "🤝", desc: "Manage partner brands" },
   certificados: {
     label: "Certificados",
     icon: "🌿",
@@ -403,7 +403,7 @@ function PhotosModal({
           {/* Galeria de fotos existentes */}
           <div>
             <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-3">
-              Fotos Existentes ({photos.length})
+              Existing Photos ({photos.length})
             </label>
 
             {loading ? (
@@ -653,7 +653,7 @@ function ProductsSection() {
                     variant="edit"
                     onClick={() => handleOpenPhotos(product)}
                   >
-                    📸 Fotos
+                    📸 Photos
                   </ActionButton>
                   <ActionButton
                     variant="delete"

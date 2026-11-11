@@ -50,7 +50,7 @@ test("REQ-CHAT-02: more than 20 messages per minute per user return 429", async 
   for (let i = 0; i < 21; i++) status.push((await submit(cookie, "oi")).status);
   assert.ok(
     status.slice(0, 20).every((s) => s === 200),
-    "as 20 primeiras devem passar",
+    "the first 20 must pass",
   );
   assert.equal(status[20], 429);
 });

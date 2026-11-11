@@ -1,4 +1,4 @@
-// lib/ai/prompts/sustentabilidade.ts
+// lib/ai/prompts/sustainability.ts
 
 /**
  * ============================================================================

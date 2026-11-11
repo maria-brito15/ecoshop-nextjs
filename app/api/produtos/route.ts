@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     const result = await listProducts(parsed.data);
     return NextResponse.json(result);
   } catch (err) {
-    return ERRORS.internal("listar produtos", err);
+    return ERRORS.internal("list products", err);
   }
 }
 

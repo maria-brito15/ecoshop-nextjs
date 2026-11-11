@@ -52,13 +52,13 @@ test("REQ-PERF-02: the user edits the name and phone of their own profile", asyn
     req(`/api/usuarios/${u.id}`, {
       method: "PUT",
       cookie: await cookieDe(u),
-      body: { nome: "Nome Novo Teste", telefone: "11999990000" },
+      body: { nome: "New Test Name", telefone: "11999990000" },
     }),
     ctx(u.id),
   );
   assert.equal(res.status, 200);
   const saved = await prisma.usuario.findUnique({ where: { id: u.id } });
-  assert.equal(saved?.nome, "Nome Novo Teste");
+  assert.equal(saved?.nome, "New Test Name");
   assert.equal(saved?.telefone, "11999990000");
 });
 
@@ -68,7 +68,7 @@ test("REQ-PERF-03: the user cannot change their own type", async () => {
     req(`/api/usuarios/${u.id}`, {
       method: "PUT",
       cookie: await cookieDe(u),
-      body: { nome: "Nome Valido", tipo: "ADMIN" },
+      body: { nome: "Valid Name", tipo: "ADMIN" },
     }),
     ctx(u.id),
   );

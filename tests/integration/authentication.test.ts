@@ -146,13 +146,13 @@ test("REQ-AUTH-07: no user response exposes the password (create and update by a
     req(`/api/usuarios/${c.usuario.id}`, {
       method: "PUT",
       cookie,
-      body: { nome: "Nome Atualizado" },
+      body: { nome: "Updated Name" },
     }),
     ctx(c.usuario.id),
   );
   assert.equal(updated.status, 200);
   const a = await updated.json();
-  assert.equal(a.usuario.nome, "Nome Atualizado");
+  assert.equal(a.usuario.nome, "Updated Name");
   assert.equal(
     "senha" in a.usuario,
     false,

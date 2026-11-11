@@ -22,7 +22,7 @@
  * - Tamanho máximo: 10MB
  * - Formatos aceitos: JPG, PNG, GIF, WebP
  *
- * @see lib/ai/analisar-imagem.ts - Orquestração da análise
+ * @see lib/ai/analyze-image.ts - Orquestração da análise
  * ============================================================================
  */
 

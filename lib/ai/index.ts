@@ -17,7 +17,7 @@
  * ============================================================================
  */
 
-export { analyzeImage as analisarImagem } from "./analisar-imagem";
+export { analyzeImage as analisarImagem } from "./analyze-image";
 export { classifyImage as classificarImagemAzure } from "./providers/azure-vision";
-export { fallbackAnalysis as analiseBasica } from "./fallbacks/sustentabilidade";
+export { fallbackAnalysis as analiseBasica } from "./fallbacks/sustainability";
 export type { AiAnalysis as AnaliseIA, ScanResult as ResultadoScan } from "@/types/ai";
