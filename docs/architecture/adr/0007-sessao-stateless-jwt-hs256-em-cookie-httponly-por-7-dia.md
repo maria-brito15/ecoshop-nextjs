@@ -1,6 +1,7 @@
 # ADR-0007: Sessão stateless: JWT HS256 em cookie httpOnly por 7 dias, sem revogação
 
-- Status: Inferido
+- Status: Substituído
+- Substituído por: ADR-0021
 - Data: desconhecida (sem histórico git no pacote analisado)
 - Decisores: desconhecido (decisão histórica)
 - Origem: inferida do código

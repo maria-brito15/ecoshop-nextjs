@@ -1,6 +1,6 @@
 # PERF · Conta e perfil do usuário
 
-> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-10. ADRs: ADR-0017 · ADR-0007
+> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-11. ADRs: ADR-0017 · ADR-0021 · ADR-0004
 
 ## Objetivo
 
@@ -44,5 +44,4 @@ Excluir a própria conta; alterar e-mail e senha pela tela.
 
 ## Perguntas abertas
 
-1. O histórico de produtos vistos (REQ-PERF-05) e as métricas de impacto pessoal (REQ-PERF-06): decidido (2026-11-10) que são desejados, mas ficam em backlog — nenhum dos dois tem dados reais hoje (o histórico nem é gravado). Ver `docs/architecture/adr/pendentes.md`.
-2. O usuário pode alterar o próprio e-mail e senha? (a API permite; a tela não)
+1. O usuário pode alterar o próprio e-mail e senha? (a API permite; a tela não)

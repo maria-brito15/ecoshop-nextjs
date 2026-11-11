@@ -24,6 +24,7 @@ ADMIN (escrita); todos (leitura, ver AUTZ-02).
 | REQ-REF-02 | Se o nome informado já existe, o sistema deve responder 409 ao criar categoria, marca ou certificado. | Nome duplicado → 409 |
 | REQ-REF-03 | Se uma categoria, marca ou certificado tem vínculos, o sistema deve responder 409 ao excluí-lo. | DELETE de categoria com produtos → 409 |
 | REQ-REF-04 | Se um ADMIN cria uma marca para um usuário que não é do tipo MARCA nem ADMIN, o sistema deve recusar. | POST /api/marcas com usuário CLIENTE → 409; com usuário inexistente → 404 |
+| REQ-REF-05 | Se o `id` das rotas de categorias, marcas ou certificados não é um inteiro positivo, o sistema deve responder 400. | `abc`, `0`, `1.5` → 400 em GET, PUT e DELETE |
 
 ## Casos-limite
 

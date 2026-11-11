@@ -1,6 +1,7 @@
 # ADR-0010: Redis opcional com fail-open, inclusive no rate limit
 
-- Status: Inferido
+- Status: Substituído
+- Substituído por: ADR-0020
 - Data: desconhecida (sem histórico git no pacote analisado)
 - Decisores: desconhecido (decisão histórica)
 - Origem: inferida do código

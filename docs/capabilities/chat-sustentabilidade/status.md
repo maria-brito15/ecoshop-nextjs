@@ -9,7 +9,9 @@ Legenda: ✅ implementado e testado · ◐ parcial ou sem teste · ❌ não impl
 | REQ-CHAT-01 | ✅ | test: tests/integration/chat-ia.test.ts | 2026-11-10 |
 | REQ-CHAT-02 | ✅ | test: tests/integration/chat-ia.test.ts | 2026-11-10 |
 | REQ-CHAT-03 | ✅ | test: tests/integration/chat-ia.test.ts | 2026-11-10 |
-| REQ-CHAT-04 | ✅ | test: tests/integration/chat-ia.test.ts | 2026-11-10 |
+| REQ-CHAT-04 | ✅ | test: tests/integration/chat-ia.test.ts (2026-11-10). Em 2026-11-11 a chamada ao Gemini foi movida para o provedor (REQ-CHAT-08/09); esse arquivo **não foi reexecutado** (precisa de banco) | 2026-11-10 |
 | REQ-CHAT-05 | ✅ | test: tests/integration/chat-ia.test.ts | 2026-11-10 |
-| REQ-CHAT-06 | ❌ | decisão do dono (2026-11-10): o chat fica e ganha interface; nenhuma tela existe | 2026-11-10 |
+| REQ-CHAT-06 | ◐ | código: app/components/ChatFlutuante.tsx (botão flutuante, só para quem tem sessão); API confirmada via curl (401 sem sessão, chega ao Gemini com sessão). Falta verificação visual no navegador | 2026-11-10 |
 | REQ-CHAT-07 | ✅ | test: tests/integration/autorizacao.test.ts | 2026-11-10 |
+| REQ-CHAT-08 | ✅ | test: tests/integration/entrada-e-erros.test.ts (schema, chamada ao Gemini do chat e do scan, handler com 21 itens) | 2026-11-11 |
+| REQ-CHAT-09 | ✅ | test: tests/integration/entrada-e-erros.test.ts | 2026-11-11 |

@@ -28,6 +28,7 @@ Usuário autenticado (qualquer papel).
 | REQ-SCAN-06 | Se o arquivo falta, não é imagem aceita ou excede 10 MB, o sistema deve responder 400. | Sem arquivo, .gif ou 11 MB → 400 |
 | REQ-SCAN-07 | Se o Azure não responde ou falha, o sistema deve responder 422 com sugestão ao usuário, não 500. | fetch do Azure falha → 422 |
 | REQ-SCAN-08 | Quando a análise indica descarte correto e impacto, o sistema deve exibi-los na tela do EcoScan. | Tela mostra os 6 campos devolvidos |
+| REQ-SCAN-09 | O sistema deve aplicar tempo limite às chamadas ao Azure e ao Gemini e tratar o estouro como falha da dependência (REQ-SCAN-05 e REQ-SCAN-07). | Chamada que não responde é abortada; Azure → `null` (422 na rota), Gemini → `null` (contingência) |
 
 ## Casos-limite
 

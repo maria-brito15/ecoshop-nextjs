@@ -1,6 +1,6 @@
 # CAT · Catálogo de produtos (vitrine)
 
-> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-10. ADRs: ADR-0004 · ADR-0009
+> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-11. ADRs: ADR-0004 · ADR-0009 · ADR-0018
 
 ## Objetivo
 
@@ -27,6 +27,8 @@ Visitante · CLIENTE · MARCA · ADMIN (todos leem).
 | REQ-CAT-06 | Quando o visitante ordena por preço ou nome, ou limita o preço máximo, o sistema deve aplicar a ordenação e o limite ao catálogo inteiro, não apenas à página exibida. | Ordenar por preço crescente → o primeiro item da página 1 é o mais barato de todos |
 | REQ-CAT-07 | Quando o visitante filtra por marca, o sistema deve devolver somente produtos dela. | marcaId=N → só produtos da marca N |
 | REQ-CAT-08 | Quando o visitante abre um produto, o sistema deve exibir nome, descrição, preço, categoria, marca e seus certificados. | GET /api/produtos/[id] inclui categoria, marca e certificados |
+| REQ-CAT-09 | Se o `id` de `GET /api/produtos/[id]` não é um inteiro positivo, o sistema deve responder 400. | `abc`, `0`, `-1`, `1.5`, `1e3`, `2147483648` → 400 (não 500) |
+| REQ-CAT-10 | O sistema deve montar a chave de cache da listagem a partir dos filtros validados, em ordem fixa e só com os parâmetros conhecidos (a busca por `nome` ignora caixa e espaços das pontas e tem no máximo 100 caracteres; mais que isso → 400). | Ordem dos parâmetros e parâmetros desconhecidos não mudam a chave; `nome` de 101 caracteres → 400 |
 
 ## Casos-limite
 
@@ -34,7 +36,7 @@ Produto sem foto mostra placeholder (fotoUrl vazio). Lista cacheada por 2 min (N
 
 ## Interfaces
 
-GET /api/produtos?page&size&nome&categoriaId · GET /api/produtos/[id] · páginas /produtos e /produtos/[id].
+GET /api/produtos?page&size&nome&categoriaId&marcaId&precoMax&sort · GET /api/produtos/[id] · páginas /produtos e /produtos/[id].
 
 ## NFRs aplicáveis
 
@@ -46,5 +48,4 @@ Carrinho, pedido, pagamento, estoque, avaliações.
 
 ## Perguntas abertas
 
-1. Ordenação e limite de preço no catálogo inteiro (REQ-CAT-06): decidido (2026-11-10) que é funcionalidade desejada, mas fica em backlog — hoje não existe nem no servidor (não é só a UI que falta). Ver `docs/architecture/adr/pendentes.md`.
-2. Filtro por marca (REQ-CAT-07): decidido (2026-11-10) que é funcionalidade desejada, mas fica em backlog pelo mesmo motivo.
+Nenhuma. REQ-CAT-06 e REQ-CAT-07 foram implementados em 2026-11-11 (`specs/005-filtro-marca-ordenacao-preco/spec.md`).

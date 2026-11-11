@@ -17,10 +17,11 @@ Vitrine/catálogo de produtos sustentáveis (sem carrinho, pedido ou pagamento).
 4. Ao final: consolidar `spec.md`/`status.md` da capacidade.
 
 ## Comandos
-`npm run lint` · `npx tsc --noEmit` · `npm test` (precisa de Postgres e Redis; ver `docs/guides/rodar-e-testar.md`) · `npm run sdd:check` · `node scripts/sdd/impact-map.mjs --worktree`.
+`npm run lint` · `npx tsc --noEmit` · `npm run test:file -- tests/integration/<cap>.test.ts` (um arquivo, saída curta) · `npm run test:quiet` (suíte toda, saída curta) · `npm test` (como no CI; precisa de Postgres e Redis; ver `docs/guides/rodar-e-testar.md`) · `npm run sdd:check` · `node scripts/sdd/impact-map.mjs --worktree`.
 
 ## Regras rápidas
 - Não invente fatos nem números; marque o que não sabe como ❔ e pergunte.
 - Preserve o comportamento atual salvo mudança aprovada em spec.
 - Handlers de API chamam `services/`, não `lib/db` direto; decisão de acesso fica no handler (ADR-0017).
 - Escreva docs em português. Não edite a Constitution nem ADR Aceito sem pedido explícito do dono.
+- Não leia `docs/discovery/` sem pedido (retrato congelado). Em arquivos grandes, use Grep e Read com offset/limit.

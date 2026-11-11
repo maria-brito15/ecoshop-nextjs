@@ -1,6 +1,7 @@
 # ADR-0013: Entrega por imagem Docker no ghcr.io e VPS via SSH com Compose
 
-- Status: Inferido
+- Status: Substituído
+- Substituído por: ADR-0019
 - Data: desconhecida (sem histórico git no pacote analisado)
 - Decisores: desconhecido (decisão histórica)
 - Origem: inferida do código
