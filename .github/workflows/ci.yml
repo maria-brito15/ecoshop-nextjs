@@ -178,7 +178,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build & Push (application)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           target: runner
@@ -192,7 +192,7 @@ jobs:
 
       - name: Build & Push (migrations)
         # the "runner" target has no Prisma CLI; the deploy applies the migrations with this image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           target: migrator
