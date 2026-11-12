@@ -1,4 +1,4 @@
-// MIDIA capability — docs/capabilities/midia-de-produto/spec.md
+// MIDIA capability — docs/capabilities/product-media/spec.md
 import {
   RUN,
   email,

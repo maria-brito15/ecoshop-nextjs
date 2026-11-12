@@ -29,4 +29,4 @@ flowchart LR
 - Authorization per handler (ADR-0017); the middleware authenticates and restricts `/painel` pages.
 
 ## Effective authorization (per route)
-Source of truth: `docs/capabilities/autorizacao/spec.md`.
+Source of truth: `docs/capabilities/authorization/spec.md`.

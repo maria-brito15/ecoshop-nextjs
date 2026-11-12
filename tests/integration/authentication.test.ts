@@ -1,4 +1,4 @@
-// Capacidade AUTH — docs/capabilities/autenticacao/spec.md
+// AUTH capability — docs/capabilities/authentication/spec.md
 import {
   email,
   createUserDirectly,

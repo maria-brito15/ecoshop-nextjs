@@ -1,4 +1,4 @@
-// Capacidade USR — docs/capabilities/gestao-de-usuarios/spec.md
+// USR capability — docs/capabilities/user-management/spec.md
 import {
   email,
   createUserDirectly,

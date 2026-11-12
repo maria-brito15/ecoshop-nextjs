@@ -22,7 +22,7 @@
  */
 
 import { prisma } from "@/lib/db";
-import { ResourceNotFound, BusinessConflict } from "@/lib/errors/dominio";
+import { ResourceNotFound, BusinessConflict } from "@/lib/errors/domain";
 import {
   withCache,
   invalidateCache,
@@ -95,7 +95,7 @@ export async function getBrand(id: number) {
  *
  * @throws ResourceNotFound if usuarioId does not exist
  * @throws BusinessConflict if the user is neither MARCA nor ADMIN
- *   (REQ-REF-04; decision recorded in docs/capabilities/cadastros-de-referencia/spec.md)
+ *   (REQ-REF-04; decision recorded in docs/capabilities/reference-data/spec.md)
  *
  * NOTE (ADR-0018): this path is used by the ADMIN in the panel, with the user
  * already of type MARCA/ADMIN — so the brand goes straight in as APPROVED, unlike

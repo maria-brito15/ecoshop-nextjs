@@ -3,7 +3,7 @@
  *
  * Static tests: they read the compose file, Dockerfile, workflow and deploy script. What
  * requires Docker or a server (actually starting, actually rolling back) runs in CI or is
- * recorded as manual verification in `docs/capabilities/operacao/status.md`.
+ * recorded as manual verification in `docs/capabilities/operations/status.md`.
  */
 import { closeConnections } from "./helpers";
 import test, { after } from "node:test";

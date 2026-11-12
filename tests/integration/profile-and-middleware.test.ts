@@ -1,4 +1,4 @@
-// Capacidades PERF e AUTZ (middleware) — docs/capabilities/conta-e-perfil, docs/capabilities/autorizacao
+// PERF and AUTZ (middleware) capabilities — docs/capabilities/account-and-profile, docs/capabilities/authorization
 import {
   email,
   createUserDirectly,

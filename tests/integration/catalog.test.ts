@@ -1,4 +1,4 @@
-// Capacidades CAT, PROD e REF — docs/capabilities/{catalogo,gestao-de-produtos,cadastros-de-referencia}
+// CAT, PROD and REF capabilities — docs/capabilities/{catalog,product-management,reference-data}
 import {
   RUN,
   email,

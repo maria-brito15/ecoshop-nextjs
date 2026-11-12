@@ -1,4 +1,4 @@
-// Capacidade CHAT — docs/capabilities/chat-sustentabilidade/spec.md
+// CHAT capability — docs/capabilities/sustainability-chat/spec.md
 import {
   email,
   createUserDirectly,

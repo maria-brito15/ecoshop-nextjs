@@ -20,7 +20,7 @@ import {
   ResourceNotFound,
   BusinessConflict,
   OperationNotAllowed,
-} from "@/lib/errors/dominio";
+} from "@/lib/errors/domain";
 import { log, serializeError } from "@/lib/log";
 
 /**

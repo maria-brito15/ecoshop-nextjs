@@ -1,4 +1,4 @@
-// Capacidade OPS — docs/capabilities/operacao/spec.md
+// OPS capability — docs/capabilities/operations/spec.md
 import { closeConnections, req } from "./helpers";
 import { test, after } from "node:test";
 import assert from "node:assert/strict";

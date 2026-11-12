@@ -4,18 +4,18 @@
 
 | Capability | Spec | ✅ | ◐ | ❌ | ❔ | Total |
 |---|---|---|---|---|---|---|
-| AUTZ | [autorizacao](autorizacao/spec.md) | 8 | 0 | 0 | 0 | 8 |
-| AUTH | [autenticacao](autenticacao/spec.md) | 15 | 7 | 0 | 1 | 23 |
-| PERF | [conta-e-perfil](conta-e-perfil/spec.md) | 3 | 3 | 0 | 0 | 6 |
-| CAT | [catalogo](catalogo/spec.md) | 9 | 1 | 0 | 0 | 10 |
-| PROD | [gestao-de-produtos](gestao-de-produtos/spec.md) | 6 | 1 | 0 | 0 | 7 |
-| REF | [cadastros-de-referencia](cadastros-de-referencia/spec.md) | 5 | 0 | 0 | 0 | 5 |
-| MIDIA | [midia-de-produto](midia-de-produto/spec.md) | 6 | 1 | 0 | 0 | 7 |
-| USR | [gestao-de-usuarios](gestao-de-usuarios/spec.md) | 6 | 1 | 1 | 0 | 8 |
+| AUTZ | [authorization](authorization/spec.md) | 8 | 0 | 0 | 0 | 8 |
+| AUTH | [authentication](authentication/spec.md) | 15 | 7 | 0 | 1 | 23 |
+| PERF | [account-and-profile](account-and-profile/spec.md) | 3 | 3 | 0 | 0 | 6 |
+| CAT | [catalog](catalog/spec.md) | 9 | 1 | 0 | 0 | 10 |
+| PROD | [product-management](product-management/spec.md) | 6 | 1 | 0 | 0 | 7 |
+| REF | [reference-data](reference-data/spec.md) | 5 | 0 | 0 | 0 | 5 |
+| MIDIA | [product-media](product-media/spec.md) | 6 | 1 | 0 | 0 | 7 |
+| USR | [user-management](user-management/spec.md) | 6 | 1 | 1 | 0 | 8 |
 | SCAN | [ecoscan](ecoscan/spec.md) | 8 | 1 | 0 | 0 | 9 |
-| CHAT | [chat-sustentabilidade](chat-sustentabilidade/spec.md) | 8 | 1 | 0 | 0 | 9 |
-| CONT | [conteudo-institucional](conteudo-institucional/spec.md) | 0 | 5 | 0 | 0 | 5 |
-| OPS | [operacao](operacao/spec.md) | 13 | 7 | 0 | 0 | 20 |
+| CHAT | [sustainability-chat](sustainability-chat/spec.md) | 8 | 1 | 0 | 0 | 9 |
+| CONT | [institutional-content](institutional-content/spec.md) | 0 | 5 | 0 | 0 | 5 |
+| OPS | [operations](operations/spec.md) | 13 | 7 | 0 | 0 | 20 |
 | **Total** | | 87 | 28 | 1 | 1 | 117 |
 
 Legend: ✅ implemented and tested · ◐ partial or untested · ❌ does not meet the spec · ❔ not verified.

@@ -1,4 +1,4 @@
-// Capacidade AUTZ — docs/capabilities/autorizacao/spec.md  (ADR-0017)
+// AUTZ capability — docs/capabilities/authorization/spec.md  (ADR-0017)
 import {
   email,
   createUserDirectly,

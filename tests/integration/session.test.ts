@@ -28,7 +28,7 @@ import {
   type SessionIdentity,
 } from "@/services/session.service";
 import { mapError } from "@/lib/http/responses";
-import { OperationNotAllowed } from "@/lib/errors/dominio";
+import { OperationNotAllowed } from "@/lib/errors/domain";
 import { updateUserSchema } from "@/lib/schemas/user";
 import { POST as login } from "@/app/api/auth/route";
 import { PUT as updateUser } from "@/app/api/usuarios/[id]/route";

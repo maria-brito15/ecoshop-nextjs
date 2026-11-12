@@ -28,7 +28,7 @@
 ## Article III · Authorization denied by default, with a single source of truth
 
 1. Every API route declares its access level (`publico`, `autenticado`, `proprio-recurso`, `admin`); a route without a declaration is treated as `admin` (deny by default).
-2. The role × resource × action matrix is part of the spec (`docs/capabilities/autorizacao/spec.md`) and the implementation has **one** decision point (which one: ADR-P01, pending).
+2. The role × resource × action matrix is part of the spec (`docs/capabilities/authorization/spec.md`) and the implementation has **one** decision point (which one: ADR-P01, pending).
 3. Endpoints that incur external cost (AI) require authentication and a usage limit.
 
 **Why:** D1 (middleware contradicts handler) and D3 (public chat consuming quota).
@@ -124,7 +124,7 @@
 
 ## Article XIV · Code and language conventions
 
-1. **English** is the single language of the project: identifiers, files and folders, comments, messages (log, error, validation, interface), tests and documentation (ADR-0022). Kept as they are, being an external contract or existing data: API paths and JSON keys, database models/fields/tables, enum values, proper nouns, and the capability codes/requirement IDs. The glossary lives in `docs/product/glossario.md`.
+1. **English** is the single language of the project: identifiers, files and folders, comments, messages (log, error, validation, interface), tests and documentation (ADR-0022). Kept as they are, being an external contract or existing data: API paths and JSON keys, database models/fields/tables, enum values, proper nouns, and the capability codes/requirement IDs. The glossary lives in `docs/product/glossary.md`.
 2. A component/page does not exceed ~300 lines without justification; pages are composed of components per capability.
 3. ESLint + Prettier are mandatory in CI.
 

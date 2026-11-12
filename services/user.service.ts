@@ -37,7 +37,7 @@ import {
   BusinessConflict,
   OperationNotAllowed,
   ResourceNotFound,
-} from "@/lib/errors/dominio";
+} from "@/lib/errors/domain";
 import { revokeUserSessions } from "./session.service";
 import type { SessionIdentity } from "./session.service";
 import bcrypt from "bcryptjs";

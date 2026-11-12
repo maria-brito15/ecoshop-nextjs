@@ -21,7 +21,7 @@ import assert from "node:assert/strict";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { ResourceNotFound, BusinessConflict } from "@/lib/errors/dominio";
+import { ResourceNotFound, BusinessConflict } from "@/lib/errors/domain";
 import { mapError } from "@/lib/http/responses";
 import { parseId } from "@/lib/schemas/id";
 import {

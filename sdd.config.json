@@ -2,7 +2,7 @@
   "_ajuda": "Mapa código → capacidade (spec viva) e caminhos sensíveis → ADR dono. Usado por scripts/sdd/*. Atualize ao criar capacidade ou mover código.",
   "capacidades": {
     "AUTZ": {
-      "pasta": "autorizacao",
+      "pasta": "authorization",
       "codigo": [
         "middleware.ts",
         "config/protected-routes.ts",
@@ -10,7 +10,7 @@
       ]
     },
     "AUTH": {
-      "pasta": "autenticacao",
+      "pasta": "authentication",
       "codigo": [
         "app/api/auth/**",
         "app/api/users/**",
@@ -22,11 +22,11 @@
       ]
     },
     "PERF": {
-      "pasta": "conta-e-perfil",
+      "pasta": "account-and-profile",
       "codigo": ["app/(perfil)/**", "app/api/usuarios/[id]/**"]
     },
     "CAT": {
-      "pasta": "catalogo",
+      "pasta": "catalog",
       "codigo": [
         "app/(store)/**",
         "app/api/produtos/route.ts",
@@ -36,7 +36,7 @@
       ]
     },
     "PROD": {
-      "pasta": "gestao-de-produtos",
+      "pasta": "product-management",
       "codigo": [
         "app/(admin)/painel/**",
         "app/api/produtos/**",
@@ -45,7 +45,7 @@
       ]
     },
     "REF": {
-      "pasta": "cadastros-de-referencia",
+      "pasta": "reference-data",
       "codigo": [
         "app/api/categorias/**",
         "app/api/marcas/**",
@@ -59,7 +59,7 @@
       ]
     },
     "MIDIA": {
-      "pasta": "midia-de-produto",
+      "pasta": "product-media",
       "codigo": [
         "app/api/produtos/[id]/fotos/**",
         "services/photo.service.ts",
@@ -67,7 +67,7 @@
       ]
     },
     "USR": {
-      "pasta": "gestao-de-usuarios",
+      "pasta": "user-management",
       "codigo": ["app/api/usuarios/**", "services/user.service.ts"]
     },
     "SCAN": {
@@ -80,7 +80,7 @@
       ]
     },
     "CHAT": {
-      "pasta": "chat-sustentabilidade",
+      "pasta": "sustainability-chat",
       "codigo": [
         "app/api/ia/chat/**",
         "lib/schemas/ai-chat.ts",
@@ -88,7 +88,7 @@
       ]
     },
     "CONT": {
-      "pasta": "conteudo-institucional",
+      "pasta": "institutional-content",
       "codigo": [
         "app/page.tsx",
         "app/(educacao)/**",
@@ -98,7 +98,7 @@
       ]
     },
     "OPS": {
-      "pasta": "operacao",
+      "pasta": "operations",
       "codigo": [
         "Dockerfile",
         "docker-compose*.yml",

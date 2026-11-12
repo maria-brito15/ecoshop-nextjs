@@ -22,7 +22,7 @@
  */
 
 import { prisma } from "@/lib/db";
-import { ResourceNotFound } from "@/lib/errors/dominio";
+import { ResourceNotFound } from "@/lib/errors/domain";
 import {
   withCache,
   invalidateCache,
