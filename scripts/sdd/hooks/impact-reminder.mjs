@@ -2,27 +2,27 @@
 // PostToolUse (Edit|Write): reminds which capability/ADR the edited file affects.
 import { execFileSync } from "node:child_process";
 import { relative } from "node:path";
-import { entrada, contexto } from "./lib.mjs";
+import { readInput, addContext } from "./lib.mjs";
 
-const ev = await entrada();
-const alvo = ev.tool_input?.file_path;
-if (!alvo) process.exit(0);
-const rel = relative(process.cwd(), alvo).replaceAll("\\", "/");
+const ev = await readInput();
+const target = ev.tool_input?.file_path;
+if (!target) process.exit(0);
+const rel = relative(process.cwd(), target).replaceAll("\\", "/");
 try {
   const out = execFileSync(
     "node",
-    ["scripts/sdd/impact-map.mjs", "--arquivos", rel, "--json"],
+    ["scripts/sdd/impact-map.mjs", "--files", rel, "--json"],
     { encoding: "utf8" },
   );
   const r = JSON.parse(out);
-  const caps = (r.capacidades ?? []).join(", ");
-  const adrs = [...new Set((r.sensiveis ?? []).map((x) => x.adr ?? x))].join(
+  const caps = (r.capabilities ?? []).join(", ");
+  const adrs = [...new Set((r.sensitive ?? []).map((x) => x.adr ?? x))].join(
     ", ",
   );
   if (caps || adrs)
-    contexto(
+    addContext(
       "PostToolUse",
-      `Impacto SDD de ${rel}: capacidades [${caps || "nenhuma"}]; ADRs [${adrs || "nenhum"}]. Se o comportamento mudou, atualize o REQ, o teste e o status.md.`,
+      `SDD impact of ${rel}: capabilities [${caps || "none"}]; ADRs [${adrs || "none"}]. If behavior changed, update the REQ, the test and status.md.`,
     );
 } catch {
   /* the reminder is optional: it never blocks */

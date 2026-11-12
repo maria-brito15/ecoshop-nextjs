@@ -1,5 +1,5 @@
 // Claude Code hook utility: reads the JSON from stdin and emits decisions.
-export async function entrada() {
+export async function readInput() {
   let s = "";
   for await (const c of process.stdin) s += c;
   try {
@@ -8,21 +8,21 @@ export async function entrada() {
     return {};
   }
 }
-export const pedirConfirmacao = (motivo) => {
+export const askConfirmation = (reason) => {
   console.log(
     JSON.stringify({
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
         permissionDecision: "ask",
-        permissionDecisionReason: motivo,
+        permissionDecisionReason: reason,
       },
     }),
   );
 };
-export const contexto = (evento, texto) => {
+export const addContext = (eventName, text) => {
   console.log(
     JSON.stringify({
-      hookSpecificOutput: { hookEventName: evento, additionalContext: texto },
+      hookSpecificOutput: { hookEventName: eventName, additionalContext: text },
     }),
   );
 };

@@ -1,6 +1,6 @@
 # Phase 6 · Governance against drift
 
-**Mechanisms:** `npm run sdd:check` in CI (blocking); `impact-map --exige-adr` fails a PR that changes a sensitive path without citing the ADR; PR template with track, capabilities, REQs and ADRs; a monthly `sdd-drift` workflow that opens an issue with `trace-check --stale`; `CODEOWNERS` (replace `@DONO`).
+**Mechanisms:** `npm run sdd:check` in CI (blocking); `impact-map --require-adr` fails a PR that changes a sensitive path without citing the ADR; PR template with track, capabilities, REQs and ADRs; a monthly `sdd-drift` workflow that opens an issue with `trace-check --stale`; `CODEOWNERS` (replace `@OWNER`).
 
 **Core idea:** drift is not avoided with better documentation; it is avoided by making part of the spec executable and having a detector confront the rest with the code.
 

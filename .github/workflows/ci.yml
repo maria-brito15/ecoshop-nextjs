@@ -95,7 +95,7 @@ jobs:
 
       - name: Impact on capabilities and ADRs (fails if a sensitive path changed without citing the ADR in the PR)
         if: github.event_name == 'pull_request'
-        run: node scripts/sdd/impact-map.mjs --base origin/${{ github.base_ref }} --exige-adr >> "$GITHUB_STEP_SUMMARY"
+        run: node scripts/sdd/impact-map.mjs --base origin/${{ github.base_ref }} --require-adr >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build
         run: npm run build
