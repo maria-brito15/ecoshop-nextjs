@@ -80,7 +80,7 @@ export interface RouteRule {
  * 3. /painel → admin (only administrators access the panel)
  * 4. /api/usuarios → authenticated (the middleware only requires a session; who may read/edit each
  *    record is decided in the handler: the user themselves or ADMIN, and only ADMIN lists, creates and deletes.
- *    See ADR-0017 and specs/001-perfil-proprio-usuario)
+ *    See ADR-0017 and specs/001-own-user-profile)
  * 5. /api/admin → admin (administrative endpoints)
  */
 export const ROUTE_RULES: RouteRule[] = [

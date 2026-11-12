@@ -6,7 +6,7 @@ description: Use para avaliar desenhos, trade-offs e decisões técnicas (estrut
 # Arquitetura e ADRs (EcoShop)
 
 ## Quando criar ADR
-Mudança em caminho sensível de `sdd.config.json`, dependência de runtime nova, mudança de schema Prisma, ou decisão que o próximo desenvolvedor não deduz do código. Decisões pendentes: `docs/architecture/adr/pendentes.md`.
+Mudança em caminho sensível de `sdd.config.json`, dependência de runtime nova, mudança de schema Prisma, ou decisão que o próximo desenvolvedor não deduz do código. Decisões pendentes: `docs/architecture/adr/pending.md`.
 
 ## Passos
 1. Leia os ADRs vigentes da área e a Constitution; não contradiga sem emendar/substituir.

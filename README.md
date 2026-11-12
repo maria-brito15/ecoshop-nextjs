@@ -32,7 +32,7 @@ npx tsx prisma/seed-admin.ts
 
 > `npm run seed:admin` **does not work**: the `seed` and `seed:admin` scripts sit under the `"prisma"` key of `package.json`, not under `"scripts"`.
 
-See [`docs/guides/rodar-e-testar.md`](docs/guides/rodar-e-testar.md) (Portuguese).
+See [`docs/guides/run-and-test.md`](docs/guides/run-and-test.md).
 
 ## Verify
 
@@ -55,7 +55,7 @@ Snapshot in [`docs/discovery/2026-11-coleta/`](docs/discovery/2026-11-coleta) (P
 
 ## Spec-Driven Development
 
-Project rules: [`.specify/memory/constitution.md`](.specify/memory/constitution.md) · behavior per capability: [`docs/capabilities/`](docs/capabilities/README.md) · decisions: [`docs/architecture/adr/`](docs/architecture/adr/README.md) · workflow: [`docs/guides/fluxo-sdd.md`](docs/guides/fluxo-sdd.md) · Claude Code instructions: [`CLAUDE.md`](CLAUDE.md). The code base is English-only (ADR-0022); `docs/` and `specs/` are still being translated from Portuguese.
+Project rules: [`.specify/memory/constitution.md`](.specify/memory/constitution.md) · behavior per capability: [`docs/capabilities/`](docs/capabilities/README.md) · decisions: [`docs/architecture/adr/`](docs/architecture/adr/README.md) · workflow: [`docs/guides/sdd-flow.md`](docs/guides/sdd-flow.md) · Claude Code instructions: [`CLAUDE.md`](CLAUDE.md). The code base and the documentation are English-only (ADR-0022); `docs/discovery/` is a frozen snapshot and stays in Portuguese.
 
 ## Stack
 

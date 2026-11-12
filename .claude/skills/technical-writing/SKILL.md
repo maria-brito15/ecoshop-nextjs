@@ -5,7 +5,7 @@ description: Use para produzir documentação técnica clara e consistente em po
 
 # Escrita técnica (EcoShop)
 
-- Português, frases curtas, voz ativa. Termos do glossário em `docs/product/glossario.md`.
+- Português, frases curtas, voz ativa. Termos do glossário em `docs/product/glossary.md`.
 - Primeiro o que o leitor precisa fazer ou saber; depois o porquê.
 - Cada afirmação sobre o sistema aponta para evidência (`arquivo:linha`, teste ou ADR) ou é marcada como inferência/dúvida.
 - Não duplique: aponte para a fonte de verdade (Constitution, spec viva, ADR).
