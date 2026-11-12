@@ -1,66 +1,66 @@
-# AUTH · Autenticação (cadastro, login, sessão)
+# AUTH · Authentication (sign-up, login, session)
 
-> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-10. ADRs: ADR-0018 · ADR-0020 · ADR-0021
+> Living spec. Source of truth for the expected behavior. Last review: 2026-11-10. ADRs: ADR-0018 · ADR-0020 · ADR-0021
 
-## Objetivo
+## Goal
 
-Permitir que uma pessoa crie conta, entre, saia e mantenha uma sessão segura, com proteção contra tentativas em massa.
+Let a person create an account, sign in, sign out and keep a secure session, with protection against mass attempts.
 
-## Atores
+## Actors
 
-Visitante · CLIENTE · MARCA · ADMIN (criado apenas por ADMIN ou pelo seed).
+Visitor · CLIENTE · MARCA · ADMIN (created only by an ADMIN or by the seed).
 
-## Regras de negócio
+## Business rules
 
-- **BR-AUTH-01** — E-mail é único por usuário.
-- **BR-AUTH-02** — ADMIN não pode ser criado pelo cadastro público.
-- **BR-AUTH-03** — Senha tem ao menos 8 caracteres e é guardada com bcrypt (12 rounds).
-- **BR-AUTH-04** — Cadastro como MARCA exige aprovação de um ADMIN; enquanto pendente, o usuário tem os direitos de CLIENTE (decisão do dono, 2026-11-10; modelo em ADR-0018).
+- **BR-AUTH-01** — Email is unique per user.
+- **BR-AUTH-02** — An ADMIN cannot be created through public sign-up.
+- **BR-AUTH-03** — The password has at least 8 characters and is stored with bcrypt (12 rounds).
+- **BR-AUTH-04** — Signing up as MARCA requires approval by an ADMIN; while pending, the user has CLIENTE rights (owner decision, 2026-11-10; model in ADR-0018).
 
-## Requisitos
+## Requirements
 
-| ID | Requisito (EARS) | Aceitação |
+| ID | Requirement (EARS) | Acceptance |
 |---|---|---|
-| REQ-AUTH-01 | Quando credenciais válidas são enviadas ao login, o sistema deve responder 200 e definir o cookie de sessão `token` como httpOnly e SameSite=lax. | POST /api/auth válido → 200, cabeçalho set-cookie com token, HttpOnly, SameSite=lax; corpo sem senha |
-| REQ-AUTH-02 | Se o e-mail não existe ou a senha está errada, o sistema deve responder o mesmo 401, sem revelar qual dos dois falhou. | As duas respostas têm status 401 e corpo idêntico |
-| REQ-AUTH-03 | Se o corpo do login é inválido, o sistema deve responder 400. | e-mail malformado e senha vazia → 400 |
-| REQ-AUTH-04 | Se um mesmo IP faz mais de 10 tentativas de login em 1 minuto, o sistema deve responder 429. | A 11ª tentativa em 60 s → 429; as 10 primeiras não |
-| REQ-AUTH-05 | Quando o cadastro público é válido, o sistema deve criar um usuário CLIENTE (padrão), iniciar a sessão e responder 201. | POST /api/users → 201, tipo CLIENTE, set-cookie token |
-| REQ-AUTH-06 | Se o e-mail do cadastro já existe, o sistema deve responder 409. | Cadastro com e-mail existente → 409 |
-| REQ-AUTH-07 | O sistema nunca deve incluir a senha ou seu hash em respostas sobre usuários (login, cadastro, criação e atualização por ADMIN). | As respostas de login, cadastro, POST /api/usuarios e PUT /api/usuarios/[id] não contêm o campo senha |
-| REQ-AUTH-08 | Se o cadastro público pede o tipo ADMIN, o sistema deve responder 400. | POST /api/users com tipo ADMIN → 400 |
-| REQ-AUTH-09 | Quando o usuário sai, o sistema deve remover o cookie de sessão. | DELETE /api/auth → 200 e set-cookie expirando token |
-| REQ-AUTH-10 | Quando a sessão é válida, o sistema deve devolver os dados do usuário em /api/auth/me; sem sessão, deve responder 401. | GET /api/auth/me com e sem cookie |
-| REQ-AUTH-11 | Quando alguém se cadastra como MARCA, o sistema deve registrar o pedido como pendente (usuário CLIENTE + `Marca` com status PENDENTE) e conceder os direitos de MARCA somente após aprovação de um ADMIN. | Cadastro com tipo MARCA não resulta em usuário MARCA até aprovação; `Marca.status === "PENDENTE"` |
-| REQ-AUTH-12 | Se a senha do cadastro tem menos de 8 caracteres, o sistema deve responder 400. | POST /api/users com senha de 7 caracteres → 400 |
-| REQ-AUTH-13 | Quando um usuário é excluído ou tem o papel alterado, o sistema deve encerrar ou invalidar suas sessões existentes em prazo a definir. | Token emitido antes da exclusão deixa de valer em até N minutos (N a decidir) |
-| REQ-AUTH-14 | Se o cadastro pede `tipo: "MARCA"` sem o nome da marca, o sistema deve responder 400. | POST /api/users com tipo MARCA e sem `marcaNome` → 400 |
-| REQ-AUTH-15 | O sistema deve normalizar o e-mail (remover espaços das pontas e converter para minúsculas) no cadastro, no login e na atualização, e buscar usuários ignorando a diferença de caixa; ao cadastrar MARCA com nome de marca já existente, deve responder 409. | Cadastrar `Foo@X.com` grava `foo@x.com`; cadastrar `foo@x.com` depois → 409; conta antiga com caixa mista continua entrando |
-| REQ-AUTH-16 | Se a senha informada no cadastro ou na atualização passa de 72 bytes (limite útil do bcrypt), o sistema deve responder 400. | 73 bytes → 400; 72 → aceita; `ç` × 37 (74 bytes) → 400 |
-| REQ-AUTH-17 | Quando o login redireciona por `?next=`, o sistema deve aceitar apenas caminho local (começa com uma única `/`, sem `\` nem caracteres de controle); qualquer outro valor leva a `/`. | `//evil.com`, `https://evil.com`, `/\evil.com`, `javascript:…` → `/` |
-| REQ-AUTH-18 | O JWT de acesso deve expirar em 15 minutos. | `exp` do token emitido ≈ agora + 900 s |
-| REQ-AUTH-19 | Quando o login ou o cadastro tem sucesso, o sistema deve emitir também um token de renovação opaco (cookie `refresh`, 7 dias, guardado só como hash no Redis); renovar deve gastá-lo (uso único), reler o papel do usuário no banco e emitir um par novo; sem Redis, o login funciona sem renovação e a renovação responde 503. | Reusar um token → recusado; dois pedidos simultâneos → um renova; Redis fora → 503; admin rebaixado vira CLIENTE ao renovar |
-| REQ-AUTH-20 | Quando o usuário faz logout, troca a senha ou é excluído, o sistema deve revogar os tokens de renovação (logout: o da sessão; troca de senha e exclusão: todos do usuário), sem falhar se o Redis estiver fora. | Após revogar, a renovação é recusada; sessões de outros usuários não são tocadas |
-| REQ-AUTH-21 | Quando o usuário troca a PRÓPRIA senha, o sistema deve exigir `senhaAtual` correta (403 "Senha atual incorreta"); um ADMIN trocando a de outro usuário não precisa. | Sem `senhaAtual` ou errada → 403; certa → 200 |
-| REQ-AUTH-22 | Quando uma página protegida recebe um acesso expirado mas há token de renovação, o sistema deve renovar e voltar para a mesma página; falhando, levar ao login com `next`. | Middleware redireciona para `/api/auth/refresh?next=/perfil?aba=2` |
-| REQ-AUTH-23 | O login deve executar a comparação do bcrypt mesmo quando o e-mail não existe, para o tempo de resposta não revelar quais e-mails têm conta. | Tempo com e-mail inexistente é da mesma ordem que com e-mail existente |
+| REQ-AUTH-01 | When valid credentials are sent to login, the system shall respond 200 and set the `token` session cookie as httpOnly and SameSite=lax. | Valid POST /api/auth → 200, set-cookie header with token, HttpOnly, SameSite=lax; body without password |
+| REQ-AUTH-02 | If the email does not exist or the password is wrong, the system shall respond with the same 401, without revealing which of the two failed. | Both responses have status 401 and an identical body |
+| REQ-AUTH-03 | If the login body is invalid, the system shall respond 400. | malformed email and empty password → 400 |
+| REQ-AUTH-04 | If the same IP makes more than 10 login attempts in 1 minute, the system shall respond 429. | The 11th attempt in 60 s → 429; the first 10 are not |
+| REQ-AUTH-05 | When a public sign-up is valid, the system shall create a CLIENTE user (default), start the session and respond 201. | POST /api/users → 201, type CLIENTE, set-cookie token |
+| REQ-AUTH-06 | If the sign-up email already exists, the system shall respond 409. | Sign-up with an existing email → 409 |
+| REQ-AUTH-07 | The system shall never include the password or its hash in responses about users (login, sign-up, creation and update by an ADMIN). | The responses of login, sign-up, POST /api/usuarios and PUT /api/usuarios/[id] do not contain the `senha` field |
+| REQ-AUTH-08 | If public sign-up asks for the ADMIN type, the system shall respond 400. | POST /api/users with type ADMIN → 400 |
+| REQ-AUTH-09 | When the user signs out, the system shall remove the session cookie. | DELETE /api/auth → 200 and a set-cookie expiring token |
+| REQ-AUTH-10 | When the session is valid, the system shall return the user's data at /api/auth/me; without a session, it shall respond 401. | GET /api/auth/me with and without the cookie |
+| REQ-AUTH-11 | When someone signs up as MARCA, the system shall record the request as pending (CLIENTE user + `Marca` with status PENDENTE) and grant MARCA rights only after approval by an ADMIN. | Sign-up with type MARCA does not result in a MARCA user until approval; `Marca.status === "PENDENTE"` |
+| REQ-AUTH-12 | If the sign-up password has fewer than 8 characters, the system shall respond 400. | POST /api/users with a 7-character password → 400 |
+| REQ-AUTH-13 | When a user is deleted or has the role changed, the system shall end or invalidate their existing sessions within a period to be defined. | A token issued before the deletion stops being valid within N minutes (N to be decided) |
+| REQ-AUTH-14 | If sign-up asks for `tipo: "MARCA"` without the brand name, the system shall respond 400. | POST /api/users with type MARCA and without `marcaNome` → 400 |
+| REQ-AUTH-15 | The system shall normalize the email (trim the ends and lowercase it) on sign-up, login and update, and look users up ignoring case; when signing up a MARCA with an already existing brand name, it shall respond 409. | Signing up `Foo@X.com` stores `foo@x.com`; signing up `foo@x.com` afterwards → 409; an old mixed-case account still signs in |
+| REQ-AUTH-16 | If the password given on sign-up or update exceeds 72 bytes (the useful bcrypt limit), the system shall respond 400. | 73 bytes → 400; 72 → accepted; `ç` × 37 (74 bytes) → 400 |
+| REQ-AUTH-17 | When login redirects through `?next=`, the system shall accept only a local path (starts with a single `/`, with no `\` or control characters); any other value leads to `/`. | `//evil.com`, `https://evil.com`, `/\evil.com`, `javascript:…` → `/` |
+| REQ-AUTH-18 | The access JWT shall expire in 15 minutes. | `exp` of the issued token ≈ now + 900 s |
+| REQ-AUTH-19 | When login or sign-up succeeds, the system shall also issue an opaque refresh token (`refresh` cookie, 7 days, stored only as a hash in Redis); refreshing shall consume it (single use), re-read the user's role from the database and issue a new pair; without Redis, login works without refresh and refresh responds 503. | Reusing a token → refused; two simultaneous requests → one refreshes; Redis down → 503; a demoted admin becomes CLIENTE on refresh |
+| REQ-AUTH-20 | When the user logs out, changes the password or is deleted, the system shall revoke the refresh tokens (logout: the session's; password change and deletion: all of the user's), without failing if Redis is down. | After revoking, refresh is refused; other users' sessions are untouched |
+| REQ-AUTH-21 | When the user changes their OWN password, the system shall require the correct `senhaAtual` (403 "Current password is incorrect"); an ADMIN changing another user's password does not need it. | Without `senhaAtual` or wrong → 403; correct → 200 |
+| REQ-AUTH-22 | When a protected page receives an expired access token but there is a refresh token, the system shall refresh and return to the same page; on failure, take the user to login with `next`. | Middleware redirects to `/api/auth/refresh?next=/perfil?aba=2` |
+| REQ-AUTH-23 | Login shall run the bcrypt comparison even when the email does not exist, so that the response time does not reveal which emails have an account. | Time with a nonexistent email is of the same order as with an existing email |
 
-## Casos-limite
+## Edge cases
 
-Sem Redis o limite de tentativas continua valendo por instância, com contador em memória (ADR-0020). O IP do cliente é a N-ésima entrada, contada do fim, de x-forwarded-for (N = TRUST_PROXY_HOPS, padrão 1; REQ-OPS-16); com N = 0 o cabeçalho é ignorado.
+Without Redis, the attempt limit still applies per instance, with an in-memory counter (ADR-0020). The client IP is the N-th entry, counted from the end, of x-forwarded-for (N = TRUST_PROXY_HOPS, default 1; REQ-OPS-16); with N = 0 the header is ignored.
 
 ## Interfaces
 
-POST/DELETE /api/auth · POST /api/users · GET /api/auth/me · POST e GET /api/auth/refresh (renova a sessão com o cookie `refresh`; sem ele, reemite o token quando o tipo no banco difere). Cookies `token` (JWT HS256, 15 minutos) e `refresh` (opaco, 7 dias, uso único, revogável; ADR-0021).
+POST/DELETE /api/auth · POST /api/users · GET /api/auth/me · POST and GET /api/auth/refresh (refreshes the session with the `refresh` cookie; without it, reissues the token when the type in the database differs). Cookies `token` (JWT HS256, 15 minutes) and `refresh` (opaque, 7 days, single use, revocable; ADR-0021).
 
-## NFRs aplicáveis
+## Applicable NFRs
 
 NFR-SEG-01, NFR-SEG-02, NFR-SEG-03.
 
-## Fora de escopo
+## Out of scope
 
-Recuperação de senha, verificação de e-mail, login social, MFA.
+Password recovery, email verification, social login, MFA.
 
-## Perguntas abertas
+## Open questions
 
-1. Qual duração e política de revogação de sessão (P02)?
+1. What session duration and revocation policy (P02)?

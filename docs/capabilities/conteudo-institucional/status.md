@@ -1,13 +1,13 @@
-# CONT · Status de implementação
+# CONT · Implementation status
 
-Legenda: ✅ implementado e testado · ◐ parcial ou sem teste · ❌ não implementado ou defeituoso · ❔ incerto, precisa verificação. Evidência: `test: <arquivo>` ou `manual: AAAA-MM-DD <o quê>` ou `código: <onde>`.
+Legend: ✅ implemented and tested · ◐ partial or untested · ❌ not implemented or defective · ❔ uncertain, needs verification. Evidence: `test: <file>` or `manual: YYYY-MM-DD <what>` or `code: <where>`.
 
 ## Status
 
-| REQ | Status | Evidência | Verificado em |
+| REQ | Status | Evidence | Verified on |
 |---|---|---|---|
-| REQ-CONT-01 | ◐ | código: app/page.tsx; sem teste de interface | 2026-11-10 |
-| REQ-CONT-02 | ◐ | código: app/page.tsx mostra "Números ilustrativos — ainda sem fonte de dados real" junto das métricas (REQ reescrito em 2026-11-10 para exigir rótulo, não fonte real — ver spec); falta verificação manual na tela | 2026-11-10 |
-| REQ-CONT-03 | ◐ | código: app/(educacao); sem teste | 2026-11-10 |
-| REQ-CONT-04 | ◐ | código: app/(sobre); sem teste | 2026-11-10 |
-| REQ-CONT-05 | ◐ | código: app/(store)/produtos/[id]/page.tsx (ImpactCard) mostra "Estimativa ilustrativa calculada a partir do preço" (REQ reescrito em 2026-11-10, mesma lógica do CONT-02); falta verificação manual na tela | 2026-11-10 |
+| REQ-CONT-01 | ◐ | code: app/page.tsx; no UI test | 2026-11-10 |
+| REQ-CONT-02 | ◐ | code: app/page.tsx shows "Illustrative numbers — no real data source yet" next to the metrics (REQ rewritten on 2026-11-10 to require a label, not a real source — see spec); manual check on screen is missing | 2026-11-10 |
+| REQ-CONT-03 | ◐ | code: app/(educacao); no test | 2026-11-10 |
+| REQ-CONT-04 | ◐ | code: app/(sobre); no test | 2026-11-10 |
+| REQ-CONT-05 | ◐ | code: app/(store)/produtos/[id]/page.tsx (ImpactCard) shows "Illustrative estimate calculated from the price" (REQ rewritten on 2026-11-10, same logic as CONT-02); manual check on screen is missing | 2026-11-10 |

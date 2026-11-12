@@ -1,47 +1,47 @@
-# REF · Cadastros de referência (categorias, marcas, certificados)
+# REF · Reference registries (categories, brands, certificates)
 
-> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-10. ADRs: ADR-0009 · ADR-0017
+> Living spec. Source of truth for the expected behavior. Last review: 2026-11-10. ADRs: ADR-0009 · ADR-0017
 
-## Objetivo
+## Goal
 
-Permitir que ADMIN mantenha os cadastros usados pelos produtos, preservando a integridade.
+Let an ADMIN maintain the registries used by products, preserving integrity.
 
-## Atores
+## Actors
 
-ADMIN (escrita); todos (leitura, ver AUTZ-02).
+ADMIN (write); everyone (read, see AUTZ-02).
 
-## Regras de negócio
+## Business rules
 
-- **BR-REF-01** — Nomes de categoria, marca e certificado são únicos.
-- **BR-REF-02** — Cada marca pertence a exatamente um usuário, e cada usuário tem no máximo uma marca.
-- **BR-REF-03** — Não se exclui cadastro que tem produtos vinculados.
+- **BR-REF-01** — Category, brand and certificate names are unique.
+- **BR-REF-02** — Each brand belongs to exactly one user, and each user has at most one brand.
+- **BR-REF-03** — A registry entry that has linked products cannot be deleted.
 
-## Requisitos
+## Requirements
 
-| ID | Requisito (EARS) | Aceitação |
+| ID | Requirement (EARS) | Acceptance |
 |---|---|---|
-| REQ-REF-01 | Quando um ADMIN cria uma categoria válida, o sistema deve responder 201. | POST /api/categorias → 201 |
-| REQ-REF-02 | Se o nome informado já existe, o sistema deve responder 409 ao criar categoria, marca ou certificado. | Nome duplicado → 409 |
-| REQ-REF-03 | Se uma categoria, marca ou certificado tem vínculos, o sistema deve responder 409 ao excluí-lo. | DELETE de categoria com produtos → 409 |
-| REQ-REF-04 | Se um ADMIN cria uma marca para um usuário que não é do tipo MARCA nem ADMIN, o sistema deve recusar. | POST /api/marcas com usuário CLIENTE → 409; com usuário inexistente → 404 |
-| REQ-REF-05 | Se o `id` das rotas de categorias, marcas ou certificados não é um inteiro positivo, o sistema deve responder 400. | `abc`, `0`, `1.5` → 400 em GET, PUT e DELETE |
+| REQ-REF-01 | When an ADMIN creates a valid category, the system shall respond 201. | POST /api/categorias → 201 |
+| REQ-REF-02 | If the given name already exists, the system shall respond 409 when creating a category, brand or certificate. | Duplicate name → 409 |
+| REQ-REF-03 | If a category, brand or certificate has links, the system shall respond 409 when deleting it. | DELETE of a category with products → 409 |
+| REQ-REF-04 | If an ADMIN creates a brand for a user who is neither of type MARCA nor ADMIN, the system shall refuse. | POST /api/marcas with a CLIENTE user → 409; with a nonexistent user → 404 |
+| REQ-REF-05 | If the `id` in the category, brand or certificate routes is not a positive integer, the system shall respond 400. | `abc`, `0`, `1.5` → 400 on GET, PUT and DELETE |
 
-## Casos-limite
+## Edge cases
 
-A criação de marca exige digitar o ID do usuário no painel. Alterar uma marca não invalida o cache de produtos (ver REQ-PROD-02).
+Creating a brand requires typing the user ID in the dashboard. Changing a brand does not invalidate the product cache (see REQ-PROD-02).
 
 ## Interfaces
 
-/api/categorias, /api/marcas, /api/certificados (+ /[id]) · painel (abas).
+/api/categorias, /api/marcas, /api/certificados (+ /[id]) · dashboard (tabs).
 
-## NFRs aplicáveis
+## Applicable NFRs
 
 NFR-CONS-01.
 
-## Fora de escopo
+## Out of scope
 
-Hierarquia de categorias.
+Category hierarchy.
 
-## Perguntas abertas
+## Open questions
 
-1. ~~O dono de uma marca precisa ser do tipo MARCA (REQ-REF-04)?~~ Decidido (2026-11-10): precisa ser MARCA ou ADMIN; `services/brand.service.ts` recusa CLIENTE com 409.
+1. ~~Does the owner of a brand need to be of type MARCA (REQ-REF-04)?~~ Decided (2026-11-10): must be MARCA or ADMIN; `services/brand.service.ts` refuses CLIENTE with 409.

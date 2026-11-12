@@ -1,49 +1,49 @@
-# MIDIA · Mídia de produto (fotos)
+# MIDIA · Product media (photos)
 
-> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-10. ADRs: ADR-0011
+> Living spec. Source of truth for the expected behavior. Last review: 2026-11-10. ADRs: ADR-0011
 
-## Objetivo
+## Goal
 
-Permitir que ADMIN anexe e remova fotos de um produto, guardadas no banco, e que a vitrine as exiba.
+Let an ADMIN attach and remove photos of a product, and let the storefront show them.
 
-## Atores
+## Actors
 
-ADMIN (escrita) · todos (leitura).
+ADMIN (write) · everyone (read).
 
-## Regras de negócio
+## Business rules
 
-- **BR-MIDIA-01** — A foto é guardada no filesystem local (`public/data_fotos/`, prefixo `{produtoId}_`) e servida como arquivo estático (ADR-0011, ratificado em 2026-11-10). O texto anterior desta regra dizia "banco como bytes" — isso nunca esteve no código; era a spec errada, corrigida junto com o ADR.
-- ~~BR-MIDIA-02 — Cada produto tem no máximo uma foto principal.~~ Removida em 2026-11-10: nunca foi verdade no código, que sempre aceitou várias fotos por produto (é 1:N pelo prefixo do nome do arquivo).
+- **BR-MIDIA-01** — The photo is stored on the local filesystem (`public/data_fotos/`, prefix `{produtoId}_`) and served as a static file (ADR-0011, ratified on 2026-11-10). The previous text of this rule said "database as bytes" — that was never in the code; it was the wrong spec, fixed together with the ADR.
+- ~~BR-MIDIA-02 — Each product has at most one main photo.~~ Removed on 2026-11-10: it was never true in the code, which always accepted several photos per product (it is 1:N through the file name prefix).
 
-## Requisitos
+## Requirements
 
-| ID | Requisito (EARS) | Aceitação |
+| ID | Requirement (EARS) | Acceptance |
 |---|---|---|
-| REQ-MIDIA-01 | Quando um ADMIN envia uma imagem válida para um produto, o sistema deve guardá-la e torná-la acessível por URL. | POST em /api/produtos/[id]/fotos → 201 e GET da URL devolve a imagem |
-| REQ-MIDIA-02 | Se o arquivo enviado não é imagem permitida ou excede o limite de tamanho, o sistema deve recusá-lo com 400. | Arquivo .txt → 400; arquivo acima do limite → 400 |
-| REQ-MIDIA-03 | Quando um ADMIN remove uma foto, o sistema deve apagá-la e deixar de exibi-la. | DELETE → 200 e a URL passa a responder 404 |
-| REQ-MIDIA-04 | Quando o produto tem várias fotos, o sistema deve exibir a galeria na página do produto. | Produto com 3 fotos mostra 3 miniaturas |
-| REQ-MIDIA-05 | Se o `id` das rotas de fotos não é um inteiro positivo, o sistema deve responder 400. | `1.5`, `abc`, `0`, `-3`, `1e3` → 400 em GET e DELETE |
-| REQ-MIDIA-06 | Se o conteúdo do arquivo enviado não é uma imagem JPEG, PNG, GIF ou WebP (assinatura dos primeiros bytes), ou não combina com a extensão do nome, o sistema deve responder 400 e não gravar nada. | `fake.png` com HTML, `.jpg` com conteúdo PNG e arquivo vazio → 400 (CONTEUDO_NAO_E_IMAGEM) |
-| REQ-MIDIA-07 | Se dois uploads simultâneos usam o mesmo nome, o sistema deve gravar um só e responder 409 ao outro, sem sobrescrever. | Duas gravações concorrentes de `<id>_capa.png` → 1 arquivo, 1 resposta 409 |
+| REQ-MIDIA-01 | When an ADMIN uploads a valid image for a product, the system shall store it and make it accessible by URL. | POST on /api/produtos/[id]/fotos → 201 and a GET of the URL returns the image |
+| REQ-MIDIA-02 | If the uploaded file is not an allowed image or exceeds the size limit, the system shall refuse it with 400. | A .txt file → 400; a file above the limit → 400 |
+| REQ-MIDIA-03 | When an ADMIN removes a photo, the system shall delete it and stop showing it. | DELETE → 200 and the URL starts responding 404 |
+| REQ-MIDIA-04 | When the product has several photos, the system shall show the gallery on the product page. | A product with 3 photos shows 3 thumbnails |
+| REQ-MIDIA-05 | If the `id` of the photo routes is not a positive integer, the system shall respond 400. | `1.5`, `abc`, `0`, `-3`, `1e3` → 400 on GET and DELETE |
+| REQ-MIDIA-06 | If the content of the uploaded file is not a JPEG, PNG, GIF or WebP image (signature of the first bytes), or does not match the file name extension, the system shall respond 400 and write nothing. | `fake.png` with HTML, `.jpg` with PNG content and an empty file → 400 (CONTENT_NOT_IMAGE) |
+| REQ-MIDIA-07 | If two simultaneous uploads use the same name, the system shall write only one and respond 409 to the other, without overwriting. | Two concurrent writes of `<id>_capa.png` → 1 file, 1 response 409 |
 
-## Casos-limite
+## Edge cases
 
-Fotos no banco aumentam seu tamanho e o custo de backup (NFR-DES-01 a verificar). Troca da foto principal não está especificada.
+Photos in the database increase its size and the backup cost (NFR-DES-01 to be verified). Changing the main photo is not specified.
 
 ## Interfaces
 
-/api/produtos/[id]/fotos (+ subrotas) · painel (aba Produtos).
+/api/produtos/[id]/fotos (+ subroutes) · dashboard (Products tab).
 
-## NFRs aplicáveis
+## Applicable NFRs
 
 NFR-DES-01.
 
-## Fora de escopo
+## Out of scope
 
-Redimensionamento automático; CDN.
+Automatic resizing; CDN.
 
-## Perguntas abertas
+## Open questions
 
-1. ~~Foto no banco continua adequada, ou migrar para armazenamento de objetos?~~ Decidido (2026-11-10): manter o filesystem local (nunca foi "no banco" — ver BR-MIDIA-01). ADR-0011 ratificado como Aceito. Revisitar se o deploy for multi-instância.
-2. A galeria (REQ-MIDIA-04) foi implementada em 2026-11-10 (`specs/003-galeria-de-fotos/spec.md`); falta só a verificação visual no navegador (sem essa ferramenta disponível na sessão que implementou).
+1. ~~Is a photo in the database still adequate, or should we migrate to object storage?~~ Decided (2026-11-10): keep the local filesystem (it was never "in the database" — see BR-MIDIA-01). ADR-0011 ratified as Accepted. Revisit if the deploy becomes multi-instance.
+2. The gallery (REQ-MIDIA-04) was implemented on 2026-11-10 (`specs/003-galeria-de-fotos/spec.md`); only the visual check in the browser is missing (that tool was not available in the session that implemented it).

@@ -1,50 +1,50 @@
-# USR · Gestão de usuários (ADMIN)
+# USR · User management (ADMIN)
 
-> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-10. ADRs: ADR-0017 · ADR-0018
+> Living spec. Source of truth for the expected behavior. Last review: 2026-11-10. ADRs: ADR-0017 · ADR-0018
 
-## Objetivo
+## Goal
 
-Permitir que ADMIN liste, crie, edite e exclua usuários, e aprove pedidos de MARCA pendentes.
+Let an ADMIN list, create, edit and delete users, and approve pending MARCA requests.
 
-## Atores
+## Actors
 
 ADMIN.
 
-## Regras de negócio
+## Business rules
 
-- **BR-USR-01** — A senha é sempre guardada com hash e nunca devolvida.
-- **BR-USR-02** — Excluir um usuário que tem marca é restringido pelo banco.
-- **BR-USR-03** — A aprovação de uma marca pendente muda `Marca.status` e `Usuario.tipo` juntos, de forma atômica (ADR-0018).
+- **BR-USR-01** — The password is always stored hashed and never returned.
+- **BR-USR-02** — Deleting a user who has a brand is restricted by the database.
+- **BR-USR-03** — Approving a pending brand changes `Marca.status` and `Usuario.tipo` together, atomically (ADR-0018).
 
-## Requisitos
+## Requirements
 
-| ID | Requisito (EARS) | Aceitação |
+| ID | Requirement (EARS) | Acceptance |
 |---|---|---|
-| REQ-USR-01 | Quando um ADMIN lista usuários, o sistema deve devolver dados públicos (id, nome, e-mail, telefone, tipo, criadoEm), sem o hash da senha. | GET /api/usuarios por ADMIN → 200, sem campo senha |
-| REQ-USR-02 | Quando um ADMIN cria um usuário válido, o sistema deve guardar a senha com hash e responder 201 sem o hash. | POST /api/usuarios → 201 e banco com hash bcrypt |
-| REQ-USR-03 | Quando um ADMIN aprova um pedido de MARCA, o sistema deve conceder o papel MARCA ao usuário. | POST /api/marcas/{id}/aprovar muda `Marca.status` para APROVADA e `Usuario.tipo` de CLIENTE para MARCA |
-| REQ-USR-04 | Quando um ADMIN abre o painel, o sistema deve permitir gerenciar usuários pela interface. | Aba Usuários com listar, editar e excluir |
-| REQ-USR-05 | Quando um ADMIN lista marcas, o sistema deve incluir o status de aprovação de cada uma. | GET /api/marcas → cada item com `status` (PENDENTE/APROVADA/REJEITADA) |
-| REQ-USR-06 | Se o `id` de `/api/usuarios/[id]` ou de `POST /api/marcas/[id]/aprovar` não é um inteiro positivo (só dígitos, sem zeros à esquerda, até 2147483647), o sistema deve responder 400, depois de checar a sessão. | ADMIN com `id=abc` → 400; visitante → 403 |
-| REQ-USR-07 | Quando uma atualização ou exclusão de usuário falha por inexistência, e-mail repetido ou vínculo com marca, o sistema deve responder 404, 409 e 409, respectivamente (nunca 500). | `PUT` de id inexistente → 404; `PUT` com e-mail de outro → 409; `DELETE` de usuário com marca → 409 |
-| REQ-USR-08 | Se um ADMIN tenta excluir a própria conta, o sistema deve responder 409 e manter a conta. | `DELETE /api/usuarios/<meu id>` → 409 |
+| REQ-USR-01 | When an ADMIN lists users, the system shall return public data (id, nome, email, telefone, tipo, criadoEm), without the password hash. | GET /api/usuarios by ADMIN → 200, without a `senha` field |
+| REQ-USR-02 | When an ADMIN creates a valid user, the system shall store the password hashed and respond 201 without the hash. | POST /api/usuarios → 201 and a database with a bcrypt hash |
+| REQ-USR-03 | When an ADMIN approves a MARCA request, the system shall grant the MARCA role to the user. | POST /api/marcas/{id}/aprovar changes `Marca.status` to APROVADA and `Usuario.tipo` from CLIENTE to MARCA |
+| REQ-USR-04 | When an ADMIN opens the dashboard, the system shall allow managing users through the interface. | Users tab with list, edit and delete |
+| REQ-USR-05 | When an ADMIN lists brands, the system shall include the approval status of each one. | GET /api/marcas → each item with `status` (PENDENTE/APROVADA/REJEITADA) |
+| REQ-USR-06 | If the `id` of `/api/usuarios/[id]` or of `POST /api/marcas/[id]/aprovar` is not a positive integer (digits only, no leading zeros, up to 2147483647), the system shall respond 400, after checking the session. | ADMIN with `id=abc` → 400; visitor → 403 |
+| REQ-USR-07 | When a user update or deletion fails because the user does not exist, the email is repeated or there is a link to a brand, the system shall respond 404, 409 and 409, respectively (never 500). | `PUT` of a nonexistent id → 404; `PUT` with another user's email → 409; `DELETE` of a user with a brand → 409 |
+| REQ-USR-08 | If an ADMIN tries to delete their own account, the system shall respond 409 and keep the account. | `DELETE /api/usuarios/<my id>` → 409 |
 
-## Casos-limite
+## Edge cases
 
-ADMIN pode excluir a si mesmo (a regra contrária não está especificada). E-mail duplicado na edição devolve 409 (a verificar).
+An ADMIN can delete themselves (the opposite rule is not specified). A duplicate email on edit returns 409 (to be verified).
 
 ## Interfaces
 
-/api/usuarios e /api/usuarios/[id]. /api/marcas/[id]/aprovar (POST, ADMIN).
+/api/usuarios and /api/usuarios/[id]. /api/marcas/[id]/aprovar (POST, ADMIN).
 
-## NFRs aplicáveis
+## Applicable NFRs
 
 NFR-SEG-01.
 
-## Fora de escopo
+## Out of scope
 
-Convites por e-mail; auditoria de ações.
+Email invitations; action auditing.
 
-## Perguntas abertas
+## Open questions
 
-1. ADMIN pode excluir o próprio usuário ou o último ADMIN?
+1. Can an ADMIN delete their own user or the last ADMIN?

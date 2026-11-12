@@ -1,69 +1,69 @@
-# OPS · Operação (execução, saúde, build e entrega)
+# OPS · Operations (running, health, build and delivery)
 
-> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-11. ADRs: ADR-0006 · ADR-0016 · ADR-0019 · ADR-0020
+> Living spec. Source of truth for the expected behavior. Last review: 2026-11-11. ADRs: ADR-0006 · ADR-0016 · ADR-0019 · ADR-0020
 
-## Objetivo
+## Goal
 
-Fazer o sistema subir de forma reproduzível, informar sua saúde e passar por verificações antes de ser entregue.
+Make the system start up reproducibly, report its health and go through checks before being delivered.
 
-## Atores
+## Actors
 
-Pessoa que opera ou desenvolve o sistema.
+The person who operates or develops the system.
 
-## Regras de negócio
+## Business rules
 
-- **BR-OPS-01** — Migrations são versionadas em prisma/migrations e aplicadas com migrate deploy.
-- **BR-OPS-02** — O CI falha se lint, tipos, testes, specs ou build falham.
+- **BR-OPS-01** — Migrations are versioned in prisma/migrations and applied with migrate deploy.
+- **BR-OPS-02** — CI fails if lint, types, tests, specs or build fail.
 
-## Requisitos
+## Requirements
 
-| ID | Requisito (EARS) | Aceitação |
+| ID | Requirement (EARS) | Acceptance |
 |---|---|---|
-| REQ-OPS-01 | Quando o endpoint de saúde é consultado, o sistema deve responder 200 com `status: "ok"` se banco e Redis respondem, 200 com `status: "degradado"` se só o Redis (opcional) falha, e 503 com `status: "indisponivel"` se o banco falha. | GET /api/health com ambos no ar → 200 `ok`; Redis fora → 200 `degradado`; banco fora → 503 |
-| REQ-OPS-02 | Quando o ambiente sobe pela primeira vez com Docker, o sistema deve criar um usuário ADMIN para acesso ao painel, com a senha informada em `ADMIN_PASSWORD` (sem senha embutida; ver REQ-OPS-09). | docker compose up em banco vazio, com `ADMIN_PASSWORD` definida, permite login de ADMIN |
-| REQ-OPS-03 | Quando o ambiente reinicia, o sistema deve preservar os dados cadastrados. | docker compose up de novo mantém os produtos |
-| REQ-OPS-04 | Quando uma mudança é proposta, o pipeline deve executar lint, tipos, testes de integração, validação das specs e build. | Job do CI contém os 5 passos |
-| REQ-OPS-05 | Quando o pipeline passa na branch principal, o sistema deve ser publicado automaticamente no servidor, pela imagem do GHCR e pelo compose versionado (REQ-OPS-10/11). | Deploy após CI verde |
-| REQ-OPS-06 | Quando a aplicação inicia com `NODE_ENV=production`, o sistema deve recusar iniciar se `JWT_SECRET` estiver ausente, tiver menos de 32 caracteres ou for um valor-exemplo conhecido. | Iniciar o servidor em produção com cada valor inválido → encerra com mensagem clara, sem subir; com valor válido → sobe |
-| REQ-OPS-07 | O `docker-compose.yml` não deve conter valor padrão utilizável para nenhum segredo (`JWT_SECRET`, senhas do Postgres, do Redis e do ADMIN, senha dos usuários de demonstração); a falta de qualquer um deve impedir a subida nomeando a variável. | `docker compose config` sem as variáveis → erro nomeando a variável; nenhum `:-` associado a segredo |
-| REQ-OPS-08 | O `docker-compose.yml` não deve publicar as portas do Postgres e do Redis no host por padrão; publicá-las é uma escolha explícita de desenvolvimento, só em 127.0.0.1. | Compose base e de publicação sem `5432`/`6379` em `ports`; o override de desenvolvimento as publica em 127.0.0.1 |
-| REQ-OPS-09 | Quando o seed roda, o sistema não deve usar senha embutida: `SEED_USER_PASSWORD` e `ADMIN_PASSWORD` são obrigatórios (12+ caracteres) e o seed falha, sem gravar nada, se faltarem. Em produção só o ADMIN é criado; o seed de demonstração roda só em desenvolvimento e o catálogo de produção começa vazio. | Seeds sem a variável → falha antes de qualquer escrita; o compose de publicação não referencia `seed.ts` |
-| REQ-OPS-10 | Quando o pipeline publica uma nova versão, o deploy deve aplicar as migrations antes de iniciar a aplicação nova, verificar a saúde depois e, se falhar, voltar à imagem anterior e falhar o job. A reversão não desfaz migrations: elas devem ser compatíveis com a versão anterior. | Script de deploy versionado com a ordem migrate → up → saúde → reversão |
-| REQ-OPS-11 | O repositório deve conter o compose usado para publicar (imagem do GHCR por tag de commit), de modo que o deploy seja reproduzível a partir dele. | O job de deploy usa o arquivo versionado; `docker compose -f docker-compose.prod.yml config` válido |
-| REQ-OPS-12 | Quando a aplicação responde, o sistema deve incluir `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin` e `Permissions-Policy` restritiva; em produção, também `Strict-Transport-Security` (curto, sem `includeSubDomains` nem `preload`). | Configuração de cabeçalhos lida em teste; HSTS só com `NODE_ENV=production` |
-| REQ-OPS-13 | As imagens base do Dockerfile e dos compose devem ser fixadas por digest, com atualização proposta automaticamente (Dependabot). | Nenhuma imagem de terceiros sem digest; `.github/dependabot.yml` cobre docker, docker-compose e github-actions |
-| REQ-OPS-14 | Quando o Redis está fora do ar ou lento, o sistema deve falhar rápido em cada comando (tempo limite e fila offline limitada), tratando como miss de cache, sem pendurar a requisição. | Com um Redis inexistente, `get`, `set`, `del`, varredura e rate limit retornam em milissegundos e sem erro |
-| REQ-OPS-15 | O rate limit deve contar de forma atômica no Redis (a chave nasce com validade) e, sem Redis, deve usar um contador em memória do processo, mantendo o limite (não liberar tudo). | 3 acessos com limite 2 → o 3º é bloqueado, com e sem Redis; a chave tem TTL |
-| REQ-OPS-16 | O sistema deve obter o IP do cliente a partir da N-ésima entrada, contada do fim, de `x-forwarded-for` (N = `TRUST_PROXY_HOPS`, padrão 1); com N = 0, ignorar o cabeçalho. | `9.9.9.9, 203.0.113.7` com N = 1 → `203.0.113.7` (o valor forjado pelo cliente não vale) |
-| REQ-OPS-17 | Quando vários acessos simultâneos pedem a mesma chave com o cache vazio, o sistema deve executar uma única busca à fonte e compartilhar o resultado. | 8 chamadas concorrentes → 1 execução do `fetcher` |
-| REQ-OPS-18 | Quando a aplicação inicia com `NODE_ENV=production`, o sistema deve recusar iniciar se `DATABASE_URL` estiver ausente ou não for uma URL PostgreSQL, listando todos os problemas de configuração de uma vez e sem revelar valores; `REDIS_URL` é opcional. | Produção sem `DATABASE_URL` (ou `mysql://…`) → encerra com código 1 nomeando a variável |
-| REQ-OPS-19 | Quando uma rota responde 500, o sistema deve registrar um log estruturado (uma linha JSON, com o contexto e a causa), sem segredos: chaves sensíveis e credenciais em URLs saem mascaradas; o corpo da resposta não traz detalhe da causa. | `ERROS.interno(contexto, causa)` responde 500 e escreve o evento `erro_interno`; `senha`, `token`, `*_KEY`, `redis://:senha@…` aparecem como `[REDIGIDO]` |
-| REQ-OPS-20 | Quando uma mudança é proposta, o pipeline deve falhar se o número de avisos do lint passar do teto registrado (que só pode descer) e deve auditar as dependências de produção, falhando em vulnerabilidade alta ou crítica; o Dependabot deve propor atualizações de npm, Docker e actions. | CI com `eslint --max-warnings <teto>` e `npm audit --omit=dev --audit-level=high`; `.github/dependabot.yml` com npm |
+| REQ-OPS-01 | When the health endpoint is queried, the system shall respond 200 with `status: "ok"` if the database and Redis respond, 200 with `status: "degradado"` if only Redis (optional) fails, and 503 with `status: "indisponivel"` if the database fails. | GET /api/health with both up → 200 `ok`; Redis down → 200 `degradado`; database down → 503 |
+| REQ-OPS-02 | When the environment comes up for the first time with Docker, the system shall create an ADMIN user for dashboard access, with the password given in `ADMIN_PASSWORD` (no embedded password; see REQ-OPS-09). | docker compose up on an empty database, with `ADMIN_PASSWORD` set, allows ADMIN login |
+| REQ-OPS-03 | When the environment restarts, the system shall preserve the registered data. | docker compose up again keeps the products |
+| REQ-OPS-04 | When a change is proposed, the pipeline shall run lint, types, integration tests, spec validation and build. | The CI job contains the 5 steps |
+| REQ-OPS-05 | When the pipeline passes on the main branch, the system shall be published automatically to the server, using the GHCR image and the versioned compose (REQ-OPS-10/11). | Deploy after green CI |
+| REQ-OPS-06 | When the application starts with `NODE_ENV=production`, the system shall refuse to start if `JWT_SECRET` is missing, has fewer than 32 characters or is a known example value. | Starting the server in production with each invalid value → exits with a clear message, without coming up; with a valid value → comes up |
+| REQ-OPS-07 | The `docker-compose.yml` shall not contain a usable default value for any secret (`JWT_SECRET`, Postgres, Redis and ADMIN passwords, the password of the demo users); the lack of any of them shall prevent startup by naming the variable. | `docker compose config` without the variables → error naming the variable; no `:-` associated with a secret |
+| REQ-OPS-08 | The `docker-compose.yml` shall not publish the Postgres and Redis ports on the host by default; publishing them is an explicit development choice, only on 127.0.0.1. | The base and publishing composes without `5432`/`6379` in `ports`; the development override publishes them on 127.0.0.1 |
+| REQ-OPS-09 | When the seed runs, the system shall not use an embedded password: `SEED_USER_PASSWORD` and `ADMIN_PASSWORD` are required (12+ characters) and the seed fails, writing nothing, if they are missing. In production only the ADMIN is created; the demo seed runs only in development and the production catalog starts empty. | Seeds without the variable → fail before any write; the publishing compose does not reference `seed.ts` |
+| REQ-OPS-10 | When the pipeline publishes a new version, the deploy shall apply the migrations before starting the new application, check health afterwards and, if it fails, go back to the previous image and fail the job. The rollback does not undo migrations: they must be compatible with the previous version. | Versioned deploy script with the order migrate → up → health → rollback |
+| REQ-OPS-11 | The repository shall contain the compose used to publish (GHCR image by commit tag), so that the deploy is reproducible from it. | The deploy job uses the versioned file; `docker compose -f docker-compose.prod.yml config` is valid |
+| REQ-OPS-12 | When the application responds, the system shall include `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin` and a restrictive `Permissions-Policy`; in production, also `Strict-Transport-Security` (short, without `includeSubDomains` or `preload`). | Header configuration read in a test; HSTS only with `NODE_ENV=production` |
+| REQ-OPS-13 | The base images of the Dockerfile and the composes shall be pinned by digest, with updates proposed automatically (Dependabot). | No third-party image without a digest; `.github/dependabot.yml` covers docker, docker-compose and github-actions |
+| REQ-OPS-14 | When Redis is down or slow, the system shall fail fast on each command (timeout and a bounded offline queue), treating it as a cache miss, without hanging the request. | With a nonexistent Redis, `get`, `set`, `del`, scan and rate limit return in milliseconds and without error |
+| REQ-OPS-15 | The rate limit shall count atomically in Redis (the key is born with an expiry) and, without Redis, shall use an in-process memory counter, keeping the limit (not letting everything through). | 3 accesses with limit 2 → the 3rd is blocked, with and without Redis; the key has a TTL |
+| REQ-OPS-16 | The system shall obtain the client IP from the N-th entry, counted from the end, of `x-forwarded-for` (N = `TRUST_PROXY_HOPS`, default 1); with N = 0, ignore the header. | `9.9.9.9, 203.0.113.7` with N = 1 → `203.0.113.7` (the value forged by the client does not count) |
+| REQ-OPS-17 | When several simultaneous accesses ask for the same key with an empty cache, the system shall run a single lookup against the source and share the result. | 8 concurrent calls → 1 execution of the `fetcher` |
+| REQ-OPS-18 | When the application starts with `NODE_ENV=production`, the system shall refuse to start if `DATABASE_URL` is missing or is not a PostgreSQL URL, listing all configuration problems at once and without revealing values; `REDIS_URL` is optional. | Production without `DATABASE_URL` (or `mysql://…`) → exits with code 1 naming the variable |
+| REQ-OPS-19 | When a route responds 500, the system shall record a structured log (one JSON line, with the context and the cause), without secrets: sensitive keys and credentials in URLs are masked; the response body carries no detail of the cause. | `ERRORS.internal(context, cause)` responds 500 and writes the `internal_error` event; `senha`, `token`, `*_KEY`, `redis://:senha@…` appear as `[REDACTED]` |
+| REQ-OPS-20 | When a change is proposed, the pipeline shall fail if the number of lint warnings exceeds the recorded ceiling (which can only go down) and shall audit the production dependencies, failing on a high or critical vulnerability; Dependabot shall propose npm, Docker and actions updates. | CI with `eslint --max-warnings <ceiling>` and `npm audit --omit=dev --audit-level=high`; `.github/dependabot.yml` with npm |
 
-## Casos-limite
+## Edge cases
 
-Sem Redis, cache e rate limit degradam sem pendurar a requisição (ADR-0020). Projeto ainda não está em produção (resposta do dono).
+Without Redis, cache and rate limit degrade without hanging the request (ADR-0020). The project is not in production yet (owner's answer).
 
-- A verificação de REQ-OPS-06 só roda quando o servidor inicia, não no `next build` (o build do Docker não tem o segredo).
-- A reversão do deploy (REQ-OPS-10) troca só a imagem da aplicação; migration incompatível com a versão anterior precisa de aviso na PR.
-- Até a spec que ajustar REQ-OPS-01 (Redis como dependência opcional, Constitution Art. XIII.2), `/api/health` devolve 503 quando só o Redis cai e o deploy reverte nesse caso.
-- Em produção o catálogo começa vazio; o ADMIN é criado por um passo único e explícito (perfil `bootstrap` do compose de publicação).
+- The verification of REQ-OPS-06 only runs when the server starts, not on `next build` (the Docker build does not have the secret).
+- The deploy rollback (REQ-OPS-10) only swaps the application image; a migration incompatible with the previous version needs a notice in the PR.
+- Until the spec that adjusts REQ-OPS-01 (Redis as an optional dependency, Constitution Art. XIII.2), `/api/health` returns 503 when only Redis goes down and the deploy rolls back in that case.
+- In production the catalog starts empty; the ADMIN is created by a single explicit step (the `bootstrap` profile of the publishing compose).
 
 ## Interfaces
 
-GET /api/health · docker-compose.yml · docker-compose.override.yml (desenvolvimento) · docker-compose.prod.yml · Dockerfile · scripts/deploy/deploy.sh · .github/workflows/ci.yml · instrumentation.ts.
+GET /api/health · docker-compose.yml · docker-compose.override.yml (development) · docker-compose.prod.yml · Dockerfile · scripts/deploy/deploy.sh · .github/workflows/ci.yml · instrumentation.ts.
 
-## NFRs aplicáveis
+## Applicable NFRs
 
 NFR-OPS-01, NFR-OPS-02.
 
-## Fora de escopo
+## Out of scope
 
-Observabilidade completa (métricas, tracing).
+Full observability (metrics, tracing).
 
-## Perguntas abertas
+## Open questions
 
-Resolvidas em 2026-11-11 (`specs/008-operacao-segura`): o destino é um servidor por SSH com o compose de publicação versionado e reversão automática à imagem anterior (ADR-0019); o primeiro ADMIN é criado por `seed-admin` com `ADMIN_PASSWORD` obrigatória.
+Resolved on 2026-11-11 (`specs/008-operacao-segura`): the target is a server over SSH with the versioned publishing compose and automatic rollback to the previous image (ADR-0019); the first ADMIN is created by `seed-admin` with a required `ADMIN_PASSWORD`.
 
-1. Quem termina o TLS no servidor? O desenho assume um proxy reverso fora do compose apontando para `127.0.0.1:3000`; confirmar quando houver servidor.
-2. O deploy e a reversão ainda não foram ensaiados num servidor real (REQ-OPS-10 fica ◐ até lá).
+1. Who terminates TLS on the server? The design assumes a reverse proxy outside the compose pointing to `127.0.0.1:3000`; confirm when there is a server.
+2. The deploy and the rollback have not been rehearsed on a real server yet (REQ-OPS-10 stays ◐ until then).

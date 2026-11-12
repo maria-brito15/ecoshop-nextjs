@@ -1,62 +1,62 @@
-# AUTZ · Autorização (quem pode o quê)
+# AUTZ · Authorization (who can do what)
 
-> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-10. ADRs: ADR-0017 · ADR-0008 (histórico, substituído)
+> Living spec. Source of truth for the expected behavior. Last review: 2026-11-10. ADRs: ADR-0017 · ADR-0008 (historical, superseded)
 
-## Objetivo
+## Goal
 
-Definir, em um só lugar, quais papéis podem executar cada ação em cada recurso, e como o sistema nega o que não é permitido. É a matriz que o middleware e os handlers implementam (ADR-0017).
+Define, in a single place, which roles can perform each action on each resource, and how the system denies what is not allowed. It is the matrix that the middleware and the handlers implement (ADR-0017).
 
-## Atores
+## Actors
 
-Visitante (sem sessão) · CLIENTE · MARCA (hoje sem direitos além de CLIENTE) · ADMIN.
+Visitor (no session) · CLIENTE · MARCA (today with no rights beyond CLIENTE) · ADMIN.
 
-## Regras de negócio
+## Business rules
 
-- **BR-AUTZ-01** — Negar por padrão: o que não está explicitamente permitido é negado (proposto; ver REQ-AUTZ-07).
-- **BR-AUTZ-02** — 401 = sem sessão válida; 403 = sessão válida sem permissão.
-- **BR-AUTZ-03** — A decisão de acesso por recurso mora no handler; o middleware autentica e restringe páginas administrativas (ADR-0017).
+- **BR-AUTZ-01** — Deny by default: what is not explicitly allowed is denied (proposed; see REQ-AUTZ-07).
+- **BR-AUTZ-02** — 401 = no valid session; 403 = valid session without permission.
+- **BR-AUTZ-03** — The per-resource access decision lives in the handler; the middleware authenticates and restricts administrative pages (ADR-0017).
 
-## Requisitos
+## Requirements
 
-| ID | Requisito (EARS) | Aceitação |
+| ID | Requirement (EARS) | Acceptance |
 |---|---|---|
-| REQ-AUTZ-01 | Quando uma requisição de escrita (criar, alterar, excluir) chega a produtos, categorias, marcas, certificados ou fotos de produto, o sistema deve exigir sessão de ADMIN: 401 sem sessão e 403 para outro papel. | POST em cada rota sem cookie → 401; com cookie de CLIENTE → 403 |
-| REQ-AUTZ-02 | Quando um visitante lê produtos ou categorias, o sistema deve permitir a leitura sem sessão. | GET /api/produtos e /api/categorias sem cookie → 200 |
-| REQ-AUTZ-03 | Quando alguém aciona o scan ou o chat de IA, o sistema deve exigir sessão (qualquer papel). | POST sem cookie em /api/ia/scan e /api/ia/chat → 401 |
-| REQ-AUTZ-04 | Quando alguém lista ou cria usuários, o sistema deve exigir sessão de ADMIN. | GET /api/usuarios: 401 sem cookie, 403 para CLIENTE |
-| REQ-AUTZ-05 | Quando alguém lê ou altera /api/usuarios/[id], o sistema deve permitir apenas o próprio usuário ou um ADMIN, e deve permitir excluir apenas a um ADMIN. | CLIENTE A lê A → 200; lê B → 403; altera B → 403; exclui A → 403; ADMIN lê A → 200 |
-| REQ-AUTZ-06 | Quando uma requisição chega ao middleware, o sistema deve exigir sessão em /perfil e em /api/usuarios (redirecionar a /sign-in?next= para páginas e responder 401 JSON para a API) e deve exigir ADMIN em /painel (redirecionar a / para outros papéis). | middleware(/perfil) sem cookie → 307 para /sign-in?next=%2Fperfil; /api/usuarios/1 sem cookie → 401; /painel com CLIENTE → 307 para / |
-| REQ-AUTZ-07 | Se uma rota de API não declara sua política de acesso, o sistema deve negá-la por padrão. | Existe teste que percorre todas as rotas de app/api e falha para rota sem política declarada |
-| REQ-AUTZ-08 | Quando um visitante abre a página /ia-scan, o sistema deve redirecioná-lo ao login. | /ia-scan sem sessão → 307 para /sign-in?next=%2Fia-scan |
+| REQ-AUTZ-01 | When a write request (create, update, delete) reaches products, categories, brands, certificates or product photos, the system shall require an ADMIN session: 401 without a session and 403 for another role. | POST on each route without a cookie → 401; with a CLIENTE cookie → 403 |
+| REQ-AUTZ-02 | When a visitor reads products or categories, the system shall allow the read without a session. | GET /api/produtos and /api/categorias without a cookie → 200 |
+| REQ-AUTZ-03 | When someone triggers the AI scan or chat, the system shall require a session (any role). | POST without a cookie on /api/ia/scan and /api/ia/chat → 401 |
+| REQ-AUTZ-04 | When someone lists or creates users, the system shall require an ADMIN session. | GET /api/usuarios: 401 without a cookie, 403 for CLIENTE |
+| REQ-AUTZ-05 | When someone reads or changes /api/usuarios/[id], the system shall allow only the user themselves or an ADMIN, and shall allow deletion only to an ADMIN. | CLIENTE A reads A → 200; reads B → 403; changes B → 403; deletes A → 403; ADMIN reads A → 200 |
+| REQ-AUTZ-06 | When a request reaches the middleware, the system shall require a session on /perfil and on /api/usuarios (redirect to /sign-in?next= for pages and respond 401 JSON for the API) and shall require ADMIN on /painel (redirect other roles to /). | middleware(/perfil) without a cookie → 307 to /sign-in?next=%2Fperfil; /api/usuarios/1 without a cookie → 401; /painel with CLIENTE → 307 to / |
+| REQ-AUTZ-07 | If an API route does not declare its access policy, the system shall deny it by default. | A test walks all app/api routes and fails for a route without a declared policy |
+| REQ-AUTZ-08 | When a visitor opens the /ia-scan page, the system shall redirect them to login. | /ia-scan without a session → 307 to /sign-in?next=%2Fia-scan |
 
-## Casos-limite
+## Edge cases
 
-Token expirado ou adulterado equivale a sem sessão (401). Papel MARCA hoje é tratado como CLIENTE em todas as rotas. Prefixo `/api/admin` está nas regras do middleware, mas essa rota não existe.
+An expired or tampered token is equivalent to no session (401). The MARCA role is today treated as CLIENTE on all routes. The `/api/admin` prefix is in the middleware rules, but that route does not exist.
 
 ## Interfaces
 
-Matriz de acesso efetiva (verificada por REQ-AUTZ-01 a 06):
+Effective access matrix (verified by REQ-AUTZ-01 to 06):
 
-| Recurso | Visitante | CLIENTE / MARCA | ADMIN |
+| Resource | Visitor | CLIENTE / MARCA | ADMIN |
 |---|---|---|---|
-| GET produtos, categorias, marcas, certificados, fotos | ✅ | ✅ | ✅ |
-| POST/PUT/DELETE produtos, categorias, marcas, certificados, fotos | 401 | 403 | ✅ |
+| GET products, categories, brands, certificates, photos | ✅ | ✅ | ✅ |
+| POST/PUT/DELETE products, categories, brands, certificates, photos | 401 | 403 | ✅ |
 | GET/POST /api/usuarios | 401 | 403 | ✅ |
-| GET/PUT /api/usuarios/[id] | 401 | só o próprio | ✅ |
+| GET/PUT /api/usuarios/[id] | 401 | only their own | ✅ |
 | DELETE /api/usuarios/[id] | 401 | 403 | ✅ |
 | POST /api/ia/scan, /api/ia/chat | 401 | ✅ | ✅ |
-| Página /perfil | redireciona ao login | ✅ | ✅ |
-| Página /painel | redireciona ao login | redireciona a / | ✅ |
+| Page /perfil | redirects to login | ✅ | ✅ |
+| Page /painel | redirects to login | redirects to / | ✅ |
 
-## NFRs aplicáveis
+## Applicable NFRs
 
-NFR-SEG-04 (negar por padrão).
+NFR-SEG-04 (deny by default).
 
-## Fora de escopo
+## Out of scope
 
-Papéis novos; permissões por marca (MARCA gerir os próprios produtos) — depende da definição do papel (ver overview).
+New roles; per-brand permissions (MARCA managing their own products) — depends on the definition of the role (see overview).
 
-## Perguntas abertas
+## Open questions
 
-1. ~~A página /ia-scan deve exigir login antes de abrir (REQ-AUTZ-08)?~~ Decidido (2026-11-10): sim, exigir login. Implementado em `config/protected-routes.ts`.
-2. O que o papel MARCA pode fazer? Enquanto não houver resposta, MARCA = CLIENTE.
+1. ~~Should the /ia-scan page require login before opening (REQ-AUTZ-08)?~~ Decided (2026-11-10): yes, require login. Implemented in `config/protected-routes.ts`.
+2. What can the MARCA role do? Until there is an answer, MARCA = CLIENTE.

@@ -1,47 +1,47 @@
-# PERF · Conta e perfil do usuário
+# PERF · User account and profile
 
-> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-11. ADRs: ADR-0017 · ADR-0021 · ADR-0004
+> Living spec. Source of truth for the expected behavior. Last review: 2026-11-11. ADRs: ADR-0017 · ADR-0021 · ADR-0004
 
-## Objetivo
+## Goal
 
-Permitir que o usuário veja e edite os próprios dados.
+Let the user see and edit their own data.
 
-## Atores
+## Actors
 
-CLIENTE · MARCA · ADMIN (cada um, no próprio perfil).
+CLIENTE · MARCA · ADMIN (each, on their own profile).
 
-## Regras de negócio
+## Business rules
 
-- **BR-PERF-01** — Usuário só vê e edita o próprio perfil; ADMIN pode ver e editar qualquer um (via /api/usuarios/[id]).
-- **BR-PERF-02** — O usuário não altera o próprio tipo.
+- **BR-PERF-01** — A user only sees and edits their own profile; an ADMIN can see and edit anyone's (via /api/usuarios/[id]).
+- **BR-PERF-02** — The user does not change their own type.
 
-## Requisitos
+## Requirements
 
-| ID | Requisito (EARS) | Aceitação |
+| ID | Requirement (EARS) | Acceptance |
 |---|---|---|
-| REQ-PERF-01 | Quando um usuário autenticado acessa o próprio perfil, o sistema deve exibir nome, e-mail, telefone e tipo. | Com cookie de CLIENTE: middleware libera /api/usuarios/{id} e o handler responde 200 sem senha |
-| REQ-PERF-02 | Quando o usuário envia novo nome e/ou telefone para o próprio perfil, o sistema deve gravar os dados e devolver o usuário atualizado. | PUT /api/usuarios/{id} → 200; banco com os novos valores |
-| REQ-PERF-03 | Se o corpo da edição inclui o campo tipo, o sistema deve ignorá-lo, mantendo o tipo atual. | PUT com tipo ADMIN por CLIENTE → tipo continua CLIENTE |
-| REQ-PERF-04 | Se a edição do perfil falha, o sistema deve mostrar ao usuário a mensagem de erro devolvida pela API. | Resposta de erro com campo `erro` → a mensagem aparece na tela |
-| REQ-PERF-05 | Quando o usuário visita um produto, o sistema deve registrar no histórico e mostrá-lo na aba Histórico do perfil. | Visitar 2 produtos → aba mostra 2 |
-| REQ-PERF-06 | Quando o usuário abre a aba Impacto, o sistema deve exibir métricas derivadas de dados reais do próprio usuário. | Cada métrica tem fonte declarada |
+| REQ-PERF-01 | When an authenticated user accesses their own profile, the system shall show name, email, phone and type. | With a CLIENTE cookie: the middleware lets /api/usuarios/{id} through and the handler responds 200 without the password |
+| REQ-PERF-02 | When the user sends a new name and/or phone for their own profile, the system shall store the data and return the updated user. | PUT /api/usuarios/{id} → 200; database with the new values |
+| REQ-PERF-03 | If the edit body includes the tipo field, the system shall ignore it, keeping the current type. | PUT with tipo ADMIN by a CLIENTE → type stays CLIENTE |
+| REQ-PERF-04 | If the profile edit fails, the system shall show the user the error message returned by the API. | An error response with an `erro` field → the message appears on screen |
+| REQ-PERF-05 | When the user visits a product, the system shall record it in the history and show it in the History tab of the profile. | Visiting 2 products → the tab shows 2 |
+| REQ-PERF-06 | When the user opens the Impact tab, the system shall show metrics derived from the user's own real data. | Each metric has a declared source |
 
-## Casos-limite
+## Edge cases
 
-Perfil de ADMIN segue as mesmas regras. Telefone vazio não é enviado (a página omite o campo). E-mail e senha são aceitos pelo schema de atualização, mas a página só edita nome e telefone.
+An ADMIN's profile follows the same rules. An empty phone is not sent (the page omits the field). Email and password are accepted by the update schema, but the page only edits name and phone.
 
 ## Interfaces
 
-GET/PUT /api/usuarios/[id] · GET /api/auth/me · página /perfil.
+GET/PUT /api/usuarios/[id] · GET /api/auth/me · page /perfil.
 
-## NFRs aplicáveis
+## Applicable NFRs
 
 NFR-SEG-01.
 
-## Fora de escopo
+## Out of scope
 
-Excluir a própria conta; alterar e-mail e senha pela tela.
+Deleting one's own account; changing email and password from the screen.
 
-## Perguntas abertas
+## Open questions
 
-1. O usuário pode alterar o próprio e-mail e senha? (a API permite; a tela não)
+1. Can the user change their own email and password? (the API allows it; the screen does not)

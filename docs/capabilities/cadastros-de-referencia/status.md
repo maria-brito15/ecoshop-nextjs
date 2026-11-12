@@ -1,13 +1,13 @@
-# REF · Status de implementação
+# REF · Implementation status
 
-Legenda: ✅ implementado e testado · ◐ parcial ou sem teste · ❌ não implementado ou defeituoso · ❔ incerto, precisa verificação. Evidência: `test: <arquivo>` ou `manual: AAAA-MM-DD <o quê>` ou `código: <onde>`.
+Legend: ✅ implemented and tested · ◐ partial or untested · ❌ not implemented or defective · ❔ uncertain, needs verification. Evidence: `test: <file>` or `manual: YYYY-MM-DD <what>` or `code: <where>`.
 
 ## Status
 
-| REQ | Status | Evidência | Verificado em |
+| REQ | Status | Evidence | Verified on |
 |---|---|---|---|
 | REQ-REF-01 | ✅ | test: tests/integration/catalog.test.ts | 2026-11-10 |
-| REQ-REF-02 | ✅ | test: tests/integration/catalog.test.ts (corrigido: mapeiaErro usa err.code, P2002 → 409) | 2026-11-10 |
-| REQ-REF-03 | ✅ | test: tests/integration/catalog.test.ts (corrigido D7: a causa era checar err.message.includes("P2025") em vez de err.code; agora usa err.code === "P2003" → 409) | 2026-11-10 |
-| REQ-REF-04 | ✅ | test: tests/integration/catalog.test.ts (decisão 2026-11-10: dono da marca precisa ser MARCA ou ADMIN; brand.service.ts valida antes de criar) | 2026-11-10 |
-| REQ-REF-05 | ✅ | test: tests/integration/input-and-errors.test.ts (3 recursos × 3 métodos; `parseId` testado à parte) | 2026-11-11 |
+| REQ-REF-02 | ✅ | test: tests/integration/catalog.test.ts (fixed: mapError uses err.code, P2002 → 409) | 2026-11-10 |
+| REQ-REF-03 | ✅ | test: tests/integration/catalog.test.ts (fixed D7: the cause was checking err.message.includes("P2025") instead of err.code; now uses err.code === "P2003" → 409) | 2026-11-10 |
+| REQ-REF-04 | ✅ | test: tests/integration/catalog.test.ts (decision 2026-11-10: the brand owner must be MARCA or ADMIN; brand.service.ts validates before creating) | 2026-11-10 |
+| REQ-REF-05 | ✅ | test: tests/integration/input-and-errors.test.ts (3 resources × 3 methods; `parseId` tested separately) | 2026-11-11 |

@@ -1,47 +1,47 @@
-# PROD · Gestão de produtos (painel administrativo)
+# PROD · Product management (admin dashboard)
 
-> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-11. ADRs: ADR-0009 · ADR-0017
+> Living spec. Source of truth for the expected behavior. Last review: 2026-11-11. ADRs: ADR-0009 · ADR-0017
 
-## Objetivo
+## Goal
 
-Permitir que ADMIN crie, edite e exclua produtos do catálogo.
+Let an ADMIN create, edit and delete catalog products.
 
-## Atores
+## Actors
 
 ADMIN.
 
-## Regras de negócio
+## Business rules
 
-- **BR-PROD-01** — Todo produto pertence a uma categoria e a uma marca existentes.
+- **BR-PROD-01** — Every product belongs to an existing category and an existing brand.
 
-## Requisitos
+## Requirements
 
-| ID | Requisito (EARS) | Aceitação |
+| ID | Requirement (EARS) | Acceptance |
 |---|---|---|
-| REQ-PROD-01 | Quando um ADMIN cria um produto válido, o sistema deve responder 201 e deve listá-lo no catálogo logo em seguida. | POST /api/produtos → 201; a listagem com o nome do produto o inclui sem esperar o TTL |
-| REQ-PROD-02 | Quando uma marca ou categoria é alterada, o sistema deve refletir o novo nome nos produtos exibidos sem esperar o vencimento do cache. | Renomear a marca → GET /api/produtos/[id] já mostra o novo nome |
-| REQ-PROD-03 | Se um ADMIN atualiza um produto que não existe, o sistema deve responder 404. | PUT /api/produtos/99999999 → 404 |
-| REQ-PROD-04 | Se um ADMIN cria ou atualiza um produto com categoria ou marca inexistente, o sistema deve responder 4xx com mensagem clara. | categoriaId inexistente → 404 ou 409, não 500 |
-| REQ-PROD-05 | Quando um ADMIN edita um produto, o sistema deve permitir associar e remover certificados. | PUT com certificadoIds atualiza o vínculo |
-| REQ-PROD-06 | Se o `id` de `PUT` ou `DELETE /api/produtos/[id]` não é um inteiro positivo, o sistema deve responder 400. | ADMIN com `id=abc` → 400 |
-| REQ-PROD-07 | Se um ADMIN tenta excluir um produto que tem certificados vinculados, o sistema deve responder 409 e manter produto e vínculos; depois de desvincular os certificados (`PUT` com `certificadoIds: []`), a exclusão deve funcionar. Decisão do dono (2026-11-11): bloqueio, não cascata. | `DELETE` com certificado vinculado → 409; após `PUT {certificadoIds: []}` → 200 |
+| REQ-PROD-01 | When an ADMIN creates a valid product, the system shall respond 201 and shall list it in the catalog right away. | POST /api/produtos → 201; the listing with the product name includes it without waiting for the TTL |
+| REQ-PROD-02 | When a brand or category is changed, the system shall reflect the new name on the displayed products without waiting for the cache to expire. | Rename the brand → GET /api/produtos/[id] already shows the new name |
+| REQ-PROD-03 | If an ADMIN updates a product that does not exist, the system shall respond 404. | PUT /api/produtos/99999999 → 404 |
+| REQ-PROD-04 | If an ADMIN creates or updates a product with a nonexistent category or brand, the system shall respond 4xx with a clear message. | nonexistent categoriaId → 404 or 409, not 500 |
+| REQ-PROD-05 | When an ADMIN edits a product, the system shall allow associating and removing certificates. | PUT with certificadoIds updates the link |
+| REQ-PROD-06 | If the `id` of `PUT` or `DELETE /api/produtos/[id]` is not a positive integer, the system shall respond 400. | ADMIN with `id=abc` → 400 |
+| REQ-PROD-07 | If an ADMIN tries to delete a product that has linked certificates, the system shall respond 409 and keep the product and the links; after unlinking the certificates (`PUT` with `certificadoIds: []`), the deletion shall work. Owner decision (2026-11-11): block, not cascade. | `DELETE` with a linked certificate → 409; after `PUT {certificadoIds: []}` → 200 |
 
-## Casos-limite
+## Edge cases
 
-O painel lista até 100 produtos de uma vez (sem paginação). Preço enviado como número JSON. Exclusão de produto com certificados: a FK do vínculo é RESTRICT (verificar).
+The dashboard lists up to 100 products at once (no pagination). Price sent as a JSON number. Deleting a product with certificates: the link's FK is RESTRICT (to be verified).
 
 ## Interfaces
 
-POST /api/produtos · PUT/DELETE /api/produtos/[id] · página /painel (aba Produtos).
+POST /api/produtos · PUT/DELETE /api/produtos/[id] · page /painel (Products tab).
 
-## NFRs aplicáveis
+## Applicable NFRs
 
 NFR-CONS-01.
 
-## Fora de escopo
+## Out of scope
 
-Importação em massa; histórico de alterações.
+Bulk import; change history.
 
-## Perguntas abertas
+## Open questions
 
-1. Quem mantém produtos: só ADMIN ou também MARCA (para os próprios)?
+1. Who maintains products: only ADMIN or also MARCA (for their own)?

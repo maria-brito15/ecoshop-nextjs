@@ -1,51 +1,51 @@
-# CAT · Catálogo de produtos (vitrine)
+# CAT · Product catalog (storefront)
 
-> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-11. ADRs: ADR-0004 · ADR-0009 · ADR-0018
+> Living spec. Source of truth for the expected behavior. Last review: 2026-11-11. ADRs: ADR-0004 · ADR-0009 · ADR-0018
 
-## Objetivo
+## Goal
 
-Permitir que visitantes encontrem produtos sustentáveis e vejam seus detalhes e certificações.
+Let visitors find sustainable products and see their details and certifications.
 
-## Atores
+## Actors
 
-Visitante · CLIENTE · MARCA · ADMIN (todos leem).
+Visitor · CLIENTE · MARCA · ADMIN (all can read).
 
-## Regras de negócio
+## Business rules
 
-- **BR-CAT-01** — Preço é decimal positivo com 2 casas e é exibido como número.
-- **BR-CAT-02** — O catálogo é uma vitrine: não há carrinho, pedido nem pagamento (fora de escopo).
+- **BR-CAT-01** — Price is a positive decimal with 2 places and is shown as a number.
+- **BR-CAT-02** — The catalog is a storefront: there is no cart, order or payment (out of scope).
 
-## Requisitos
+## Requirements
 
-| ID | Requisito (EARS) | Aceitação |
+| ID | Requirement (EARS) | Acceptance |
 |---|---|---|
-| REQ-CAT-01 | Quando um visitante abre o catálogo, o sistema deve listar produtos em páginas de 12 itens, com o total de resultados. | GET /api/produtos?nome=X → total 14, 12 itens na página 1, 2 na página 2 |
-| REQ-CAT-02 | Quando o visitante informa um termo de busca, o sistema deve devolver apenas produtos cujo nome contém o termo, sem diferenciar maiúsculas e minúsculas. | Busca em maiúsculas encontra os 14 produtos |
-| REQ-CAT-03 | Quando o visitante filtra por categoria, o sistema deve devolver somente produtos dela. | categoriaId=N → só produtos da categoria N |
-| REQ-CAT-04 | Se o produto pedido não existe, o sistema deve responder 404. | GET /api/produtos/99999999 → 404 |
-| REQ-CAT-05 | Se page ou size são inválidos ou size passa de 100, o sistema deve responder 400. | size=1000 → 400; page=abc → 400 |
-| REQ-CAT-06 | Quando o visitante ordena por preço ou nome, ou limita o preço máximo, o sistema deve aplicar a ordenação e o limite ao catálogo inteiro, não apenas à página exibida. | Ordenar por preço crescente → o primeiro item da página 1 é o mais barato de todos |
-| REQ-CAT-07 | Quando o visitante filtra por marca, o sistema deve devolver somente produtos dela. | marcaId=N → só produtos da marca N |
-| REQ-CAT-08 | Quando o visitante abre um produto, o sistema deve exibir nome, descrição, preço, categoria, marca e seus certificados. | GET /api/produtos/[id] inclui categoria, marca e certificados |
-| REQ-CAT-09 | Se o `id` de `GET /api/produtos/[id]` não é um inteiro positivo, o sistema deve responder 400. | `abc`, `0`, `-1`, `1.5`, `1e3`, `2147483648` → 400 (não 500) |
-| REQ-CAT-10 | O sistema deve montar a chave de cache da listagem a partir dos filtros validados, em ordem fixa e só com os parâmetros conhecidos (a busca por `nome` ignora caixa e espaços das pontas e tem no máximo 100 caracteres; mais que isso → 400). | Ordem dos parâmetros e parâmetros desconhecidos não mudam a chave; `nome` de 101 caracteres → 400 |
+| REQ-CAT-01 | When a visitor opens the catalog, the system shall list products in pages of 12 items, with the total number of results. | GET /api/produtos?nome=X → total 14, 12 items on page 1, 2 on page 2 |
+| REQ-CAT-02 | When the visitor provides a search term, the system shall return only products whose name contains the term, case-insensitively. | An uppercase search finds the 14 products |
+| REQ-CAT-03 | When the visitor filters by category, the system shall return only its products. | categoriaId=N → only products of category N |
+| REQ-CAT-04 | If the requested product does not exist, the system shall respond 404. | GET /api/produtos/99999999 → 404 |
+| REQ-CAT-05 | If page or size are invalid or size exceeds 100, the system shall respond 400. | size=1000 → 400; page=abc → 400 |
+| REQ-CAT-06 | When the visitor sorts by price or name, or caps the maximum price, the system shall apply the sort and the cap to the whole catalog, not only to the displayed page. | Sorting by ascending price → the first item on page 1 is the cheapest of all |
+| REQ-CAT-07 | When the visitor filters by brand, the system shall return only its products. | marcaId=N → only products of brand N |
+| REQ-CAT-08 | When the visitor opens a product, the system shall show its name, description, price, category, brand and certificates. | GET /api/produtos/[id] includes category, brand and certificates |
+| REQ-CAT-09 | If the `id` of `GET /api/produtos/[id]` is not a positive integer, the system shall respond 400. | `abc`, `0`, `-1`, `1.5`, `1e3`, `2147483648` → 400 (not 500) |
+| REQ-CAT-10 | The system shall build the listing cache key from the validated filters, in a fixed order and only with the known parameters (the `nome` search ignores case and trims the ends and has at most 100 characters; more than that → 400). | The order of the parameters and unknown parameters do not change the key; a 101-character `nome` → 400 |
 
-## Casos-limite
+## Edge cases
 
-Produto sem foto mostra placeholder (fotoUrl vazio). Lista cacheada por 2 min (NFR-CONS-01). O painel administrativo pede size=100 (limite do REQ-CAT-05 deve acomodá-lo).
+A product without a photo shows a placeholder (empty fotoUrl). The list is cached for 2 min (NFR-CONS-01). The admin dashboard asks for size=100 (the limit in REQ-CAT-05 must accommodate it).
 
 ## Interfaces
 
-GET /api/produtos?page&size&nome&categoriaId&marcaId&precoMax&sort · GET /api/produtos/[id] · páginas /produtos e /produtos/[id].
+GET /api/produtos?page&size&nome&categoriaId&marcaId&precoMax&sort · GET /api/produtos/[id] · pages /produtos and /produtos/[id].
 
-## NFRs aplicáveis
+## Applicable NFRs
 
 NFR-DES-01, NFR-CONS-01.
 
-## Fora de escopo
+## Out of scope
 
-Carrinho, pedido, pagamento, estoque, avaliações.
+Cart, order, payment, stock, reviews.
 
-## Perguntas abertas
+## Open questions
 
-Nenhuma. REQ-CAT-06 e REQ-CAT-07 foram implementados em 2026-11-11 (`specs/005-filtro-marca-ordenacao-preco/spec.md`).
+None. REQ-CAT-06 and REQ-CAT-07 were implemented on 2026-11-11 (`specs/005-filtro-marca-ordenacao-preco/spec.md`).

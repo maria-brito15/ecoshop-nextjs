@@ -1,45 +1,45 @@
-# CONT · Conteúdo institucional e educativo
+# CONT · Institutional and educational content
 
-> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-10. ADRs: ADR-0022 (substitui o ADR-0014)
+> Living spec. Source of truth for the expected behavior. Last review: 2026-11-10. ADRs: ADR-0022 (supersedes ADR-0014)
 
-## Objetivo
+## Goal
 
-Apresentar a marca, a missão e conteúdo educativo sobre sustentabilidade.
+Present the brand, the mission and educational content about sustainability.
 
-## Atores
+## Actors
 
-Visitante e usuários.
+Visitor and users.
 
-## Regras de negócio
+## Business rules
 
-- **BR-CONT-01** — Nenhum número ou dado exibido pode ser inventado sem fonte (Constitution, Art. XI).
+- **BR-CONT-01** — No number or data shown may be invented without a source (Constitution, Art. XI).
 
-## Requisitos
+## Requirements
 
-| ID | Requisito (EARS) | Aceitação |
+| ID | Requirement (EARS) | Acceptance |
 |---|---|---|
-| REQ-CONT-01 | Quando um visitante abre a home, o sistema deve exibir a apresentação do EcoShop e o acesso ao catálogo. | Home renderiza com link para /produtos |
-| REQ-CONT-02 | Quando a home exibe métricas sem fonte real, o sistema deve rotulá-las como ilustrativas, visível ao lado do número. | A home mostra "Números ilustrativos — ainda sem fonte de dados real" junto das métricas |
-| REQ-CONT-03 | Quando um visitante abre a área de educação, o sistema deve exibir os conteúdos educativos. | /educacao renderiza os conteúdos |
-| REQ-CONT-04 | Quando um visitante abre a página Sobre, o sistema deve exibir a equipe e a missão. | /sobre renderiza |
-| REQ-CONT-05 | Quando um produto exibe impacto ambiental calculado (não cadastrado), o sistema deve rotulá-lo como estimativa ilustrativa, visível junto do número. | A página de produto mostra "Estimativa ilustrativa calculada a partir do preço" junto do card de impacto |
+| REQ-CONT-01 | When a visitor opens the home page, the system shall show the EcoShop presentation and access to the catalog. | Home renders with a link to /produtos |
+| REQ-CONT-02 | When the home page shows metrics without a real source, the system shall label them as illustrative, visibly next to the number. | The home page shows "Illustrative numbers — no real data source yet" next to the metrics |
+| REQ-CONT-03 | When a visitor opens the education area, the system shall show the educational content. | /educacao renders the content |
+| REQ-CONT-04 | When a visitor opens the About page, the system shall show the team and the mission. | /sobre renders |
+| REQ-CONT-05 | When a product shows a computed (not registered) environmental impact, the system shall label it as an illustrative estimate, visibly next to the number. | The product page shows "Illustrative estimate calculated from the price" next to the impact card |
 
-## Casos-limite
+## Edge cases
 
-Conteúdo estático; nenhuma regra de acesso.
+Static content; no access rules.
 
 ## Interfaces
 
-Páginas /, /educacao, /sobre.
+Pages /, /educacao, /sobre.
 
-## NFRs aplicáveis
+## Applicable NFRs
 
 NFR-ACE-01.
 
-## Fora de escopo
+## Out of scope
 
 CMS; blog.
 
-## Perguntas abertas
+## Open questions
 
-1. Qual fonte real alimentará as métricas da home e o impacto por produto? Decidido por ora (2026-11-10, resposta do dono): nenhuma; os números continuam ilustrativos, mas visivelmente rotulados como tais (REQ-CONT-02, REQ-CONT-05). Backlog de fonte real em `docs/architecture/adr/pendentes.md`.
+1. Which real source will feed the home page metrics and the per-product impact? Decided for now (2026-11-10, owner's answer): none; the numbers stay illustrative, but visibly labeled as such (REQ-CONT-02, REQ-CONT-05). Backlog for a real source in `docs/architecture/adr/pendentes.md`.

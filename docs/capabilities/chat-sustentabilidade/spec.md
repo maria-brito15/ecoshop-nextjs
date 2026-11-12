@@ -1,50 +1,50 @@
-# CHAT · Chat de sustentabilidade
+# CHAT · Sustainability chat
 
-> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-10. ADRs: ADR-0012
+> Living spec. Source of truth for the expected behavior. Last review: 2026-11-10. ADRs: ADR-0012
 
-## Objetivo
+## Goal
 
-Responder perguntas de usuários autenticados sobre sustentabilidade usando o Gemini, com um botão flutuante de chat visível em qualquer página.
+Answer authenticated users' questions about sustainability using Gemini, with a floating chat button visible on any page.
 
-## Atores
+## Actors
 
-Usuário autenticado (qualquer papel).
+Authenticated user (any role).
 
-## Regras de negócio
+## Business rules
 
-- **BR-CHAT-01** — Limite de 20 mensagens por minuto por usuário.
-- **BR-CHAT-02** — Mensagem tem de 1 a 2000 caracteres.
+- **BR-CHAT-01** — Limit of 20 messages per minute per user.
+- **BR-CHAT-02** — A message has 1 to 2000 characters.
 
-## Requisitos
+## Requirements
 
-| ID | Requisito (EARS) | Aceitação |
+| ID | Requirement (EARS) | Acceptance |
 |---|---|---|
-| REQ-CHAT-01 | Quando um usuário autenticado envia uma mensagem válida, o sistema deve devolver a resposta do Gemini. | POST /api/ia/chat → 200 com a resposta |
-| REQ-CHAT-02 | Se o usuário excede 20 mensagens por minuto, o sistema deve responder 429. | A 21ª mensagem em 60 s → 429 |
-| REQ-CHAT-03 | Se a chave do Gemini não está configurada, o sistema deve responder 503. | Sem GEMINI_API_KEY → 503 |
-| REQ-CHAT-04 | Se o Gemini falha, o sistema deve responder 502. | Gemini devolve erro → 502 |
-| REQ-CHAT-05 | Se a mensagem é vazia ou tem mais de 2000 caracteres, o sistema deve responder 400. | "" e 2001 caracteres → 400 |
-| REQ-CHAT-06 | Quando um usuário autenticado abre o chat, o sistema deve oferecer uma interface para conversar. | Há tela com campo de mensagem e histórico da conversa |
-| REQ-CHAT-07 | Se um visitante sem sessão envia mensagem, o sistema deve responder 401. | POST sem cookie → 401 |
-| REQ-CHAT-08 | Se o `historico` do chat tem mais de 20 itens, ou algum texto passa de 2000 caracteres, ou algum item tem mais de 5 partes, o sistema deve responder 400; a chave do Gemini deve ir no cabeçalho `x-goog-api-key`, nunca na URL. | 21 itens → 400; a chamada ao Gemini não tem `key=` na URL |
-| REQ-CHAT-09 | Se a chamada ao Gemini lança erro ou excede o tempo limite, o chat deve responder 502 (como REQ-CHAT-04), não 500. | `fetch` que lança → 502 |
+| REQ-CHAT-01 | When an authenticated user sends a valid message, the system shall return Gemini's answer. | POST /api/ia/chat → 200 with the answer |
+| REQ-CHAT-02 | If the user exceeds 20 messages per minute, the system shall respond 429. | The 21st message in 60 s → 429 |
+| REQ-CHAT-03 | If the Gemini key is not configured, the system shall respond 503. | Without GEMINI_API_KEY → 503 |
+| REQ-CHAT-04 | If Gemini fails, the system shall respond 502. | Gemini returns an error → 502 |
+| REQ-CHAT-05 | If the message is empty or has more than 2000 characters, the system shall respond 400. | "" and 2001 characters → 400 |
+| REQ-CHAT-06 | When an authenticated user opens the chat, the system shall offer an interface to converse. | There is a screen with a message field and the conversation history |
+| REQ-CHAT-07 | If a visitor without a session sends a message, the system shall respond 401. | POST without a cookie → 401 |
+| REQ-CHAT-08 | If the chat `historico` has more than 20 items, or any text exceeds 2000 characters, or any item has more than 5 parts, the system shall respond 400; the Gemini key shall go in the `x-goog-api-key` header, never in the URL. | 21 items → 400; the Gemini call has no `key=` in the URL |
+| REQ-CHAT-09 | If the call to Gemini throws or exceeds the time limit, the chat shall respond 502 (like REQ-CHAT-04), not 500. | A `fetch` that throws → 502 |
 
-## Casos-limite
+## Edge cases
 
-O contexto da conversa não é persistido no servidor. Corrigido em 2026-11-10: antes, o chat era público e sem limite (D3).
+The conversation context is not persisted on the server. Fixed on 2026-11-10: before, the chat was public and unlimited (D3).
 
 ## Interfaces
 
-POST /api/ia/chat · Gemini 2.0 Flash · `app/components/FloatingChat.tsx` (montado em `app/layout.tsx`).
+POST /api/ia/chat · Gemini 2.0 Flash · `app/components/FloatingChat.tsx` (mounted in `app/layout.tsx`).
 
-## NFRs aplicáveis
+## Applicable NFRs
 
 NFR-SEG-05.
 
-## Fora de escopo
+## Out of scope
 
-Persistir conversas; chat em tempo real.
+Persisting conversations; real-time chat.
 
-## Perguntas abertas
+## Open questions
 
-Nenhuma. A pergunta sobre onde o chat aparece foi resolvida em 2026-11-10 (botão flutuante, `specs/004-chat-flutuante/spec.md`).
+None. The question about where the chat appears was resolved on 2026-11-10 (floating button, `specs/004-chat-flutuante/spec.md`).

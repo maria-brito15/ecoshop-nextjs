@@ -1,52 +1,52 @@
-# SCAN · EcoScan (identificação de material por foto)
+# SCAN · EcoScan (material identification from a photo)
 
-> Spec viva. Fonte de verdade do comportamento esperado. Última revisão: 2026-11-10. ADRs: ADR-0012
+> Living spec. Source of truth for the expected behavior. Last review: 2026-11-10. ADRs: ADR-0012
 
-## Objetivo
+## Goal
 
-A partir de uma foto, identificar o material (Azure Custom Vision) e explicar sua sustentabilidade (Gemini), com contingência quando a explicação falha.
+From a photo, identify the material (Azure Custom Vision) and explain its sustainability (Gemini), with a fallback when the explanation fails.
 
-## Atores
+## Actors
 
-Usuário autenticado (qualquer papel).
+Authenticated user (any role).
 
-## Regras de negócio
+## Business rules
 
-- **BR-SCAN-01** — Limiar de confiança mínimo 0,7 (configurável por AI_CONFIDENCE_THRESHOLD).
-- **BR-SCAN-02** — A tag "outros" nunca é uma identificação.
-- **BR-SCAN-03** — A confiança é devolvida em porcentagem inteira.
+- **BR-SCAN-01** — Minimum confidence threshold 0.7 (configurable through AI_CONFIDENCE_THRESHOLD).
+- **BR-SCAN-02** — The tag "outros" is never an identification.
+- **BR-SCAN-03** — Confidence is returned as an integer percentage.
 
-## Requisitos
+## Requirements
 
-| ID | Requisito (EARS) | Aceitação |
+| ID | Requirement (EARS) | Acceptance |
 |---|---|---|
-| REQ-SCAN-01 | Quando uma imagem válida é enviada e o material é identificado com confiança igual ou acima do limiar, o sistema deve devolver o material, a confiança e a análise de sustentabilidade com 6 campos. | Resposta 200 com sucesso, material, confianca e os 6 campos da análise |
-| REQ-SCAN-02 | Se a confiança fica abaixo do limiar, o sistema deve responder 422 sem consultar o Gemini. | Azure com 0,4 → 422 e nenhuma chamada ao Gemini |
-| REQ-SCAN-03 | Se a melhor tag é "outros", o sistema deve tratar a imagem como não identificada, mesmo com confiança alta. | Azure devolve outros 0,95 → 422 |
-| REQ-SCAN-04 | Se o Gemini devolve conteúdo inválido, o sistema deve responder 200 com a análise de contingência. | Gemini devolve texto sem JSON → 200 com análise padrão |
-| REQ-SCAN-05 | Se a chamada ao Gemini falha por rede, o sistema deve responder 200 com a análise de contingência. | fetch lança erro → 200 com análise padrão |
-| REQ-SCAN-06 | Se o arquivo falta, não é imagem aceita ou excede 10 MB, o sistema deve responder 400. | Sem arquivo, .gif ou 11 MB → 400 |
-| REQ-SCAN-07 | Se o Azure não responde ou falha, o sistema deve responder 422 com sugestão ao usuário, não 500. | fetch do Azure falha → 422 |
-| REQ-SCAN-08 | Quando a análise indica descarte correto e impacto, o sistema deve exibi-los na tela do EcoScan. | Tela mostra os 6 campos devolvidos |
-| REQ-SCAN-09 | O sistema deve aplicar tempo limite às chamadas ao Azure e ao Gemini e tratar o estouro como falha da dependência (REQ-SCAN-05 e REQ-SCAN-07). | Chamada que não responde é abortada; Azure → `null` (422 na rota), Gemini → `null` (contingência) |
+| REQ-SCAN-01 | When a valid image is sent and the material is identified with confidence equal to or above the threshold, the system shall return the material, the confidence and the sustainability analysis with 6 fields. | 200 response with sucesso, material, confianca and the 6 analysis fields |
+| REQ-SCAN-02 | If the confidence is below the threshold, the system shall respond 422 without querying Gemini. | Azure with 0.4 → 422 and no call to Gemini |
+| REQ-SCAN-03 | If the best tag is "outros", the system shall treat the image as unidentified, even with high confidence. | Azure returns outros 0.95 → 422 |
+| REQ-SCAN-04 | If Gemini returns invalid content, the system shall respond 200 with the fallback analysis. | Gemini returns text without JSON → 200 with the default analysis |
+| REQ-SCAN-05 | If the call to Gemini fails because of the network, the system shall respond 200 with the fallback analysis. | fetch throws → 200 with the default analysis |
+| REQ-SCAN-06 | If the file is missing, is not an accepted image or exceeds 10 MB, the system shall respond 400. | No file, .gif or 11 MB → 400 |
+| REQ-SCAN-07 | If Azure does not respond or fails, the system shall respond 422 with a suggestion to the user, not 500. | Azure fetch fails → 422 |
+| REQ-SCAN-08 | When the analysis indicates correct disposal and impact, the system shall show them on the EcoScan screen. | The screen shows the 6 returned fields |
+| REQ-SCAN-09 | The system shall apply a timeout to the calls to Azure and to Gemini and treat the overrun as a dependency failure (REQ-SCAN-05 and REQ-SCAN-07). | A call that does not respond is aborted; Azure → `null` (422 in the route), Gemini → `null` (fallback) |
 
-## Casos-limite
+## Edge cases
 
-Tags reconhecidas pelo modelo do Azure ainda são poucas e não estão documentadas (resposta do dono, 2026-11-10). Sem rate limit no scan (ver pergunta aberta).
+The tags recognized by the Azure model are still few and are not documented (owner's answer, 2026-11-10). No rate limit on the scan (see the open question).
 
 ## Interfaces
 
-POST /api/ia/scan (multipart, campo file) · Azure Custom Vision (prediction) · Gemini 2.0 Flash · página /ia-scan.
+POST /api/ia/scan (multipart, field file) · Azure Custom Vision (prediction) · Gemini 2.0 Flash · page /ia-scan.
 
-## NFRs aplicáveis
+## Applicable NFRs
 
 NFR-SEG-05, NFR-DES-02.
 
-## Fora de escopo
+## Out of scope
 
-Salvar histórico de scans; identificar mais de um material por foto.
+Saving scan history; identifying more than one material per photo.
 
-## Perguntas abertas
+## Open questions
 
-1. Quais tags o modelo Azure reconhece hoje? (documentar em interfaces-externas)
-2. O scan precisa de limite de requisições por usuário, como o chat?
+1. Which tags does the Azure model recognize today? (document in external-interfaces)
+2. Does the scan need a per-user request limit, like the chat?
