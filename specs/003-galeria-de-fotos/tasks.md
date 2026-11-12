@@ -1,11 +1,11 @@
-# Tarefas: 003-galeria-de-fotos
+# Tasks: 003-galeria-de-fotos
 
-| ID | Tarefa | REQ | Depende de | Feito quando | OK |
+| ID | Task | REQ | Depends on | Done when | OK |
 |---|---|---|---|---|---|
-| T1 | `app/(store)/produtos/[id]/page.tsx`: consumir `useListarFotos`, calcular `imagemPrincipal` (seleção > fotoUrl > primeira foto) e renderizar faixa de miniaturas clicáveis | REQ-MIDIA-04 | — | código compila (`tsc`), lint sem erro novo | [x] |
-| T2 | Verificar a API que a galeria consome (`GET /api/produtos/{id}/fotos`) contra o dev server real, com um produto com 2 fotos | REQ-MIDIA-04 | T1 | `curl` confirma `total: 2` e as URLs corretas | [x] |
-| T3 | Consolidar `midia-de-produto/{spec,status}.md`; remover a linha da galeria de `pendentes.md` | — | T1, T2 | `npm run sdd:check` passa | [x] |
+| T1 | `app/(store)/produtos/[id]/page.tsx`: consume `useListPhotos`, compute `mainImage` (selection > fotoUrl > first photo) and render a strip of clickable thumbnails | REQ-MIDIA-04 | — | the code compiles (`tsc`), lint with no new error | [x] |
+| T2 | Verify the API the gallery consumes (`GET /api/produtos/{id}/fotos`) against the real dev server, with a 2-photo product | REQ-MIDIA-04 | T1 | `curl` confirms `total: 2` and the correct URLs | [x] |
+| T3 | Consolidate `midia-de-produto/{spec,status}.md`; remove the gallery row from `pendentes.md` | — | T1, T2 | `npm run sdd:check` passes | [x] |
 
-## Nota
+## Note
 
-REQ-MIDIA-04 ficou como ◐, não ✅: verifiquei o código e a API real via `curl`, mas não há ferramenta de navegador nesta sessão para confirmar visualmente que as miniaturas aparecem e trocam a imagem principal na tela (a página é client-side; o HTML inicial via `curl` não carrega os dados pós-hidratação). Falta um `manual: AAAA-MM-DD` com navegador para virar ✅.
+REQ-MIDIA-04 stayed ◐, not ✅: I verified the code and the real API via `curl`, but there is no browser tool in this session to confirm visually that the thumbnails appear and swap the main image on screen (the page is client-side; the initial HTML via `curl` does not carry the post-hydration data). A `manual: YYYY-MM-DD` with a browser is missing to become ✅.

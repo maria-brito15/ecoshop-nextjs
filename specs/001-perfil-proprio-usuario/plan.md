@@ -1,36 +1,36 @@
-# Plano: 001-perfil-proprio-usuario
+# Plan: 001-perfil-proprio-usuario
 
 - **Spec:** ./spec.md
-- **ADRs que segue:** ADR-0017 · **ADRs novos/que substitui:** nenhum
+- **ADRs it follows:** ADR-0017 · **New ADRs / ones it supersedes:** none
 
-## Abordagem técnica
-Rebaixar `/api/usuarios` de `admin` para `autenticado` em `config/protected-routes.ts`. A segurança não diminui: os handlers já exigem ADMIN para listar, criar e excluir, e "próprio ou ADMIN" para ler e alterar (cobertos por REQ-AUTZ-04 e REQ-AUTZ-05). Corrigir o campo lido na tela de perfil (`data.erro`).
+## Technical approach
+Downgrade `/api/usuarios` from `admin` to `autenticado` in `config/protected-routes.ts`. Security does not decrease: the handlers already require ADMIN to list, create and delete, and "own or ADMIN" to read and change (covered by REQ-AUTZ-04 and REQ-AUTZ-05). Fix the field read on the profile screen (`data.erro`).
 
-Alternativa descartada: manter `admin` no middleware e criar `/api/me` para o próprio perfil. Exigiria rota nova, mudança na página e duplicaria a regra; o ADR-0017 já define o handler como lugar da decisão.
+Discarded alternative: keep `admin` in the middleware and create `/api/me` for the user's own profile. It would need a new route, a page change and would duplicate the rule; ADR-0017 already defines the handler as the place of the decision.
 
 ## Constitution Check
-| Artigo | Aplica? | Cumprido? | Observação |
+| Article | Applies? | Met? | Note |
 |---|---|---|---|
-| II Testes por REQ | sim | sim | `REQ-PERF-01` deixa de ser `todo`; `REQ-AUTZ-04/05` já cobrem o handler |
-| III Autorização | sim | sim | decisão no handler (ADR-0017) |
-| IV Dado sensível | sim | sim | respostas sem `senha` (REQ-AUTH-07) |
-| V Camadas | não | — | sem mudança estrutural |
-| VII Erros | sim | sim | a tela mostra `erro` da API |
-| XI Sem dado inventado | não | — | |
+| II Tests per REQ | yes | yes | `REQ-PERF-01` stops being `todo`; `REQ-AUTZ-04/05` already cover the handler |
+| III Authorization | yes | yes | decision in the handler (ADR-0017) |
+| IV Sensitive data | yes | yes | responses without `senha` (REQ-AUTH-07) |
+| V Layers | no | — | no structural change |
+| VII Errors | yes | yes | the screen shows the API's `erro` |
+| XI No invented data | no | — | |
 
-## Arquivos afetados
-| Arquivo | Mudança | REQ |
+## Affected files
+| File | Change | REQ |
 |---|---|---|
 | `config/protected-routes.ts` | `/api/usuarios` → `autenticado` | REQ-PERF-01, REQ-AUTZ-06 |
 | `app/(perfil)/perfil/page.tsx` | `data.mensagem` → `data.erro` | REQ-PERF-04 |
-| `tests/integration/profile-and-middleware.test.ts` | remove o `todo` de REQ-PERF-01 | REQ-PERF-01 |
+| `tests/integration/profile-and-middleware.test.ts` | removes the `todo` of REQ-PERF-01 | REQ-PERF-01 |
 | `docs/capabilities/conta-e-perfil/status.md` | status | REQ-PERF-01, REQ-PERF-04 |
 
-## Plano de verificação
-Integração: REQ-PERF-01, REQ-AUTZ-04, REQ-AUTZ-05, REQ-AUTZ-06. Manual: abrir `/perfil` como CLIENTE, forçar um erro (ex.: telefone inválido) e ver a mensagem da API.
+## Verification plan
+Integration: REQ-PERF-01, REQ-AUTZ-04, REQ-AUTZ-05, REQ-AUTZ-06. Manual: open `/perfil` as CLIENTE, force an error (e.g. an invalid phone) and see the API's message.
 
-## Riscos e reversão
-Risco: um handler de `/api/usuarios/*` sem checagem passaria a ficar aberto a qualquer logado. Mitigação: os 3 métodos de `[id]` e os 2 de `route.ts` foram conferidos e têm teste (AUTZ-04/05). Reversão: restaurar `nivel: "admin"` (1 linha).
+## Risks and rollback
+Risk: a handler of `/api/usuarios/*` without a check would become open to any logged-in user. Mitigation: the 3 methods of `[id]` and the 2 of `route.ts` were checked and have tests (AUTZ-04/05). Rollback: restore `nivel: "admin"` (1 line).
 
 ## Complexity Tracking
-Sem violações.
+No violations.

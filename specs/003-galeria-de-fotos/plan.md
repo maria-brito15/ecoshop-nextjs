@@ -1,38 +1,38 @@
-# Plano: 003-galeria-de-fotos
+# Plan: 003-galeria-de-fotos
 
 - **Spec:** ./spec.md
-- **ADRs que segue:** ADR-0011 (fotos no filesystem local) · **ADRs novos/que substitui:** nenhum
+- **ADRs it follows:** ADR-0011 (photos on the local filesystem) · **New ADRs / ones it supersedes:** none
 
-## Abordagem técnica
+## Technical approach
 
-A API e o armazenamento já suportam várias fotos por produto (ADR-0011, REQ-MIDIA-01/02/03, todos ✅). Só a tela não usava isso. `app/(store)/produtos/[id]/page.tsx` já chama `useBuscarProduto`; adiciono `useListarFotos(Number(id))` (hook já existente, sem mudança em `lib/hooks/usePhotos.ts`) e um estado `fotoSelecionada`. A imagem principal passa a ser `fotoSelecionada ?? produto.fotoUrl ?? fotos[0]?.url ?? null`, e uma faixa de miniaturas (uma por foto) aparece abaixo da imagem principal quando `fotos.length > 0`; clicar numa miniatura troca `fotoSelecionada`.
+The API and the storage already support several photos per product (ADR-0011, REQ-MIDIA-01/02/03, all ✅). Only the screen did not use that. `app/(store)/produtos/[id]/page.tsx` already calls `useGetProduct`; I add `useListPhotos(Number(id))` (an existing hook, no change in `lib/hooks/usePhotos.ts`) and a `selectedPhoto` state. The main image becomes `selectedPhoto ?? product.fotoUrl ?? photos[0]?.url ?? null`, and a strip of thumbnails (one per photo) appears below the main image when `photos.length > 0`; clicking a thumbnail changes `selectedPhoto`.
 
-Alternativa descartada: um componente de carrossel de terceiros. Rejeitada por ser um add-on desproporcional para uma galeria de miniaturas simples, e por introduzir uma dependência nova sem necessidade.
+Discarded alternative: a third-party carousel component. Rejected as a disproportionate add-on for a simple thumbnail gallery, and for introducing a new dependency without need.
 
 ## Constitution Check
 
-| Artigo | Aplica? | Cumprido? | Observação |
+| Article | Applies? | Met? | Note |
 |---|---|---|---|
-| II Testes por REQ | sim | parcial | sem suíte de teste de componente no projeto (ADR-0016 cobre só API); verificado via API real (`curl`) e código; falta manual com navegador |
-| V Camadas | sim | sim | página só consome hooks existentes, nenhuma chamada direta a `lib/db` ou ao filesystem |
-| XI Sem dado inventado | sim | sim | a galeria só mostra fotos reais devolvidas pela API |
+| II Tests per REQ | yes | partial | no component-test suite in the project (ADR-0016 covers only the API); verified via the real API (`curl`) and code; a manual check with a browser is missing |
+| V Layers | yes | yes | the page only consumes existing hooks, no direct call to `lib/db` or the filesystem |
+| XI No invented data | yes | yes | the gallery only shows real photos returned by the API |
 
-## Arquivos afetados
+## Affected files
 
-| Arquivo | Mudança | REQ |
+| File | Change | REQ |
 |---|---|---|
-| `app/(store)/produtos/[id]/page.tsx` | consome `useListarFotos`; estado `fotoSelecionada`; faixa de miniaturas | REQ-MIDIA-04 |
-| `docs/capabilities/midia-de-produto/{spec,status}.md` | REQ-MIDIA-04 ❌→◐ (código + API verificada; falta manual no navegador) | REQ-MIDIA-04 |
-| `docs/architecture/adr/pendentes.md` | remove a linha da galeria do backlog | — |
+| `app/(store)/produtos/[id]/page.tsx` | consumes `useListPhotos`; `selectedPhoto` state; thumbnail strip | REQ-MIDIA-04 |
+| `docs/capabilities/midia-de-produto/{spec,status}.md` | REQ-MIDIA-04 ❌→◐ (code + API verified; manual check in the browser missing) | REQ-MIDIA-04 |
+| `docs/architecture/adr/pendentes.md` | removes the gallery row from the backlog | — |
 
-## Plano de verificação
+## Verification plan
 
-API: `GET /api/produtos/{id}/fotos` já cobertas por REQ-MIDIA-01/02/03; confirmado também ao vivo contra o dev server com um produto de 2 fotos (`total: 2`, URLs corretas). Manual pendente: abrir `/produtos/{id}` no navegador com um produto de 3+ fotos e confirmar que aparecem 3 miniaturas clicáveis que trocam a imagem principal — não feito nesta sessão por falta de ferramenta de navegador.
+API: `GET /api/produtos/{id}/fotos` already covered by REQ-MIDIA-01/02/03; also confirmed live against the dev server with a 2-photo product (`total: 2`, correct URLs). Manual pending: open `/produtos/{id}` in the browser with a product of 3+ photos and confirm that 3 clickable thumbnails appear and swap the main image — not done in this session for lack of a browser tool.
 
-## Riscos e reversão
+## Risks and rollback
 
-Risco: produto sem fotos extras perde alguma coisa? Não — `fotos.length === 0` mantém o comportamento atual (só `fotoUrl` ou ícone). Reversão: remover o bloco de miniaturas e o import de `useListarFotos` (não toca em API nem banco).
+Risk: does a product without extra photos lose anything? No — `photos.length === 0` keeps the current behavior (only `fotoUrl` or the icon). Rollback: remove the thumbnail block and the `useListPhotos` import (it touches neither the API nor the database).
 
 ## Complexity Tracking
 
-Sem violações.
+No violations.

@@ -1,9 +1,9 @@
-# Tarefas: <NNN-nome-curto>
+# Tasks: <NNN-short-name>
 
-Regra: uma tarefa por commit; a mensagem do commit leva o ID da tarefa. Teste que falha vem antes da correção.
+Rule: one task per commit; the commit message carries the task ID. A failing test comes before the fix.
 
-| ID | Tarefa | REQ | Depende de | Feito quando | OK |
+| ID | Task | REQ | Depends on | Done when | OK |
 |---|---|---|---|---|---|
-| T1 | Escrever teste que falha para REQ-XXX-NN | REQ-XXX-NN | — | teste existe e falha pelo motivo certo | [ ] |
-| T2 | Implementar | REQ-XXX-NN | T1 | teste de T1 passa; lint/tipos ok | [ ] |
-| T3 | Consolidar spec viva e status | — | T2 | `npm run sdd:check` passa; status ✅ cita o teste | [ ] |
+| T1 | Write a failing test for REQ-XXX-NN | REQ-XXX-NN | — | the test exists and fails for the right reason | [ ] |
+| T2 | Implement | REQ-XXX-NN | T1 | the T1 test passes; lint/types ok | [ ] |
+| T3 | Consolidate the living spec and status | — | T2 | `npm run sdd:check` passes; a ✅ status cites the test | [ ] |

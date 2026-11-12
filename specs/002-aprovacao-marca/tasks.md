@@ -1,22 +1,22 @@
-# Tarefas: 002-aprovacao-marca
+# Tasks: 002-aprovacao-marca
 
-| ID | Tarefa | REQ | Depende de | Feito quando | OK |
+| ID | Task | REQ | Depends on | Done when | OK |
 |---|---|---|---|---|---|
-| T1 | Migração Prisma: `enum StatusMarca`, `Marca.status @default(PENDENTE)`, backfill `APROVADA` nas linhas existentes | REQ-AUTH-11, REQ-USR-03 | — | `npx prisma migrate dev` roda limpo; marcas do seed ficam `APROVADA` | [x] (migração escrita à mão e aplicada com `prisma migrate deploy`: sem Postgres acessível para `migrate dev` gerar o diff) |
-| T2 | Teste falhando: REQ-AUTH-11 (cadastro MARCA → `Usuario.tipo=CLIENTE`, `Marca.status=PENDENTE`) e REQ-AUTH-14 (sem `marcaNome` → 400) em `tests/integration/authentication.test.ts` | REQ-AUTH-11, REQ-AUTH-14 | T1 | testes existem e falham pelo motivo certo | [x] |
-| T3 | `registroPublicoSchema`: `marcaNome`/`marcaDescricao` + `superRefine` exigindo `marcaNome` quando `tipo === "MARCA"` | REQ-AUTH-14 | T2 | T2 (parte 400) passa | [x] |
-| T4 | `criarUsuario`: ao `tipo === "MARCA"`, grava `Usuario` como `CLIENTE` e cria `Marca` `PENDENTE` numa transação | REQ-AUTH-11 | T3 | T2 (parte pendência) passa | [x] |
-| T5 | `app/api/users/route.ts`: repassa `marcaNome`/`marcaDescricao`; resposta inclui `marcaPendente: true` quando aplicável | REQ-AUTH-11 | T4 | teste de integração da rota passa | [x] |
-| T6 | Teste falhando: REQ-USR-03 (aprovar marca pendente muda `Usuario.tipo` e `Marca.status`; aprovar de novo → 409) e REQ-USR-05 (`GET /api/marcas` inclui `status`) em `tests/integration/users.test.ts` | REQ-USR-03, REQ-USR-05 | T1 | testes existem e falham pelo motivo certo | [x] |
-| T7 | `services/brand.service.ts::aprovarMarca(id)` (transação `Marca.status→APROVADA` + `Usuario.tipo→MARCA`; erro `MARCA_NAO_PENDENTE` se já não pendente) | REQ-USR-03 | T6 | parte "aprovar" de T6 passa | [x] |
-| T8 | `app/api/marcas/[id]/aprovar/route.ts` (`POST`, `requireAdmin`, mapeia 404/409) | REQ-USR-03 | T7 | T6 passa completo | [x] |
-| T9 | Confirmar que `criarMarca` (fluxo ADMIN/painel) continua exigindo `tipo MARCA/ADMIN` e cria com `status APROVADA` — teste de não regressão de REQ-REF-04 | REQ-REF-04 | T1 | teste existente de REQ-REF-04 continua passando sem alteração de comportamento | [x] |
-| T10 | `useAprovarMarca` em `lib/hooks/useBrands.ts` | REQ-USR-05 | T8 | hook chama `POST .../aprovar` e invalida a listagem | [x] |
-| T11 | `SecaoMarcas` no painel: coluna "Status" + botão "Aprovar" quando `PENDENTE` | REQ-USR-05 | T10 | manual: ADMIN vê e aprova uma marca pendente pela UI | [x] código + fluxo ponta a ponta verificado via `curl` contra o dev server (sem ferramenta de navegador neste ambiente); **não verificado visualmente na tela do painel** |
-| T12 | `app/(auth)/sign-in/page.tsx`: corrige envio de `tipo`/`marcaNome` quando `isLoja`; campo "Nome da marca"; mensagem de pendência ao receber `marcaPendente: true` | REQ-AUTH-11 | T5 | manual: cadastro como loja mostra a mensagem e não redireciona para `/` | [x] código + `POST /api/users` verificado via `curl` (`marcaPendente: true`); **tela de cadastro não verificada visualmente** |
-| T13 | Consolidar `autenticacao/status.md`, `gestao-de-usuarios/{spec,status}.md`; remover P11 de `pendentes.md`; adicionar ADR-0018 ao `adr/README.md` | — | T2–T12 | `npm run sdd:check` passa | [x] |
-| T14 | Verificação final: lint, `tsc --noEmit`, `npm test` | — | T13 | todos passam | [x] `npm test` com 2 falhas pré-existentes e sem relação (REQ-SCAN-05 defeito conhecido D4; REQ-OPS-02 por dado obsoleto no banco local — ver nota abaixo) |
+| T1 | Prisma migration: `enum StatusMarca`, `Marca.status @default(PENDENTE)`, `APROVADA` backfill on existing rows | REQ-AUTH-11, REQ-USR-03 | — | `npx prisma migrate dev` runs clean; seed brands stay `APROVADA` | [x] (migration written by hand and applied with `prisma migrate deploy`: no reachable Postgres for `migrate dev` to generate the diff) |
+| T2 | Failing test: REQ-AUTH-11 (MARCA sign-up → `Usuario.tipo=CLIENTE`, `Marca.status=PENDENTE`) and REQ-AUTH-14 (without `marcaNome` → 400) in `tests/integration/authentication.test.ts` | REQ-AUTH-11, REQ-AUTH-14 | T1 | the tests exist and fail for the right reason | [x] |
+| T3 | `publicRegistrationSchema`: `marcaNome`/`marcaDescricao` + `superRefine` requiring `marcaNome` when `tipo === "MARCA"` | REQ-AUTH-14 | T2 | T2 (400 part) passes | [x] |
+| T4 | `createUser`: on `tipo === "MARCA"`, stores `Usuario` as `CLIENTE` and creates a `PENDENTE` `Marca` in a transaction | REQ-AUTH-11 | T3 | T2 (pending part) passes | [x] |
+| T5 | `app/api/users/route.ts`: passes `marcaNome`/`marcaDescricao`; the response includes `marcaPendente: true` when applicable | REQ-AUTH-11 | T4 | the route's integration test passes | [x] |
+| T6 | Failing test: REQ-USR-03 (approving a pending brand changes `Usuario.tipo` and `Marca.status`; approving again → 409) and REQ-USR-05 (`GET /api/marcas` includes `status`) in `tests/integration/users.test.ts` | REQ-USR-03, REQ-USR-05 | T1 | the tests exist and fail for the right reason | [x] |
+| T7 | `services/brand.service.ts::approveBrand(id)` (transaction `Marca.status→APROVADA` + `Usuario.tipo→MARCA`; error `MARCA_NAO_PENDENTE` if no longer pending) | REQ-USR-03 | T6 | the "approve" part of T6 passes | [x] |
+| T8 | `app/api/marcas/[id]/aprovar/route.ts` (`POST`, `requireAdmin`, maps 404/409) | REQ-USR-03 | T7 | T6 passes completely | [x] |
+| T9 | Confirm that `createBrand` (ADMIN/dashboard flow) keeps requiring `tipo MARCA/ADMIN` and creates with `status APROVADA` — a non-regression test of REQ-REF-04 | REQ-REF-04 | T1 | the existing REQ-REF-04 test keeps passing without a behavior change | [x] |
+| T10 | `useApproveBrand` in `lib/hooks/useBrands.ts` | REQ-USR-05 | T8 | the hook calls `POST .../aprovar` and invalidates the listing | [x] |
+| T11 | `BrandsSection` in the dashboard: "Status" column + "Approve" button when `PENDENTE` | REQ-USR-05 | T10 | manual: ADMIN sees and approves a pending brand through the UI | [x] code + end-to-end flow verified via `curl` against the dev server (no browser tool in this environment); **not visually verified on the dashboard screen** |
+| T12 | `app/(auth)/sign-in/page.tsx`: fixes sending `tipo`/`marcaNome` when `isLoja`; "Brand name" field; pending message on receiving `marcaPendente: true` | REQ-AUTH-11 | T5 | manual: sign-up as a store shows the message and does not redirect to `/` | [x] code + `POST /api/users` verified via `curl` (`marcaPendente: true`); **sign-up screen not visually verified** |
+| T13 | Consolidate `autenticacao/status.md`, `gestao-de-usuarios/{spec,status}.md`; remove P11 from `pendentes.md`; add ADR-0018 to `adr/README.md` | — | T2–T12 | `npm run sdd:check` passes | [x] |
+| T14 | Final verification: lint, `tsc --noEmit`, `npm test` | — | T13 | all pass | [x] `npm test` with 2 pre-existing, unrelated failures (REQ-SCAN-05 known defect D4; REQ-OPS-02 due to stale data in the local database — see the note below) |
 
-## Nota sobre T14
+## Note on T14
 
-`REQ-OPS-02` falhou neste ambiente porque o `admin@ecoplace.com` já existia no banco local desde 2026-04-26 (hash placeholder, de antes da correção D6 de `prisma/seed.ts`), e o `upsert` do seed não atualiza usuários já existentes. Não é uma regressão desta mudança: nenhum arquivo de autenticação/seed de usuário foi tocado por `002-aprovacao-marca` além da linha `status: "APROVADA"` em `prisma/seed.ts` (marcas do seed, não usuários). `REQ-SCAN-05` é o defeito conhecido D4, já documentado antes desta mudança.
+`REQ-OPS-02` failed in this environment because `admin@ecoplace.com` already existed in the local database since 2026-04-26 (placeholder hash, from before the D6 fix of `prisma/seed.ts`), and the seed's `upsert` does not update existing users. It is not a regression of this change: no authentication/user-seed file was touched by `002-aprovacao-marca` beyond the `status: "APROVADA"` line in `prisma/seed.ts` (seed brands, not users). `REQ-SCAN-05` is the known defect D4, already documented before this change.

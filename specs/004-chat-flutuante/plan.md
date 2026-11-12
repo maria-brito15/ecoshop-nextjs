@@ -1,44 +1,44 @@
-# Plano: 004-chat-flutuante
+# Plan: 004-chat-flutuante
 
 - **Spec:** ./spec.md
-- **ADRs que segue:** ADR-0012 (IA em duas etapas / modelo Gemini) · **ADRs novos/que substitui:** nenhum
+- **ADRs it follows:** ADR-0012 (AI in two stages / Gemini model) · **New ADRs / ones it supersedes:** none
 
-## Abordagem técnica
+## Technical approach
 
-Novo componente `app/components/FloatingChat.tsx` ("use client"), montado no `app/layout.tsx` ao lado do `<Header />` para aparecer em todas as páginas. Ele:
-1. Checa sessão com `GET /api/auth/me` (mesmo padrão do `useSession` interno do `Header.tsx`); sem sessão, não renderiza nada (`return null`).
-2. Mantém `mensagens` (histórico local, não persistido) e usa `useChat()` (`lib/hooks/useAI.ts`, já existente) para chamar `POST /api/ia/chat`, convertendo o histórico local para o formato `{ role, parts: [{ text }] }` que a API espera.
-3. Mostra o erro devolvido pela API (`chat.erro`) em vez de um texto genérico (`ui.md`).
+A new component `app/components/FloatingChat.tsx` ("use client"), mounted in `app/layout.tsx` next to `<Header />` so that it shows on every page. It:
+1. Checks the session with `GET /api/auth/me` (same pattern as the internal `useSession` of `Header.tsx`); without a session, it renders nothing (`return null`).
+2. Keeps `messages` (local history, not persisted) and uses `useChat()` (`lib/hooks/useAI.ts`, already existing) to call `POST /api/ia/chat`, converting the local history to the `{ role, parts: [{ text }] }` format that the API expects.
+3. Shows the error returned by the API (`chat.erro`) instead of a generic text (`ui.md`).
 
-Alternativa descartada: hook de sessão compartilhado extraído de `Header.tsx`. Rejeitada para esta mudança por aumentar o escopo (refatorar `Header.tsx` não é necessário só para o chat); o componente novo faz sua própria checagem leve, do mesmo jeito que `Header.tsx` já faz.
+Discarded alternative: a shared session hook extracted from `Header.tsx`. Rejected for this change because it increases the scope (refactoring `Header.tsx` is not necessary just for the chat); the new component does its own light check, the same way `Header.tsx` already does.
 
 ## Constitution Check
 
-| Artigo | Aplica? | Cumprido? | Observação |
+| Article | Applies? | Met? | Note |
 |---|---|---|---|
-| II Testes por REQ | sim | parcial | backend já 100% testado (REQ-CHAT-01 a 05, 07); UI sem suíte de componente no projeto (ADR-0016 cobre só API) — falta manual no navegador |
-| III Autorização | sim | sim | a UI só chama a API, que já exige sessão (`requireAuth`); a UI some sem sessão, mas a decisão de acesso real continua no handler |
-| V Camadas | sim | sim | componente só consome `useChat`/`fetch`, nenhuma chamada direta a `lib/db` |
-| VII Erros | sim | sim | exibe `chat.erro` (o campo `erro` da API) |
-| XI Sem dado inventado | sim | sim | só mostra texto vindo da API |
+| II Tests per REQ | yes | partial | backend already 100% tested (REQ-CHAT-01 to 05, 07); UI without a component suite in the project (ADR-0016 covers only the API) — a manual check in the browser is missing |
+| III Authorization | yes | yes | the UI only calls the API, which already requires a session (`requireAuth`); the UI disappears without a session, but the real access decision stays in the handler |
+| V Layers | yes | yes | the component only consumes `useChat`/`fetch`, no direct call to `lib/db` |
+| VII Errors | yes | yes | shows `chat.erro` (the API's `erro` field) |
+| XI No invented data | yes | yes | only shows text coming from the API |
 
-## Arquivos afetados
+## Affected files
 
-| Arquivo | Mudança | REQ |
+| File | Change | REQ |
 |---|---|---|
-| `app/components/FloatingChat.tsx` (novo) | botão flutuante + painel de chat | REQ-CHAT-06 |
-| `app/layout.tsx` | monta `<ChatFlutuante />` | REQ-CHAT-06 |
-| `docs/capabilities/chat-sustentabilidade/{spec,status}.md` | REQ-CHAT-06 ❌→◐; resolve pergunta aberta #1 | REQ-CHAT-06 |
-| `docs/architecture/adr/pendentes.md` | remove a linha do chat do backlog | — |
+| `app/components/FloatingChat.tsx` (new) | floating button + chat panel | REQ-CHAT-06 |
+| `app/layout.tsx` | mounts `<FloatingChat />` | REQ-CHAT-06 |
+| `docs/capabilities/chat-sustentabilidade/{spec,status}.md` | REQ-CHAT-06 ❌→◐; resolves open question #1 | REQ-CHAT-06 |
+| `docs/architecture/adr/pendentes.md` | removes the chat row from the backlog | — |
 
-## Plano de verificação
+## Verification plan
 
-API: REQ-CHAT-01 a 05, 07 já cobertas por `tests/integration/chat-ai.test.ts`, sem alteração. Manual pendente: abrir qualquer página autenticado, ver o botão flutuante, enviar mensagem e receber resposta; deslogado, confirmar que o botão não aparece — não feito nesta sessão por falta de ferramenta de navegador.
+API: REQ-CHAT-01 to 05, 07 already covered by `tests/integration/chat-ai.test.ts`, unchanged. Manual pending: open any page authenticated, see the floating button, send a message and receive an answer; logged out, confirm that the button does not appear — not done in this session for lack of a browser tool.
 
-## Riscos e reversão
+## Risks and rollback
 
-Risco: o componente aparecer para visitantes sem sessão e falhar ao enviar. Mitigado por checar `GET /api/auth/me` antes de renderizar. Reversão: remover a linha `<ChatFlutuante />` de `app/layout.tsx` (o componente não altera nenhum outro arquivo).
+Risk: the component appearing for visitors without a session and failing on send. Mitigated by checking `GET /api/auth/me` before rendering. Rollback: remove the `<FloatingChat />` line from `app/layout.tsx` (the component alters no other file).
 
 ## Complexity Tracking
 
-Sem violações.
+No violations.

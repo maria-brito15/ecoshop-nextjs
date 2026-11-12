@@ -1,35 +1,35 @@
-# Spec de mudança: <NNN-nome-curto>
+# Change spec: <NNN-short-name>
 
-- **Trilha:** completa | correção com mudança de regra
-- **Capacidades afetadas:** <ex.: AUTZ, PERF> (`docs/capabilities/<cap>/spec.md`)
-- **Status:** Rascunho | Em revisão | Aprovada (G1) | Implementada | Consolidada
-- **Autor / aprovador:** <nome> / <nome> · **Data:**
+- **Track:** full | fix with a rule change
+- **Affected capabilities:** <e.g.: AUTZ, PERF> (`docs/capabilities/<cap>/spec.md`)
+- **Status:** Draft | In review | Approved (G1) | Implemented | Consolidated
+- **Author / approver:** <name> / <name> · **Date:**
 
-## Problema
-<Quem tem qual necessidade, e por que o comportamento atual não atende. Sem solução aqui.>
+## Problem
+<Who has which need, and why the current behavior does not meet it. No solution here.>
 
-## Fora de escopo
+## Out of scope
 -
 
-## Comportamento atual (fato, com evidência arquivo:linha)
+## Current behavior (fact, with file:line evidence)
 -
 
-## Requisitos (EARS, um comportamento por linha)
-| ID | Requisito | Critério de aceite (decidível por teste ou passo manual) | Novo / Altera |
+## Requirements (EARS, one behavior per line)
+| ID | Requirement | Acceptance criterion (decidable by a test or a manual step) | New / Changes |
 |---|---|---|---|
-| REQ-XXX-NN | Quando <gatilho>, o sistema deve <resposta observável>. | <entrada → saída esperada> | Novo |
+| REQ-XXX-NN | When <trigger>, the system shall <observable response>. | <input → expected output> | New |
 
-## Cenários e casos-limite
+## Scenarios and edge cases
 -
 
-## Regras de negócio (BR-*) e restrições
+## Business rules (BR-*) and constraints
 -
 
-## Interfaces afetadas (rotas, contratos, telas)
+## Affected interfaces (routes, contracts, screens)
 -
 
-## Delta na spec viva
-<O que muda em docs/capabilities/<cap>/spec.md e status.md quando esta mudança for consolidada (G4).>
+## Delta in the living spec
+<What changes in docs/capabilities/<cap>/spec.md and status.md when this change is consolidated (G4).>
 
-## Perguntas em aberto  (marque [NEEDS CLARIFICATION] e o dono)
+## Open questions  (mark [NEEDS CLARIFICATION] and the owner)
 -

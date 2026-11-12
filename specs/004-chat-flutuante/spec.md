@@ -1,54 +1,54 @@
-# Spec de mudança: 004-chat-flutuante
+# Change spec: 004-chat-flutuante
 
-- **Trilha:** correção (o código viola REQ-CHAT-06; a regra já existe na spec, só faltava a UI)
-- **Capacidades afetadas:** CHAT (`docs/capabilities/chat-sustentabilidade`)
-- **Status:** Consolidada
-- **Autor / aprovador:** Claude / Arthur (G1: escolheu "botão flutuante" entre as duas opções em 2026-11-10, resolvendo a pergunta aberta #1 da spec) · **Data:** 2026-11-10
+- **Track:** fix (the code violates REQ-CHAT-06; the rule already exists in the spec, only the UI was missing)
+- **Affected capabilities:** CHAT (`docs/capabilities/chat-sustentabilidade`)
+- **Status:** Consolidated
+- **Author / approver:** Claude / Arthur (G1: chose "floating button" between the two options on 2026-11-10, resolving open question #1 of the spec) · **Date:** 2026-11-10
 
-## Problema
+## Problem
 
-`POST /api/ia/chat` já funciona de ponta a ponta (REQ-CHAT-01 a 05, 07, todos ✅: autenticação, rate limit, validação, fallback de erro do Gemini). Só não existe nenhuma tela que o use — REQ-CHAT-06 está ❌. A spec deixava aberto se a interface seria uma página própria ou um botão flutuante; o dono decidiu botão flutuante, visível em qualquer página.
+`POST /api/ia/chat` already works end to end (REQ-CHAT-01 to 05, 07, all ✅: authentication, rate limit, validation, Gemini error fallback). There is just no screen that uses it — REQ-CHAT-06 is ❌. The spec left open whether the interface would be a page of its own or a floating button; the owner decided on a floating button, visible on any page.
 
-## Fora de escopo
+## Out of scope
 
-- Qualquer mudança no backend do chat (`app/api/ia/chat/route.ts`, `lib/schemas/ai-chat.ts`): já funciona e está fora de escopo.
-- Persistir a conversa no servidor (já é "fora de escopo" explícito na spec viva).
-- Decidir o escopo do EcoScan/Azure (P06 também cita isso, mas é uma capacidade separada — `ecoscan`, já implementada).
+- Any change to the chat backend (`app/api/ia/chat/route.ts`, `lib/schemas/ai-chat.ts`): it already works and is out of scope.
+- Persisting the conversation on the server (already an explicit "out of scope" in the living spec).
+- Deciding the scope of EcoScan/Azure (P06 also mentions this, but it is a separate capability — `ecoscan`, already implemented).
 
-## Comportamento atual (fato, com evidência)
+## Current behavior (fact, with evidence)
 
-- `app/api/ia/chat/route.ts`: endpoint completo, testado (`tests/integration/chat-ai.test.ts`), aceita `{ mensagem, historico? }` e devolve `{ resposta }`.
-- `lib/hooks/useAI.ts:45-47` (`useChat`): hook de mutation já pronto para esse endpoint.
-- Nenhum componente de UI chamava `useChat` antes desta mudança.
+- `app/api/ia/chat/route.ts`: complete endpoint, tested (`tests/integration/chat-ai.test.ts`), accepts `{ mensagem, historico? }` and returns `{ resposta }`.
+- `lib/hooks/useAI.ts:45-47` (`useChat`): a mutation hook already ready for this endpoint.
+- No UI component called `useChat` before this change.
 - `docs/capabilities/chat-sustentabilidade/status.md`: REQ-CHAT-06 ❌.
 
-## Requisitos
+## Requirements
 
-| ID | Requisito (EARS) | Critério de aceite | Novo / Altera |
+| ID | Requirement (EARS) | Acceptance criterion | New / Changes |
 |---|---|---|---|
-| REQ-CHAT-06 | Quando um usuário autenticado abre o chat, o sistema deve oferecer uma interface para conversar. | Botão flutuante visível em qualquer página para quem tem sessão; abre painel com histórico da conversa e campo de mensagem | Já existe (❌→◐, ver nota de verificação) |
+| REQ-CHAT-06 | When an authenticated user opens the chat, the system shall offer an interface to converse. | A floating button visible on any page for whoever has a session; it opens a panel with the conversation history and a message field | Already exists (❌→◐, see the verification note) |
 
-## Cenários e casos-limite
+## Scenarios and edge cases
 
-- Visitante sem sessão: o botão flutuante não aparece (a página chama `GET /api/auth/me`; sem sessão, `res.ok` é falso).
-- Usuário excede 20 mensagens/min (REQ-CHAT-02): a tela mostra o erro devolvido pela API (`429`) na área de erro do painel.
-- Gemini indisponível (REQ-CHAT-03/04): a tela mostra o erro devolvido (`503`/`502`), sem travar o input.
-- Recarregar a página: o histórico da conversa se perde (consistente com "contexto não persistido no servidor").
+- Visitor without a session: the floating button does not appear (the page calls `GET /api/auth/me`; without a session, `res.ok` is false).
+- User exceeds 20 messages/min (REQ-CHAT-02): the screen shows the error returned by the API (`429`) in the panel's error area.
+- Gemini unavailable (REQ-CHAT-03/04): the screen shows the returned error (`503`/`502`), without freezing the input.
+- Reloading the page: the conversation history is lost (consistent with "context not persisted on the server").
 
-## Regras de negócio e restrições
+## Business rules and constraints
 
-- Nenhuma nova; reaproveita BR-CHAT-01 (rate limit) e BR-CHAT-02 (tamanho da mensagem), ambas já impostas pelo backend.
-- `ui.md`: a tela mostra a mensagem `erro` devolvida pela API, não um texto genérico.
-- Constitution Art. XI: nenhum dado inventado — a resposta exibida é sempre a devolvida pelo Gemini via API.
+- None new; it reuses BR-CHAT-01 (rate limit) and BR-CHAT-02 (message size), both already enforced by the backend.
+- `ui.md`: the screen shows the `erro` message returned by the API, not a generic text.
+- Constitution Art. XI: no invented data — the answer shown is always the one returned by Gemini through the API.
 
-## Interfaces afetadas
+## Affected interfaces
 
-`app/components/FloatingChat.tsx` (novo) · `app/layout.tsx` (monta o componente para todas as páginas).
+`app/components/FloatingChat.tsx` (new) · `app/layout.tsx` (mounts the component for all pages).
 
-## Delta na spec viva
+## Delta in the living spec
 
-`chat-sustentabilidade/status.md`: REQ-CHAT-06 ❌→◐ (código implementado; falta verificação visual no navegador). `chat-sustentabilidade/spec.md`: resolve a pergunta aberta #1 (botão flutuante).
+`chat-sustentabilidade/status.md`: REQ-CHAT-06 ❌→◐ (code implemented; visual check in the browser missing). `chat-sustentabilidade/spec.md`: resolves open question #1 (floating button).
 
-## Perguntas em aberto
+## Open questions
 
-Nenhuma bloqueante.
+None blocking.
