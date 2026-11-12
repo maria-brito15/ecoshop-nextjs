@@ -1,14 +1,14 @@
 ---
 name: technical-writing
-description: Use para produzir documentação técnica clara e consistente em português: READMEs, ADRs, specs, guias e changelogs, com a mesma estrutura e termos do projeto.
+description: Use to produce clear, consistent technical documentation in English: READMEs, ADRs, specs, guides and changelogs, with the project's structure and terms.
 ---
 
-# Escrita técnica (EcoShop)
+# Technical writing (EcoShop)
 
-- Português, frases curtas, voz ativa. Termos do glossário em `docs/product/glossary.md`.
-- Primeiro o que o leitor precisa fazer ou saber; depois o porquê.
-- Cada afirmação sobre o sistema aponta para evidência (`arquivo:linha`, teste ou ADR) ou é marcada como inferência/dúvida.
-- Não duplique: aponte para a fonte de verdade (Constitution, spec viva, ADR).
-- README enxuto: o que é, como rodar, onde está a documentação. Detalhe vai para `docs/`.
-- Guias (`docs/guides/`): passos numerados, comandos copiáveis, resultado esperado.
-- Marque `[FATO]`, `[INFERÊNCIA]`, `[RECOMENDAÇÃO]`, `[DÚVIDA]` em documentos de análise.
+- English, short sentences, active voice. Glossary terms in `docs/product/glossary.md`.
+- First what the reader must do or know; then why.
+- Every claim about the system points to evidence (`file:line`, test or ADR) or is marked as inference/doubt.
+- Do not duplicate: point to the source of truth (Constitution, living spec, ADR).
+- Lean README: what it is, how to run it, where the documentation is. Detail goes in `docs/`.
+- Guides (`docs/guides/`): numbered steps, copyable commands, expected result.
+- Mark `[FACT]`, `[INFERENCE]`, `[RECOMMENDATION]`, `[DOUBT]` in analysis documents.

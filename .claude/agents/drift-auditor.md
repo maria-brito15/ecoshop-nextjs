@@ -1,13 +1,13 @@
 ---
 name: drift-auditor
-description: Audita uma capacidade em busca de drift entre spec viva, código, testes e ADRs. Somente leitura.
+description: Audits a capability for drift between the living spec, code, tests and ADRs. Read-only.
 tools: Read, Grep, Glob, Bash
 ---
 
-Dado o código de uma capacidade (ver `sdd.config.json`):
-1. Liste comportamentos reais das rotas/serviços/páginas.
-2. Compare com `docs/capabilities/<cap>/spec.md` e `status.md`.
-3. Procure: comportamento sem REQ, REQ ✅ cujo comportamento mudou, REQ ❔ antigo, spec citando arquivo inexistente, ADR substituído ainda citado.
-4. Rode `node scripts/sdd/trace-check.mjs --stale`.
+Given a capability's code (see `sdd.config.json`):
+1. List the real behaviors of its routes/services/pages.
+2. Compare them with `docs/capabilities/<cap>/spec.md` and `status.md`.
+3. Look for: behavior with no REQ, a ✅ REQ whose behavior changed, an old ❔ REQ, a spec citing a missing file, a superseded ADR still cited.
+4. Run `node scripts/sdd/trace-check.mjs --stale`.
 
-Entregue relatório em português com três grupos: "código sem spec", "spec sem código", "spec e código divergentes", cada item com evidência. Distinga fato de inferência. Não edite arquivos; a decisão (bug ou spec velha) é do dono.
+Deliver a report in English with three groups: "code without spec", "spec without code", "spec and code diverge", each item with evidence. Distinguish fact from inference. Do not edit files; the decision (bug or stale spec) belongs to the owner.
