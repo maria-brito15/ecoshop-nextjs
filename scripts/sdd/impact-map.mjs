@@ -96,13 +96,13 @@ if (tem("--json")) {
       L.push("");
     }
     if (sensiveis.length) {
-      L.push("**Caminhos sensíveis (exigem citar o ADR no PR)**", "");
+      L.push("**Sensitive paths (the PR must cite the ADR)**", "");
       for (const s of sensiveis) L.push(`- ${s.adr}: ${s.arquivos.join(", ")}`);
       L.push("");
     }
     if (afetadas.size && !docsMudaram)
       L.push(
-        '> ⚠ Código de capacidade mudou e nenhuma spec/status foi tocada. Se o comportamento mudou, consolide a spec (G4); senão declare "sem mudança de comportamento" no PR.',
+        '> ⚠ Capability code changed and no spec/status was touched. If behavior changed, consolidate the spec (G4); otherwise declare "no behavior change" in the PR.',
       );
     if (afetadas.size && !testesMudaram) L.push("> ⚠ Nenhum teste alterado.");
   }
@@ -114,7 +114,7 @@ if (tem("--exige-adr") && sensiveis.length) {
   const faltam = sensiveis.filter((s) => !corpo.includes(s.adr));
   if (faltam.length) {
     console.error(
-      `✖ impact-map: o PR altera caminho sensível e não cita ${[...new Set(faltam.map((s) => s.adr))].join(", ")} (cite o ADR ou "não altera a decisão do ADR-NNNN")`,
+      `✖ impact-map: the PR changes a sensitive path and does not cite ${[...new Set(faltam.map((s) => s.adr))].join(", ")} (cite the ADR or "does not change the decision of ADR-NNNN")`,
     );
     process.exitCode = 1;
   }

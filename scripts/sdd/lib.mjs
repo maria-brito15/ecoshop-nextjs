@@ -8,6 +8,38 @@ export const ADR_DIR = join(RAIZ, "docs/architecture/adr");
 export const STATUS_VALIDOS = ["✅", "◐", "❌", "❔"];
 export const REQ_RE = /REQ-[A-Z]+-\d{2}/g;
 
+// Vocabulary read from the markdown. Each concept accepts its English form and the
+// legacy Portuguese one, so the docs can be migrated in batches without breaking
+// the checkers. Drop the Portuguese entries once the migration is complete.
+export const VOCAB = {
+  sections: {
+    goal: ["Goal", "Objetivo"],
+    actors: ["Actors", "Atores"],
+    rules: ["Business rules", "Regras de negócio"],
+    requirements: ["Requirements", "Requisitos"],
+    edgeCases: ["Edge cases", "Casos-limite"],
+    interfaces: ["Interfaces"],
+    nfrs: ["Applicable NFRs", "NFRs aplicáveis"],
+    outOfScope: ["Out of scope", "Fora de escopo"],
+    openQuestions: ["Open questions", "Perguntas abertas"],
+  },
+  status: {
+    proposed: ["Proposed", "Proposto"],
+    accepted: ["Accepted", "Aceito"],
+    inferred: ["Inferred", "Inferido"],
+    superseded: ["Superseded", "Substituído"],
+  },
+  fields: {
+    status: ["Status"],
+    supersedes: ["Supersedes", "Substitui"],
+    supersededBy: ["Superseded by", "Substituído por"],
+  },
+};
+
+/** Maps a raw ADR status word (either language) to its canonical key, or undefined. */
+export const statusKey = (word) =>
+  Object.entries(VOCAB.status).find(([, v]) => v.includes(word))?.[0];
+
 export const ler = (p) => readFileSync(p, "utf8");
 export const config = () => JSON.parse(ler(join(RAIZ, "sdd.config.json")));
 
@@ -23,11 +55,12 @@ export function listar(dir, filtro = () => true) {
   return out;
 }
 
-/** Markdown table rows below a "## ..." heading that contains `titulo`. */
+/** Markdown table rows below a "## ..." heading that contains `titulo` (a string or a list of aliases). */
 export function tabela(md, titulo) {
+  const titulos = [titulo].flat().map((t) => t.toLowerCase());
   const linhas = md.split("\n");
   const i = linhas.findIndex(
-    (l) => /^##\s/.test(l) && l.toLowerCase().includes(titulo.toLowerCase()),
+    (l) => /^##\s/.test(l) && titulos.some((t) => l.toLowerCase().includes(t)),
   );
   if (i < 0) return null;
   const rows = [];
@@ -45,7 +78,7 @@ export function tabela(md, titulo) {
 }
 
 export const temSecao = (md, nome) =>
-  new RegExp(`^##\\s+${nome}`, "mi").test(md);
+  [nome].flat().some((n) => new RegExp(`^##\\s+${n}`, "mi").test(md));
 
 export function capacidades() {
   const cfg = config();
@@ -66,15 +99,16 @@ export function lerAdrs() {
     (p) => /[\\/]\d{4}-.*\.md$/.test(p) && !p.includes("0000-template"),
   ).map((p) => {
     const md = ler(p);
-    const campo = (nome) =>
-      (md.match(new RegExp(`^- ${nome}:\\s*(.+)$`, "m")) ?? [])[1]?.trim();
+    const campo = (nomes) =>
+      (md.match(new RegExp(`^- (?:${nomes.join("|")}):\\s*(.+)$`, "m")) ??
+        [])[1]?.trim();
     return {
       arquivo: relative(RAIZ, p),
       id: "ADR-" + p.match(/(\d{4})-[^\\/]*\.md$/)[1],
       titulo: (md.match(/^# ADR-\d{4}:\s*(.+)$/m) ?? [])[1],
-      status: campo("Status"),
-      substitui: campo("Substitui"),
-      substituidoPor: campo("Substituído por"),
+      status: campo(VOCAB.fields.status),
+      substitui: campo(VOCAB.fields.supersedes),
+      substituidoPor: campo(VOCAB.fields.supersededBy),
     };
   });
 }
@@ -92,9 +126,9 @@ export function globParaRegex(g) {
 }
 
 export function relatar(titulo, erros, avisos = []) {
-  for (const a of avisos) console.warn(`  aviso: ${a}`);
+  for (const a of avisos) console.warn(`  warning: ${a}`);
   if (erros.length) {
-    console.error(`✖ ${titulo}: ${erros.length} problema(s)`);
+    console.error(`✖ ${titulo}: ${erros.length} problem(s)`);
     for (const e of erros) console.error(`  - ${e}`);
     process.exitCode = 1;
   } else {

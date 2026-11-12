@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// scripts/sdd/trace-check.mjs — rastreabilidade REQ ↔ teste ↔ status.
-// Regras (Constitution, Art. II e XVI):
+// scripts/sdd/trace-check.mjs — traceability REQ <-> test <-> status.
+// Rules (Constitution, Art. II and XVI):
 //  1. every REQ cited in a test exists in a spec;
 //  2. a ✅ REQ needs a test that runs (not todo/skip) or "manual: YYYY-MM-DD …" evidence;
 //  3. a ❌ REQ cannot have an active test passing entirely (outdated status);
-//  4. tarefas de specs/NNN citam REQ existentes.
+//  4. tasks in specs/NNN cite existing REQs.
 // Options: --write  rewrites docs/capabilities/README.md ; --stale  lists old pending items (warning).
 import { join } from "node:path";
 import { writeFileSync } from "node:fs";
@@ -17,13 +17,14 @@ import {
   listar,
   relatar,
   REQ_RE,
+  VOCAB,
 } from "./lib.mjs";
 
 const args = new Set(process.argv.slice(2));
 const erros = [];
 const avisos = [];
 
-// 1. testes
+// 1. tests
 const testes = new Map(); // REQ -> { ativos: n, todo: n, arquivos: Set }
 for (const arq of listar(join(RAIZ, "tests"), (p) => p.endsWith(".test.ts"))) {
   const linhas = ler(arq).split("\n");
@@ -46,11 +47,13 @@ for (const arq of listar(join(RAIZ, "tests"), (p) => p.endsWith(".test.ts"))) {
   });
 }
 
-// 2. specs e status
+// 2. specs and status
 const resumo = [];
 const todos = new Map(); // REQ -> { status, evidencia, cap }
 for (const cap of capacidades()) {
-  const reqs = (tabela(ler(cap.spec), "Requisitos") ?? []).map((r) => r[0]);
+  const reqs = (tabela(ler(cap.spec), VOCAB.sections.requirements) ?? []).map(
+    (r) => r[0],
+  );
   const cont = { "✅": 0, "◐": 0, "❌": 0, "❔": 0 };
   for (const [id, st, evidencia = ""] of tabela(ler(cap.status), "Status") ??
     []) {
@@ -62,24 +65,24 @@ for (const cap of capacidades()) {
       const manual = /^manual:\s*\d{4}-\d{2}-\d{2}/.test(evidencia);
       if (!t?.ativos && !manual)
         erros.push(
-          `${id} está ✅ mas não tem teste ativo (nem evidência "manual: AAAA-MM-DD …")`,
+          `${id} is ✅ but has no active test (nor "manual: YYYY-MM-DD …" evidence)`,
         );
     }
     if (st === "❌" && t?.ativos)
       erros.push(
-        `${id} está ❌ mas tem teste ativo: atualize o status (✅ ou ◐)`,
+        `${id} is ❌ but has an active test: update the status (✅ or ◐)`,
       );
-    if (st === "◐" && !evidencia) avisos.push(`${id} ◐ sem evidência`);
-    if (st === "❔") avisos.push(`${id} ❔ aguarda verificação`);
+    if (st === "◐" && !evidencia) avisos.push(`${id} ◐ without evidence`);
+    if (st === "❔") avisos.push(`${id} ❔ awaiting verification`);
   }
   resumo.push({ cap, cont, total: reqs.length });
 }
 
 for (const id of testes.keys())
   if (!todos.has(id))
-    erros.push(`teste cita ${id}, que não existe em nenhuma spec`);
+    erros.push(`test cites ${id}, which does not exist in any spec`);
 
-// 4. tarefas de specs/NNN
+// 4. tasks in specs/NNN
 for (const f of listar(join(RAIZ, "specs"), (p) => p.endsWith("/tasks.md"))) {
   const proprios = new Set(
     ler(f.replace("tasks.md", "spec.md")).match(REQ_RE) ?? [],
@@ -89,11 +92,11 @@ for (const f of listar(join(RAIZ, "specs"), (p) => p.endsWith("/tasks.md"))) {
     .filter((x) => /^\|\s*T\d+/.test(x))) {
     const ids = l.match(REQ_RE) ?? [];
     const dono = f.replace(RAIZ + "/", "");
-    if (!ids.length && !/consolidar/i.test(l))
-      erros.push(`${dono}: tarefa sem REQ: ${l.slice(0, 60)}`);
+    if (!ids.length && !/consolidar|consolidate/i.test(l))
+      erros.push(`${dono}: task without REQ: ${l.slice(0, 60)}`);
     for (const id of ids)
       if (!todos.has(id) && !proprios.has(id))
-        erros.push(`${dono}: ${id} não existe`);
+        erros.push(`${dono}: ${id} does not exist`);
   }
 }
 
@@ -119,10 +122,10 @@ if (args.has("--write")) {
 
 if (args.has("--stale"))
   for (const [id, v] of todos)
-    if (v.status === "❔") avisos.push(`pendente de verificação: ${id}`);
+    if (v.status === "❔") avisos.push(`pending verification: ${id}`);
 
 console.log(
-  `  ${todos.size} requisitos · ${[...todos.values()].filter((v) => v.status === "✅").length} ✅ · ${testes.size} com teste`,
+  `  ${todos.size} requirements · ${[...todos.values()].filter((v) => v.status === "✅").length} ✅ · ${testes.size} with a test`,
 );
 relatar(
   "trace-check",
@@ -130,6 +133,6 @@ relatar(
   args.has("--quiet")
     ? []
     : avisos.filter(
-        (a) => !a.endsWith("aguarda verificação") || args.has("--stale"),
+        (a) => !a.endsWith("awaiting verification") || args.has("--stale"),
       ),
 );

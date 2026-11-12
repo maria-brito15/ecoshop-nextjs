@@ -3,27 +3,34 @@
 // Usage: node scripts/sdd/adr-index.mjs [--check]   (--check: fails if the index is out of date)
 import { join } from "node:path";
 import { existsSync, writeFileSync } from "node:fs";
-import { ADR_DIR, RAIZ, ler, lerAdrs, listar, relatar } from "./lib.mjs";
+import {
+  ADR_DIR,
+  RAIZ,
+  ler,
+  lerAdrs,
+  listar,
+  relatar,
+  statusKey,
+} from "./lib.mjs";
 
-const STATUS = ["Proposto", "Aceito", "Inferido", "Substituído"];
 const adrs = lerAdrs().sort((a, b) => a.id.localeCompare(b.id));
 const porId = new Map(adrs.map((a) => [a.id, a]));
 const erros = [];
 
 for (const a of adrs) {
-  if (!STATUS.includes(a.status))
-    erros.push(`${a.id}: status inválido "${a.status}"`);
-  if (a.status === "Substituído") {
+  if (!statusKey(a.status)) erros.push(`${a.id}: invalid status "${a.status}"`);
+  if (statusKey(a.status) === "superseded") {
     const novo = porId.get(a.substituidoPor ?? "");
-    if (!novo) erros.push(`${a.id}: "Substituído por" inexistente`);
+    if (!novo) erros.push(`${a.id}: "Superseded by" target does not exist`);
     else if (novo.substitui !== a.id)
-      erros.push(`${novo.id} deveria declarar "Substitui: ${a.id}"`);
+      erros.push(`${novo.id} should declare "Supersedes: ${a.id}"`);
   }
   if (a.substitui) {
     const antigo = porId.get(a.substitui);
-    if (!antigo) erros.push(`${a.id}: "Substitui" ${a.substitui} inexistente`);
-    else if (antigo.status !== "Substituído")
-      erros.push(`${antigo.id} deveria estar "Substituído"`);
+    if (!antigo)
+      erros.push(`${a.id}: "Supersedes" ${a.substitui} does not exist`);
+    else if (statusKey(antigo.status) !== "superseded")
+      erros.push(`${antigo.id} should be "Superseded"`);
   }
 }
 
@@ -41,11 +48,11 @@ for (const d of docs) {
     .filter((x) => /ADRs?[^:]*:/i.test(x) && /ADR-\d{4}/.test(x))) {
     for (const id of l.match(/ADR-\d{4}/g)) {
       if (
-        porId.get(id)?.status === "Substituído" &&
-        !/substitu|histórico/i.test(l)
+        statusKey(porId.get(id)?.status) === "superseded" &&
+        !/substitu|supersed|hist[oó]ric|history/i.test(l)
       )
         erros.push(
-          `${d.replace(RAIZ + "/", "")}: cita ${id} (Substituído) como vigente`,
+          `${d.replace(RAIZ + "/", "")}: cites ${id} (Superseded) as current`,
         );
     }
   }
@@ -70,7 +77,7 @@ const alvo = join(ADR_DIR, "README.md");
 if (process.argv.includes("--check")) {
   if (!existsSync(alvo) || ler(alvo) !== novo)
     erros.push(
-      "docs/architecture/adr/README.md desatualizado: rode `node scripts/sdd/adr-index.mjs`",
+      "docs/architecture/adr/README.md is out of date: run `node scripts/sdd/adr-index.mjs`",
     );
 } else writeFileSync(alvo, novo);
 

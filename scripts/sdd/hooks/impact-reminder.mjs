@@ -25,5 +25,5 @@ try {
       `Impacto SDD de ${rel}: capacidades [${caps || "nenhuma"}]; ADRs [${adrs || "nenhum"}]. Se o comportamento mudou, atualize o REQ, o teste e o status.md.`,
     );
 } catch {
-  /* lembrete é opcional: nunca bloqueia */
+  /* the reminder is optional: it never blocks */
 }

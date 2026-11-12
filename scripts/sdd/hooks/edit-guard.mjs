@@ -11,17 +11,19 @@ const rel = relative(process.cwd(), alvo).replaceAll("\\", "/");
 
 if (rel === ".specify/memory/constitution.md")
   pedirConfirmacao(
-    "A Constitution só muda por emenda aprovada pelo dono. Confirme que isso foi pedido.",
+    "The Constitution only changes through an amendment approved by the owner. Confirm this was requested.",
   );
 else if (rel.startsWith("docs/discovery/"))
   pedirConfirmacao(
-    "docs/discovery é retrato congelado. Confirme que a edição é intencional.",
+    "docs/discovery is a frozen snapshot. Confirm the edit is intentional.",
   );
 else if (
   /^docs\/architecture\/adr\/\d{4}-.*\.md$/.test(rel) &&
   existsSync(alvo) &&
-  /^[-*\s]*\**Status:?\**:?\s*Aceito/im.test(readFileSync(alvo, "utf8"))
+  /^[-*\s]*\**Status:?\**:?\s*(Accepted|Aceito)\b/im.test(
+    readFileSync(alvo, "utf8"),
+  )
 )
   pedirConfirmacao(
-    "ADR Aceito não se edita; crie um ADR que o substitua. Confirme que é só correção de forma.",
+    "An Accepted ADR is not edited; create an ADR that supersedes it. Confirm this is only a formatting fix.",
   );

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // scripts/sdd/spec-lint.mjs — format of capability specs and change specs.
 // Checks: required sections, unique IDs with the capability prefix, EARS requirements,
-// ADRs citados existentes, spec.md ↔ status.md consistentes, specs/NNN completas.
+// cited ADRs exist, spec.md and status.md are consistent, specs/NNN are complete.
 import { existsSync } from "node:fs";
 import { join, basename } from "node:path";
 import {
@@ -14,73 +14,64 @@ import {
   listar,
   STATUS_VALIDOS,
   relatar,
+  VOCAB,
 } from "./lib.mjs";
 
 const erros = [];
 const adrs = new Set(lerAdrs().map((a) => a.id));
 const vistos = new Map();
-const SECOES = [
-  "Objetivo",
-  "Atores",
-  "Regras de negócio",
-  "Requisitos",
-  "Casos-limite",
-  "Interfaces",
-  "NFRs aplicáveis",
-  "Fora de escopo",
-  "Perguntas abertas",
-];
+const SECOES = Object.values(VOCAB.sections);
 
 for (const cap of capacidades()) {
   const onde = `docs/capabilities/${cap.pasta}`;
   if (!existsSync(cap.spec)) {
-    erros.push(`${onde}/spec.md não existe`);
+    erros.push(`${onde}/spec.md does not exist`);
     continue;
   }
   if (!existsSync(cap.status)) {
-    erros.push(`${onde}/status.md não existe`);
+    erros.push(`${onde}/status.md does not exist`);
     continue;
   }
   const spec = ler(cap.spec);
   const status = ler(cap.status);
   for (const s of SECOES)
     if (!temSecao(spec, s))
-      erros.push(`${onde}/spec.md: falta a seção "## ${s}"`);
+      erros.push(`${onde}/spec.md: missing section "## ${s[0]}"`);
 
-  const reqs = tabela(spec, "Requisitos") ?? [];
+  const reqs = tabela(spec, VOCAB.sections.requirements) ?? [];
   const ids = [];
   for (const [id, enunciado] of reqs) {
     if (!new RegExp(`^REQ-${cap.codigo}-\\d{2}$`).test(id)) {
-      erros.push(`${onde}: ID "${id}" fora do padrão REQ-${cap.codigo}-NN`);
+      erros.push(`${onde}: ID "${id}" does not match REQ-${cap.codigo}-NN`);
       continue;
     }
     if (vistos.has(id))
-      erros.push(`${id} duplicado (${vistos.get(id)} e ${onde})`);
+      erros.push(`${id} duplicated (${vistos.get(id)} and ${onde})`);
     vistos.set(id, onde);
     ids.push(id);
-    if (!/\bdeve(m)?\b/i.test(enunciado ?? ""))
+    if (!/\b(deve(m)?|shall)\b/i.test(enunciado ?? ""))
       erros.push(
-        `${id}: o enunciado não está em forma EARS ("... o sistema deve ...")`,
+        `${id}: the statement is not in EARS form ("... the system shall ...")`,
       );
   }
-  if (!ids.length) erros.push(`${onde}/spec.md: nenhum requisito encontrado`);
+  if (!ids.length) erros.push(`${onde}/spec.md: no requirement found`);
 
   const linhas = tabela(status, "Status") ?? [];
   const noStatus = new Set();
   for (const [id, st] of linhas) {
     noStatus.add(id);
     if (!ids.includes(id))
-      erros.push(`${onde}/status.md: ${id} não existe na spec`);
+      erros.push(`${onde}/status.md: ${id} does not exist in the spec`);
     if (!STATUS_VALIDOS.includes(st))
-      erros.push(`${onde}/status.md: ${id} com status inválido "${st}"`);
+      erros.push(`${onde}/status.md: ${id} has an invalid status "${st}"`);
   }
   for (const id of ids)
     if (!noStatus.has(id))
-      erros.push(`${onde}/status.md: falta linha para ${id}`);
+      erros.push(`${onde}/status.md: missing row for ${id}`);
 
   for (const m of spec.matchAll(/ADR-\d{4}/g))
     if (!adrs.has(m[0]))
-      erros.push(`${onde}/spec.md cita ${m[0]}, que não existe`);
+      erros.push(`${onde}/spec.md cites ${m[0]}, which does not exist`);
 }
 
 // change specs (Spec Kit)
@@ -89,16 +80,16 @@ for (const spec of listar(
   (p) => basename(p) === "spec.md",
 )) {
   const pasta = spec.slice(0, -"/spec.md".length);
-  // basename() entende tanto "/" quanto "\" (Windows); pasta.lastIndexOf("/")
+  // basename() handles both "/" and "\" (Windows); pasta.lastIndexOf("/")
   // alone found nothing on Windows paths and returned the whole path.
   const nome = basename(pasta);
   if (!/^\d{3}-/.test(nome))
-    erros.push(`specs/${nome}: o nome deve começar com NNN-`);
+    erros.push(`specs/${nome}: the name must start with NNN-`);
   for (const f of ["plan.md", "tasks.md"])
-    if (!existsSync(join(pasta, f))) erros.push(`specs/${nome}: falta ${f}`);
+    if (!existsSync(join(pasta, f))) erros.push(`specs/${nome}: missing ${f}`);
   for (const m of ler(spec).matchAll(/ADR-\d{4}/g))
     if (!adrs.has(m[0]))
-      erros.push(`specs/${nome}/spec.md cita ${m[0]}, que não existe`);
+      erros.push(`specs/${nome}/spec.md cites ${m[0]}, which does not exist`);
 }
 
 relatar("spec-lint", erros);

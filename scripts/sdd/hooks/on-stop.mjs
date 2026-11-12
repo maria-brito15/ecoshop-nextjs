@@ -12,5 +12,5 @@ for (const s of ["spec-lint", "trace-check", "adr-index"]) {
 }
 if (falhas.length)
   console.error(
-    `Atenção: validações de SDD com problemas.\n${falhas.join("\n")}`,
+    `Warning: SDD validations have problems.\n${falhas.join("\n")}`,
   );

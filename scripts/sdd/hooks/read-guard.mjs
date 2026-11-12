@@ -30,9 +30,9 @@ try {
     negar(
       `${rel} tem ${kb.toFixed(0)} KB (limite ${LIMITE_KB} KB). ` +
         `Use Grep para achar o trecho e Read com offset e limit. ` +
-        `Se precisar mesmo do arquivo todo, repita o Read com um limit explícito.`,
+        `If you really need the whole file, repeat the Read with an explicit limit.`,
     );
   }
 } catch {
-  /* arquivo inexistente ou ilegível: deixa o Read falhar normalmente */
+  /* missing or unreadable file: let the Read fail normally */
 }
