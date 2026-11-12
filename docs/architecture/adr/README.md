@@ -26,4 +26,5 @@
 | [ADR-0019](0019-ghcr-delivery-versioned-compose-migrate-health-rollback.md) | Delivery by image on GHCR with a versioned compose; migrations first, health check and rollback | Accepted | supersedes ADR-0013 |
 | [ADR-0020](0020-optional-redis-fast-failure-in-memory-rate-limit.md) | Optional Redis with fast failure, in-memory rate limit without Redis and "degraded" health | Accepted | supersedes ADR-0010 |
 | [ADR-0021](0021-short-access-token-revocable-refresh.md) | Session with a short access token (JWT, 15 min) and an opaque, revocable refresh token in Redis | Accepted | supersedes ADR-0007 |
-| [ADR-0022](0022-english-as-the-single-project-language.md) | English as the single language of code, comments, messages and documentation | Accepted | supersedes ADR-0014 |
+| [ADR-0022](0022-english-as-the-single-project-language.md) | English as the single language of code, comments, messages and documentation | Superseded | superseded by ADR-0023 |
+| [ADR-0023](0023-english-wire-and-data-contract.md) | English wire and data contract, with the migrations restarted from zero | Accepted | supersedes ADR-0022 |

@@ -1,6 +1,7 @@
 # ADR-0022: English as the single language of code, comments, messages and documentation
 
-- Status: Accepted
+- Status: Superseded
+- Superseded by: ADR-0023
 - Date: 2026-11-11
 - Deciders: project owner (choices "Keep the wire contract", "Add i18n later" and "Update the project rules", 2026-11-11) and Claude
 - Origin: new (supersedes ADR-0014)
