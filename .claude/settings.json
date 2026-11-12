@@ -6,7 +6,7 @@
       "Read(./package-lock.json)",
       "Read(./tsconfig.tsbuildinfo)",
       "Read(./prints/**)",
-      "Read(./public/data_fotos/**)",
+      "Read(./public/data_photos/**)",
       "Read(./docs/discovery/**/README-*original.md)",
       "Read(./.env)",
       "Read(./.env.local)"

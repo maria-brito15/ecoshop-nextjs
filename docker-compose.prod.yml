@@ -41,7 +41,7 @@ services:
       TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
     volumes:
-      - fotos_data:/app/public/data_fotos
+      - photos_data:/app/public/data_photos
     depends_on:
       postgres:
         condition: service_healthy
@@ -122,4 +122,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  fotos_data:
+  photos_data:
