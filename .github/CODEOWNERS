@@ -1,6 +1,6 @@
-# Mudanças que exigem revisão do dono do projeto.
-# Substitua @DONO pelo usuário ou time do GitHub responsável antes de ativar "Require review from Code Owners".
-/.specify/memory/constitution.md  @DONO
-/docs/architecture/adr/           @DONO
-/sdd.config.json                  @DONO
-/.github/workflows/               @DONO
+# Changes that require review from the project owner.
+# Replace @OWNER with the responsible GitHub user or team before enabling "Require review from Code Owners".
+/.specify/memory/constitution.md  @OWNER
+/docs/architecture/adr/           @OWNER
+/sdd.config.json                  @OWNER
+/.github/workflows/               @OWNER

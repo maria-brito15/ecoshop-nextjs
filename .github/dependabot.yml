@@ -1,4 +1,4 @@
-# Atualização automática das imagens base (fixadas por digest) e das actions (REQ-OPS-13).
+# Automatic updates of the base images (pinned by digest) and of the actions (REQ-OPS-13).
 version: 2
 updates:
   - package-ecosystem: "docker"
@@ -21,7 +21,7 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
-    # atualizações menores e de correção chegam agrupadas, para reduzir ruído
+    # minor and patch updates arrive grouped, to reduce noise
     groups:
-      menores-e-correcoes:
+      minor-and-patch:
         update-types: ["minor", "patch"]
