@@ -1,11 +1,11 @@
-# Fase 4 · Testes como especificação executável
+# Phase 4 · Tests as an executable specification
 
-**O que foi feito:** 47 testes de integração (`node:test` + `tsx`, contra Postgres e Redis reais; Azure/Gemini simulados). Cada teste leva o ID do requisito no título.
+**What was done:** 47 integration tests (`node:test` + `tsx`, against real Postgres and Redis; Azure/Gemini simulated). Each test carries the requirement ID in its title.
 
-**Conceitos**
-- *Teste de caracterização*: descreve o comportamento correto de algo ainda quebrado e fica `todo` (não derruba o CI, mas aparece). Ex.: REQ-CAT-05, REQ-REF-02. Quando o defeito é corrigido, remove-se o `todo` — foi o que aconteceu com REQ-PERF-01 no piloto.
-- *Rastreabilidade*: `trace-check` falha se um REQ ✅ não tem teste ativo, ou se um teste cita REQ inexistente. É o que impede a spec de mentir.
+**Concepts**
+- *Characterization test*: describes the correct behavior of something still broken and stays `todo` (it does not break CI, but it shows up). E.g. REQ-CAT-05, REQ-REF-02. When the defect is fixed, the `todo` is removed — that is what happened with REQ-PERF-01 in the pilot.
+- *Traceability*: `trace-check` fails if a ✅ REQ has no active test, or if a test cites a nonexistent REQ. It is what stops the spec from lying.
 
-**Achados ao escrever os testes:** `POST /api/usuarios` também devolvia o hash da senha (além do `PUT`); excluir categoria com produtos responde 404 e não 409, porque o código procura "P2025" em `err.message` e a mensagem do Prisma inclui um trecho de código com esse texto.
+**Findings while writing the tests:** `POST /api/usuarios` also returned the password hash (besides `PUT`); deleting a category with products responds 404 and not 409, because the code looks for "P2025" in `err.message` and Prisma's message includes a code excerpt with that text.
 
-**Defeitos corrigidos aqui (decisão do dono):** D2 (hash de senha exposto) e D3 (chat de IA público e sem limite).
+**Defects fixed here (owner's decision):** D2 (exposed password hash) and D3 (public, unlimited AI chat).

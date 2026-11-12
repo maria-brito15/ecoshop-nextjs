@@ -1,9 +1,9 @@
-# Fase 5 · Specs vivas
+# Phase 5 · Living specs
 
-**O que foi feito:** 12 capacidades, 77 requisitos em EARS (`Quando…, o sistema deve…`), cada um com critério de aceite, status e evidência.
+**What was done:** 12 capabilities, 77 requirements in EARS (`When…, the system shall…`), each with an acceptance criterion, status and evidence.
 
-**Retrato honesto (2026-11-10):** 40 ✅, o restante ◐/❌/❔. Os ❌ e ❔ são o backlog real: aprovação de MARCA, UI do chat, métricas com fonte real, seed utilizável, validação de paginação, 409 em duplicidade, invalidação de cache ao renomear marca, falha de rede do Gemini virando 500.
+**Honest snapshot (2026-11-10):** 40 ✅, the rest ◐/❌/❔. The ❌ and ❔ are the real backlog: MARCA approval, chat UI, metrics with a real source, a usable seed, pagination validation, 409 on duplicates, cache invalidation when renaming a brand, a Gemini network failure turning into 500.
 
-**Lição:** escrever a spec *depois* do código (retroativa) obriga a separar o que o código faz do que se queria. As "Perguntas abertas" de cada spec são perguntas ao dono, não buracos a preencher por suposição.
+**Lesson:** writing the spec *after* the code (retroactively) forces you to separate what the code does from what was intended. The "Open questions" of each spec are questions to the owner, not gaps to fill by assumption.
 
-**Ferramentas:** `spec-lint` (formato), `trace-check` (REQ ↔ teste ↔ status), `adr-index` (índice e cadeia de substituição), `impact-map` (arquivo → capacidade/ADR).
+**Tools:** `spec-lint` (format), `trace-check` (REQ ↔ test ↔ status), `adr-index` (index and supersession chain), `impact-map` (file → capability/ADR).

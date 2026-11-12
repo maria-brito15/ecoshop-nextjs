@@ -1,7 +1,7 @@
-# Fase 3 · Documentação honesta
+# Phase 3 · Honest documentation
 
-**O que mudou:** o README tinha promessas que o código não cumpre (e-commerce com carrinho, filtro por marca, galeria, credenciais de seed, `SameSite=Strict`). Foi reescrito enxuto; o original ficou em `docs/discovery/2026-11-baseline/`.
+**What changed:** the README had promises that the code does not keep (e-commerce with a cart, brand filter, gallery, seed credentials, `SameSite=Strict`). It was rewritten lean; the original stayed in `docs/discovery/2026-11-baseline/`.
 
-**Lição:** documentação de intenção e documentação de comportamento são coisas diferentes. A spec viva só vale se cada linha diz o que o código faz hoje (status ✅ ◐ ❌ ❔) e prova com evidência. O README passou a apontar para ela em vez de competir com ela.
+**Lesson:** documentation of intent and documentation of behavior are different things. The living spec is only worth anything if each line says what the code does today (status ✅ ◐ ❌ ❔) and proves it with evidence. The README now points to it instead of competing with it.
 
-**Também:** `prisma/schema.txt` (cópia duplicada do schema) foi removido e `.gitignore` deixou de ignorar `prisma/migrations/**/*.sql`, que precisam ser versionadas.
+**Also:** `prisma/schema.txt` (a duplicated copy of the schema) was removed and `.gitignore` stopped ignoring `prisma/migrations/**/*.sql`, which must be versioned.

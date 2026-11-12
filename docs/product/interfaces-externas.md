@@ -1,9 +1,9 @@
-# Interfaces externas
+# External interfaces
 
-| Sistema | Uso | Contrato usado | Falha hoje | Pendência |
+| System | Use | Contract used | Failure today | Pending |
 |---|---|---|---|---|
-| Azure Custom Vision | Classificar a foto | `POST {AZURE_VISION_ENDPOINT}` com `Prediction-Key`, corpo binário; resposta `predictions[{tagName, probability}]` | Qualquer erro → `null` → resposta "nenhuma predição" (422) | Documentar as **tags** do modelo (hoje poucas; `outros` = não identificado). Sem timeout |
-| Google Gemini (`gemini-2.0-flash`) | Texto da análise e chat | `POST v1beta/models/{modelo}:generateContent?key=…` (chave na query string) | Resposta não-OK → `null` → fallback; **erro de rede lança exceção → 500 no scan (D4)**; chat devolve 502 | Mover a chave para header; timeout; verificar se o modelo continua disponível |
-| PostgreSQL | Persistência | Prisma | Erro → 500 | — |
-| Redis | Cache e rate limit | `redis` v4 | Silenciado (fail-open) | ADR-P04 |
-| Filesystem (`public/data_fotos`) | Fotos | `fs` | `readdir` falha → lista vazia | ADR-P03 |
+| Azure Custom Vision | Classify the photo | `POST {AZURE_VISION_ENDPOINT}` with `Prediction-Key`, binary body; response `predictions[{tagName, probability}]` | Any error → `null` → "no prediction" response (422) | Document the model's **tags** (few today; `outros` = not identified). No timeout |
+| Google Gemini (`gemini-2.0-flash`) | Analysis text and chat | `POST v1beta/models/{model}:generateContent?key=…` (key in the query string) | Non-OK response → `null` → fallback; **a network error throws an exception → 500 in the scan (D4)**; chat returns 502 | Move the key to a header; timeout; check that the model is still available |
+| PostgreSQL | Persistence | Prisma | Error → 500 | — |
+| Redis | Cache and rate limit | `redis` v4 | Silenced (fail-open) | ADR-P04 |
+| Filesystem (`public/data_fotos`) | Photos | `fs` | `readdir` fails → empty list | ADR-P03 |

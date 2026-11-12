@@ -1,23 +1,23 @@
-# Rodar e testar
+# Running and testing
 
-## Pré-requisitos
-Node 22 (`.nvmrc`), Docker (ou Postgres 16 e Redis 7 locais).
+## Prerequisites
+Node 22 (`.nvmrc`), Docker (or local Postgres 16 and Redis 7).
 
-## Rodar a aplicação
-1. `cp .env.example .env` e preencha `JWT_SECRET` (≥ 32 caracteres), `GEMINI_KEY`, `AZURE_VISION_*` se for usar IA.
-2. `docker compose up --build` (sobe app, Postgres e Redis; aplica migrations e seed).
-3. Abra http://localhost:3000. `GET /api/health` deve responder 200.
+## Run the application
+1. `cp .env.example .env` and fill in `JWT_SECRET` (≥ 32 characters), `GEMINI_KEY`, `AZURE_VISION_*` if you will use the AI.
+2. `docker compose up --build` (brings up app, Postgres and Redis; applies migrations and seed).
+3. Open http://localhost:3000. `GET /api/health` should respond 200.
 
-Atenção (defeitos conhecidos, ver `docs/capabilities/operacao/status.md`): os usuários do seed têm senha placeholder e não conseguem logar (REQ-OPS-02; use `npm run seed:admin` com `ADMIN_EMAIL`/`ADMIN_PASSWORD` para criar um ADMIN real) e o seed recria produtos a cada subida (REQ-OPS-03).
+Note (known defects, see `docs/capabilities/operacao/status.md`): the seed users have a placeholder password and cannot log in (REQ-OPS-02; use `npm run seed:admin` with `ADMIN_EMAIL`/`ADMIN_PASSWORD` to create a real ADMIN) and the seed recreates products on every start (REQ-OPS-03).
 
-## Rodar sem Docker
-1. Suba Postgres e Redis; exporte `DATABASE_URL` e `REDIS_URL`.
+## Run without Docker
+1. Bring up Postgres and Redis; export `DATABASE_URL` and `REDIS_URL`.
 2. `npm ci && npx prisma migrate deploy && npm run dev`.
 
-## Testes
-1. Com Postgres e Redis no ar e `DATABASE_URL`/`REDIS_URL` apontando para um banco **de teste** (os testes criam dados com e-mail `@test.local`).
+## Tests
+1. With Postgres and Redis up and `DATABASE_URL`/`REDIS_URL` pointing to a **test** database (the tests create data with `@test.local` emails).
 2. `npx prisma migrate deploy`
-3. `npm test` — espera: todos passam; testes `todo` são defeitos conhecidos.
+3. `npm test` — expected: all pass; `todo` tests are known defects.
 
-## Verificações completas (as do CI)
+## Full checks (the CI ones)
 `npm run lint` · `npx tsc --noEmit` · `npm test` · `npm run sdd:check` · `npm run build`.

@@ -1,9 +1,9 @@
-# Fase 7 · Piloto: `specs/001-perfil-proprio-usuario`
+# Phase 7 · Pilot: `specs/001-perfil-proprio-usuario`
 
-**Defeito:** CLIENTE/MARCA não via o próprio perfil (D1): o middleware exigia ADMIN em `/api/usuarios`, mas o handler já aceitava "o próprio ou ADMIN".
+**Defect:** CLIENTE/MARCA did not see their own profile (D1): the middleware required ADMIN on `/api/usuarios`, but the handler already accepted "the user themselves or ADMIN".
 
-**Percurso (trilha correção):** teste de caracterização `todo` → spec/plano/tarefas → mudança de 1 linha em `config/protected-routes.ts` (middleware só autentica; handler decide, ADR-0017) → `todo` removido → status ❌→✅ → `sdd:check` verde. Também corrigido D8: a tela lia `data.mensagem`, a API envia `erro`.
+**Path (fix track):** `todo` characterization test → spec/plan/tasks → a 1-line change in `config/protected-routes.ts` (the middleware only authenticates; the handler decides, ADR-0017) → `todo` removed → status ❌→✅ → `sdd:check` green. D8 was also fixed: the screen read `data.mensagem`, the API sends `erro`.
 
-**O que o piloto mostrou:** o ADR-0017 (decisão no handler) tornou a correção segura e pequena; sem testes de autorização (AUTZ-04/05) o risco de abrir `/api/usuarios` a qualquer logado seria difícil de avaliar.
+**What the pilot showed:** ADR-0017 (decision in the handler) made the fix safe and small; without authorization tests (AUTZ-04/05) the risk of opening `/api/usuarios` to any logged-in user would have been hard to assess.
 
-**Pendente:** verificação manual de REQ-PERF-04 na tela (precisa de navegador).
+**Pending:** manual verification of REQ-PERF-04 on screen (needs a browser).

@@ -1,20 +1,20 @@
-# Requisitos não funcionais (NFR)
+# Non-functional requirements (NFR)
 
-Atravessam as capacidades. As specs de capacidade **referenciam** estes IDs, não os repetem. Status: ✅ cumprido e testado · ◐ parcial/sem teste · ❌ não cumprido · ❔ não verificado.
+They cut across the capabilities. Capability specs **reference** these IDs, they do not repeat them. Status: ✅ met and tested · ◐ partial/untested · ❌ not met · ❔ not verified.
 
-| ID | Requisito | Verificação | Status |
+| ID | Requirement | Verification | Status |
 |---|---|---|---|
-| NFR-SEG-01 | Hash de senha, tokens e chaves de API nunca saem do servidor (respostas, logs, URLs) | Testes de contrato; revisão | ◐ (resposta de usuário ✅; chave Gemini ainda vai em query string) |
-| NFR-SEG-02 | Tentativas de login limitadas por IP (10/min) e cadastro (5/h) | Teste com Redis | ◐ |
-| NFR-SEG-03 | Cookie de sessão httpOnly, `secure` em produção, `sameSite=lax` | Teste do header | ◐ |
-| NFR-SEG-04 | Rotas sem política declarada são negadas por padrão | Teste da matriz | ❌ |
-| NFR-DISP-01 | Sem Redis, leitura funciona direto do banco | Teste com Redis simulado em falha | ◐ |
-| NFR-DISP-02 | Falha ou lentidão de Azure/Gemini nunca derruba a requisição com 500 quando há comportamento especificado | Testes de adaptador | ❌ (D4) |
-| NFR-DISP-03 | Toda chamada de rede externa tem timeout | Revisão/teste | ❌ |
-| NFR-CONS-01 | Mutação de uma entidade invalida caches que a embutem | Testes "mutação → leitura" | ❌ (marca → produtos) |
-| NFR-DES-01 | Listagens limitam o tamanho de página (≤ 100) | Teste | ❌ (D9) |
-| NFR-OPS-01 | Seeds nunca apagam dados em ambiente compartilhado e são idempotentes | Revisão/teste | ❌ (D5) |
-| NFR-OPS-02 | Um ambiente novo sobe com um administrador utilizável | Teste manual/CI | ❌ (D6) |
-| NFR-OPS-03 | `/api/health` distingue dependência obrigatória (banco) de opcional (Redis) | Teste | ❌ |
-| NFR-A11Y-01 | Contraste e navegação por teclado nas telas principais | — | ❔ (não verificado) |
-| NFR-PRIV-01 | Conteúdo gerado por IA é identificado como tal na interface | Revisão | ❔ |
+| NFR-SEG-01 | Password hashes, tokens and API keys never leave the server (responses, logs, URLs) | Contract tests; review | ◐ (user response ✅; Gemini key still goes in the query string) |
+| NFR-SEG-02 | Login attempts limited per IP (10/min) and sign-up (5/h) | Test with Redis | ◐ |
+| NFR-SEG-03 | Session cookie httpOnly, `secure` in production, `sameSite=lax` | Header test | ◐ |
+| NFR-SEG-04 | Routes without a declared policy are denied by default | Matrix test | ❌ |
+| NFR-DISP-01 | Without Redis, reads work straight from the database | Test with Redis simulated as failing | ◐ |
+| NFR-DISP-02 | An Azure/Gemini failure or slowness never takes the request down with 500 when there is specified behavior | Adapter tests | ❌ (D4) |
+| NFR-DISP-03 | Every external network call has a timeout | Review/test | ❌ |
+| NFR-CONS-01 | A mutation of an entity invalidates the caches that embed it | "Mutation → read" tests | ❌ (brand → products) |
+| NFR-DES-01 | Listings limit the page size (≤ 100) | Test | ❌ (D9) |
+| NFR-OPS-01 | Seeds never delete data in a shared environment and are idempotent | Review/test | ❌ (D5) |
+| NFR-OPS-02 | A new environment comes up with a usable administrator | Manual test/CI | ❌ (D6) |
+| NFR-OPS-03 | `/api/health` distinguishes a required dependency (database) from an optional one (Redis) | Test | ❌ |
+| NFR-A11Y-01 | Contrast and keyboard navigation on the main screens | — | ❔ (not verified) |
+| NFR-PRIV-01 | AI-generated content is identified as such in the interface | Review | ❔ |

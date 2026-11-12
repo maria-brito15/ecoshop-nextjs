@@ -1,12 +1,12 @@
-# Mapa da documentação
+# Documentation map
 
-| Pasta | O que há | Quando ler |
+| Folder | What is in it | When to read it |
 |---|---|---|
-| `product/` | Visão, glossário, domínio, requisitos não funcionais, restrições, interfaces externas | Antes de especificar |
-| `capabilities/` | Spec viva e status de cada capacidade (12) | Antes de mudar comportamento |
-| `architecture/` | Visão de arquitetura e ADRs (decisões) | Antes de decidir algo técnico |
-| `guides/` | Rodar/testar e fluxo SDD passo a passo | Ao começar |
-| `learning/` | O que cada fase do roadmap ensinou | Para aprender o método |
-| `discovery/` | Diagnóstico e baseline datados (congelados) | Para entender o ponto de partida |
+| `product/` | Vision, glossary, domain, non-functional requirements, constraints, external interfaces | Before specifying |
+| `capabilities/` | Living spec and status of each capability (12) | Before changing behavior |
+| `architecture/` | Architecture overview and ADRs (decisions) | Before deciding something technical |
+| `guides/` | Running/testing and the SDD flow step by step | When starting |
+| `learning/` | What each phase of the roadmap taught | To learn the method |
+| `discovery/` | Dated diagnosis and baseline (frozen) | To understand the starting point |
 
-Outras fontes: `.specify/memory/constitution.md` (regras), `specs/` (mudanças), `sdd.config.json` (código → capacidade).
+Other sources: `.specify/memory/constitution.md` (rules), `specs/` (changes), `sdd.config.json` (code → capability).

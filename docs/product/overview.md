@@ -1,28 +1,28 @@
-# EcoShop — visão do produto
+# EcoShop — product vision
 
-> Fonte: README original (intenção), código e respostas de Arthur em 2026-11-10. Onde há dúvida, está marcada como **pergunta aberta**.
+> Source: original README (intent), the code and Arthur's answers on 2026-11-10. Where there is doubt, it is marked as an **open question**.
 
-## O que é
-Uma **vitrine de produtos sustentáveis** com ferramentas educativas: o visitante navega no catálogo, conhece as certificações de cada produto e usa a IA para saber como descartar corretamente um resíduo (EcoScan) e tirar dúvidas (chat). Administradores mantêm o catálogo.
+## What it is
+A **storefront of sustainable products** with educational tools: the visitor browses the catalog, learns about each product's certifications and uses the AI to find out how to dispose of a waste item correctly (EcoScan) and to ask questions (chat). Administrators maintain the catalog.
 
-**Não é (por decisão do dono, 2026-11-10):** um e-commerce. **Fora de escopo:** carrinho, pedido, pagamento, estoque, entrega.
+**It is not (by the owner's decision, 2026-11-10):** an e-commerce. **Out of scope:** cart, order, payment, stock, delivery.
 
-## Problema
-Pessoas querem consumir e descartar com menos impacto ambiental, mas não sabem que produtos são confiáveis (certificações) nem como descartar cada material.
+## Problem
+People want to consume and dispose with less environmental impact, but do not know which products are trustworthy (certifications) or how to dispose of each material.
 
-## Público e papéis
-| Papel | Quem | Pode |
+## Audience and roles
+| Role | Who | Can |
 |---|---|---|
-| Visitante | Qualquer pessoa | Ver catálogo, produto, educação, sobre; cadastrar-se; entrar |
-| CLIENTE | Usuário cadastrado | Além do visitante: EcoScan, chat de IA, ver/editar o próprio perfil |
-| MARCA | Representa uma marca | **Em definição.** Pode ser escolhido no cadastro **mediante aprovação de um ADMIN** (ainda não implementado: hoje o cadastro cria MARCA direto). O que a MARCA pode fazer além de CLIENTE: pergunta aberta |
-| ADMIN | Equipe do EcoShop | Tudo, inclusive gerir produtos, categorias, marcas, certificados, fotos e usuários |
+| Visitor | Anyone | See the catalog, product, education, about; sign up; sign in |
+| CLIENTE | Registered user | Besides the visitor: EcoScan, AI chat, see/edit their own profile |
+| MARCA | Represents a brand | **Being defined.** Can be chosen at sign-up **subject to approval by an ADMIN** (not implemented yet: today sign-up creates MARCA directly). What MARCA can do beyond CLIENTE: open question |
+| ADMIN | The EcoShop team | Everything, including managing products, categories, brands, certificates, photos and users |
 
-## Capacidades
-Ver `docs/capabilities/README.md`.
+## Capabilities
+See `docs/capabilities/README.md`.
 
-## Perguntas abertas
-1. O que um usuário MARCA pode fazer? (gerir os próprios produtos? só ser exibido?)
-2. Fonte real das métricas da home e do "impacto" por produto (hoje ilustrativas; o dono quer fontes reais).
-3. Quais materiais o modelo do Azure Custom Vision reconhece (hoje poucas tags, não documentadas).
-4. O conteúdo de Educação deve ser editável pelo admin ou continua no código?
+## Open questions
+1. What can a MARCA user do? (manage their own products? only be displayed?)
+2. Real source for the home page metrics and the per-product "impact" (illustrative today; the owner wants real sources).
+3. Which materials the Azure Custom Vision model recognizes (few tags today, undocumented).
+4. Should the Education content be editable by the admin or stay in the code?

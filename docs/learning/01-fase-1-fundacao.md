@@ -1,12 +1,12 @@
-# Fase 1 · Fundação
+# Phase 1 · Foundation
 
-**O que foi feito:** Constitution (16 artigos), ADRs (0001–0017), documentos de produto e arquitetura, template de PR, ESLint 9 + Prettier, CI reescrito.
+**What was done:** Constitution (16 articles), ADRs (0001–0017), product and architecture documents, PR template, ESLint 9 + Prettier, rewritten CI.
 
-**Conceitos**
-- *Constitution*: poucas regras estáveis que valem para toda mudança. Resolve o problema de cada decisão recomeçar do zero. Fica em `.specify/memory/`; as specs não a repetem, apontam para ela.
-- *ADR*: registro de uma decisão com alternativas. Resolve "por que é assim?" meses depois. Os ADRs 0003–0014 são *inferidos* do código: dizem o que o código já faz, não o que alguém decidiu conscientemente — por isso há uma coluna de confiança.
-- *Duas camadas de spec* (ADR-0001): spec viva (como o sistema é hoje) e spec de mudança (como ele vai mudar). Sem a viva, ninguém sabe a verdade atual; sem a de mudança, não há registro do porquê.
+**Concepts**
+- *Constitution*: a few stable rules that apply to every change. It solves the problem of each decision starting from scratch. It lives in `.specify/memory/`; the specs do not repeat it, they point to it.
+- *ADR*: a record of a decision with alternatives. It solves "why is it like this?" months later. ADRs 0003–0014 are *inferred* from the code: they say what the code already does, not what someone consciously decided — which is why there is a confidence column.
+- *Two layers of spec* (ADR-0001): living spec (how the system is today) and change spec (how it will change). Without the living one, nobody knows the current truth; without the change one, there is no record of why.
 
-**Lição do EcoShop:** o CI nunca passava porque o lint interativo do Next pedia configuração. Um gate que nunca roda não protege nada. Corrigir isso foi pré-requisito para qualquer governança.
+**EcoShop lesson:** CI never passed because Next's interactive lint asked for configuration. A gate that never runs protects nothing. Fixing this was a prerequisite for any governance.
 
-**Ferramenta:** o Spec Kit não pôde ser instalado neste ambiente; `.specify/` foi escrito à mão (ADR-0002). Quando possível, rode `specify init` e reconcilie.
+**Tool:** Spec Kit could not be installed in this environment; `.specify/` was written by hand (ADR-0002). When possible, run `specify init` and reconcile.

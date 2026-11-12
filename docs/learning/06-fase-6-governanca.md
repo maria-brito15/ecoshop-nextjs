@@ -1,7 +1,7 @@
-# Fase 6 · Governança contra drift
+# Phase 6 · Governance against drift
 
-**Mecanismos:** `npm run sdd:check` no CI (bloqueante); `impact-map --exige-adr` falha o PR que muda caminho sensível sem citar o ADR; template de PR com trilha, capacidades, REQs e ADRs; workflow mensal `sdd-drift` que abre uma issue com `trace-check --stale`; `CODEOWNERS` (troque `@DONO`).
+**Mechanisms:** `npm run sdd:check` in CI (blocking); `impact-map --exige-adr` fails a PR that changes a sensitive path without citing the ADR; PR template with track, capabilities, REQs and ADRs; a monthly `sdd-drift` workflow that opens an issue with `trace-check --stale`; `CODEOWNERS` (replace `@DONO`).
 
-**Ideia central:** drift não se evita com documentação melhor; evita-se tornando parte da spec executável e fazendo um detector confrontar o resto com o código.
+**Core idea:** drift is not avoided with better documentation; it is avoided by making part of the spec executable and having a detector confront the rest with the code.
 
-**O que continua humano:** aprovar spec e plano, decidir se a divergência é bug ou spec velha, emendar a Constitution.
+**What stays human:** approving spec and plan, deciding whether a divergence is a bug or an old spec, amending the Constitution.
