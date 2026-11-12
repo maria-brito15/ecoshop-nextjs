@@ -1,72 +1,73 @@
 // app/api/certificados/route.ts
 
 /**
- * ============================================================================
- * CERTIFICADOS API ROUTES
- * ============================================================================
- * Endpoints para gerenciamento de certificados de sustentabilidade.
+ * CERTIFICATES API ROUTES
  *
- * GET /api/certificados - Lista todos os certificados (público)
- * POST /api/certificados - Cria novo certificado (requer ADMIN)
+ * Endpoints for managing sustainability certificates.
  *
- * Certificados são selos como "FSC", "Orgânico Brasil", "Cruelty Free".
+ * GET /api/certificados - List all certificates (public)
+ * POST /api/certificados - Create a new certificate (requires ADMIN)
  *
- * @see services/certificado.service.ts - Lógica de negócio
- * ============================================================================
+ * Certificates are seals such as "FSC", "Organic Brazil", "Cruelty Free".
+ *
+ * @see services/certificate.service.ts - Business logic
  */
 
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS } from "@/lib/http/responses";
-import { certificadoSchema } from "@/lib/schemas/certificado";
+import { ERRORS, mapError } from "@/lib/http/responses";
+import { certificateSchema } from "@/lib/schemas/certificate";
 import {
-  listarCertificados,
-  criarCertificado,
-} from "@/services/certificado.service";
+  listCertificates,
+  createCertificate,
+} from "@/services/certificate.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/certificados - Lista todos os certificados
+ * GET /api/certificados - List all certificates
  *
- * @returns { certificados: Certificado[] }
- * @status 200 - Lista retornada com sucesso
- * @status 500 - Erro ao buscar certificados
+ * @returns { certificados: Certificate[] }
+ * @status 200 - List returned successfully
+ * @status 500 - Error fetching certificates
  */
 export async function GET() {
   try {
-    const certificados = await listarCertificados();
-    return NextResponse.json({ certificados });
-  } catch {
-    return ERROS.interno("listar certificados");
+    const certificates = await listCertificates();
+    return NextResponse.json({ certificados: certificates });
+  } catch (err) {
+    return ERRORS.internal("list certificates", err);
   }
 }
 
 /**
- * POST /api/certificados - Cria novo certificado
+ * POST /api/certificados - Create a new certificate
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
  * @body { nome: string, descricao?: string, orgaoEmissor: string }
- * @returns { certificado: Certificado }
- * @status 201 - Certificado criado
- * @status 400 - Dados inválidos
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 500 - Erro ao criar certificado
+ * @returns { certificado: Certificate }
+ * @status 201 - Certificate created
+ * @status 400 - Invalid data
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 500 - Error creating certificate
  */
 export async function POST(req: NextRequest) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
     const body = await req.json();
-    const parsed = certificadoSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    const parsed = certificateSchema.safeParse(body);
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const certificado = await criarCertificado(parsed.data);
-    return NextResponse.json({ certificado }, { status: 201 });
-  } catch {
-    return ERROS.interno("criar certificado");
+    const certificate = await createCertificate(parsed.data);
+    return NextResponse.json({ certificado: certificate }, { status: 201 });
+  } catch (err) {
+    return (
+      mapError(err, "Certificate") ??
+      ERRORS.internal("create certificate", err)
+    );
   }
 }

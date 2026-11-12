@@ -1,5 +1,5 @@
-// app/components/Header.tsx - VERSÃO CORRIGIDA
-// Alterações: Adicionar chamada a /api/auth/refresh após carregar dados do usuário
+// app/components/Header.tsx - FIXED VERSION
+// Changes: Add a call to /api/auth/refresh after loading the user data
 
 "use client";
 
@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { TipoUsuario } from "@/types/api";
+import { fetchSession, endClientSession } from "@/lib/hooks/session";
 
 type SessionUser = {
   id: number;
@@ -16,9 +17,9 @@ type SessionUser = {
 };
 
 const NAV_ITEMS = [
-  { label: "Início", href: "/", page: "inicio" },
+  { label: "Home", href: "/", page: "inicio" },
   { label: "Produtos", href: "/produtos", page: "produtos" },
-  { label: "Educação", href: "/educacao", page: "educacao" },
+  { label: "Education", href: "/educacao", page: "educacao" },
   { label: "EcoScan IA", href: "/ia-scan", page: "ecoscan" },
   { label: "Sobre", href: "/about", page: "sobre" },
 ] as const;
@@ -55,7 +56,7 @@ function useDarkMode() {
 
   function applyDarkClass(dark: boolean) {
     const html = document.documentElement;
-    dark ? html.classList.add("dark-mode") : html.classList.remove("dark-mode");
+    html.classList.toggle("dark-mode", dark);
   }
 
   useEffect(() => {
@@ -72,34 +73,21 @@ function useDarkMode() {
 }
 
 function useSession() {
-  const [usuario, setUsuario] = useState<SessionUser | null>(null);
-  const [carregando, setCarregando] = useState(true);
+  const [user, setUser] = useState<SessionUser | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const refresh = () => {
-    setCarregando(true);
-    fetch("/api/auth/me", { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : { usuario: null }))
-      .then((data) => {
-        setUsuario(data.usuario ?? null);
-
-        // ✅ CORREÇÃO: Renovar o token se o usuário está autenticado
-        // Isso sincroniza o JWT com o tipo atual do banco
-        if (data.usuario) {
-          fetch("/api/auth/refresh", {
-            method: "POST",
-            credentials: "include",
-          }).catch((err) => console.error("Erro ao renovar token:", err));
-        }
-      })
-      .catch(() => setUsuario(null))
-      .finally(() => setCarregando(false));
+    setLoading(true);
+    fetchSession()
+      .then((user) => setUser(user))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     refresh();
   }, []);
 
-  return { usuario, carregando, refresh };
+  return { usuario: user, carregando: loading, refresh };
 }
 
 export default function Header() {
@@ -108,9 +96,9 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [menuPerfilOpen, setMenuPerfilOpen] = useState(false);
-  const perfilRef = useRef<HTMLDivElement>(null);
-  const { usuario, carregando, refresh } = useSession();
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+  const { usuario: user, carregando: loading, refresh } = useSession();
 
   useEffect(() => {
     refresh();
@@ -118,8 +106,8 @@ export default function Header() {
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (perfilRef.current && !perfilRef.current.contains(e.target as Node)) {
-        setMenuPerfilOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileMenuOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClick);
@@ -127,9 +115,9 @@ export default function Header() {
   }, []);
 
   async function handleLogout() {
-    await fetch("/api/auth", { method: "DELETE", credentials: "include" });
+    await endClientSession();
     refresh();
-    setMenuPerfilOpen(false);
+    setProfileMenuOpen(false);
     router.push("/");
   }
 
@@ -147,7 +135,7 @@ export default function Header() {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
-  const inicial = usuario?.nome?.charAt(0).toUpperCase() ?? "?";
+  const initial = user?.nome?.charAt(0).toUpperCase() ?? "?";
 
   return (
     <>
@@ -194,13 +182,13 @@ export default function Header() {
           </nav>
 
           <div className="flex items-center gap-3">
-            {!carregando &&
-              (usuario ? (
-                <div ref={perfilRef} className="relative">
+            {!loading &&
+              (user ? (
+                <div ref={profileRef} className="relative">
                   <button
-                    onClick={() => setMenuPerfilOpen((prev) => !prev)}
-                    aria-label="Menu do perfil"
-                    title={usuario.nome}
+                    onClick={() => setProfileMenuOpen((prev) => !prev)}
+                    aria-label="Profile menu"
+                    title={user.nome}
                     className="
                       hidden sm:flex items-center gap-2
                       px-3 py-2
@@ -218,10 +206,10 @@ export default function Header() {
                         bg-[var(--color-primary)]
                       "
                     >
-                      {inicial}
+                      {initial}
                     </span>
                     <span className="text-sm font-semibold text-[var(--color-text-primary)] max-w-[100px] truncate">
-                      {usuario.nome.split(" ")[0]}
+                      {user.nome.split(" ")[0]}
                     </span>
                     <svg
                       width="12"
@@ -238,7 +226,7 @@ export default function Header() {
                     </svg>
                   </button>
 
-                  {menuPerfilOpen && (
+                  {profileMenuOpen && (
                     <div
                       className="
                         absolute right-0 top-full mt-2 z-[9997]
@@ -251,15 +239,15 @@ export default function Header() {
                     >
                       <div className="px-4 py-3 border-b border-[var(--color-border)]">
                         <p className="text-xs font-semibold text-[var(--color-text-primary)] truncate">
-                          {usuario.nome}
+                          {user.nome}
                         </p>
                         <p className="text-xs text-[var(--color-text-tertiary)] truncate">
-                          {usuario.email}
+                          {user.email}
                         </p>
                       </div>
                       <Link
                         href="/perfil"
-                        onClick={() => setMenuPerfilOpen(false)}
+                        onClick={() => setProfileMenuOpen(false)}
                         className="
                           flex items-center gap-2.5 px-4 py-3
                           text-sm text-[var(--color-text-secondary)]
@@ -281,12 +269,12 @@ export default function Header() {
                           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                           <circle cx="12" cy="7" r="4" />
                         </svg>
-                        Meu Perfil
+                        My Profile
                       </Link>
-                      {usuario.tipo === "ADMIN" && (
+                      {user.tipo === "ADMIN" && (
                         <Link
                           href="/painel"
-                          onClick={() => setMenuPerfilOpen(false)}
+                          onClick={() => setProfileMenuOpen(false)}
                           className="
                             flex items-center gap-2.5 px-4 py-3
                             text-sm text-[var(--color-text-secondary)]
@@ -310,7 +298,7 @@ export default function Header() {
                             <rect x="14" y="14" width="7" height="7" />
                             <rect x="3" y="14" width="7" height="7" />
                           </svg>
-                          Painel Admin
+                          Admin Panel
                         </Link>
                       )}
                       <button
@@ -336,7 +324,7 @@ export default function Header() {
                           <polyline points="16 17 21 12 16 7" />
                           <line x1="21" y1="12" x2="9" y2="12" />
                         </svg>
-                        Sair
+                        Sign out
                       </button>
                     </div>
                   )}
@@ -356,7 +344,7 @@ export default function Header() {
                     transition-all
                   "
                 >
-                  Entrar
+                  Sign in
                 </Link>
               ))}
 
@@ -420,7 +408,7 @@ export default function Header() {
           transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
           ${mobileOpen ? "translate-x-0" : "translate-x-full"}
         `}
-        aria-label="Menu de navegação"
+        aria-label="Navigation menu"
       >
         <div
           className="
@@ -476,7 +464,7 @@ export default function Header() {
         </nav>
 
         <div className="p-5 border-t border-[var(--color-border)]">
-          {usuario ? (
+          {user ? (
             <button
               onClick={handleLogout}
               className="
@@ -488,7 +476,7 @@ export default function Header() {
                 transition-all
               "
             >
-              Sair da conta
+              Sign out of your account
             </button>
           ) : (
             <Link
@@ -503,7 +491,7 @@ export default function Header() {
                 transition-all
               "
             >
-              Entrar na conta
+              Sign in to your account
             </Link>
           )}
         </div>

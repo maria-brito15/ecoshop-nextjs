@@ -1,14 +1,14 @@
 ---
 name: brownfield-discovery
-description: Use para entender código existente sem spec: levantar o comportamento real, separar fato de inferência e transformar em spec viva com status honesto.
+description: Use to understand existing code that has no spec: survey the real behavior, separate fact from inference and turn it into a living spec with an honest status.
 ---
 
-# Descoberta em código existente
+# Discovery in existing code
 
-1. Percorra pelo mapa de `sdd.config.json`: rotas, services, schema, testes, docs.
-2. Para cada capacidade, liste comportamentos com `arquivo:linha`. Rode o código ou um teste quando puder; sem execução, é inferência.
-3. Compare com README e docs: divergência vira item "❌ ou ❔" na spec, não ajuste silencioso.
-4. Escreva REQs descrevendo o comportamento desejado, com status pelo que o código faz hoje.
-5. Defeitos: caracterize com teste `todo` antes de corrigir.
-6. Dúvidas de negócio vão para "Perguntas abertas"; não invente intenção.
-7. Registre o retrato datado em `docs/discovery/AAAA-MM-<nome>/` (congelado) e aponte a spec viva como verdade atual.
+1. Walk the map in `sdd.config.json`: routes, services, schema, tests, docs.
+2. For each capability, list behaviors with `file:line`. Run the code or a test when you can; without execution, it is inference.
+3. Compare with the README and docs: a divergence becomes a "❌ or ❔" item in the spec, not a silent adjustment.
+4. Write REQs describing the desired behavior, with the status given by what the code does today.
+5. Defects: characterize them with a `todo` test before fixing.
+6. Business doubts go to "Open questions"; do not invent intent.
+7. Record the dated snapshot in `docs/discovery/YYYY-MM-<name>/` (frozen) and point to the living spec as the current truth.

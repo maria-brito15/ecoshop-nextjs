@@ -1,201 +1,222 @@
-// lib/hooks/useFetch.ts - VERSÃO CORRIGIDA (sem logs)
+// lib/hooks/useFetch.ts - FIXED VERSION (no logs)
 
 /**
- * ============================================================================
  * useFetch HOOK
- * ============================================================================
- * Hook React para busca de dados com cache automático no cliente.
  *
- * Características:
- * - Cache em memória com TTL de 30 segundos (evita requisições duplicadas)
- * - Stale-while-revalidate: mostra dados do cache enquanto atualiza em background
- * - Suporte a SSR/hidratação (usa cache inicial se disponível)
+ * React hook for fetching data with automatic client-side caching.
  *
- * Por que cache no cliente?
- * - Reduz chamadas de rede em navegações entre páginas
- * - Melhora a experiência do usuário (dados aparecem instantaneamente)
- * - Dados são revalidados em background para manter consistência
+ * Features:
+ * - In-memory cache with a 30-second TTL (avoids duplicate requests)
+ * - Stale-while-revalidate: shows cached data while refreshing in the background
+ * - SSR/hydration support (uses the initial cache if available)
  *
- * Padrão de uso:
+ * Why a client-side cache?
+ * - Reduces network calls when navigating between pages
+ * - Improves the user experience (data appears instantly)
+ * - Data is revalidated in the background to stay consistent
+ *
+ * Usage pattern:
  * ```tsx
- * const { data, carregando, erro, executar } = useFetch<Produto[]>("/api/produtos");
+ * const { data, loading, error, execute } = useFetch<Product[]>("/api/produtos");
  *
- * if (carregando) return <Spinner />;
- * if (erro) return <ErrorMessage>{erro}</ErrorMessage>;
- * return <ProductList produtos={data} />;
+ * if (loading) return <Spinner />;
+ * if (error) return <ErrorMessage>{error}</ErrorMessage>;
+ * return <ProductList products={data} />;
  * ```
- * ============================================================================
  */
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 /**
- * Estado interno do hook.
- * @template T - Tipo dos dados retornados pela API
+ * Internal state of the hook.
+ * @template T - Type of the data returned by the API
  */
-type Estado<T> = {
-  /** Dados da requisição (null enquanto carrega ou em erro) */
+type State<T> = {
+  /** Request data (null while loading or on error) */
   data: T | null;
-  /** Indica se a requisição está em andamento */
-  carregando: boolean;
-  /** Mensagem de erro (null se não houver erro) */
-  erro: string | null;
+  /** Whether the request is in progress */
+  loading: boolean;
+  /** Error message (null if there is no error) */
+  error: string | null;
 };
 
 /**
- * Cache simples em memória para evitar requisições duplicadas.
- * - Chave: URL completa da requisição
- * - Valor: dados + timestamp de expiração
+ * Simple in-memory cache to avoid duplicate requests.
+ * - Key: full request URL
+ * - Value: data + expiration timestamp
  *
- * TTL de 30 segundos: equilíbrio entre dados atualizados e performance.
- * Para dados que mudam com frequência, use TTL menor ou desabilite cache.
+ * 30-second TTL: balance between fresh data and performance.
+ * For data that changes often, use a smaller TTL or disable the cache.
  */
 const memoryCache = new Map<string, { data: unknown; expiraEm: number }>();
-const TTL_CLIENTE_MS = 30_000; // 30 segundos (menor que cache do Redis no servidor)
+const CLIENT_TTL_MS = 30_000; // 30 seconds (shorter than the server-side Redis cache)
 
 /**
- * Recupera dados do cache se ainda não expiraram.
- * @template T - Tipo dos dados armazenados
- * @param url - URL da requisição (chave do cache)
- * @returns Dados cacheados ou null
+ * Gets data from the cache if it has not expired yet.
+ * @template T - Type of the stored data
+ * @param url - Request URL (cache key)
+ * @returns Cached data or null
  */
 function getCached<T>(url: string): T | null {
-  const entrada = memoryCache.get(url);
-  if (!entrada) return null;
-  if (Date.now() > entrada.expiraEm) {
+  const entry = memoryCache.get(url);
+  if (!entry) return null;
+  if (Date.now() > entry.expiraEm) {
     memoryCache.delete(url);
     return null;
   }
-  return entrada.data as T;
+  return entry.data as T;
 }
 
 /**
- * Armazena dados no cache com TTL fixo.
- * @template T - Tipo dos dados armazenados
- * @param url - URL da requisição (chave do cache)
- * @param data - Dados a serem armazenados
+ * Stores data in the cache with a fixed TTL.
+ * @template T - Type of the stored data
+ * @param url - Request URL (cache key)
+ * @param data - Data to store
  */
 function setCached<T>(url: string, data: T): void {
-  memoryCache.set(url, { data, expiraEm: Date.now() + TTL_CLIENTE_MS });
+  memoryCache.set(url, { data, expiraEm: Date.now() + CLIENT_TTL_MS });
 }
 
 /**
- * Invalida todas as entradas do cache cuja URL contém um prefixo específico.
- * Usado após mutations (POST/PUT/DELETE) para garantir dados frescos.
+ * Invalidates all cache entries whose URL contains a given prefix.
+ * Used after mutations (POST/PUT/DELETE) to guarantee fresh data.
  *
- * @param prefixo - Prefixo da URL a invalidar (ex: "/api/produtos")
+ * @param prefix - URL prefix to invalidate (e.g. "/api/produtos")
  *
  * @example
- * // Após criar um novo produto, invalida todos os caches de listagem
- * invalidarCacheCliente("/api/produtos");
+ * // After creating a new product, invalidate all listing caches
+ * invalidateClientCache("/api/produtos");
  */
-export function invalidarCacheCliente(prefixo: string): void {
-  for (const chave of memoryCache.keys()) {
-    if (chave.includes(prefixo)) memoryCache.delete(chave);
+/**
+ * Empties the WHOLE client cache. Called on logout and when opening a new session:
+ * the cache is per URL (not per user), so without this the next person using the
+ * same tab would see the previous person's data for up to 30 s.
+ */
+export function clearClientCache(): void {
+  memoryCache.clear();
+}
+
+export function invalidateClientCache(prefix: string): void {
+  for (const key of memoryCache.keys()) {
+    if (key.includes(prefix)) memoryCache.delete(key);
   }
 }
 
 /**
- * Hook para buscar dados de API com cache automático.
+ * Hook to fetch API data with automatic caching.
  *
- * @template T - Tipo dos dados retornados pela API
- * @param url - URL da requisição (se null, o hook não executa)
- * @param options - Opções adicionais do fetch (headers, etc.)
- * @returns Estado da requisição + função executar para refetch manual
+ * @template T - Type of the data returned by the API
+ * @param url - Request URL (if null, the hook does not run)
+ * @param options - Additional fetch options (headers, etc.)
+ * @returns Request state + execute function for manual refetch
  *
- * Estratégia de cache:
- * 1. Se existe cache válido → exibe instantaneamente
- * 2. Faz fetch em background para revalidar
- * 3. Se dados novos são diferentes, atualiza a UI
- *
- * @example
- * // Uso básico
- * const { data, carregando, erro } = useFetch<Usuario>("/api/auth/me");
+ * Cache strategy:
+ * 1. If a valid cache exists → show it instantly
+ * 2. Fetch in the background to revalidate
+ * 3. If the new data differs, update the UI
  *
  * @example
- * // Com refetch manual
- * const { data, executar } = useFetch<Produto>("/api/produtos");
- * const refresh = () => executar("/api/produtos?page=2");
+ * // Basic usage
+ * const { data, loading, error } = useFetch<User>("/api/auth/me");
+ *
+ * @example
+ * // With manual refetch
+ * const { data, execute } = useFetch<Product>("/api/produtos");
+ * const refresh = () => execute("/api/produtos?page=2");
  */
 export function useFetch<T>(url: string | null, options?: RequestInit) {
-  // Tenta obter dados do cache na montagem do hook
-  const dadoInicial = url ? getCached<T>(url) : null;
-  const [estado, setEstado] = useState<Estado<T>>({
-    data: dadoInicial,
-    carregando: !!url && dadoInicial === null, // carrega se não tem cache
-    erro: null,
+  // Try to get data from the cache when the hook mounts
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+  const initialData = url ? getCached<T>(url) : null;
+  const [state, setState] = useState<State<T>>({
+    data: initialData,
+    loading: !!url && initialData === null, // loads if there is no cache
+    error: null,
   });
 
   /**
-   * Executa a requisição manualmente.
-   * Útil para refetch após ações do usuário.
+   * Runs the request manually.
+   * Useful to refetch after user actions.
    *
-   * @param customUrl - URL opcional (sobrescreve a URL do hook)
-   * @returns Dados da requisição ou null em caso de erro
+   * @param customUrl - Optional URL (overrides the hook's URL)
+   * @returns Request data, or null on error
    */
-  const executar = async (customUrl?: string): Promise<T | null> => {
-    const urlParaFetch = customUrl || url;
-    if (!urlParaFetch) return null;
+  const execute = async (customUrl?: string): Promise<T | null> => {
+    const urlToFetch = customUrl || url;
+    if (!urlToFetch) return null;
 
-    setEstado({ data: null, carregando: true, erro: null });
+    setState({ data: null, loading: true, error: null });
 
     try {
-      const res = await fetch(urlParaFetch, {
+      const res = await fetch(urlToFetch, {
         credentials: "include", // envia cookie httpOnly com token JWT
-        ...options,
+        ...optionsRef.current,
       });
-      if (!res.ok) throw new Error(`Erro ${res.status}`);
+      if (!res.ok) throw new Error(`Error ${res.status}`);
       const data = (await res.json()) as T;
-      setCached(urlParaFetch, data);
-      setEstado({ data, carregando: false, erro: null });
+      setCached(urlToFetch, data);
+      setState({ data, loading: false, error: null });
       return data;
     } catch (err) {
-      const mensagem = err instanceof Error ? err.message : "Erro desconhecido";
-      setEstado({ data: null, carregando: false, erro: mensagem });
+      const message = err instanceof Error ? err.message : "Unknown error";
+      setState({ data: null, loading: false, error: message });
       return null;
     }
   };
 
-  // Efeito para execução automática quando a URL muda
+  // Effect for automatic execution when the URL changes
   useEffect(() => {
-    let ativo = true;
+    let active = true;
     if (!url) return;
 
     const cached = getCached<T>(url);
 
-    // Caso 1: Tem cache válido → exibe e revalida em background
+    // Case 1: a valid cache exists → show it and revalidate in the background
     if (cached !== null) {
-      setEstado({ data: cached, carregando: false, erro: null });
+      setState({ data: cached, loading: false, error: null });
+      const controller = new AbortController();
 
-      // Revalidação silenciosa: atualiza cache se dados mudaram
-      fetch(url, { credentials: "include", ...options })
+      // Silent revalidation: update the cache if the data changed
+      fetch(url, {
+        credentials: "include",
+        ...optionsRef.current,
+        signal: controller.signal,
+      })
         .then((res) => {
-          if (!res.ok) throw new Error(`erro ${res.status}`);
+          if (!res.ok) throw new Error(`error ${res.status}`);
           return res.json() as Promise<T>;
         })
         .then((fresh) => {
           setCached(url, fresh);
-          // Só atualiza UI se dados realmente mudaram (evita re-render desnecessário)
-          if (ativo && JSON.stringify(fresh) !== JSON.stringify(cached)) {
-            setEstado({ data: fresh, carregando: false, erro: null });
+          // Only update the UI if the data really changed (avoids unnecessary re-render)
+          if (active && JSON.stringify(fresh) !== JSON.stringify(cached)) {
+            setState({ data: fresh, loading: false, error: null });
           }
         })
         .catch(() => {
-          // Silencia erro na revalidação em background
-          // O usuário já vê os dados do cache, então falha não é crítica
+          // Silence errors on background revalidation
+          // The user already sees the cached data, so a failure is not critical
         });
-      return;
+      return () => {
+        active = false;
+        controller.abort(); // unmounted or the URL changed: cancel the revalidation
+      };
     }
 
-    // Caso 2: Sem cache → faz requisição normal
-    executar();
+    // Case 2: no cache → make a normal request
+    execute();
 
     return () => {
-      ativo = false;
+      active = false;
     };
+    // `execute` and `options` are left out on purpose: `options` is usually a
+    // new object literal on every render (including it would refetch endlessly);
+    // its latest version is read through `optionsRef`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]); // Re-executa se a URL mudar
 
-  return { ...estado, executar };
+  return { ...state, execute: execute };
 }

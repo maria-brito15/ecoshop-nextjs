@@ -1,164 +1,179 @@
 // lib/cache/keys.ts
 
 /**
- * ============================================================================
  * CACHE KEYS
- * ============================================================================
- * Gerenciamento de chaves do cache para garantir consistência.
  *
- * Padrão de chave: {PREFIXO}{identificador}
- * Exemplo: "produtos:1" (produto específico)
- *          "produtos:page=1&size=12" (listagem paginada)
+ * Cache key management to guarantee consistency.
  *
- * Por que prefixos?
- * - Organização lógica no Redis
- * - Permite invalidação por padrão (ex: "produtos:*")
- * - Evita colisão de chaves entre diferentes entidades
+ * Key pattern: {PREFIX}{identifier}
+ * Example: "products:1" (a specific product)
+ *          "products:page=1&size=12" (paginated listing)
  *
- * IMPORTANTE: Todas as funções de chave devem ser usadas consistentemente
- * em services e no módulo de cache para garantir invalidação correta.
- * ============================================================================
+ * Why prefixes?
+ * - Logical organization in Redis
+ * - Allows pattern invalidation (e.g. "products:*")
+ * - Avoids key collisions between different entities
+ *
+ * IMPORTANT: All key functions must be used consistently in services and in the
+ * cache module to guarantee correct invalidation.
  */
 
 /**
- * Prefixos para cada tipo de entidade no cache.
- * Usados para:
- * - Namespacing (separar caches por entidade)
- * - Invalidação em lote (delPattern com prefixo)
+ * Prefixes for each entity type in the cache.
+ * Used for:
+ * - Namespacing (separating caches by entity)
+ * - Batch invalidation (delPattern with a prefix)
  *
  * @example
- * await redisDelPattern(`${PREFIX.PRODUTOS}*`); // remove todos os caches de produtos
+ * await redisDelPattern(`${PREFIX.PRODUCTS}*`); // removes all product caches
  */
 export const PREFIX = {
-  PRODUTOS: "produtos:",
-  CATEGORIAS: "categorias:",
-  MARCAS: "marcas:",
-  CERTIFICADOS: "certificados:",
-  USUARIOS: "usuarios:",
-  FOTOS: "fotos:",
+  PRODUCTS: "products:",
+  CATEGORIES: "categories:",
+  BRANDS: "brands:",
+  CERTIFICATES: "certificates:",
+  USERS: "users:",
+  PHOTOS: "photos:",
 } as const;
 
 /**
- * Gera chave de cache para listagem paginada de produtos.
- * A chave inclui todos os parâmetros de query para distinguir diferentes filtros.
+ * Generates the cache key for the paginated product listing.
+ * The key includes all query parameters to tell different filters apart.
  *
- * @param params - URLSearchParams com filtros (page, size, categoriaId, nome)
- * @returns Chave no formato "produtos:page=1&size=12&categoriaId=5"
+ * REQ-CAT-10: the key comes from the ALREADY VALIDATED filters, in a fixed order and
+ * only with the known parameters. It used to use `params.toString()` of the raw URL:
+ * any `?x=...` or a different parameter order created a new Redis key, and the
+ * number of keys was controlled by whoever called the (public) API.
  *
- * @example
- * const params = new URLSearchParams({ page: "1", size: "12", categoriaId: "5" });
- * const chave = chaveProdutos(params); // "produtos:page=1&size=12&categoriaId=5"
+ * @param filters - Validated filters (`listProductsQuerySchema`)
+ * @returns Key in the format "products:page=1&size=12&categoriaId=5&marcaId=&precoMax=&sort=relevancia&nome="
  */
-export function chaveProdutos(params: URLSearchParams): string {
-  return `${PREFIX.PRODUTOS}${params.toString()}`;
+export interface ProductFilters {
+  page: number;
+  size: number;
+  categoriaId?: number;
+  marcaId?: number;
+  precoMax?: number;
+  sort: string;
+  nome?: string;
+}
+
+export function productListKey(filters: ProductFilters): string {
+  // Name search ignores case; the key does too (same search, same key).
+  const name = encodeURIComponent((filters.nome ?? "").trim().toLowerCase());
+  return (
+    `${PREFIX.PRODUCTS}page=${filters.page}&size=${filters.size}` +
+    `&categoriaId=${filters.categoriaId ?? ""}&marcaId=${filters.marcaId ?? ""}` +
+    `&precoMax=${filters.precoMax ?? ""}&sort=${filters.sort}&nome=${name}`
+  );
 }
 
 /**
- * Gera chave de cache para um produto específico.
+ * Generates the cache key for a specific product.
  *
- * @param id - ID do produto
- * @returns Chave no formato "produtos:123"
+ * @param id - Product ID
+ * @returns Key in the format "products:123"
  */
-export function chaveProduto(id: number): string {
-  return `${PREFIX.PRODUTOS}${id}`;
+export function productKey(id: number): string {
+  return `${PREFIX.PRODUCTS}${id}`;
 }
 
 /**
- * Gera chave de cache para listagem de categorias.
- * Como a listagem é sempre a mesma (sem filtros), a chave é fixa.
+ * Generates the cache key for the category listing.
+ * Since the listing is always the same (no filters), the key is fixed.
  *
- * @returns Chave no formato "categorias:lista"
+ * @returns Key in the format "categories:list"
  */
-export function chaveCategorias(): string {
-  return `${PREFIX.CATEGORIAS}lista`;
+export function categoriesKey(): string {
+  return `${PREFIX.CATEGORIES}list`;
 }
 
 /**
- * Gera chave de cache para uma categoria específica.
+ * Generates the cache key for a specific category.
  *
- * @param id - ID da categoria
- * @returns Chave no formato "categorias:123"
+ * @param id - Category ID
+ * @returns Key in the format "categories:123"
  */
-export function chaveCategoria(id: number): string {
-  return `${PREFIX.CATEGORIAS}${id}`;
+export function categoryKey(id: number): string {
+  return `${PREFIX.CATEGORIES}${id}`;
 }
 
 /**
- * Gera chave de cache para listagem de marcas.
- * A listagem é sempre completa (sem paginação/filtros).
+ * Generates the cache key for the brand listing.
+ * The listing is always complete (no pagination/filters).
  *
- * @returns Chave no formato "marcas:lista"
+ * @returns Key in the format "brands:list"
  */
-export function chaveMarcas(): string {
-  return `${PREFIX.MARCAS}lista`;
+export function brandsKey(): string {
+  return `${PREFIX.BRANDS}list`;
 }
 
 /**
- * Gera chave de cache para uma marca específica.
+ * Generates the cache key for a specific brand.
  *
- * @param id - ID da marca
- * @returns Chave no formato "marcas:123"
+ * @param id - Brand ID
+ * @returns Key in the format "brands:123"
  */
-export function chaveMarca(id: number): string {
-  return `${PREFIX.MARCAS}${id}`;
+export function brandKey(id: number): string {
+  return `${PREFIX.BRANDS}${id}`;
 }
 
 /**
- * Gera chave de cache para listagem de certificados.
+ * Generates the cache key for the certificate listing.
  *
- * @returns Chave no formato "certificados:lista"
+ * @returns Key in the format "certificates:list"
  */
-export function chaveCertificados(): string {
-  return `${PREFIX.CERTIFICADOS}lista`;
+export function certificatesKey(): string {
+  return `${PREFIX.CERTIFICATES}list`;
 }
 
 /**
- * Gera chave de cache para um certificado específico.
+ * Generates the cache key for a specific certificate.
  *
- * @param id - ID do certificado
- * @returns Chave no formato "certificados:123"
+ * @param id - Certificate ID
+ * @returns Key in the format "certificates:123"
  */
-export function chaveCertificado(id: number): string {
-  return `${PREFIX.CERTIFICADOS}${id}`;
+export function certificateKey(id: number): string {
+  return `${PREFIX.CERTIFICATES}${id}`;
 }
 
 /**
- * Gera chave de cache para o perfil do usuário autenticado ("me").
- * Inclui o ID do usuário para distinguir diferentes usuários.
+ * Generates the cache key for the authenticated user's profile ("me").
+ * Includes the user ID to tell different users apart.
  *
- * @param id - ID do usuário
- * @returns Chave no formato "usuarios:me:123"
+ * @param id - User ID
+ * @returns Key in the format "users:me:123"
  */
-export function chaveUsuarioMe(id: number): string {
-  return `${PREFIX.USUARIOS}me:${id}`;
+export function currentUserKey(id: number): string {
+  return `${PREFIX.USERS}me:${id}`;
 }
 
 /**
- * Gera chave de cache para um usuário específico (dados públicos).
+ * Generates the cache key for a specific user (public data).
  *
- * @param id - ID do usuário
- * @returns Chave no formato "usuarios:123"
+ * @param id - User ID
+ * @returns Key in the format "users:123"
  */
-export function chaveUsuario(id: number): string {
-  return `${PREFIX.USUARIOS}${id}`;
+export function userKey(id: number): string {
+  return `${PREFIX.USERS}${id}`;
 }
 
 /**
- * Gera chave de cache para listagem de usuários (admin).
- * A listagem de usuários não tem paginação/filtros no momento.
+ * Generates the cache key for the user listing (admin).
+ * The user listing currently has no pagination/filters.
  *
- * @returns Chave no formato "usuarios:lista"
+ * @returns Key in the format "users:list"
  */
-export function chaveUsuarios(): string {
-  return `${PREFIX.USUARIOS}lista`;
+export function usersKey(): string {
+  return `${PREFIX.USERS}list`;
 }
 
 /**
- * Gera chave de cache para listagem de fotos de um produto.
+ * Generates the cache key for a product's photo listing.
  *
- * @param produtoId - ID do produto
- * @returns Chave no formato "fotos:produto:123"
+ * @param productId - Product ID
+ * @returns Key in the format "photos:product:123"
  */
-export function chaveFotosProduto(produtoId: number): string {
-  return `${PREFIX.FOTOS}produto:${produtoId}`;
+export function productPhotosKey(productId: number): string {
+  return `${PREFIX.PHOTOS}product:${productId}`;
 }

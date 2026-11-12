@@ -1,127 +1,128 @@
 // app/api/categorias/[id]/route.ts
 
 /**
- * ============================================================================
- * CATEGORIA BY ID API ROUTES
- * ============================================================================
- * Endpoints para operações em uma categoria específica.
+ * CATEGORY BY ID API ROUTES
  *
- * GET /api/categorias/{id} - Busca categoria por ID (público)
- * PUT /api/categorias/{id} - Atualiza categoria (requer ADMIN)
- * DELETE /api/categorias/{id} - Deleta categoria (requer ADMIN)
+ * Endpoints for operations on a specific category.
  *
- * Permissões:
- * - GET: Público
- * - PUT/DELETE: Apenas ADMIN
+ * GET /api/categorias/{id} - Fetch category by ID (public)
+ * PUT /api/categorias/{id} - Update category (requires ADMIN)
+ * DELETE /api/categorias/{id} - Delete category (requires ADMIN)
  *
- * @see services/categoria.service.ts - Lógica de negócio
- * ============================================================================
+ * Permissions:
+ * - GET: Public
+ * - PUT/DELETE: ADMIN only
+ *
+ * @see services/category.service.ts - Business logic
  */
 
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS } from "@/lib/http/responses";
-import { atualizarCategoriaSchema } from "@/lib/schemas/categoria";
+import { ERRORS, mapError } from "@/lib/http/responses";
+import { routeId } from "@/lib/http/params";
+import { updateCategorySchema } from "@/lib/schemas/category";
 import {
-  buscarCategoria,
-  atualizarCategoria,
-  deletarCategoria,
-} from "@/services/categoria.service";
+  getCategory,
+  updateCategory,
+  deleteCategory,
+} from "@/services/category.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/categorias/{id} - Busca categoria por ID
+ * GET /api/categorias/{id} - Fetch category by ID
  *
- * @param id - ID da categoria na URL
- * @returns { categoria: Categoria }
- * @status 200 - Categoria encontrada
- * @status 404 - Categoria não existe
- * @status 500 - Erro ao buscar categoria
+ * @param id - Category ID in the URL
+ * @returns { categoria: Category }
+ * @status 200 - Category found
+ * @status 404 - Category does not exist
+ * @status 500 - Error fetching category
  */
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params;
-    const categoria = await buscarCategoria(Number(id));
-    if (!categoria) return ERROS.naoEncontrado("Categoria");
-    return NextResponse.json({ categoria });
-  } catch {
-    return ERROS.interno("buscar categoria");
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("Invalid ID");
+    const category = await getCategory(id);
+    if (!category) return ERRORS.notFound("Category");
+    return NextResponse.json({ categoria: category });
+  } catch (err) {
+    return ERRORS.internal("fetch category", err);
   }
 }
 
 /**
- * PUT /api/categorias/{id} - Atualiza categoria
+ * PUT /api/categorias/{id} - Update category
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
- * @param id - ID da categoria na URL
+ * @param id - Category ID in the URL
  * @body { nome?: string, descricao?: string }
- * @returns { categoria: Categoria }
- * @status 200 - Categoria atualizada
- * @status 400 - Dados inválidos
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 404 - Categoria não existe
- * @status 500 - Erro ao atualizar categoria
+ * @returns { categoria: Category }
+ * @status 200 - Category updated
+ * @status 400 - Invalid data
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 404 - Category does not exist
+ * @status 500 - Error updating category
  */
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
-    const { id } = await params;
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("Invalid ID");
     const body = await req.json();
-    const parsed = atualizarCategoriaSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    const parsed = updateCategorySchema.safeParse(body);
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const categoria = await atualizarCategoria(Number(id), parsed.data);
-    return NextResponse.json({ categoria });
+    const category = await updateCategory(id, parsed.data);
+    return NextResponse.json({ categoria: category });
   } catch (err) {
-    if (err instanceof Error && err.message.includes("P2025")) {
-      return ERROS.naoEncontrado("Categoria");
-    }
-    return ERROS.interno("atualizar categoria");
+    return (
+      mapError(err, "Category") ??
+      ERRORS.internal("update category", err)
+    );
   }
 }
 
 /**
- * DELETE /api/categorias/{id} - Deleta categoria
+ * DELETE /api/categorias/{id} - Delete category
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
- * ATENÇÃO: Categorias com produtos associados não podem ser deletadas.
+ * ATTENTION: Categories with associated products cannot be deleted.
  *
- * @param id - ID da categoria na URL
+ * @param id - Category ID in the URL
  * @returns { ok: true }
- * @status 200 - Categoria deletada
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 404 - Categoria não existe
- * @status 409 - Categoria possui produtos (indireto via erro Prisma P2003)
- * @status 500 - Erro ao deletar categoria
+ * @status 200 - Category deleted
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 404 - Category does not exist
+ * @status 409 - Category has products (indirectly via Prisma error P2003)
+ * @status 500 - Error deleting category
  */
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
-    const { id } = await params;
-    await deletarCategoria(Number(id));
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("Invalid ID");
+    await deleteCategory(id);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    if (err instanceof Error && err.message.includes("P2025")) {
-      return ERROS.naoEncontrado("Categoria");
-    }
-    return ERROS.interno("deletar categoria");
+    return (
+      mapError(err, "Category") ?? ERRORS.internal("delete category", err)
+    );
   }
 }

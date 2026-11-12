@@ -1,55 +1,53 @@
 // app/_middleware/auth.ts
 
 /**
- * ============================================================================
- * AUTH MIDDLEWARE PARA API ROUTES
- * ============================================================================
- * Middlewares de autenticação e autorização para uso dentro de API Routes.
+ * AUTH MIDDLEWARE FOR API ROUTES
  *
- * DIFERENÇA DO MIDDLEWARE GLOBAL (middleware.ts):
- * - middleware.ts: executa ANTES de todas as requisições (nível de rota)
- * - Este arquivo: executado DENTRO das API Routes (nível de handler)
+ * Authentication and authorization middlewares for use inside API routes.
  *
- * Por que ter middlewares separados?
- * - O middleware global não consegue acessar o corpo da requisição (body)
- * - Algumas rotas precisam validar autenticação APÓS processar o body
- * - Permite lógica de autenticação mais granular por rota
+ * DIFFERENCE FROM THE GLOBAL MIDDLEWARE (middleware.ts):
+ * - middleware.ts: runs BEFORE all requests (route level)
+ * - This file: runs INSIDE the API routes (handler level)
  *
- * Uso típico em API Routes:
+ * Why separate middlewares?
+ * - The global middleware cannot access the request body
+ * - Some routes need to validate authentication AFTER processing the body
+ * - Allows more granular per-route authentication logic
+ *
+ * Typical usage in API routes:
  * ```ts
  * export async function POST(req: NextRequest) {
- *   const authErro = await requireAdmin(req);
- *   if (authErro) return authErro;
+ *   const authError = await requireAdmin(req);
+ *   if (authError) return authError;
  *
- *   // Lógica da rota aqui (usuário é ADMIN garantido)
+ *   // Route logic here (user is guaranteed to be ADMIN)
  * }
  * ```
  *
- * @see middleware.ts - Middleware global de rotas
- * ============================================================================
+ * @see middleware.ts - Global route middleware
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { ERROS } from "@/lib/http/responses";
+import { ERRORS } from "@/lib/http/responses";
 
 /**
- * Middleware que verifica se o usuário está autenticado.
+ * Middleware that checks whether the user is authenticated.
  *
- * Útil para rotas que exigem qualquer usuário logado (CLIENTE, MARCA ou ADMIN).
+ * Useful for routes that require any signed-in user (CLIENTE, MARCA or ADMIN).
  *
- * @param req - Requisição Next.js
- * @returns null se autenticado, ou NextResponse com erro 401 se não autenticado
+ * @param req - Next.js request
+ * @returns null if authenticated, or a NextResponse with a 401 error if not
  *
  * @example
- * // Rota que qualquer usuário logado pode acessar
+ * // Route that any signed-in user can access
  * export async function GET(req: NextRequest) {
- *   const authErro = await requireAuth(req);
- *   if (authErro) return authErro;
+ *   const authError = await requireAuth(req);
+ *   if (authError) return authError;
  *
- *   // Usuário está logado (payload disponível via getSession)
+ *   // User is signed in (payload available via getSession)
  *   const session = await getSession(req);
- *   return NextResponse.json({ usuarioId: session.id });
+ *   return NextResponse.json({ userId: session.id });
  * }
  */
 export async function requireAuth(
@@ -58,33 +56,33 @@ export async function requireAuth(
   const session = await getSession(req);
 
   if (!session) {
-    return ERROS.naoAutorizado();
+    return ERRORS.unauthorized();
   }
 
   return null;
 }
 
 /**
- * Middleware que verifica se o usuário é ADMIN.
+ * Middleware that checks whether the user is ADMIN.
  *
- * Útil para rotas administrativas (CRUD de produtos, categorias, etc.).
+ * Useful for administrative routes (product CRUD, categories, etc.).
  *
- * @param req - Requisição Next.js
- * @returns null se ADMIN, ou NextResponse com erro:
- *          - 401 se não autenticado
- *          - 403 se autenticado mas não é ADMIN
+ * @param req - Next.js request
+ * @returns null if ADMIN, or a NextResponse with an error:
+ *          - 401 if not authenticated
+ *          - 403 if authenticated but not ADMIN
  *
  * @example
- * // Rota que apenas ADMIN pode acessar
+ * // Route that only ADMIN can access
  * export async function POST(req: NextRequest) {
- *   const authErro = await requireAdmin(req);
- *   if (authErro) return authErro;
+ *   const authError = await requireAdmin(req);
+ *   if (authError) return authError;
  *
- *   // Usuário é ADMIN garantido
+ *   // User is guaranteed to be ADMIN
  *   const session = await getSession(req);
- *   console.log(`Admin ${session.email} está criando um produto`);
+ *   console.log(`Admin ${session.email} is creating a product`);
  *
- *   // Lógica de criação...
+ *   // Creation logic...
  * }
  */
 export async function requireAdmin(
@@ -93,11 +91,11 @@ export async function requireAdmin(
   const session = await getSession(req);
 
   if (!session) {
-    return ERROS.naoAutorizado();
+    return ERRORS.unauthorized();
   }
 
   if (session.tipo !== "ADMIN") {
-    return ERROS.acessoNegado();
+    return ERRORS.forbidden();
   }
 
   return null;

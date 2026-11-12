@@ -1,4 +1,4 @@
-name: SDD drift (mensal)
+name: SDD drift (monthly)
 
 on:
   schedule:
@@ -18,23 +18,23 @@ jobs:
         with:
           node-version-file: .nvmrc
 
-      - name: Relatório de specs obsoletas
-        id: relatorio
+      - name: Stale specs report
+        id: report
         run: |
           {
-            echo "## Validações"
+            echo "## Validations"
             node scripts/sdd/spec-lint.mjs || true
             node scripts/sdd/adr-index.mjs --check || true
             echo
-            echo "## Rastreabilidade e itens obsoletos"
+            echo "## Traceability and stale items"
             node scripts/sdd/trace-check.mjs --stale || true
           } > drift.md 2>&1
           cat drift.md >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Abrir issue com o relatório
+      - name: Open an issue with the report
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh issue create \
-            --title "SDD: revisão mensal de drift ($(date +%Y-%m))" \
+            --title "SDD: monthly drift review ($(date +%Y-%m))" \
             --body-file drift.md

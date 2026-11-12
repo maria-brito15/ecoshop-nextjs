@@ -1,14 +1,15 @@
-## Trilha
-- [ ] Completa (`specs/NNN-…`)  - [ ] Correção  - [ ] Correção com mudança de regra  - [ ] Sem mudança de comportamento
+## Track
+- [ ] Full (`specs/NNN-…`)  - [ ] Fix  - [ ] Fix with a rule change  - [ ] No behavior change
 
-## Rastreabilidade
-- Spec de mudança: `specs/NNN-…` (ou n/a)
-- Capacidades afetadas: (ex.: AUTZ, PERF) ou "nenhuma"
-- REQs: (ex.: REQ-PERF-01 ❌→✅)
-- ADRs: segue ADR-… / cria ADR-… / "não altera a decisão do ADR-…" (obrigatório se mexeu em caminho sensível; veja `sdd.config.json`)
+## Traceability
+- Change spec: `specs/NNN-…` (or n/a)
+- Affected capabilities: (e.g. AUTZ, PERF) or "none"
+- REQs: (e.g. REQ-PERF-01 ❌→✅)
+- ADRs: follows ADR-… / creates ADR-… / "does not change the decision of ADR-…" (required if a sensitive path changed; see `sdd.config.json`)
 
-## Verificação
-- [ ] Testes com os IDs dos REQs passam
-- [ ] Spec viva consolidada (`docs/capabilities/…/spec.md` e `status.md`)
-- [ ] Verificação manual (se houver critério não automatizável): …
-- [ ] Nenhum dado inventado na interface (Constitution, Art. XI)
+## Verification
+- [ ] Tests with the REQ IDs pass
+- [ ] Living spec consolidated (`docs/capabilities/…/spec.md` and `status.md`)
+- [ ] Manual verification (if a criterion cannot be automated): …
+- [ ] No invented data in the interface (Constitution, Art. XI)
+- [ ] If there is a migration: it is compatible with the previous application version (add before removing), because rolling back the deploy does not undo migrations (`scripts/deploy/deploy.sh`)

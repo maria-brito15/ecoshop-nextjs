@@ -1,36 +1,34 @@
 // app/page.tsx
 
 /**
- * ============================================================================
- * PÁGINA INICIAL (HOME)
- * ============================================================================
- * Rota: "/"
+ * HOME PAGE
  *
- * Esta é a página principal do EcoShop, responsável por apresentar a
- * plataforma para novos visitantes e usuários.
+ * Route: "/"
  *
- * Funcionalidades:
- * - Hero section com call-to-action
- * - Listagem dos 4 primeiros produtos (destaques)
- * - Exibição de categorias disponíveis
- * - Banner informativo sobre o EcoScan IA
- * - Depoimentos e métricas de impacto
+ * This is EcoShop's main page, responsible for introducing the
+ * platform to new visitors and users.
  *
- * Estados de carregamento:
- * - Skeleton loading enquanto busca produtos/categorias
- * - Mensagem amigável em caso de erro
+ * Features:
+ * - Hero section with a call-to-action
+ * - Listing of the first 4 products (highlights)
+ * - Display of the available categories
+ * - Informational banner about EcoScan AI
+ * - Testimonials and impact metrics
  *
- * @see lib/hooks/useProdutos.ts - Hook para listar produtos
- * @see lib/hooks/useCategorias.ts - Hook para listar categorias
- * ============================================================================
+ * Loading states:
+ * - Skeleton loading while fetching products/categories
+ * - Friendly message on error
+ *
+ * @see lib/hooks/useProducts.ts - Hook to list products
+ * @see lib/hooks/useCategories.ts - Hook to list categories
  */
 
 "use client";
 
 import Link from "next/link";
 import { useEffect } from "react";
-import { useListarProdutos } from "@/lib/hooks/useProdutos";
-import { useListarCategorias } from "@/lib/hooks/useCategorias";
+import { useListProducts } from "@/lib/hooks/useProducts";
+import { useListCategories } from "@/lib/hooks/useCategories";
 import type { Produto, Categoria } from "@/types/api";
 
 // ----------------------------------------------------------------------------
@@ -38,14 +36,14 @@ import type { Produto, Categoria } from "@/types/api";
 // ----------------------------------------------------------------------------
 
 /**
- * Retorna um ícone representativo baseado no nome da categoria.
- * Usado para tornar a navegação mais visual.
+ * Returns a representative icon based on the category name.
+ * Used to make navigation more visual.
  *
- * @param nome - Nome da categoria (ex: "Casa e Decoração")
- * @returns Emoji correspondente à categoria
+ * @param name - Category name (e.g. "Home and Decor")
+ * @returns Emoji matching the category
  */
-function categoryIcon(nome: string) {
-  const n = nome.toLowerCase();
+function categoryIcon(name: string) {
+  const n = name.toLowerCase();
   if (n.includes("casa") || n.includes("home")) return "🏠";
   if (n.includes("beleza") || n.includes("corpo")) return "🌿";
   if (n.includes("moda") || n.includes("roupa")) return "👕";
@@ -54,9 +52,9 @@ function categoryIcon(nome: string) {
 }
 
 /**
- * Hook customizado para animação de revelação ao rolar a página.
- * Adiciona classe "visible" aos elementos com classe "animate-on-scroll"
- * quando eles entram na viewport.
+ * Custom hook for the reveal-on-scroll animation.
+ * Adds the "visible" class to elements with the "animate-on-scroll" class
+ * when they enter the viewport.
  */
 function useScrollReveal() {
   useEffect(() => {
@@ -89,13 +87,13 @@ function useScrollReveal() {
 }
 
 /**
- * Card de produto exibido na grade da home.
- * Versão simplificada do ProductCard usado em /produtos.
+ * Product card shown in the home grid.
+ * Simplified version of the ProductCard used in /produtos.
  *
- * @param produto - Dados do produto a ser exibido
+ * @param product - Data of the product to display
  */
-function ProductCard({ produto }: { produto: Produto }) {
-  const precoFormatado = Number(produto.preco).toLocaleString("pt-BR", {
+function ProductCard({ produto: product }: { produto: Produto }) {
+  const formattedPrice = Number(product.preco).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
@@ -103,31 +101,31 @@ function ProductCard({ produto }: { produto: Produto }) {
   return (
     <article className="product-card animate-on-scroll cursor-pointer visible">
       <div className="h-48 flex items-center justify-center bg-[var(--color-bg-body)] relative overflow-hidden">
-        {produto.fotoUrl ? (
+        {product.fotoUrl ? (
           <img
-            src={produto.fotoUrl}
-            alt={produto.nome}
+            src={product.fotoUrl}
+            alt={product.nome}
             className="card-img w-full h-full object-cover"
           />
         ) : (
           <span className="card-img text-6xl select-none">🌱</span>
         )}
         <span className="absolute top-3 left-3 text-xs font-bold px-3 py-1 rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary-dark)]">
-          {produto.categoria?.nome}
+          {product.categoria?.nome}
         </span>
       </div>
       <div className="p-5 flex flex-col gap-2 flex-1">
         <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-tertiary)]">
-          {produto.marca?.nome}
+          {product.marca?.nome}
         </span>
         <h3 className="font-bold text-[var(--color-text-primary)] leading-snug line-clamp-2">
-          {produto.nome}
+          {product.nome}
         </h3>
         <Link
-          href={`/produtos/${produto.id}`}
+          href={`/produtos/${product.id}`}
           className="mt-auto pt-3 text-lg font-extrabold text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"
         >
-          {precoFormatado}
+          {formattedPrice}
         </Link>
       </div>
     </article>
@@ -135,15 +133,15 @@ function ProductCard({ produto }: { produto: Produto }) {
 }
 
 /**
- * Card de categoria exibido na grade da home.
- * Ao clicar, redireciona para a listagem de produtos com filtro.
+ * Category card shown in the home grid.
+ * On click, redirects to the product listing with a filter.
  *
- * @param categoria - Dados da categoria
+ * @param category - Category data
  */
-function CategoryCard({ categoria }: { categoria: Categoria }) {
+function CategoryCard({ categoria: category }: { categoria: Categoria }) {
   return (
     <Link
-      href={`/produtos?categoriaId=${categoria.id}`}
+      href={`/produtos?categoriaId=${category.id}`}
       className="
         animate-on-scroll group w-full visible
         flex flex-col items-center gap-3
@@ -165,42 +163,42 @@ function CategoryCard({ categoria }: { categoria: Categoria }) {
           transition-colors
         "
       >
-        {categoryIcon(categoria.nome)}
+        {categoryIcon(category.nome)}
       </span>
       <span className="font-bold text-[var(--color-text-primary)]">
-        {categoria.nome}
+        {category.nome}
       </span>
     </Link>
   );
 }
 
 // ----------------------------------------------------------------------------
-// PÁGINA PRINCIPAL
+// MAIN PAGE
 // ----------------------------------------------------------------------------
 
 export default function HomePage() {
-  // Busca os 4 primeiros produtos para exibir como destaques
+  // Fetch the first 4 products to show as highlights
   const {
-    data: produtosData,
-    carregando: loadingProdutos,
-    erro: erroProdutos,
-  } = useListarProdutos(1, 4);
+    data: productsData,
+    loading: loadingProducts,
+    error: productsError,
+  } = useListProducts(1, 4);
 
-  // Busca todas as categorias para exibir na grade
-  const { data: categoriasData, carregando: loadingCategorias } =
-    useListarCategorias();
+  // Fetch all categories to show in the grid
+  const { data: categoriesData, loading: loadingCategories } =
+    useListCategories();
 
-  const produtos = produtosData?.produtos ?? [];
-  const categorias = categoriasData?.categorias ?? [];
-  const loading = loadingProdutos || loadingCategorias;
+  const products = productsData?.produtos ?? [];
+  const categories = categoriesData?.categorias ?? [];
+  const loading = loadingProducts || loadingCategories;
 
   useScrollReveal();
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
       {/* --------------------------------------------------------------------
-        SEÇÃO 1: HERO SECTION
-        Apresentação principal da plataforma com CTA
+        SECTION 1: HERO SECTION
+        Main presentation of the platform with a CTA
       -------------------------------------------------------------------- */}
       <section
         className="
@@ -213,27 +211,26 @@ export default function HomePage() {
             <div className="flex flex-col gap-6">
               <span className="badge-eco w-fit">🌿 Compras conscientes</span>
               <h1 className="font-display text-5xl md:text-6xl font-extrabold leading-[1.05]">
-                Sua escolha{" "}
-                <span className="text-gradient-eco">faz a diferença</span>
+                Your choice{" "}
+                <span className="text-gradient-eco">makes a difference</span>
               </h1>
               <p className="text-xl text-[var(--color-text-secondary)] max-w-lg">
-                Descubra produtos sustentáveis que cuidam de você e do planeta,
-                com entrega rápida e propósito real.
+                Discover sustainable products that care for you and the planet, with fast delivery and real purpose.
               </p>
               <div className="flex flex-wrap gap-4 pt-2">
                 <Link href="/produtos" className="btn-primary">
-                  Explorar Produtos
+                  Explore Products
                 </Link>
                 <Link href="/educacao" className="btn-secondary">
-                  Aprender mais
+                  Learn more
                 </Link>
               </div>
 
-              {/* Métricas de impacto */}
+              {/* Impact metrics */}
               <div className="flex gap-8 pt-6 border-t border-[var(--color-border)]">
                 {[
-                  { valor: "2k+", label: "Produtos eco" },
-                  { valor: "98%", label: "Satisfação" },
+                  { valor: "2k+", label: "Eco products" },
+                  { valor: "98%", label: "Satisfaction" },
                   { valor: "0 CO₂", label: "Entregas neutras" },
                 ].map((s) => (
                   <div key={s.label} className="flex flex-col">
@@ -246,9 +243,12 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
+              <p className="text-xs text-[var(--color-text-tertiary)] italic pt-1">
+                Illustrative numbers — no real data source yet (REQ-CONT-02).
+              </p>
             </div>
 
-            {/* Imagem/ilustração do lado direito */}
+            {/* Image/illustration on the right side */}
             <div className="hidden lg:flex items-center justify-center h-96 rounded-3xl overflow-hidden relative bg-[var(--color-primary-light)] border border-[var(--color-border)]">
               <img
                 src="/banner.png"
@@ -256,7 +256,7 @@ export default function HomePage() {
                 className="absolute inset-0 w-full h-full object-cover"
               />
               <div className="absolute bottom-6 left-6 flex items-center gap-3 px-4 py-3 bg-[var(--color-bg-surface)]/90 backdrop-blur-md rounded-2xl border border-[var(--color-border)]">
-                ✅ Certificado Eco-Friendly
+                ✅ Eco-Friendly Certificate
               </div>
             </div>
           </div>
@@ -264,8 +264,8 @@ export default function HomePage() {
       </section>
 
       {/* --------------------------------------------------------------------
-        SEÇÃO 2: PRODUTOS EM DESTAQUE
-        Grid com os 4 primeiros produtos do catálogo
+        SECTION 2: FEATURED PRODUCTS
+        Grid with the first 4 products of the catalog
       -------------------------------------------------------------------- */}
       <section id="produtos" className="py-20 bg-[var(--color-bg-surface)]">
         <div className="container-eco">
@@ -274,14 +274,14 @@ export default function HomePage() {
               Destaques
             </span>
             <h2 className="font-display text-4xl font-extrabold mb-3">
-              Melhores Produtos
+              Best Products
             </h2>
             <p className="text-[var(--color-text-secondary)]">
-              Selecionados com cuidado para você e para o planeta.
+              Carefully selected for you and for the planet.
             </p>
           </div>
 
-          {/* Estado de carregamento */}
+          {/* Loading state */}
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {Array.from({ length: 4 }).map((_, i) => (
@@ -291,60 +291,60 @@ export default function HomePage() {
                 />
               ))}
             </div>
-          ) : erroProdutos ? (
-            /* Estado de erro */
+          ) : productsError ? (
+            /* Error state */
             <div className="text-center py-12">
               <p className="text-[var(--color-error)] font-semibold mb-2">
                 Ops! Algo deu errado.
               </p>
               <p className="text-[var(--color-text-tertiary)] text-sm">
-                {erroProdutos}
+                {productsError}
               </p>
               <button
                 onClick={() => window.location.reload()}
                 className="mt-4 text-[var(--color-primary)] hover:underline font-medium"
               >
-                Tentar novamente
+                Try again
               </button>
             </div>
-          ) : produtos.length > 0 ? (
+          ) : products.length > 0 ? (
             /* Grid de produtos */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {produtos.map((p) => (
+              {products.map((p) => (
                 <ProductCard key={p.id} produto={p} />
               ))}
             </div>
           ) : (
             <p className="text-center text-[var(--color-text-tertiary)] py-12">
-              Nenhum produto encontrado.
+              No products found.
             </p>
           )}
 
           <div className="text-center mt-10">
             <Link href="/produtos" className="btn-secondary">
-              Ver todos os produtos →
+              See all products →
             </Link>
           </div>
         </div>
       </section>
 
       {/* --------------------------------------------------------------------
-        SEÇÃO 3: CATEGORIAS
-        Grade com as principais categorias do catálogo
+        SECTION 3: CATEGORIES
+        Grid with the main catalog categories
       -------------------------------------------------------------------- */}
-      {categorias.length > 0 && (
+      {categories.length > 0 && (
         <section className="py-20 bg-[var(--color-bg-body)]">
           <div className="container-eco">
             <div className="text-center max-w-xl mx-auto mb-12">
               <span className="block text-sm font-bold uppercase tracking-widest text-[var(--color-primary)] mb-2">
-                Navegue por
+                Browse by
               </span>
               <h2 className="font-display text-4xl font-extrabold">
                 Categorias
               </h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5 justify-items-center mx-auto max-w-5xl">
-              {categorias.slice(0, 6).map((cat) => (
+              {categories.slice(0, 6).map((cat) => (
                 <CategoryCard key={cat.id} categoria={cat} />
               ))}
             </div>
@@ -353,8 +353,8 @@ export default function HomePage() {
       )}
 
       {/* --------------------------------------------------------------------
-        SEÇÃO 4: CENTRO EDUCATIVO
-        Call-to-action para a seção de educação ambiental
+        SECTION 4: EDUCATION CENTER
+        Call-to-action for the environmental education section
       -------------------------------------------------------------------- */}
       <section className="py-20 bg-[linear-gradient(135deg,#1a3a2e_0%,#0f2419_100%)] text-white">
         <div className="container-eco">
@@ -367,19 +367,18 @@ export default function HomePage() {
                 Centro Educativo EcoShop
               </h2>
               <p className="text-[#a5c3b6] text-lg">
-                Acesse nossos guias e aprenda como suas pequenas atitudes
-                transformam o mundo.
+                Access our guides and learn how your small actions transform the world.
               </p>
               {[
                 {
                   icon: "📖",
-                  title: "Guias Práticos",
-                  desc: "Aprenda a reduzir seu lixo doméstico.",
+                  title: "Practical Guides",
+                  desc: "Learn how to reduce your household waste.",
                 },
                 {
                   icon: "🌱",
                   title: "Sustentabilidade",
-                  desc: "Entenda o impacto real de cada material.",
+                  desc: "Understand the real impact of each material.",
                 },
               ].map((f) => (
                 <div key={f.title} className="flex gap-4 items-start">
@@ -391,7 +390,7 @@ export default function HomePage() {
                 </div>
               ))}
               <Link href="/educacao" className="btn-primary w-fit mt-2">
-                Acessar Conteúdo Educativo
+                Go to Educational Content
               </Link>
             </div>
             <div className="animate-on-scroll hidden lg:flex items-center justify-center h-80 rounded-3xl text-9xl bg-white/5 border border-white/10 visible">
@@ -402,8 +401,8 @@ export default function HomePage() {
       </section>
 
       {/* --------------------------------------------------------------------
-        SEÇÃO 5: ECOSCAN IA
-        Banner promocional da funcionalidade de IA
+        SECTION 5: ECOSCAN AI
+        Promotional banner for the AI feature
       -------------------------------------------------------------------- */}
       <section className="py-20 bg-[var(--color-bg-surface)]">
         <div className="container-eco">
@@ -411,14 +410,13 @@ export default function HomePage() {
             <div className="absolute inset-0 opacity-10 [background-image:radial-gradient(circle_at_80%_50%,white_0%,transparent_60%)] pointer-events-none" />
             <div className="relative z-10 flex flex-col gap-3 text-white">
               <span className="text-sm font-bold uppercase tracking-widest opacity-80">
-                Inteligência Artificial
+                Artificial Intelligence
               </span>
               <h2 className="font-display text-3xl md:text-4xl font-extrabold">
                 EcoScan IA
               </h2>
               <p className="text-white/80 max-w-md">
-                Use nossa IA para identificar resíduos e descobrir o descarte
-                correto.
+                Use our AI to identify waste and find the right way to dispose of it.
               </p>
             </div>
             <Link
@@ -433,7 +431,7 @@ export default function HomePage() {
 
       {/* --------------------------------------------------------------------
         FOOTER
-        Rodapé com links institucionais e redes sociais
+        Footer with institutional links and social networks
       -------------------------------------------------------------------- */}
       <footer className="bg-[var(--color-bg-surface)] border-t border-[var(--color-border)] py-16">
         <div className="container-eco">
@@ -443,8 +441,7 @@ export default function HomePage() {
                 🍃 EcoShop
               </span>
               <p className="text-[var(--color-text-secondary)] max-w-sm">
-                Conectamos pessoas a produtos sustentáveis, facilitando escolhas
-                conscientes.
+                We connect people to sustainable products, making conscious choices easier.
               </p>
               <div className="flex gap-3">
                 {["Instagram", "Twitter", "YouTube"].map((r) => (
@@ -472,8 +469,8 @@ export default function HomePage() {
               {
                 title: "Empresa",
                 links: [
-                  { label: "Sobre nós", href: "/about" },
-                  { label: "Educação", href: "/educacao" },
+                  { label: "About us", href: "/about" },
+                  { label: "Education", href: "/educacao" },
                   { label: "EcoScan IA", href: "/ia-scan" },
                 ],
               },
@@ -500,8 +497,7 @@ export default function HomePage() {
 
           <div className="border-t border-[var(--color-border)] pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-[var(--color-text-tertiary)]">
             <span>
-              © {new Date().getFullYear()} EcoShop. Todos os direitos
-              reservados.
+              © {new Date().getFullYear()} EcoShop. All rights reserved.
             </span>
             <span className="flex gap-2 text-xl opacity-60">💳 🔒 ♻️</span>
           </div>

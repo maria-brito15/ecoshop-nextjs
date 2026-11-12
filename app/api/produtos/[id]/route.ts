@@ -1,117 +1,121 @@
 // app/api/produtos/[id]/route.ts
 
 /**
- * ============================================================================
- * PRODUTO BY ID API ROUTES
- * ============================================================================
- * Endpoints para operações em um produto específico.
+ * PRODUCT BY ID API ROUTES
  *
- * GET /api/produtos/{id} - Busca produto por ID (público)
- * PUT /api/produtos/{id} - Atualiza produto (requer ADMIN)
- * DELETE /api/produtos/{id} - Deleta produto (requer ADMIN)
+ * Endpoints for operations on a specific product.
  *
- * @see services/produto.service.ts - Lógica de negócio
- * ============================================================================
+ * GET /api/produtos/{id} - Fetch product by ID (public)
+ * PUT /api/produtos/{id} - Update product (requires ADMIN)
+ * DELETE /api/produtos/{id} - Delete product (requires ADMIN)
+ *
+ * @see services/product.service.ts - Business logic
  */
 
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS } from "@/lib/http/responses";
-import { atualizarProdutoSchema } from "@/lib/schemas/produto";
+import { ERRORS, mapError } from "@/lib/http/responses";
+import { routeId } from "@/lib/http/params";
+import { updateProductSchema } from "@/lib/schemas/product";
 import {
-  buscarProduto,
-  atualizarProduto,
-  deletarProduto,
-} from "@/services/produto.service";
+  getProduct,
+  updateProduct,
+  deleteProduct,
+} from "@/services/product.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/produtos/{id} - Busca produto por ID
+ * GET /api/produtos/{id} - Fetch product by ID
  *
- * @param id - ID do produto na URL
- * @returns { produto: Produto }
- * @status 200 - Produto encontrado
- * @status 404 - Produto não existe
- * @status 500 - Erro ao buscar produto
+ * @param id - Product ID in the URL
+ * @returns { produto: Product }
+ * @status 200 - Product found
+ * @status 404 - Product does not exist
+ * @status 500 - Error fetching product
  */
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params;
-    const produto = await buscarProduto(Number(id));
-    if (!produto) return ERROS.naoEncontrado("Produto");
-    return NextResponse.json({ produto });
-  } catch {
-    return ERROS.interno("buscar produto");
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("Invalid ID");
+    const product = await getProduct(id);
+    if (!product) return ERRORS.notFound("Product");
+    return NextResponse.json({ produto: product });
+  } catch (err) {
+    return ERRORS.internal("fetch product", err);
   }
 }
 
 /**
- * PUT /api/produtos/{id} - Atualiza produto
+ * PUT /api/produtos/{id} - Update product
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
- * @param id - ID do produto na URL
- * @body { nome?: string, descricao?: string, preco?: number, categoriaId?: number, marcaId?: number }
- * @returns { produto: Produto }
- * @status 200 - Produto atualizado
- * @status 400 - Dados inválidos
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 404 - Produto não existe
- * @status 500 - Erro ao atualizar produto
+ * @param id - Product ID in the URL
+ * @body { nome?: string, descricao?: string, preco?: number, categoriaId?: number, marcaId?: number, certificadoIds?: number[] }
+ * @returns { produto: Product }
+ * @status 200 - Product updated
+ * @status 400 - Invalid data
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 404 - Product does not exist
+ * @status 500 - Error updating product
  */
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
-    const { id } = await params;
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("Invalid ID");
     const body = await req.json();
-    const parsed = atualizarProdutoSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    const parsed = updateProductSchema.safeParse(body);
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const produto = await atualizarProduto(Number(id), parsed.data);
-    return NextResponse.json({ produto });
-  } catch {
-    return ERROS.interno("atualizar produto");
+    const product = await updateProduct(id, parsed.data);
+    return NextResponse.json({ produto: product });
+  } catch (err) {
+    return (
+      mapError(err, "Product") ?? ERRORS.internal("update product", err)
+    );
   }
 }
 
 /**
- * DELETE /api/produtos/{id} - Deleta produto
+ * DELETE /api/produtos/{id} - Delete product
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
- * @param id - ID do produto na URL
+ * @param id - Product ID in the URL
  * @returns { ok: true }
- * @status 200 - Produto deletado
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 404 - Produto não existe
- * @status 500 - Erro ao deletar produto
+ * @status 200 - Product deleted
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 404 - Product does not exist
+ * @status 409 - Product has linked certificates (REQ-PROD-07)
+ * @status 500 - Error deleting product
  */
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
-    const { id } = await params;
-    await deletarProduto(Number(id));
+    const id = await routeId(params);
+    if (id === null) return ERRORS.invalidData("Invalid ID");
+    await deleteProduct(id);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    if (err instanceof Error && err.message.includes("P2025")) {
-      return ERROS.naoEncontrado("Produto");
-    }
-    return ERROS.interno("deletar produto");
+    return (
+      mapError(err, "Product") ?? ERRORS.internal("delete product", err)
+    );
   }
 }

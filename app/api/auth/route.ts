@@ -1,109 +1,102 @@
 // app/api/auth/route.ts
 
 /**
- * ============================================================================
- * AUTH API ROUTES - LOGIN E LOGOUT
- * ============================================================================
- * Endpoints de autenticação da aplicação.
+ * AUTH API ROUTES - LOGIN AND LOGOUT
  *
- * POST /api/auth - Login de usuário
- * DELETE /api/auth - Logout de usuário (remove cookie)
+ * POST /api/auth - Login
+ * DELETE /api/auth - Logout (revokes the refresh token and removes the cookies)
  *
- * Fluxo de login:
- * 1. Rate limiting por IP (10 tentativas/minuto)
- * 2. Validação do corpo da requisição (email + senha)
- * 3. Busca usuário no banco por email
- * 4. Verifica senha com bcrypt.compareSync
- * 5. Gera token JWT com expiração de 7 dias
- * 6. Define cookie httpOnly com o token
- * 7. Retorna dados do usuário (excluindo senha)
+ * Login flow:
+ * 1. Rate limiting by IP (10 attempts/minute)
+ * 2. Body validation (email + password)
+ * 3. `verifyCredentials`: bcrypt ALWAYS runs, with or without an account (REQ-AUTH-23)
+ * 4. `startSession`: access JWT (15 min) + refresh token in Redis (ADR-0021)
+ * 5. httpOnly cookies `token` and `refresh`
  *
- * IMPORTANTE: O cookie é httpOnly (inacessível via JavaScript)
- * e secure em produção (apenas HTTPS). Isso mitiga ataques XSS.
+ * Without Redis the login still works: there is just no refresh token (REQ-AUTH-19).
  *
- * @see lib/auth/jwt.ts - Implementação do JWT
- * @see lib/rate-limit.ts - Rate limiting com Redis
- * ============================================================================
+ * @see services/session.service.ts - Session
+ * @see lib/rate-limit.ts - Rate limiting
  */
 
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { signToken, setAuthCookie } from "@/lib/auth";
-import { ERROS } from "@/lib/http/responses";
-import { loginSchema } from "@/lib/schemas/usuario";
+import { setAuthCookie, setRefreshCookie, clearSessionCookies } from "@/lib/auth";
+import { REFRESH_COOKIE } from "@/lib/auth/constants";
+import { ERRORS } from "@/lib/http/responses";
+import { loginSchema } from "@/lib/schemas/user";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
-import bcrypt from "bcryptjs";
+import { verifyCredentials } from "@/services/user.service";
+import { startSession, endSession } from "@/services/session.service";
 
-const LIMITE_TENTATIVAS = 10;
-const JANELA_SEGUNDOS = 60;
+const ATTEMPT_LIMIT = 10;
+const WINDOW_SECONDS = 60;
 
 /**
- * POST /api/auth - Login de usuário
+ * POST /api/auth - User login
  *
  * @body { email: string, senha: string }
- * @returns { ok: true, usuario: { id, email, tipo } } + cookie httpOnly
- * @status 200 - Login bem-sucedido
- * @status 400 - Dados inválidos (email ou senha faltando)
- * @status 401 - Credenciais inválidas
- * @status 429 - Muitas tentativas (rate limit)
- * @status 500 - Erro interno no servidor
+ * @returns { ok: true, usuario: { id, email, tipo } } + httpOnly cookies
+ * @status 200 - Login successful
+ * @status 400 - Invalid data (email or password missing)
+ * @status 401 - Invalid credentials
+ * @status 429 - Too many attempts (rate limit)
+ * @status 500 - Internal server error
  */
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
-    const { bloqueado } = await rateLimit(ip, {
-      limite: LIMITE_TENTATIVAS,
-      janelaSegundos: JANELA_SEGUNDOS,
+    const { blocked: blocked } = await rateLimit(ip, {
+      limit: ATTEMPT_LIMIT,
+      windowSeconds: WINDOW_SECONDS,
     });
 
-    if (bloqueado) {
+    if (blocked) {
       return NextResponse.json(
-        { erro: "Muitas tentativas. Aguarde 1 minuto e tente novamente." },
+        { erro: "Too many attempts. Wait 1 minute and try again." },
         { status: 429 },
       );
     }
 
     const body = await req.json();
     const parsed = loginSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos();
+    if (!parsed.success) return ERRORS.invalidData();
 
-    const { email, senha } = parsed.data;
-    const usuario = await prisma.usuario.findUnique({ where: { email } });
+    const { email, senha: password } = parsed.data;
+    const identity = await verifyCredentials(email, password);
+    if (!identity) return ERRORS.unauthorized();
 
-    if (!usuario || !(await bcrypt.compare(senha, usuario.senha))) {
-      return ERROS.naoAutorizado();
-    }
-
-    const token = await signToken({
-      id: usuario.id,
-      email: usuario.email,
-      tipo: usuario.tipo as "CLIENTE" | "MARCA" | "ADMIN",
-    });
+    const session = await startSession(identity);
 
     const res = NextResponse.json({
       ok: true,
-      usuario: { id: usuario.id, email: usuario.email, tipo: usuario.tipo },
+      usuario: {
+        id: identity.id,
+        email: identity.email,
+        tipo: identity.tipo,
+      },
     });
 
-    setAuthCookie(res, token);
+    setAuthCookie(res, session.access);
+    if (session.refresh) setRefreshCookie(res, session.refresh);
     return res;
-  } catch {
-    return ERROS.interno("processar autenticação");
+  } catch (err) {
+    return ERRORS.internal("process authentication", err);
   }
 }
 
 /**
- * DELETE /api/auth - Logout de usuário
+ * DELETE /api/auth - User logout
  *
- * Remove o cookie de autenticação da resposta.
+ * Revokes the refresh token (REQ-AUTH-20) and removes both cookies.
  *
  * @returns { ok: true }
- * @status 200 - Logout bem-sucedido
+ * @status 200 - Logout successful
  */
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
+  await endSession(req.cookies.get(REFRESH_COOKIE)?.value);
   const res = NextResponse.json({ ok: true });
-  res.cookies.delete("token");
+  clearSessionCookies(res);
   return res;
 }

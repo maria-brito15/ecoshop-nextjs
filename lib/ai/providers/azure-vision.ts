@@ -1,83 +1,91 @@
 // lib/ai/providers/azure-vision.ts
 
 /**
- * ============================================================================
- * AZURE CUSTOM VISION - CLASSIFICAÇÃO DE IMAGENS
- * ============================================================================
- * Integração com o Azure Custom Vision para classificação de materiais recicláveis.
+ * AZURE CUSTOM VISION - IMAGE CLASSIFICATION
  *
- * O Azure Custom Vision é um serviço de IA que permite treinar modelos
- * personalizados para classificação de imagens. Neste projeto, ele identifica
- * materiais como: plástico, vidro, papel, metal, orgânico, etc.
+ * Integration with Azure Custom Vision to classify recyclable materials.
  *
- * Fluxo:
- * 1. Recebe buffer da imagem enviada pelo usuário
- * 2. Envia para o endpoint de predição do Azure
- * 3. Retorna array de tags com probabilidades
+ * Azure Custom Vision is an AI service that lets you train custom models for
+ * image classification. In this project it identifies materials such as:
+ * plastic, glass, paper, metal, organic, etc.
  *
- * IMPORTANTE: O modelo deve ser treinado previamente no portal do Azure.
- * As tags reconhecidas devem incluir "outros" para fallback.
+ * Flow:
+ * 1. Receives the image buffer sent by the user
+ * 2. Sends it to the Azure prediction endpoint
+ * 3. Returns an array of tags with probabilities
  *
- * Variáveis de ambiente necessárias:
- * - AZURE_VISION_ENDPOINT: URL do endpoint de predição
- * - AZURE_VISION_KEY: Chave de acesso à API
- * ============================================================================
+ * IMPORTANT: The model must be trained beforehand in the Azure portal.
+ * The recognized tags must include "outros" as a fallback.
+ *
+ * Required environment variables:
+ * - AZURE_VISION_ENDPOINT: prediction endpoint URL
+ * - AZURE_VISION_KEY: API access key
  */
+
+import { fetchWithTimeout } from "@/lib/http/fetch-with-timeout";
 
 const AZURE_URL = process.env.AZURE_VISION_ENDPOINT ?? "";
 const AZURE_KEY = process.env.AZURE_VISION_KEY ?? "";
 
+/** Default time limit (initial value, not measured: adjust with real data; REQ-SCAN-09). */
+const TIMEOUT_AZURE_MS = 10_000;
+
 /**
- * Predição retornada pelo Azure Custom Vision.
+ * Prediction returned by Azure Custom Vision.
  */
 export interface AzurePrediction {
-  /** Nome da tag/material identificado (ex: "plastico", "vidro", "papel") */
+  /** Name of the identified tag/material (e.g. "plastico", "vidro", "papel") */
   tagName: string;
-  /** Probabilidade/confiança da predição (0 a 1) */
+  /** Probability/confidence of the prediction (0 to 1) */
   probability: number;
 }
 
 /**
- * Classifica uma imagem usando Azure Custom Vision.
+ * Classifies an image using Azure Custom Vision.
  *
- * @param imageBuffer - Buffer da imagem (formato binário)
- * @returns Array de predições ordenadas por probabilidade (maior primeiro)
- *          ou null se falha na requisição ou credenciais inválidas
+ * @param imageBuffer - Image buffer (binary format)
+ * @returns Array of predictions sorted by probability (highest first),
+ *          or null on request failure or invalid credentials
  *
- * Casos de falha:
- * - Credenciais não configuradas (AZURE_URL ou AZURE_KEY vazias/inválidas)
- * - Erro de rede (timeout, conexão)
- * - Resposta inválida da API
+ * Failure cases:
+ * - Credentials not configured (AZURE_URL or AZURE_KEY empty/invalid)
+ * - Network error (timeout, connection)
+ * - Invalid API response
  *
  * @example
  * const buffer = await file.arrayBuffer();
- * const predicoes = await classificarImagem(Buffer.from(buffer));
- * const melhor = predicoes?.[0]; // maior probabilidade
+ * const predictions = await classifyImage(Buffer.from(buffer));
+ * const best = predictions?.[0]; // highest probability
  */
-export async function classificarImagem(
+export async function classifyImage(
   imageBuffer: Buffer,
+  timeoutMs: number = TIMEOUT_AZURE_MS,
 ): Promise<AzurePrediction[] | null> {
-  // Validação básica: se credenciais não existem, retorna null
-  // O código chamador deve tratar este caso como falha
+  // Basic validation: if credentials are missing, return null
+  // The caller must treat this case as a failure
   if (!AZURE_URL || !AZURE_KEY || AZURE_KEY.length < 10) return null;
 
   try {
-    const res = await fetch(AZURE_URL, {
-      method: "POST",
-      headers: {
-        "Prediction-Key": AZURE_KEY,
-        "Content-Type": "application/octet-stream", // imagem bruta
+    const res = await fetchWithTimeout(
+      AZURE_URL,
+      {
+        method: "POST",
+        headers: {
+          "Prediction-Key": AZURE_KEY,
+          "Content-Type": "application/octet-stream", // imagem bruta
+        },
+        body: new Uint8Array(imageBuffer),
       },
-      body: new Uint8Array(imageBuffer),
-    });
+      timeoutMs,
+    );
 
     if (!res.ok) return null;
 
     const data = await res.json();
     return (data.predictions as AzurePrediction[]) ?? null;
   } catch {
-    // Qualquer erro (rede, timeout, parse) retorna null
-    // O erro é silencioso para não expor detalhes internos
+    // Any error (network, timeout, parse) returns null
+    // The error is silent so internal details are not exposed
     return null;
   }
 }

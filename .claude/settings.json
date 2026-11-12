@@ -1,17 +1,31 @@
 {
+  "permissions": {
+    "deny": [
+      "Read(./.next/**)",
+      "Read(./node_modules/**)",
+      "Read(./package-lock.json)",
+      "Read(./tsconfig.tsbuildinfo)",
+      "Read(./prints/**)",
+      "Read(./public/data_fotos/**)",
+      "Read(./docs/discovery/**/README-*original.md)",
+      "Read(./.env)",
+      "Read(./.env.local)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
-      { "hooks": [ { "type": "command", "command": "echo 'EcoShop (SDD): leia CLAUDE.md. Specs vivas em docs/capabilities, Constitution em .specify/memory/constitution.md. Verifique com npm run sdd:check.'" } ] }
+      { "hooks": [ { "type": "command", "command": "echo 'EcoShop (SDD): read CLAUDE.md. Living specs in docs/capabilities, Constitution in .specify/memory/constitution.md. Verify with npm run sdd:check.'" } ] }
     ],
     "PreToolUse": [
-      { "matcher": "Edit|Write", "hooks": [ { "type": "command", "command": "node scripts/sdd/hooks/guarda-edicao.mjs" } ] },
-      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node scripts/sdd/hooks/guarda-bash.mjs" } ] }
+      { "matcher": "Edit|Write", "hooks": [ { "type": "command", "command": "node scripts/sdd/hooks/edit-guard.mjs" } ] },
+      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node scripts/sdd/hooks/bash-guard.mjs" } ] },
+      { "matcher": "Read", "hooks": [ { "type": "command", "command": "node scripts/sdd/hooks/read-guard.mjs" } ] }
     ],
     "PostToolUse": [
-      { "matcher": "Edit|Write", "hooks": [ { "type": "command", "command": "node scripts/sdd/hooks/lembrete-impacto.mjs" } ] }
+      { "matcher": "Edit|Write", "hooks": [ { "type": "command", "command": "node scripts/sdd/hooks/impact-reminder.mjs" } ] }
     ],
     "Stop": [
-      { "hooks": [ { "type": "command", "command": "node scripts/sdd/hooks/ao-parar.mjs" } ] }
+      { "hooks": [ { "type": "command", "command": "node scripts/sdd/hooks/on-stop.mjs" } ] }
     ]
   }
 }

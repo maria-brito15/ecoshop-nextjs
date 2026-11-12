@@ -1,105 +1,135 @@
 // lib/rate-limit.ts
 
 /**
- * ============================================================================
  * RATE LIMITING
- * ============================================================================
- * Este módulo implementa rate limiting baseado em Redis para prevenir abusos
- * em endpoints sensíveis (login, registro, etc.).
  *
- * Estratégia: Sliding Window Counter via Redis INCR + EXPIRE
- * - Cada requisição incrementa um contador no Redis
- * - O contador expira automaticamente após a janela configurada
- * - Se o limite for excedido, bloqueia requisições subsequentes
+ * Limits attempts per identifier (IP, user) within a time window.
  *
- * Endpoints que utilizam rate limiting:
- * - POST /api/auth (login) → 10 tentativas por minuto
- * - POST /api/users (registro) → 5 tentativas por hora
- *
- * IMPORTANTE: O rate limiting é aplicado por IP para prevenir:
- * - Ataques de força bruta (brute force)
- * - Enumeração de usuários
- * - Exaustão de recursos do servidor
- * ============================================================================
+ * - Counting in Redis, ATOMICALLY (REQ-OPS-15): `SET key 0 EX window NX`
+ *   followed by `INCR` in a transaction. The TTL is born with the key; before, a
+ *   separate `INCR` and `EXPIRE` left the key without expiry if the process
+ *   died between the two, blocking the identifier forever.
+ * - Without Redis (ADR-0020, owner's decision): uses an IN-MEMORY counter in the
+ *   process itself. The limit applies per instance (with several instances, each
+ *   counts separately) and is lost on restart — better than letting everything through.
+ * - Client IP (REQ-OPS-16): `x-forwarded-for` is only trustworthy from the
+ *   reverse proxy onward; the first value is written by the client and can be forged.
+ *   The value at the position given by `TRUST_PROXY_HOPS` is used (default 1).
  */
 
-import { redis } from "@/lib/redis";
+import { redis, withTimeout, COMMAND_TIMEOUT_MS, warnRedisFailure } from "@/lib/redis";
 
-/**
- * Configuração do rate limit para um endpoint específico.
- */
 export interface RateLimitConfig {
-  /** Número máximo de tentativas permitidas dentro da janela */
-  limite: number;
-  /** Duração da janela de tempo em segundos */
-  janelaSegundos: number;
+  limit: number;
+  windowSeconds: number;
 }
 
-/**
- * Verifica se uma requisição deve ser bloqueada por excesso de tentativas.
- *
- * Como funciona:
- * 1. Chave única é criada no formato `rate_limit:{identificador}`
- * 2. INCR incrementa o contador (cria chave com valor 1 se não existir)
- * 3. Se for a primeira tentativa (tentativas === 1), define EXPIRE
- * 4. Compara tentativas com limite configurado
- *
- * @param {string} identificador - Identificador único do cliente (geralmente IP)
- * @param {RateLimitConfig} config - Limite e janela de tempo
- * @returns {Promise<{ bloqueado: boolean; tentativasRestantes: number }>}
- *
- * @example
- * const { bloqueado } = await rateLimit(ip, { limite: 10, janelaSegundos: 60 });
- * if (bloqueado) return NextResponse.json({ erro: "Muitas tentativas" }, { status: 429 });
- */
-export async function rateLimit(
-  identificador: string,
-  config: RateLimitConfig,
-): Promise<{ bloqueado: boolean; tentativasRestantes: number }> {
-  const chave = `rate_limit:${identificador}`;
+/** Counts occurrences of a key within a window. */
+export interface WindowCounter {
+  /** Adds 1 to the key and returns the total in the current window. */
+  increment(key: string, windowSeconds: number): Promise<number>;
+}
 
-  try {
-    // Incrementa o contador atômico
-    const tentativas = await redis.incr(chave);
-
-    // Se é a primeira tentativa (contador acabou de ser criado),
-    // define o TTL para a chave expirar automaticamente após a janela.
-    if (tentativas === 1) {
-      await redis.expire(chave, config.janelaSegundos);
-    }
-
-    const bloqueado = tentativas > config.limite;
-    const tentativasRestantes = Math.max(0, config.limite - tentativas);
-
-    return { bloqueado, tentativasRestantes };
-  } catch {
-    // Fallback em caso de falha do Redis:
-    // Permite a requisição para não prejudicar a experiência do usuário.
-    // O erro é silenciado, mas deve ser monitorado nos logs.
-    return { bloqueado: false, tentativasRestantes: config.limite };
+class RedisCounter implements WindowCounter {
+  async increment(key: string, windowSeconds: number): Promise<number> {
+    const response = (await withTimeout(
+      redis
+        .multi()
+        .set(key, 0, { EX: windowSeconds, NX: true })
+        .incr(key)
+        .exec(),
+      COMMAND_TIMEOUT_MS,
+    )) as unknown[];
+    const total = Number(response[1]);
+    if (!Number.isFinite(total)) throw new Error("unexpected Redis response");
+    return total;
   }
 }
 
+/** Process-local counter (fallback when Redis fails). */
+export class InMemoryCounter implements WindowCounter {
+  private readonly entradas = new Map<string, { total: number; expiraEm: number }>();
+
+  constructor(private readonly now: () => number = Date.now) {}
+
+  async increment(key: string, windowSeconds: number): Promise<number> {
+    const t = this.now();
+    this.purgeExpired(t);
+    const current = this.entradas.get(key);
+    if (!current || current.expiraEm <= t) {
+      this.entradas.set(key, { total: 1, expiraEm: t + windowSeconds * 1000 });
+      return 1;
+    }
+    current.total += 1;
+    return current.total;
+  }
+
+  /** Only sweeps when the map grows, so the common case costs nothing. */
+  private purgeExpired(t: number) {
+    if (this.entradas.size < 1000) return;
+    for (const [key, e] of this.entradas) if (e.expiraEm <= t) this.entradas.delete(key);
+  }
+}
+
+const redisCounter = new RedisCounter();
+const localCounter = new InMemoryCounter();
+
 /**
- * Extrai o endereço IP do cliente a partir dos headers da requisição.
+ * Records an attempt and reports whether the identifier went over the limit.
  *
- * Ordem de verificação (mais confiável para menos):
- * 1. x-forwarded-for: header padrão quando a aplicação está atrás de proxy/load balancer
- *    (ex: Nginx, Cloudflare, Vercel, Render)
- * 2. x-real-ip: header alternativo configurado em alguns proxies
- * 3. "unknown" fallback para casos onde nenhum IP está disponível
- *
- * IMPORTANTE: Em produção atrás de proxy, o IP real está em x-forwarded-for,
- * não em socket remoto. Este header pode conter múltiplos IPs (forwarded chain),
- * então pegamos apenas o primeiro (mais próximo do cliente).
- *
- * @param {Request} req - Requisição Next.js (pode ser NextRequest ou Request padrão)
- * @returns {string} Endereço IP do cliente ou "unknown"
+ * @param counter - Main counter (default: Redis)
+ * @param fallback - Used when the main one fails (default: local memory)
  */
-export function getClientIp(req: Request): string {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("x-real-ip") ??
-    "unknown"
-  );
+export async function rateLimit(
+  identifier: string,
+  config: RateLimitConfig,
+  counter: WindowCounter = redisCounter,
+  fallback: WindowCounter = localCounter,
+): Promise<{ blocked: boolean; remainingAttempts: number }> {
+  const key = `rate_limit:${identifier}`;
+
+  let attempts: number;
+  try {
+    attempts = await counter.increment(key, config.windowSeconds);
+  } catch (err) {
+    warnRedisFailure("rate_limit.redis_unavailable_using_memory", err);
+    attempts = await fallback.increment(key, config.windowSeconds);
+  }
+
+  return {
+    blocked: attempts > config.limit,
+    remainingAttempts: Math.max(0, config.limit - attempts),
+  };
+}
+
+/**
+ * How many trusted proxies sit in front of the application (variable
+ * `TRUST_PROXY_HOPS`; default 1: one reverse proxy, as in the publishing compose).
+ */
+function proxyHops(): number {
+  const value = Number(process.env.TRUST_PROXY_HOPS ?? 1);
+  return Number.isInteger(value) && value >= 0 ? value : 1;
+}
+
+/**
+ * Client IP for rate limiting.
+ *
+ * With N trusted proxies, the real IP is the Nth entry counted from the END of
+ * `x-forwarded-for` (each proxy appends the one it saw); earlier entries come from
+ * the client and can be forged. With 0 proxies the header is ignored (everyone
+ * falls into the same "unknown" bucket: more restrictive, but not bypassable).
+ */
+export function getClientIp(
+  req: Request,
+  hops: number = proxyHops(),
+): string {
+  if (hops === 0) return "unknown";
+  const entries = (req.headers.get("x-forwarded-for") ?? "")
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+  if (entries.length > 0) {
+    return entries[Math.max(0, entries.length - hops)];
+  }
+  return req.headers.get("x-real-ip") ?? "unknown";
 }

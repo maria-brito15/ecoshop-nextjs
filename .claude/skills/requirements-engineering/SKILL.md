@@ -1,25 +1,25 @@
 ---
 name: requirements-engineering
-description: Use para levantar, analisar e estruturar requisitos antes de projetar ou codar: transformar um pedido em requisitos testáveis com ID, critério de aceite e perguntas abertas.
+description: Use to elicit, analyze and structure requirements before designing or coding: turn a request into testable requirements with an ID, acceptance criterion and open questions.
 ---
 
-# Engenharia de requisitos (EcoShop)
+# Requirements engineering (EcoShop)
 
-## Onde escrever
-- Comportamento atual/alvo: `docs/capabilities/<cap>/spec.md` (requisitos vivos) e `status.md`.
-- Mudança nova: `specs/NNN-*/spec.md` (delta), citando os REQ afetados.
+## Where to write
+- Current/target behavior: `docs/capabilities/<cap>/spec.md` (living requirements) and `status.md`.
+- New change: `specs/NNN-*/spec.md` (delta), citing the affected REQs.
 
-## Formato
-- ID `REQ-<CAP>-NN` (CAP em `sdd.config.json`), regra de negócio `BR-<CAP>-NN`, não funcional `NFR-…`. IDs nunca são reutilizados.
-- Enunciado em EARS: "Quando <evento>, o sistema deve <resposta>"; "Se <condição>, o sistema deve …"; "O sistema nunca deve …".
-- Critério de aceite decidível: entrada → saída/status observável. Se não dá para virar teste, diga como verificar à mão.
-- Status ✅ ◐ ❌ ❔ com evidência (`test:`, `manual: AAAA-MM-DD …`, `código:`).
+## Format
+- ID `REQ-<CAP>-NN` (CAP in `sdd.config.json`), business rule `BR-<CAP>-NN`, non-functional `NFR-…`. IDs are never reused.
+- Statement in EARS: "When <event>, the system shall <response>"; "If <condition>, the system shall …"; "The system shall never …".
+- Decidable acceptance criterion: input → observable output/status. If it cannot become a test, say how to verify it by hand.
+- Status ✅ ◐ ❌ ❔ with evidence (`test:`, `manual: YYYY-MM-DD …`, `code:`).
 
-## Como trabalhar
-1. Separe fato (visto no código/teste), inferência, recomendação e dúvida.
-2. Anote perguntas abertas na spec em vez de decidir sozinho.
-3. Cada requisito responde: quem, quando, o quê, como saber que está certo.
-4. Rode `node scripts/sdd/spec-lint.mjs` ao terminar.
+## How to work
+1. Separate fact (seen in code/tests), inference, recommendation and doubt.
+2. Note open questions in the spec instead of deciding alone.
+3. Each requirement answers: who, when, what, how to know it is right.
+4. Run `node scripts/sdd/spec-lint.mjs` when done.
 
-## Evite
-Requisitos vagos ("rápido", "seguro"), vários comportamentos num só ID, solução disfarçada de requisito.
+## Avoid
+Vague requirements ("fast", "secure"), several behaviors under one ID, a solution disguised as a requirement.

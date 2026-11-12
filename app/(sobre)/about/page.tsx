@@ -1,25 +1,23 @@
 // app/(sobre)/about/page.tsx
 
 /**
- * ============================================================================
- * PÁGINA SOBRE O ECOSHOP
- * ============================================================================
- * Rota: "/about"
+ * ABOUT ECOSHOP PAGE
  *
- * Página institucional que conta a história do EcoShop, o time de desenvolvimento
- * e as tecnologias utilizadas no projeto.
+ * Route: "/about"
  *
- * Conteúdo abordado:
- * - Origem do projeto (Trabalho Interdisciplinar 2 da PUC Minas)
- * - Reconhecimento acadêmico (finalista entre melhores trabalhos)
- * - Problema que o EcoShop resolve
- * - Sprints do desenvolvimento (4 sprints)
- * - Comparação entre versão original (Java) e refatorada (Next.js)
- * - Melhorias implementadas na refatoração
- * - Equipe original do projeto
+ * Institutional page telling EcoShop's story, the development team
+ * and the technologies used in the project.
  *
- * @see app/(store)/produtos/page.tsx - Call-to-action para produtos
- * ============================================================================
+ * Topics covered:
+ * - Origin of the project (PUC Minas Interdisciplinary Work 2)
+ * - Academic recognition (finalist among the best works)
+ * - The problem EcoShop solves
+ * - Development sprints (4 sprints)
+ * - Comparison between the original version (Java) and the refactored one (Next.js)
+ * - Improvements made in the refactoring
+ * - The project's original team
+ *
+ * @see app/(store)/produtos/page.tsx - Call-to-action to products
  */
 
 "use client";
@@ -28,7 +26,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 
 // ----------------------------------------------------------------------------
-// DADOS ESTÁTICOS
+// STATIC DATA
 // ----------------------------------------------------------------------------
 
 const TEAM = [
@@ -61,10 +59,10 @@ const TEAM = [
 const SPRINTS = [
   {
     num: "01",
-    titulo: "Visão & Banco de Dados",
+    titulo: "Vision & Database",
     itens: [
-      "Definição do problema e público-alvo",
-      "Modelagem relacional (Peter Chen + Pé de Galinha)",
+      "Problem definition and target audience",
+      "Relational modeling (Peter Chen + Crow's Foot)",
       "Schema PostgreSQL completo",
       "Recursos inteligentes planejados",
     ],
@@ -74,76 +72,76 @@ const SPRINTS = [
     titulo: "Requisitos & Front-end",
     itens: [
       "13 requisitos funcionais documentados",
-      "DER conceitual e modelo lógico",
-      "Scripts SQL de criação",
-      "Protótipos de todas as telas",
+      "Conceptual ERD and logical model",
+      "Creation SQL scripts",
+      "Prototypes of all screens",
     ],
   },
   {
     num: "03",
     titulo: "Back-end & IA",
     itens: [
-      "API REST com Java + Spark Framework",
+      "REST API with Java + Spark Framework",
       "Arquitetura Controller → Service → DAO",
       "Azure Custom Vision integrado",
-      "Gemini 2.0 Flash para análise textual",
+      "Gemini 2.0 Flash for text analysis",
     ],
   },
   {
     num: "04",
     titulo: "Projeto Completo",
     itens: [
-      "Documentação final consolidada",
-      "Deploy na plataforma Render",
-      "Segurança: BCrypt + Prepared Statements",
-      "Finalista entre os melhores trabalhos 2025/2",
+      "Consolidated final documentation",
+      "Deploy on the Render platform",
+      "Security: BCrypt + Prepared Statements",
+      "Finalist among the best works of 2025/2",
     ],
   },
 ] as const;
 
-const MELHORIAS = [
+const IMPROVEMENTS = [
   {
     icon: "⚡",
     titulo: "Performance",
-    desc: "Server Components do Next.js eliminam round-trips desnecessários. SSR e SSG onde cada um faz mais sentido.",
+    desc: "Next.js Server Components eliminate unnecessary round-trips. SSR and SSG where each makes the most sense.",
   },
   {
     icon: "🏗️",
     titulo: "Arquitetura Unificada",
-    desc: "Frontend e backend no mesmo repo com API Routes. Prisma substitui os DAOs manuais em Java com type-safety total.",
+    desc: "Frontend and backend in the same repo with API Routes. Prisma replaces the manual Java DAOs with full type safety.",
   },
   {
     icon: "🎨",
     titulo: "Design System",
-    desc: "Interface redesenhada com Syne + Plus Jakarta Sans, CSS custom properties e dark mode nativo.",
+    desc: "Interface redesigned with Syne + Plus Jakarta Sans, CSS custom properties and native dark mode.",
   },
   {
     icon: "🔐",
-    titulo: "Autenticação",
-    desc: "JWT com refresh automático, cookies httpOnly e diferenciação de roles CLIENTE / ADMIN / MARCA.",
+    titulo: "Authentication",
+    desc: "JWT with automatic refresh, httpOnly cookies and CLIENTE / ADMIN / MARCA role differentiation.",
   },
   {
     icon: "🤖",
     titulo: "IA Aprimorada",
-    desc: "Integração direta via SDK oficial do Gemini. Prompts otimizados para análise de sustentabilidade.",
+    desc: "Direct integration via the official Gemini SDK. Prompts optimized for sustainability analysis.",
   },
   {
     icon: "🐳",
-    titulo: "Containerização",
-    desc: "Dockerfile multi-stage com imagem mínima em produção. Docker Compose orquestra app, PostgreSQL e Redis com healthchecks.",
+    titulo: "Containerization",
+    desc: "Multi-stage Dockerfile with a minimal production image. Docker Compose orchestrates the app, PostgreSQL and Redis with healthchecks.",
   },
   {
     icon: "🚀",
     titulo: "CI/CD Completo",
-    desc: "GitHub Actions: lint, typecheck e build em todo PR. Push na main publica imagem no ghcr.io e deploya via SSH no servidor de produção.",
+    desc: "GitHub Actions: lint, typecheck and build on every PR. A push to main publishes the image to ghcr.io and deploys via SSH to the production server.",
   },
 ] as const;
 
 const STATS = [
   { valor: "4", label: "Sprints" },
   { valor: "4", label: "Integrantes" },
-  { valor: "17", label: "Rotas de API" },
-  { valor: "2", label: "Modelos de IA" },
+  { valor: "17", label: "API Routes" },
+  { valor: "2", label: "AI Models" },
 ] as const;
 
 // ----------------------------------------------------------------------------
@@ -151,8 +149,8 @@ const STATS = [
 // ----------------------------------------------------------------------------
 
 /**
- * Hook para animação de revelação ao rolar a página.
- * Adiciona classe "visible" a elementos com classe "animate-on-scroll".
+ * Hook for the reveal-on-scroll animation.
+ * Adds the "visible" class to elements with the "animate-on-scroll" class.
  */
 function useScrollReveal() {
   useEffect(() => {
@@ -181,7 +179,7 @@ function useScrollReveal() {
 }
 
 // ----------------------------------------------------------------------------
-// PÁGINA PRINCIPAL
+// MAIN PAGE
 // ----------------------------------------------------------------------------
 
 export default function AboutPage() {
@@ -195,12 +193,10 @@ export default function AboutPage() {
           <div className="max-w-3xl flex flex-col gap-6">
             <span className="badge-eco w-fit">🏫 PUC Minas · TI2 · 2025/2</span>
             <h1 className="font-display text-5xl md:text-6xl font-extrabold leading-[1.05]">
-              Sobre o <span className="text-gradient-eco">EcoShop</span>
+              About <span className="text-gradient-eco">EcoShop</span>
             </h1>
             <p className="text-xl text-[var(--color-text-secondary)] max-w-2xl leading-relaxed">
-              Projeto acadêmico finalista do Trabalho Interdisciplinar 2 da PUC
-              Minas — originalmente desenvolvido em equipe com Java e Spark
-              Framework, depois completamente refatorado para Next.js.
+              Academic project, finalist of PUC Minas&apos; Interdisciplinary Work 2 — originally developed by a team with Java and Spark Framework, then completely refactored to Next.js.
             </p>
             <div className="flex flex-wrap gap-x-10 gap-y-6 pt-4 border-t border-[var(--color-border)] mt-2">
               {STATS.map((s) => (
@@ -218,7 +214,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* RECONHECIMENTO ACADÊMICO */}
+      {/* ACADEMIC RECOGNITION */}
       <section className="bg-[linear-gradient(135deg,#1a3a2e_0%,#0f2419_100%)] py-16">
         <div className="container-eco">
           <div className="animate-on-scroll flex flex-col lg:flex-row items-center justify-between gap-10 p-10 rounded-3xl border border-white/10 relative overflow-hidden">
@@ -226,17 +222,14 @@ export default function AboutPage() {
             <div className="relative z-10 flex flex-col gap-6 lg:w-1/2">
               <div className="flex flex-col gap-3 text-white">
                 <span className="inline-flex items-center gap-2 w-fit px-4 py-1.5 rounded-full text-sm font-bold border border-[#c9a84c]/30 bg-[#c9a84c]/15 text-[#c9a84c]">
-                  🏆 Reconhecimento Acadêmico
+                  🏆 Academic Recognition
                 </span>
                 <h2 className="font-display text-3xl md:text-4xl font-extrabold text-white">
-                  Finalista entre os melhores <br className="hidden md:block" />{" "}
-                  trabalhos de 2025/2
+                  Finalist among the best <br className="hidden md:block" />{" "}
+                  works of 2025/2
                 </h2>
                 <p className="text-white/70 max-w-lg">
-                  O EcoShop foi selecionado como finalista na competição de
-                  melhores projetos do segundo semestre na PUC Minas,
-                  concorrendo com trabalhos de todas as unidades e turmas de
-                  TI2.
+                  EcoShop was selected as a finalist in the best-projects competition of the second semester at PUC Minas, competing with works from all IT units and TI2 classes.
                 </p>
               </div>
               <div className="flex flex-wrap gap-3 justify-start">
@@ -255,7 +248,7 @@ export default function AboutPage() {
             <div className="relative z-10 lg:w-1/2 w-full">
               <img
                 src="/evento.png"
-                alt="Palco da Premiação Melhores TCCs e TIs na PUC Minas"
+                alt="Stage of the Best TCCs and TIs Awards at PUC Minas"
                 className="w-full h-auto object-cover rounded-2xl border border-white/10 shadow-[0_0_30px_rgba(201,168,76,0.15)] transition-transform duration-500 hover:scale-[1.02]"
               />
             </div>
@@ -263,7 +256,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* O PROBLEMA */}
+      {/* THE PROBLEM */}
       <section className="py-20 bg-[var(--color-bg-surface)]">
         <div className="container-eco">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
@@ -272,60 +265,55 @@ export default function AboutPage() {
                 O Problema
               </span>
               <h2 className="font-display text-4xl font-extrabold">
-                Por que o EcoShop existe?
+                Why does EcoShop exist?
               </h2>
               <p className="text-[var(--color-text-secondary)] leading-relaxed">
-                Consumidores interessados em práticas sustentáveis enfrentam
-                dificuldades para descobrir e comparar produtos com{" "}
+                Consumers interested in sustainable practices struggle to discover and compare products with{" "}
                 <strong className="text-[var(--color-text-primary)]">
-                  critérios ecológicos claros e confiáveis
+                  clear and reliable ecological criteria
                 </strong>
-                . Não existia uma plataforma centralizada que organizasse
-                produtos de diferentes marcas com informações transparentes
-                sobre impacto ambiental.
+                . There was no centralized platform that organized products from different brands with transparent information about environmental impact.
               </p>
               <p className="text-[var(--color-text-secondary)] leading-relaxed">
-                O EcoShop foi desenvolvido durante o{" "}
+                EcoShop was developed during the{" "}
                 <strong className="text-[var(--color-text-primary)]">
                   Trabalho Interdisciplinar 2 (TI2)
                 </strong>{" "}
-                da PUC Minas — disciplina que integra banco de dados, engenharia
-                de software e desenvolvimento web — pelo Grupo 10.
+                course at PUC Minas — a subject that integrates databases, software engineering and web development — by Group 10.
               </p>
               <p className="text-[var(--color-text-secondary)] leading-relaxed">
-                A plataforma contribui com o{" "}
+                The platform contributes to the{" "}
                 <strong className="text-[var(--color-text-primary)]">
-                  ODS 13 (Ação Climática)
+                  SDG 13 (Climate Action)
                 </strong>{" "}
                 e{" "}
                 <strong className="text-[var(--color-text-primary)]">
                   ODS 15 (Vida Terrestre)
                 </strong>{" "}
-                das metas da ONU, incentivando consumo consciente e preservação
-                de ecossistemas.
+                of the UN goals, encouraging conscious consumption and ecosystem preservation.
               </p>
             </div>
             <div className="animate-on-scroll grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
                 {
                   icon: "📦",
-                  titulo: "Catálogo Exclusivo",
-                  desc: "Apenas produtos com critérios ecológicos verificados.",
+                  titulo: "Exclusive Catalog",
+                  desc: "Only products with verified ecological criteria.",
                 },
                 {
                   icon: "📜",
-                  titulo: "Certificações",
+                  titulo: "Certifications",
                   desc: "ECOCERT, FSC, Cradle to Cradle e outras.",
                 },
                 {
                   icon: "📚",
-                  titulo: "Educação Ambiental",
-                  desc: "Artigos, guias e conteúdo sobre sustentabilidade.",
+                  titulo: "Environmental Education",
+                  desc: "Articles, guides and content about sustainability.",
                 },
                 {
                   icon: "🤖",
                   titulo: "IA Integrada",
-                  desc: "Azure + Gemini para análise de materiais.",
+                  desc: "Azure + Gemini for material analysis.",
                 },
               ].map((card) => (
                 <div
@@ -358,11 +346,10 @@ export default function AboutPage() {
               Processo
             </span>
             <h2 className="font-display text-4xl font-extrabold">
-              4 sprints, 1 produto
+              4 sprints, 1 product
             </h2>
             <p className="mt-3 text-[var(--color-text-secondary)]">
-              Do levantamento de requisitos à entrega final, cada sprint avançou
-              a maturidade técnica e funcional do projeto.
+              From requirements gathering to final delivery, each sprint advanced the technical and functional maturity of the project.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -400,26 +387,25 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* EVOLUÇÃO TÉCNICA (JAVA vs NEXT.JS) */}
+      {/* TECHNICAL EVOLUTION (JAVA vs NEXT.JS) */}
       <section className="py-20 bg-[var(--color-bg-surface)]">
         <div className="container-eco">
           <div className="text-center max-w-xl mx-auto mb-14">
             <span className="block text-sm font-bold uppercase tracking-widest text-[var(--color-primary)] mb-2">
-              Evolução Técnica
+              Technical Evolution
             </span>
             <h2 className="font-display text-4xl font-extrabold">
-              Da entrega ao refinamento
+              From delivery to refinement
             </h2>
             <p className="mt-3 text-[var(--color-text-secondary)]">
-              Após a conclusão do projeto original, o código foi inteiramente
-              refatorado de forma individual para Next.js.
+              After the original project was completed, the code was entirely refactored individually to Next.js.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-start">
-            {/* Versão Original */}
+            {/* Original version */}
             <div className="animate-on-scroll flex flex-col gap-5 p-8 rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg-body)]">
               <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[var(--color-bg-surface-hover)] text-[var(--color-text-tertiary)] border border-[var(--color-border)] w-fit">
-                Versão Original · Equipe
+                Original Version · Team
               </span>
               <div className="flex flex-wrap gap-2">
                 {[
@@ -442,13 +428,11 @@ export default function AboutPage() {
                 ))}
               </div>
               <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                Backend em Java com Spark Framework expondo uma REST API com
-                arquitetura em camadas (Controller → Service → DAO). Frontend em
-                HTML/CSS/JS vanilla. Deploy no Render com PostgreSQL.
+                Java backend with Spark Framework exposing a REST API with a layered architecture (Controller → Service → DAO). Frontend in vanilla HTML/CSS/JS. Deployed on Render with PostgreSQL.
               </p>
             </div>
 
-            {/* Setinha */}
+            {/* Arrow */}
             <div className="hidden md:flex flex-col items-center justify-center gap-2 pt-12 text-[var(--color-primary)]">
               <div className="w-px h-8 bg-[var(--color-primary)] opacity-30" />
               <svg
@@ -467,13 +451,13 @@ export default function AboutPage() {
               <div className="w-px h-8 bg-[var(--color-primary)] opacity-30" />
             </div>
 
-            {/* Versão Refatorada */}
+            {/* Refactored version */}
             <div
               className="animate-on-scroll flex flex-col gap-5 p-8 rounded-3xl border-2 border-[var(--color-primary)] bg-[var(--color-primary-light)]"
               style={{ transitionDelay: "120ms" }}
             >
               <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[var(--color-primary)] text-white w-fit">
-                Versão Refatorada · Solo
+                Refactored Version · Solo
               </span>
               <div className="flex flex-wrap gap-2">
                 {[
@@ -499,29 +483,26 @@ export default function AboutPage() {
                 ))}
               </div>
               <p className="text-sm text-[var(--color-primary-dark)] leading-relaxed">
-                Reescrita completa com Next.js App Router, componentes React
-                tipados com TypeScript, ORM moderno via Prisma e design system
-                coeso. CI/CD com GitHub Actions, imagem Docker publicada no
-                ghcr.io e deploy automatizado via SSH no servidor de produção.
+                Full rewrite with Next.js App Router, React components typed with TypeScript, a modern ORM via Prisma and a cohesive design system. CI/CD with GitHub Actions, Docker image published to ghcr.io and automated deploy via SSH to the production server.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* MELHORIAS */}
+      {/* IMPROVEMENTS */}
       <section className="py-20 bg-[var(--color-bg-body)]">
         <div className="container-eco">
           <div className="text-center max-w-xl mx-auto mb-14">
             <span className="block text-sm font-bold uppercase tracking-widest text-[var(--color-primary)] mb-2">
-              O que mudou
+              What changed
             </span>
             <h2 className="font-display text-4xl font-extrabold">
-              Melhorias na refatoração
+              Refactoring improvements
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {MELHORIAS.map((m, i) => (
+            {IMPROVEMENTS.map((m, i) => (
               <div
                 key={m.titulo}
                 className="card-eco animate-on-scroll p-6 flex flex-col gap-3"
@@ -542,7 +523,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* EQUIPE */}
+      {/* TEAM */}
       <section className="py-20 bg-[var(--color-bg-surface)]">
         <div className="container-eco">
           <div className="text-center max-w-xl mx-auto mb-14">
@@ -554,31 +535,31 @@ export default function AboutPage() {
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-            {TEAM.map((membro, i) => (
+            {TEAM.map((member, i) => (
               <div
-                key={membro.nome}
+                key={member.nome}
                 className="animate-on-scroll flex flex-col items-center text-center gap-4 p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-body)] hover:border-[var(--color-primary)] hover:shadow-[var(--shadow-card)] hover:-translate-y-1 transition-all duration-300"
                 style={{ transitionDelay: `${i * 80}ms` }}
               >
                 <span className="w-12 h-12 flex items-center justify-center rounded-full text-lg font-extrabold font-display bg-[var(--color-primary-light)] text-[var(--color-primary)]">
-                  {membro.nome.charAt(0)}
+                  {member.nome.charAt(0)}
                 </span>
                 <div>
                   <p className="font-bold text-sm text-[var(--color-text-primary)] leading-snug">
-                    {membro.nome}
+                    {member.nome}
                   </p>
                   <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                    {membro.papel}
+                    {member.papel}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  {membro.linkedin && (
+                  {member.linkedin && (
                     <a
-                      href={membro.linkedin}
+                      href={member.linkedin}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[var(--color-text-tertiary)] hover:text-[var(--color-primary)] transition-colors"
-                      aria-label={`LinkedIn de ${membro.nome}`}
+                      aria-label={`${member.nome}'s LinkedIn`}
                     >
                       <svg
                         className="w-5 h-5"
@@ -590,13 +571,13 @@ export default function AboutPage() {
                       </svg>
                     </a>
                   )}
-                  {membro.github && (
+                  {member.github && (
                     <a
-                      href={membro.github}
+                      href={member.github}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[var(--color-text-tertiary)] hover:text-[var(--color-primary)] transition-colors"
-                      aria-label={`GitHub de ${membro.nome}`}
+                      aria-label={`${member.nome}'s GitHub`}
                     >
                       <svg
                         className="w-5 h-5"
@@ -629,7 +610,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* CALL-TO-ACTION FINAL */}
+      {/* FINAL CALL-TO-ACTION */}
       <section className="py-20 bg-[var(--color-bg-body)]">
         <div className="container-eco">
           <div className="animate-on-scroll flex flex-col md:flex-row items-center justify-between gap-8 p-10 rounded-3xl bg-[var(--color-primary)] relative overflow-hidden">
@@ -639,8 +620,7 @@ export default function AboutPage() {
                 Explore a plataforma
               </h2>
               <p className="text-white/80 max-w-md">
-                Descubra produtos sustentáveis, use a EcoScan IA e acesse nosso
-                conteúdo educativo — tudo em um só lugar.
+                Discover sustainable products, use EcoScan AI and access our educational content — all in one place.
               </p>
             </div>
             <div className="relative z-10 flex flex-wrap gap-3">
@@ -648,7 +628,7 @@ export default function AboutPage() {
                 href="/produtos"
                 className="flex-shrink-0 flex items-center gap-2 px-7 py-3.5 bg-white text-[var(--color-primary-dark)] font-bold rounded-full hover:-translate-y-px hover:shadow-xl transition-all"
               >
-                Ver Produtos
+                See Products
               </Link>
               <Link
                 href="/ia-scan"

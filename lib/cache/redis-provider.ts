@@ -1,77 +1,75 @@
 // lib/cache/redis-provider.ts
 
 /**
- * ============================================================================
  * REDIS CACHE PROVIDER
- * ============================================================================
- * Implementação concreta do CacheProvider usando Redis como backend.
  *
- * Redis é escolhido por:
- * - Performance: operações em memória (sub-milissegundo)
- * - Persistência: dados sobrevivem a reinicializações (opcional)
- * - Expiração nativa: TTL via EXPIRE command
- * - Operações atômicas: INCR, DEL, etc.
- * - SCAN para invalidação por padrão (delPattern)
+ * Concrete CacheProvider implementation using Redis as the backend.
  *
- * Esta classe é um wrapper (Adapter Pattern) que converte as operações
- * genéricas do CacheProvider para as operações específicas do Redis.
+ * Redis is chosen for:
+ * - Performance: in-memory operations (sub-millisecond)
+ * - Persistence: data survives restarts (optional)
+ * - Native expiration: TTL via the EXPIRE command
+ * - Atomic operations: INCR, DEL, etc.
+ * - SCAN for pattern invalidation (delPattern)
  *
- * IMPORTANTE: Falhas de Redis são silenciadas nos métodos subjacentes
- * (redisGet, redisSet, etc.) para não quebrar a aplicação se Redis estiver off.
- * ============================================================================
+ * This class is a wrapper (Adapter pattern) that converts the generic CacheProvider
+ * operations into Redis-specific ones.
+ *
+ * IMPORTANT: Redis failures are silenced in the underlying methods
+ * (redisGet, redisSet, etc.) so the application does not break if Redis is off.
  */
 
 import { redisGet, redisSet, redisDel, redisDelPattern } from "@/lib/redis";
 import type { CacheProvider } from "./contracts";
 
 /**
- * Implementação do provedor de cache com Redis.
+ * Cache provider implementation with Redis.
  *
- * Utiliza as funções helpers de lib/redis.ts que já tratam:
- * - Serialização/deserialização JSON
- * - Conexão e erros
- * - SCAN iterator para delPattern
+ * Uses the helper functions in lib/redis.ts, which already handle:
+ * - JSON serialization/deserialization
+ * - Connection and errors
+ * - SCAN iterator for delPattern
  */
 export class RedisCacheProvider implements CacheProvider {
   /**
-   * Recupera um valor do Redis.
+   * Fetches a value from Redis.
    *
-   * @template T - Tipo esperado do valor
-   * @param key - Chave no Redis
-   * @returns Valor desserializado ou null
+   * @template T - Expected type of the value
+   * @param key - Redis key
+   * @returns Deserialized value or null
    */
   async get<T>(key: string): Promise<T | null> {
     return redisGet<T>(key);
   }
 
   /**
-   * Armazena um valor no Redis com TTL.
+   * Stores a value in Redis with a TTL.
    *
-   * @param key - Chave no Redis
-   * @param value - Valor a ser armazenado
-   * @param ttlSeconds - Tempo de vida em segundos
+   * @param key - Redis key
+   * @param value - Value to store
+   * @param ttlSeconds - Time to live in seconds
    */
   async set(key: string, value: unknown, ttlSeconds: number): Promise<void> {
     return redisSet(key, value, ttlSeconds);
   }
 
   /**
-   * Remove uma chave específica do Redis.
+   * Removes a specific key from Redis.
    *
-   * @param key - Chave a ser removida
+   * @param key - Key to remove
    */
   async del(key: string): Promise<void> {
     return redisDel(key);
   }
 
   /**
-   * Remove todas as chaves que correspondem a um padrão glob.
+   * Removes all keys matching a glob pattern.
    *
-   * Implementação:
-   * - Usa SCAN iterator para não bloquear o Redis (ao contrário de KEYS)
-   * - Remove em lotes (COUNT 100) para performance
+   * Implementation:
+   * - Uses a SCAN iterator so Redis is not blocked (unlike KEYS)
+   * - Removes in batches (COUNT 100) for performance
    *
-   * @param pattern - Padrão glob (ex: "produtos:*")
+   * @param pattern - Glob pattern (e.g. "products:*")
    */
   async delPattern(pattern: string): Promise<void> {
     return redisDelPattern(pattern);

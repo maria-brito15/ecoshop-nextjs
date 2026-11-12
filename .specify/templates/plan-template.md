@@ -1,35 +1,35 @@
-# Plano: <NNN-nome-curto>
+# Plan: <NNN-short-name>
 
-- **Spec:** ./spec.md (aprovada em G1)
-- **ADRs que segue:** ADR-NNNN · **ADRs novos/que substitui:** ADR-NNNN
+- **Spec:** ./spec.md (approved at G1)
+- **ADRs it follows:** ADR-NNNN · **New ADRs / ones it supersedes:** ADR-NNNN
 
-## Abordagem técnica
-<Resumo em poucas linhas. Alternativas consideradas ficam no ADR, se a escolha for arquitetural.>
+## Technical approach
+<Summary in a few lines. Alternatives considered go in the ADR, if the choice is architectural.>
 
-## Constitution Check  (violação exige justificativa em "Complexity Tracking")
-| Artigo | Aplica? | Cumprido? | Observação |
+## Constitution Check  (a violation requires a justification in "Complexity Tracking")
+| Article | Applies? | Met? | Note |
 |---|---|---|---|
-| II Testes por REQ | sim | | |
-| III Autorização | | | |
-| IV Dado sensível | | | |
-| V Camadas | | | |
-| VI Validação/tipos | | | |
-| VII Erros | | | |
-| VIII Dependências externas | | | |
+| II Tests per REQ | yes | | |
+| III Authorization | | | |
+| IV Sensitive data | | | |
+| V Layers | | | |
+| VI Validation/types | | | |
+| VII Errors | | | |
+| VIII External dependencies | | | |
 | IX Cache | | | |
-| X Dados/schema | | | |
-| XI Sem dado inventado | | | |
+| X Data/schema | | | |
+| XI No invented data | | | |
 
-## Arquivos afetados
-| Arquivo | Mudança | REQ |
+## Affected files
+| File | Change | REQ |
 |---|---|---|
 
-## Contratos e modelo de dados
-<ver ./contracts/ e ./data-model.md, se houver>
+## Contracts and data model
+<see ./contracts/ and ./data-model.md, if any>
 
-## Plano de verificação
-<testes por REQ, nível (unidade/integração/E2E), verificações manuais>
+## Verification plan
+<tests per REQ, level (unit/integration/E2E), manual checks>
 
-## Riscos e reversão
+## Risks and rollback
 
 ## Complexity Tracking

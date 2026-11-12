@@ -12,6 +12,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "npm run test:integration",
+    "test:quiet": "tsx --test --test-concurrency=1 --test-reporter=dot tests/integration/*.test.ts",
+    "test:file": "tsx --test --test-concurrency=1 --test-reporter=dot",
     "sdd:check": "node scripts/sdd/spec-lint.mjs && node scripts/sdd/trace-check.mjs && node scripts/sdd/adr-index.mjs --check"
   },
   "prisma": {

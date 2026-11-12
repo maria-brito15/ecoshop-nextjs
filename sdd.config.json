@@ -1,78 +1,78 @@
 {
-  "_ajuda": "Mapa código → capacidade (spec viva) e caminhos sensíveis → ADR dono. Usado por scripts/sdd/*. Atualize ao criar capacidade ou mover código.",
-  "capacidades": {
+  "_help": "Code → capability map (living spec) and sensitive paths → owning ADR. Used by scripts/sdd/*. Update when creating a capability or moving code.",
+  "capabilities": {
     "AUTZ": {
-      "pasta": "autorizacao",
-      "codigo": [
+      "folder": "authorization",
+      "code": [
         "middleware.ts",
-        "config/rotas-protegidas.ts",
+        "config/protected-routes.ts",
         "app/_middleware/**"
       ]
     },
     "AUTH": {
-      "pasta": "autenticacao",
-      "codigo": [
+      "folder": "authentication",
+      "code": [
         "app/api/auth/**",
         "app/api/users/**",
         "lib/auth/**",
         "lib/rate-limit.ts",
         "app/(auth)/**",
-        "lib/schemas/usuario.ts",
+        "lib/schemas/user.ts",
         "types/auth.ts"
       ]
     },
     "PERF": {
-      "pasta": "conta-e-perfil",
-      "codigo": ["app/(perfil)/**", "app/api/usuarios/[id]/**"]
+      "folder": "account-and-profile",
+      "code": ["app/(perfil)/**", "app/api/usuarios/[id]/**"]
     },
     "CAT": {
-      "pasta": "catalogo",
-      "codigo": [
+      "folder": "catalog",
+      "code": [
         "app/(store)/**",
         "app/api/produtos/route.ts",
         "app/api/produtos/[id]/route.ts",
-        "services/produto.service.ts",
-        "lib/hooks/useProdutos.ts"
+        "services/product.service.ts",
+        "lib/hooks/useProducts.ts"
       ]
     },
     "PROD": {
-      "pasta": "gestao-de-produtos",
-      "codigo": [
+      "folder": "product-management",
+      "code": [
         "app/(admin)/painel/**",
         "app/api/produtos/**",
-        "services/produto.service.ts",
-        "lib/schemas/produto.ts"
+        "services/product.service.ts",
+        "lib/schemas/product.ts"
       ]
     },
     "REF": {
-      "pasta": "cadastros-de-referencia",
-      "codigo": [
+      "folder": "reference-data",
+      "code": [
         "app/api/categorias/**",
         "app/api/marcas/**",
         "app/api/certificados/**",
-        "services/categoria.service.ts",
-        "services/marca.service.ts",
-        "services/certificado.service.ts",
-        "lib/schemas/categoria.ts",
-        "lib/schemas/marca.ts",
-        "lib/schemas/certificado.ts"
+        "services/category.service.ts",
+        "services/brand.service.ts",
+        "services/certificate.service.ts",
+        "lib/schemas/category.ts",
+        "lib/schemas/brand.ts",
+        "lib/schemas/certificate.ts"
       ]
     },
     "MIDIA": {
-      "pasta": "midia-de-produto",
-      "codigo": [
+      "folder": "product-media",
+      "code": [
         "app/api/produtos/[id]/fotos/**",
-        "services/foto.service.ts",
-        "lib/hooks/useFotos.ts"
+        "services/photo.service.ts",
+        "lib/hooks/usePhotos.ts"
       ]
     },
     "USR": {
-      "pasta": "gestao-de-usuarios",
-      "codigo": ["app/api/usuarios/**", "services/usuario.service.ts"]
+      "folder": "user-management",
+      "code": ["app/api/usuarios/**", "services/user.service.ts"]
     },
     "SCAN": {
-      "pasta": "ecoscan",
-      "codigo": [
+      "folder": "ecoscan",
+      "code": [
         "lib/ai/**",
         "app/api/ia/scan/**",
         "app/(ia-scan)/**",
@@ -80,16 +80,16 @@
       ]
     },
     "CHAT": {
-      "pasta": "chat-sustentabilidade",
-      "codigo": [
+      "folder": "sustainability-chat",
+      "code": [
         "app/api/ia/chat/**",
-        "lib/schemas/ia-chat.ts",
+        "lib/schemas/ai-chat.ts",
         "lib/ai/providers/gemini-chat.ts"
       ]
     },
     "CONT": {
-      "pasta": "conteudo-institucional",
-      "codigo": [
+      "folder": "institutional-content",
+      "code": [
         "app/page.tsx",
         "app/(educacao)/**",
         "app/(sobre)/**",
@@ -98,12 +98,18 @@
       ]
     },
     "OPS": {
-      "pasta": "operacao",
-      "codigo": [
+      "folder": "operations",
+      "code": [
         "Dockerfile",
-        "docker-compose.yml",
+        "docker-compose*.yml",
         "docker-entrypoint.sh",
         ".github/workflows/**",
+        ".github/dependabot.yml",
+        "scripts/deploy/**",
+        "scripts/ops/**",
+        "instrumentation.ts",
+        "next.config.ts",
+        "lib/config/**",
         "prisma/**",
         "app/api/health/**",
         "lib/redis.ts",
@@ -113,20 +119,21 @@
       ]
     }
   },
-  "sensiveis": [
-    { "caminho": "middleware.ts", "adr": "ADR-0017" },
-    { "caminho": "config/rotas-protegidas.ts", "adr": "ADR-0017" },
-    { "caminho": "app/_middleware/**", "adr": "ADR-0017" },
-    { "caminho": "lib/auth/**", "adr": "ADR-0007" },
-    { "caminho": "lib/cache/**", "adr": "ADR-0009" },
-    { "caminho": "lib/redis.ts", "adr": "ADR-0010" },
-    { "caminho": "lib/rate-limit.ts", "adr": "ADR-0010" },
-    { "caminho": "services/foto.service.ts", "adr": "ADR-0011" },
-    { "caminho": "lib/ai/**", "adr": "ADR-0012" },
-    { "caminho": "Dockerfile", "adr": "ADR-0013" },
-    { "caminho": "docker-compose.yml", "adr": "ADR-0013" },
-    { "caminho": ".github/workflows/**", "adr": "ADR-0013" },
-    { "caminho": "prisma/schema.prisma", "adr": "ADR-0006" },
-    { "caminho": "prisma/migrations/**", "adr": "ADR-0006" }
+  "sensitivePaths": [
+    { "path": "middleware.ts", "adr": "ADR-0017" },
+    { "path": "config/protected-routes.ts", "adr": "ADR-0017" },
+    { "path": "app/_middleware/**", "adr": "ADR-0017" },
+    { "path": "lib/auth/**", "adr": "ADR-0021" },
+    { "path": "lib/cache/**", "adr": "ADR-0009" },
+    { "path": "lib/redis.ts", "adr": "ADR-0020" },
+    { "path": "lib/rate-limit.ts", "adr": "ADR-0020" },
+    { "path": "services/photo.service.ts", "adr": "ADR-0011" },
+    { "path": "lib/ai/**", "adr": "ADR-0012" },
+    { "path": "Dockerfile", "adr": "ADR-0019" },
+    { "path": "docker-compose*.yml", "adr": "ADR-0019" },
+    { "path": "scripts/deploy/**", "adr": "ADR-0019" },
+    { "path": ".github/workflows/**", "adr": "ADR-0019" },
+    { "path": "prisma/schema.prisma", "adr": "ADR-0006" },
+    { "path": "prisma/migrations/**", "adr": "ADR-0006" }
   ]
 }

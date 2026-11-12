@@ -1,76 +1,129 @@
 // app/api/auth/refresh/route.ts
 
 /**
- * ============================================================================
- * AUTH REFRESH API ROUTE - RENOVAÇÃO DE TOKEN
- * ============================================================================
- * Endpoint para renovar o token JWT quando o tipo de usuário muda no banco.
+ * AUTH REFRESH API ROUTE - SESSION RENEWAL (ADR-0021)
  *
- * POST /api/auth/refresh - Renova o token com dados atualizados
+ * POST /api/auth/refresh        - Renews the session (used by the front end; JSON)
+ * GET  /api/auth/refresh?next=  - Renews and REDIRECTS (used by the middleware
+ *                                 when a page navigation arrives with an
+ *                                 expired access token and a still-valid refresh token)
  *
- * Por que isso é necessário?
- * - O token JWT contém o tipo do usuário (CLIENTE, MARCA, ADMIN)
- * - Se um admin promove um usuário para ADMIN, o token antigo ainda tem tipo antigo
- * - Este endpoint verifica o tipo atual no banco e renova o token se necessário
+ * With the `refresh` cookie (REQ-AUTH-19):
+ * - the token is SPENT (single use) and a new pair is issued, with the role reread from the database;
+ * - invalid, expired, already-used token or one from a deleted user → 401 and cookies removed;
+ * - Redis unavailable → 503 (refresh is denied; the user signs in again).
  *
- * Fluxo:
- * 1. Extrai sessão do cookie
- * 2. Busca usuário no banco (dados atuais)
- * 3. Se tipo mudou → gera novo token e atualiza cookie
- * 4. Invalida cache do perfil do usuário
+ * Without the `refresh` cookie (sessions from before ADR-0021, or opened without Redis):
+ * keeps the old behavior — with a valid access token, reissues the JWT if the user's
+ * role changed in the database.
  *
- * Chamado pelo frontend após /api/auth/me retornar dados
- *
- * @see app/components/Header.tsx - Chamada após carregar usuário
- * ============================================================================
+ * @see services/session.service.ts
  */
 
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { getSession, signToken, setAuthCookie } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { invalidarChave, chaveUsuarioMe } from "@/lib/cache";
-import { ERROS } from "@/lib/http/responses";
+import {
+  getSession,
+  signToken,
+  setAuthCookie,
+  setRefreshCookie,
+  clearSessionCookies,
+} from "@/lib/auth";
+import { REFRESH_COOKIE } from "@/lib/auth/constants";
+import { invalidateKey, currentUserKey } from "@/lib/cache";
+import { ERRORS } from "@/lib/http/responses";
+import { localPathOrRoot } from "@/lib/http/next-url";
+import { getIdentity } from "@/services/user.service";
+import { refreshSession, type IssuedSession } from "@/services/session.service";
+
+/** Cookies of the completed renewal. */
+function applySession(
+  res: NextResponse,
+  session: IssuedSession,
+) {
+  setAuthCookie(res, session.access);
+  if (session.refresh) setRefreshCookie(res, session.refresh);
+}
 
 /**
- * POST /api/auth/refresh - Renova token JWT
+ * POST /api/auth/refresh
  *
- * @returns { ok: true, tipo?: string } - tipo incluído se houve mudança
- * @status 200 - Token válido (renovado ou não)
- * @status 401 - Não autenticado
- * @status 404 - Usuário não encontrado no banco
- * @status 500 - Erro interno
+ * @returns { ok: true, tipo }
+ * @status 200 - Session renewed (or still valid, in old mode)
+ * @status 401 - No session, or invalid refresh
+ * @status 404 - Session user no longer exists (old mode)
+ * @status 503 - Refresh unavailable (Redis down)
  */
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession(req);
-    if (!session) return ERROS.naoAutorizado();
+    const refreshToken = req.cookies.get(REFRESH_COOKIE)?.value;
 
-    const usuario = await prisma.usuario.findUnique({
-      where: { id: session.id },
-      select: { id: true, email: true, tipo: true },
-    });
-
-    if (!usuario) return ERROS.naoEncontrado("Usuário");
-
-    // Se o tipo no banco é diferente do tipo no token, renova
-    if (usuario.tipo !== session.tipo) {
-      const novoToken = await signToken({
-        id: usuario.id,
-        email: usuario.email,
-        tipo: usuario.tipo,
-      });
-
-      const res = NextResponse.json({ ok: true, tipo: usuario.tipo });
-      setAuthCookie(res, novoToken);
-      await invalidarChave(chaveUsuarioMe(usuario.id));
-
+    if (refreshToken) {
+      const r = await refreshSession(refreshToken, getIdentity);
+      if (!r.ok) {
+        const res =
+          r.reason === "UNAVAILABLE"
+            ? NextResponse.json(
+                { erro: "Could not renew the session right now. Please sign in again." },
+                { status: 503 },
+              )
+            : ERRORS.unauthorized();
+        clearSessionCookies(res);
+        return res;
+      }
+      const res = NextResponse.json({ ok: true, tipo: r.tipo });
+      applySession(res, r.session);
       return res;
     }
 
-    return NextResponse.json({ ok: true, tipo: usuario.tipo });
+    // Old mode: no refresh token.
+    const session = await getSession(req);
+    if (!session) return ERRORS.unauthorized();
+
+    const user = await getIdentity(session.id);
+    if (!user) return ERRORS.notFound("User");
+
+    if (user.tipo !== session.tipo) {
+      const newToken = await signToken(user);
+      const res = NextResponse.json({ ok: true, tipo: user.tipo });
+      setAuthCookie(res, newToken);
+      await invalidateKey(currentUserKey(user.id));
+      return res;
+    }
+    return NextResponse.json({ ok: true, tipo: user.tipo });
+  } catch (err) {
+    return ERRORS.internal("renew session", err);
+  }
+}
+
+/**
+ * GET /api/auth/refresh?next=/path
+ *
+ * Renews and redirects to `next` (local path only; REQ-AUTH-17). If the renewal
+ * fails, removes the cookies and goes to login, with `next` preserved.
+ */
+export async function GET(req: NextRequest) {
+  const destination = localPathOrRoot(req.nextUrl.searchParams.get("next"));
+  const toLogin = () => {
+    const res = NextResponse.redirect(
+      new URL(`/sign-in?next=${encodeURIComponent(destination)}`, req.url),
+    );
+    clearSessionCookies(res);
+    return res;
+  };
+
+  try {
+    const r = await refreshSession(
+      req.cookies.get(REFRESH_COOKIE)?.value,
+      getIdentity,
+    );
+    if (!r.ok) return toLogin();
+
+    const res = NextResponse.redirect(new URL(destination, req.url));
+    applySession(res, r.session);
+    return res;
   } catch {
-    return ERROS.interno("renovar token");
+    return toLogin();
   }
 }

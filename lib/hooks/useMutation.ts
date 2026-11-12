@@ -1,107 +1,105 @@
 // lib/hooks/useMutation.ts
 
 /**
- * ============================================================================
  * useMutation HOOK
- * ============================================================================
- * Hook React para operações de escrita na API (POST, PUT, DELETE, PATCH).
  *
- * Características:
- * - Gerencia estado de carregamento e erro
- * - Invalida cache automaticamente após sucesso
- * - Suporte a FormData (upload de arquivos)
- * - Compatível com qualquer endpoint REST
+ * React hook for write operations on the API (POST, PUT, DELETE, PATCH).
  *
- * Diferença do useFetch:
- * - useFetch: usado para GET (leituras)
- * - useMutation: usado para POST/PUT/DELETE (escritas)
+ * Features:
+ * - Manages loading and error state
+ * - Invalidates the cache automatically after success
+ * - FormData support (file uploads)
+ * - Compatible with any REST endpoint
  *
- * Padrão de uso:
+ * Difference from useFetch:
+ * - useFetch: used for GET (reads)
+ * - useMutation: used for POST/PUT/DELETE (writes)
+ *
+ * Usage pattern:
  * ```tsx
- * const criarProduto = useMutation<Produto, CriarProdutoBody>({
+ * const createProduct = useMutation<Product, CreateProductBody>({
  *   method: "POST",
- *   invalidar: ["/api/produtos"] // invalida cache da listagem
+ *   invalidate: ["/api/produtos"] // invalidates the listing cache
  * });
  *
- * const handleSubmit = async (dados) => {
- *   const resultado = await criarProduto.executar("/api/produtos", dados);
- *   if (resultado) router.push("/produtos");
+ * const handleSubmit = async (data) => {
+ *   const result = await createProduct.execute("/api/produtos", data);
+ *   if (result) router.push("/produtos");
  * };
  * ```
- * ============================================================================
  */
 
 "use client";
 
 import { useState } from "react";
-import { invalidarCacheCliente } from "./useFetch";
+import { invalidateClientCache } from "./useFetch";
 
 /**
- * Opções de configuração do mutation hook.
+ * Configuration options of the mutation hook.
  */
-type Opcoes = {
-  /** Método HTTP da requisição (padrão: POST) */
+type Options = {
+  /** HTTP method of the request (default: POST) */
   method?: "POST" | "PUT" | "DELETE" | "PATCH";
-  /** Modo de credenciais (padrão: "include" para enviar cookies) */
+  /** Credentials mode (default: "include" to send cookies) */
   credentials?: RequestCredentials;
-  /** URLs a invalidar no cache cliente após sucesso */
-  invalidar?: string[];
+  /** URLs to invalidate in the client cache after success */
+  invalidate?: string[];
 };
 
 /**
- * Formato de resposta de erro esperado da API.
- * A API pode retornar "erro" (português) ou "error" (inglês) conforme rota.
+ * Expected error response format from the API.
+ * The API can return "erro" (Portuguese) or "error" (English) depending on the route.
  */
-type ApiErroResponse = { erro?: string; error?: string };
+type ApiErrorResponse = { erro?: string; error?: string };
 
 /**
- * Hook para operações de mutação na API.
+ * Hook for API mutation operations.
  *
- * @template TResponse - Tipo dos dados de resposta (sucesso)
- * @template TBody - Tipo do corpo da requisição (pode ser objeto ou FormData)
- * @param opcoes - Configuração do mutation (method, invalidar, etc.)
- * @returns Estado da mutação + função executar
- *
- * @example
- * // DELETE sem corpo
- * const deletar = useMutation<{ ok: boolean }>({ method: "DELETE" });
- * await deletar.executar(`/api/produtos/${id}`);
+ * @template TResponse - Type of the response data (success)
+ * @template TBody - Type of the request body (an object or FormData)
+ * @param options - Mutation configuration (method, invalidate, etc.)
+ * @returns Mutation state + execute function
  *
  * @example
- * // POST com FormData (upload de arquivo)
- * const upload = useMutation<Foto, FormData>({ method: "POST" });
+ * // DELETE without a body
+ * const remove = useMutation<{ ok: boolean }>({ method: "DELETE" });
+ * await remove.execute(`/api/produtos/${id}`);
+ *
+ * @example
+ * // POST with FormData (file upload)
+ * const upload = useMutation<Photo, FormData>({ method: "POST" });
  * const formData = new FormData();
  * formData.append("imagem", file);
- * await upload.executar("/api/fotos", formData);
+ * await upload.execute("/api/fotos", formData);
  */
-export function useMutation<TResponse, TBody = unknown>(opcoes?: Opcoes) {
+export function useMutation<TResponse, TBody = unknown>(options?: Options) {
   const [data, setData] = useState<TResponse | null>(null);
-  const [carregando, setCarregando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   /**
-   * Executa a mutação.
+   * Runs the mutation.
    *
-   * @param url - URL do endpoint
-   * @param body - Corpo da requisição (opcional para DELETE)
-   * @returns Dados da resposta ou null em caso de erro
+   * @param url - Endpoint URL
+   * @param body - Request body (optional for DELETE)
+   * @returns Response data, or null on error
    */
-  async function executar(
+  async function execute(
     url: string,
     body?: TBody,
   ): Promise<TResponse | null> {
     setData(null);
-    setCarregando(true);
-    setErro(null);
+    setLoading(true);
+    setError(null);
 
     try {
-      // Detecta se body é FormData (upload de arquivo)
-      // Se for, não seta Content-Type (o browser define multipart/form-data corretamente)
+      // Detect whether the body is FormData (file upload)
+      // If so, do not set Content-Type (the browser sets multipart/form-data correctly)
       const isFormData = body instanceof FormData;
 
       const res = await fetch(url, {
-        method: opcoes?.method ?? "POST",
-        credentials: opcoes?.credentials ?? "include",
+        method: options?.method ?? "POST",
+        credentials: options?.credentials ?? "include",
         headers: isFormData
           ? undefined
           : { "Content-Type": "application/json" },
@@ -111,29 +109,29 @@ export function useMutation<TResponse, TBody = unknown>(opcoes?: Opcoes) {
       const responseData = (await res.json()) as TResponse;
 
       if (!res.ok) {
-        const errData = responseData as ApiErroResponse;
-        const mensagem = errData.erro ?? errData.error ?? "Erro desconhecido";
-        setErro(mensagem);
-        setCarregando(false);
+        const errData = responseData as ApiErrorResponse;
+        const message = errData.erro ?? errData.error ?? "Unknown error";
+        setError(message);
+        setLoading(false);
         return null;
       }
 
       setData(responseData);
-      setCarregando(false);
+      setLoading(false);
 
-      // Invalida caches do cliente para forçar refetch nos próximos useFetch
-      // Isso garante que a UI mostre dados atualizados após a mutação
-      if (opcoes?.invalidar) {
-        opcoes.invalidar.forEach(invalidarCacheCliente);
+      // Invalidate client caches to force a refetch on the next useFetch
+      // This guarantees the UI shows updated data after the mutation
+      if (options?.invalidate) {
+        options.invalidate.forEach(invalidateClientCache);
       }
 
       return responseData;
     } catch {
-      setErro("Falha de conexão");
-      setCarregando(false);
+      setError("Connection failure");
+      setLoading(false);
       return null;
     }
   }
 
-  return { data, carregando, erro, executar };
+  return { data, carregando: loading, erro: error, execute: execute };
 }

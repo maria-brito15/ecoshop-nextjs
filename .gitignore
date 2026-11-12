@@ -54,8 +54,10 @@ Thumbs.db
 # Prisma
 /node_modules/.prisma
 
-# Docker (override local)
-docker-compose.override.yml
+# Docker: docker-compose.override.yml agora é versionado (desenvolvimento do projeto:
+# portas do banco em 127.0.0.1 e seed de demonstração; REQ-OPS-08/09).
+# Ajustes pessoais vão em docker-compose.local.yml, que continua ignorado.
+docker-compose.local.yml
 
 # Arquivos de build
 dist/

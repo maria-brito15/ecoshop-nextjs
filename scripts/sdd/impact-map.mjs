@@ -1,33 +1,34 @@
 #!/usr/bin/env node
-// scripts/sdd/impact-map.mjs — quais capacidades, REQs e ADRs um diff pode afetar.
-// Uso: node scripts/sdd/impact-map.mjs [--base <ref>] [--worktree] [--arquivos a,b] [--exige-adr] [--json]
-//  --base        compara <ref>...HEAD (padrão: HEAD~1)         --worktree  compara o working tree com HEAD
-//  --exige-adr   falha se um caminho sensível mudou e o corpo do PR ($GITHUB_EVENT_PATH ou $PR_BODY) não cita o ADR dono
+// scripts/sdd/impact-map.mjs — which capabilities, REQs and ADRs a diff may affect.
+// Usage: node scripts/sdd/impact-map.mjs [--base <ref>] [--worktree] [--files a,b] [--require-adr] [--json]
+//  --base        compares <ref>...HEAD (default: HEAD~1)         --worktree  compares the working tree with HEAD
+//  --require-adr fails if a sensitive path changed and the PR body ($GITHUB_EVENT_PATH or $PR_BODY) does not cite the owning ADR
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import {
-  RAIZ,
-  ler,
+  ROOT,
+  read,
   config,
-  capacidades,
-  tabela,
-  globParaRegex,
+  capabilities,
+  table,
+  globToRegex,
+  VOCAB,
 } from "./lib.mjs";
 
 const arg = (n) => {
   const i = process.argv.indexOf(n);
   return i > 0 ? process.argv[i + 1] : undefined;
 };
-const tem = (n) => process.argv.includes(n);
+const has = (n) => process.argv.includes(n);
 
-function arquivosAlterados() {
-  if (arg("--arquivos")) return arg("--arquivos").split(",").filter(Boolean);
+function changedFiles() {
+  if (arg("--files")) return arg("--files").split(",").filter(Boolean);
   try {
-    const args = tem("--worktree")
+    const args = has("--worktree")
       ? ["diff", "--name-only", "HEAD"]
       : ["diff", "--name-only", `${arg("--base") ?? "HEAD~1"}...HEAD`];
     return execFileSync("git", args, {
-      cwd: RAIZ,
+      cwd: ROOT,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
     })
@@ -38,83 +39,83 @@ function arquivosAlterados() {
   }
 }
 
-function corpoDoPr() {
+function prBody() {
   if (process.env.PR_BODY) return process.env.PR_BODY;
   const ev = process.env.GITHUB_EVENT_PATH;
   if (ev && existsSync(ev)) {
     try {
-      return JSON.parse(ler(ev)).pull_request?.body ?? "";
+      return JSON.parse(read(ev)).pull_request?.body ?? "";
     } catch {
-      /* ignora */
+      /* ignored */
     }
   }
   return "";
 }
 
-const arquivos = arquivosAlterados();
+const files = changedFiles();
 const cfg = config();
-const afetadas = new Map();
-for (const cap of capacidades()) {
-  const hit = arquivos.filter((f) =>
-    cap.codigoFonte.some((g) => globParaRegex(g).test(f)),
+const affected = new Map();
+for (const cap of capabilities()) {
+  const hit = files.filter((f) =>
+    cap.sourceGlobs.some((g) => globToRegex(g).test(f)),
   );
-  if (hit.length) afetadas.set(cap.codigo, { cap, arquivos: hit });
+  if (hit.length) affected.set(cap.code, { cap, files: hit });
 }
-const sensiveis = [];
-for (const s of cfg.sensiveis) {
-  const hit = arquivos.filter((f) => globParaRegex(s.caminho).test(f));
-  if (hit.length) sensiveis.push({ adr: s.adr, arquivos: hit });
+const sensitive = [];
+for (const s of cfg.sensitivePaths) {
+  const hit = files.filter((f) => globToRegex(s.path).test(f));
+  if (hit.length) sensitive.push({ adr: s.adr, files: hit });
 }
-const docsMudaram = arquivos.some(
+const docsChanged = files.some(
   (f) => f.startsWith("docs/capabilities/") || f.startsWith("specs/"),
 );
-const testesMudaram = arquivos.some((f) => f.startsWith("tests/"));
+const testsChanged = files.some((f) => f.startsWith("tests/"));
 
-if (tem("--json")) {
+if (has("--json")) {
   console.log(
     JSON.stringify(
-      { arquivos, capacidades: [...afetadas.keys()], sensiveis },
+      { files, capabilities: [...affected.keys()], sensitive },
       null,
       2,
     ),
   );
 } else {
-  const L = ["### Mapa de impacto (SDD)", ""];
-  if (!arquivos.length) L.push("Nenhum arquivo alterado detectado.");
+  const L = ["### Impact map (SDD)", ""];
+  if (!files.length) L.push("No changed files detected.");
   else {
-    L.push(`Arquivos alterados: ${arquivos.length}`, "");
-    if (afetadas.size) {
-      L.push("**Capacidades potencialmente afetadas**", "");
-      for (const [cod, { cap, arquivos: a }] of afetadas) {
-        const reqs = (tabela(ler(cap.spec), "Requisitos") ?? []).map(
+    L.push(`Changed files: ${files.length}`, "");
+    if (affected.size) {
+      L.push("**Potentially affected capabilities**", "");
+      for (const [cod, { cap, files: a }] of affected) {
+        const reqs = (table(read(cap.spec), VOCAB.sections.requirements) ?? []).map(
           (r) => r[0],
         );
         L.push(
-          `- **${cod}** (\`docs/capabilities/${cap.pasta}\`): ${reqs.length} REQs · ${a.length} arquivo(s)`,
+          `- **${cod}** (\`docs/capabilities/${cap.folder}\`): ${reqs.length} REQs · ${a.length} file(s)`,
         );
       }
       L.push("");
     }
-    if (sensiveis.length) {
-      L.push("**Caminhos sensíveis (exigem citar o ADR no PR)**", "");
-      for (const s of sensiveis) L.push(`- ${s.adr}: ${s.arquivos.join(", ")}`);
+    if (sensitive.length) {
+      L.push("**Sensitive paths (the PR must cite the ADR)**", "");
+      for (const s of sensitive) L.push(`- ${s.adr}: ${s.files.join(", ")}`);
       L.push("");
     }
-    if (afetadas.size && !docsMudaram)
+    if (affected.size && !docsChanged)
       L.push(
-        '> ⚠ Código de capacidade mudou e nenhuma spec/status foi tocada. Se o comportamento mudou, consolide a spec (G4); senão declare "sem mudança de comportamento" no PR.',
+        '> ⚠ Capability code changed and no spec/status was touched. If behavior changed, consolidate the spec (G4); otherwise declare "no behavior change" in the PR.',
       );
-    if (afetadas.size && !testesMudaram) L.push("> ⚠ Nenhum teste alterado.");
+    if (affected.size && !testsChanged) L.push("> ⚠ No test changed.");
   }
   console.log(L.join("\n"));
 }
 
-if (tem("--exige-adr") && sensiveis.length) {
-  const corpo = corpoDoPr();
-  const faltam = sensiveis.filter((s) => !corpo.includes(s.adr));
-  if (faltam.length) {
+if (has("--require-adr") && sensitive.length) {
+  const body = prBody();
+  const missing = sensitive.filter((s) => !body.includes(s.adr));
+  if (missing.length) {
     console.error(
-      `✖ impact-map: o PR altera caminho sensível e não cita ${[...new Set(faltam.map((s) => s.adr))].join(", ")} (cite o ADR ou "não altera a decisão do ADR-NNNN")`,
+      `✖ impact-map: the PR changes a sensitive path and does not cite ${[...new Set(missing.map((s) => s.adr))].join(", ")} (cite the ADR or "does not change the decision of ADR-NNNN")`,
     );
     process.exitCode = 1;
   }

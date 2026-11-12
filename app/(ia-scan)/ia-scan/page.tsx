@@ -1,42 +1,40 @@
 // app/(ia-scan)/ia-scan/page.tsx
 
 /**
- * ============================================================================
- * PÁGINA DO ECOSCAN IA
- * ============================================================================
- * Rota: "/ia-scan"
+ * ECOSCAN AI PAGE
  *
- * Página principal da funcionalidade de inteligência artificial do EcoShop.
- * Permite que usuários tirem fotos de resíduos e recebam informações
- * sobre como descartá-los corretamente.
+ * Route: "/ia-scan"
  *
- * Fluxo:
- * 1. Usuário seleciona/arrasta uma imagem
- * 2. Envia para o backend via FormData
- * 3. Azure Vision classifica o material
- * 4. Gemini gera análise detalhada de sustentabilidade
- * 5. Exibe resultados (material, confiança, dicas de descarte)
+ * Main page of EcoShop's artificial intelligence feature.
+ * It lets users take photos of waste and get information
+ * on how to dispose of it correctly.
  *
- * Estados da página:
- * - Upload: usuário seleciona imagem
- * - Processando: IA está analisando (loading)
- * - Sucesso: exibe análise detalhada
- * - Falha: exibe sugestão para melhorar a foto
+ * Flow:
+ * 1. User selects/drags an image
+ * 2. Sends it to the backend via FormData
+ * 3. Azure Vision classifies the material
+ * 4. Gemini generates a detailed sustainability analysis
+ * 5. Shows the results (material, confidence, disposal tips)
  *
- * @see lib/hooks/useIA.ts - Hook useScan
- * @see app/api/ia/scan/route.ts - Endpoint da API
- * ============================================================================
+ * Page states:
+ * - Upload: user selects an image
+ * - Processing: the AI is analyzing (loading)
+ * - Success: shows the detailed analysis
+ * - Failure: shows a suggestion to improve the photo
+ *
+ * @see lib/hooks/useAI.ts - useScan hook
+ * @see app/api/ia/scan/route.ts - API endpoint
  */
 
 "use client";
 
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
-import { useScan } from "@/lib/hooks/useIA";
-import type { AnaliseIA } from "@/types/ai";
+import { useScan } from "@/lib/hooks/useAI";
+import type { AiAnalysis } from "@/types/ai";
 import type { ScanResponse } from "@/types/api";
 
-// Formatos de imagem aceitos pelo Azure Vision
+// Image formats accepted by Azure Vision
 const VALID_TYPES = [
   "image/jpeg",
   "image/jpg",
@@ -46,7 +44,7 @@ const VALID_TYPES = [
 ];
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
-interface ArquivoSelecionado {
+interface SelectedFile {
   file: File;
   previewUrl: string;
   name: string;
@@ -62,10 +60,10 @@ function formatBytes(bytes: number) {
 }
 
 /**
- * Retorna cores baseadas na porcentagem de confiança da IA.
- * - ≥85%: verde (alta confiança)
- * - ≥70%: amarelo (média confiança)
- * - <70%: vermelho (baixa confiança)
+ * Returns colors based on the AI confidence percentage.
+ * - ≥85%: green (high confidence)
+ * - ≥70%: yellow (medium confidence)
+ * - <70%: red (low confidence)
  */
 function getConfidenceColors(conf: number) {
   if (conf >= 85) return { bg: "#d1fae5", color: "#065f46", border: "#10b981" };
@@ -78,7 +76,7 @@ function getConfidenceColors(conf: number) {
 // ----------------------------------------------------------------------------
 
 /**
- * Card de informação usado na exibição dos resultados.
+ * Information card used to display the results.
  */
 interface CardProps {
   icon: string;
@@ -110,9 +108,9 @@ function InfoCard({ icon, title, colorClass, children, fullWidth }: CardProps) {
   );
 }
 
-function TextoSust({ value }: { value: unknown }) {
+function SustainabilityText({ value }: { value: unknown }) {
   if (!value)
-    return <p className="italic opacity-60">Informação não disponível.</p>;
+    return <p className="italic opacity-60">Information not available.</p>;
   const text =
     typeof value === "string" ? value : JSON.stringify(value, null, 2);
   const paras = text.split(/\n\n+/).filter(Boolean);
@@ -132,11 +130,11 @@ function TextoSust({ value }: { value: unknown }) {
   );
 }
 
-function isSucesso(data: ScanResponse): data is ScanResponse & {
+function isSuccess(data: ScanResponse): data is ScanResponse & {
   sucesso: true;
   material: string;
   confianca: number;
-  analise_sustentabilidade: AnaliseIA;
+  analise_sustentabilidade: AiAnalysis;
 } {
   return (
     data.sucesso === true &&
@@ -146,7 +144,7 @@ function isSucesso(data: ScanResponse): data is ScanResponse & {
   );
 }
 
-function isInsuficiente(data: ScanResponse): data is ScanResponse & {
+function isInsufficient(data: ScanResponse): data is ScanResponse & {
   sucesso: false;
   confianca: number;
   confianca_minima_requerida: number;
@@ -159,10 +157,10 @@ function isInsuficiente(data: ScanResponse): data is ScanResponse & {
 }
 
 /**
- * Resultado quando a análise foi bem-sucedida.
- * Exibe material identificado, confiança e análise completa.
+ * Result when the analysis succeeded.
+ * Shows the identified material, confidence and the full analysis.
  */
-function ResultadoSucesso({
+function SuccessResult({
   data,
   onReset,
 }: {
@@ -170,7 +168,7 @@ function ResultadoSucesso({
     sucesso: true;
     material: string;
     confianca: number;
-    analise_sustentabilidade: AnaliseIA;
+    analise_sustentabilidade: AiAnalysis;
   };
   onReset: () => void;
 }) {
@@ -178,7 +176,7 @@ function ResultadoSucesso({
   const conf = data.confianca;
   const colors = getConfidenceColors(conf);
 
-  const materialFormatado = data.material
+  const formattedMaterial = data.material
     .replace(/_/g, " ")
     .split(" ")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
@@ -198,13 +196,13 @@ function ResultadoSucesso({
             borderColor: colors.border,
           }}
         >
-          ✅ Confiança: {conf.toFixed(1)}%
+          ✅ Confidence: {conf.toFixed(1)}%
         </span>
         <h2 className="font-display text-5xl font-extrabold text-[var(--color-text-primary)] mb-2 leading-tight">
-          {materialFormatado}
+          {formattedMaterial}
         </h2>
         <p className="text-[var(--color-text-secondary)] text-base">
-          Identificação concluída com sucesso
+          Identification completed successfully
         </p>
       </div>
 
@@ -214,44 +212,44 @@ function ResultadoSucesso({
           title="Impacto Ambiental"
           colorClass="bg-[var(--color-primary-light)] text-[var(--color-primary)]"
         >
-          <TextoSust value={a.impacto_ambiental} />
+          <SustainabilityText value={a.impacto_ambiental} />
         </InfoCard>
         <InfoCard
           icon="⏳"
-          title="Decomposição"
+          title="Decomposition"
           colorClass="bg-amber-50 text-amber-500 dark:bg-amber-500/15"
         >
-          <TextoSust value={a.tempo_decomposicao} />
+          <SustainabilityText value={a.tempo_decomposicao} />
         </InfoCard>
         <InfoCard
           icon="🗑️"
           title="Como Descartar"
           colorClass="bg-blue-50 text-blue-500 dark:bg-blue-500/15"
         >
-          <TextoSust value={a.onde_descartar} />
+          <SustainabilityText value={a.onde_descartar} />
         </InfoCard>
         <InfoCard
           icon="♻️"
           title="Reciclabilidade"
           colorClass="bg-emerald-50 text-emerald-500 dark:bg-emerald-500/15"
         >
-          <TextoSust value={a.reciclabilidade} />
+          <SustainabilityText value={a.reciclabilidade} />
         </InfoCard>
         <InfoCard
           icon="💡"
-          title="Dicas Sustentáveis"
+          title="Sustainable Tips"
           colorClass="bg-purple-50 text-purple-600 dark:bg-purple-500/15"
           fullWidth
         >
-          <TextoSust value={a.dicas_sustentaveis} />
+          <SustainabilityText value={a.dicas_sustentaveis} />
         </InfoCard>
         <InfoCard
           icon="❤️"
-          title="Por que reciclar este item?"
+          title="Why recycle this item?"
           colorClass="bg-red-50 text-red-500 dark:bg-red-500/15"
           fullWidth
         >
-          <TextoSust value={a.beneficios_reciclagem} />
+          <SustainabilityText value={a.beneficios_reciclagem} />
         </InfoCard>
       </div>
 
@@ -266,7 +264,7 @@ function ResultadoSucesso({
           href="/produtos"
           className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold text-sm bg-[var(--color-primary)] text-white shadow-[var(--shadow-btn)] hover:bg-[var(--color-primary-hover)] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(45,149,105,0.4)] transition-all duration-200"
         >
-          🛍️ Ver Alternativas Sustentáveis
+          🛍️ See Sustainable Alternatives
         </Link>
       </div>
     </div>
@@ -274,10 +272,10 @@ function ResultadoSucesso({
 }
 
 /**
- * Resultado quando a análise falhou (baixa confiança ou material não identificado).
- * Exibe sugestão para melhorar a foto.
+ * Result when the analysis failed (low confidence or unidentified material).
+ * Shows a suggestion to improve the photo.
  */
-function ResultadoInsuficiente({
+function InsufficientResult({
   data,
   onReset,
 }: {
@@ -295,15 +293,15 @@ function ResultadoInsuficiente({
     >
       <span className="text-5xl mb-4 block">🔍</span>
       <h3 className="text-xl font-bold text-amber-800 dark:text-amber-300 mb-2">
-        Não foi possível identificar com segurança
+        Could not identify it reliably
       </h3>
       <p className="text-amber-700 dark:text-amber-400 mb-4 max-w-md mx-auto">
         {data.mensagem}
       </p>
       <div className="inline-block bg-white dark:bg-white/10 rounded-xl px-6 py-3 mb-4 text-sm border border-amber-200 dark:border-amber-500/20">
         <span className="text-amber-600 dark:text-amber-400">
-          Confiança obtida: <strong>{data.confianca.toFixed(1)}%</strong>{" "}
-          (mínimo: {data.confianca_minima_requerida}%)
+          Confidence obtained: <strong>{data.confianca.toFixed(1)}%</strong>{" "}
+          (minimum: {data.confianca_minima_requerida}%)
         </span>
       </div>
       <p className="text-amber-600 dark:text-amber-400 text-sm mb-6">
@@ -313,39 +311,39 @@ function ResultadoInsuficiente({
         onClick={onReset}
         className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold text-sm bg-[var(--color-primary)] text-white shadow-[var(--shadow-btn)] hover:bg-[var(--color-primary-hover)] hover:-translate-y-0.5 transition-all duration-200"
       >
-        📷 Tentar Novamente
+        📷 Try Again
       </button>
     </div>
   );
 }
 
 // ----------------------------------------------------------------------------
-// PÁGINA PRINCIPAL
+// MAIN PAGE
 // ----------------------------------------------------------------------------
 
 export default function IaScanPage() {
-  const [arquivo, setArquivo] = useState<ArquivoSelecionado | null>(null);
+  const [file, setFile] = useState<SelectedFile | null>(null);
   const [dragover, setDragover] = useState(false);
-  const [erroLocal, setErroLocal] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const { data, carregando, erro: erroHook, executar } = useScan();
+  const { data, carregando: loading, erro: hookError, execute: execute } = useScan();
 
-  function validarArquivo(file: File): string | null {
+  function validateFile(file: File): string | null {
     if (!VALID_TYPES.includes(file.type))
-      return `Formato inválido. Use: JPG, PNG, GIF ou WebP`;
-    if (file.size > MAX_SIZE) return `Arquivo muito grande. Máximo: 10 MB`;
+      return `Invalid format. Use: JPG, PNG, GIF or WebP`;
+    if (file.size > MAX_SIZE) return `File too large. Maximum: 10 MB`;
     return null;
   }
 
-  function selecionarArquivo(file: File) {
-    const err = validarArquivo(file);
+  function selectFile(file: File) {
+    const err = validateFile(file);
     if (err) {
-      setErroLocal(err);
+      setLocalError(err);
       return;
     }
 
-    setErroLocal(null);
-    setArquivo({
+    setLocalError(null);
+    setFile({
       file,
       previewUrl: URL.createObjectURL(file),
       name:
@@ -356,18 +354,18 @@ export default function IaScanPage() {
     });
   }
 
-  function resetar() {
-    if (arquivo?.previewUrl) URL.revokeObjectURL(arquivo.previewUrl);
-    setArquivo(null);
-    setErroLocal(null);
+  function reset() {
+    if (file?.previewUrl) URL.revokeObjectURL(file.previewUrl);
+    setFile(null);
+    setLocalError(null);
     if (fileRef.current) fileRef.current.value = "";
   }
 
-  function analisar() {
-    if (!arquivo) return;
+  function analyze() {
+    if (!file) return;
     const form = new FormData();
-    form.append("image", arquivo.file);
-    executar("/api/ia/scan", form);
+    form.append("image", file.file);
+    execute("/api/ia/scan", form);
   }
 
   const onDragOver = useCallback((e: React.DragEvent) => {
@@ -381,13 +379,13 @@ export default function IaScanPage() {
     e.preventDefault();
     setDragover(false);
     const file = e.dataTransfer.files[0];
-    if (file) selecionarArquivo(file);
+    if (file) selectFile(file);
   }, []);
 
-  const mostrarResultado = !carregando && data != null;
-  const sucesso = mostrarResultado && data && isSucesso(data);
-  const insuficiente =
-    mostrarResultado && data && !sucesso && isInsuficiente(data);
+  const showResult = !loading && data != null;
+  const success = showResult && data && isSuccess(data);
+  const insufficient =
+    showResult && data && !success && isInsufficient(data);
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
@@ -395,21 +393,20 @@ export default function IaScanPage() {
       <section className="text-center py-16 md:py-24 bg-[var(--color-bg-body)] [background-image:radial-gradient(circle_at_50%_0%,rgba(45,149,105,0.06)_0%,transparent_50%)] border-b border-[var(--color-border)] mb-10">
         <div className="container-eco">
           <span className="badge-eco mb-6 mx-auto">
-            🤖 Inteligência Artificial
+            🤖 Artificial Intelligence
           </span>
           <h1 className="font-display text-5xl md:text-6xl font-extrabold leading-tight mb-4">
             EcoScan <span className="text-gradient-eco">IA</span>
           </h1>
           <p className="text-[var(--color-text-secondary)] text-lg max-w-xl mx-auto">
-            Use nossa tecnologia para identificar resíduos e descobrir o
-            descarte correto em segundos.
+            Use our technology to identify waste and find the right way to dispose of it in seconds.
           </p>
         </div>
       </section>
 
       <div className="container-eco pb-24">
-        {/* MENSAGENS DE ERRO */}
-        {(erroLocal || erroHook) && (
+        {/* ERROR MESSAGES */}
+        {(localError || hookError) && (
           <div
             className="flex items-start gap-4 p-5 rounded-xl mb-8 bg-red-50 border border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800/40 dark:text-red-300"
             role="alert"
@@ -419,18 +416,18 @@ export default function IaScanPage() {
               <strong className="block font-semibold mb-0.5">
                 Ops! Algo deu errado.
               </strong>
-              <span className="text-sm">{erroLocal ?? erroHook}</span>
+              <span className="text-sm">{localError ?? hookError}</span>
             </div>
           </div>
         )}
 
-        {/* ÁREA DE UPLOAD */}
-        {!arquivo && !mostrarResultado && (
+        {/* UPLOAD AREA */}
+        {!file && !showResult && (
           <div className="max-w-2xl mx-auto bg-[var(--color-bg-surface)] rounded-2xl p-3 border border-[var(--color-border)] shadow-[var(--shadow-card)]">
             <div
               role="button"
               tabIndex={0}
-              aria-label="Área de upload de imagem"
+              aria-label="Image upload area"
               onDragOver={onDragOver}
               onDragLeave={onDragLeave}
               onDrop={onDrop}
@@ -449,7 +446,7 @@ export default function IaScanPage() {
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
-                  if (f) selecionarArquivo(f);
+                  if (f) selectFile(f);
                 }}
               />
               <div
@@ -459,48 +456,48 @@ export default function IaScanPage() {
               </div>
               <div className="text-center">
                 <h3 className="font-display text-xl font-bold text-[var(--color-text-primary)] mb-1">
-                  Arraste uma foto ou clique para selecionar
+                  Drag a photo or click to select
                 </h3>
                 <p className="text-[var(--color-text-secondary)] text-sm">
-                  Suporta JPG, PNG, GIF, WebP &mdash; máx. 10 MB
+                  Supports JPG, PNG, GIF, WebP &mdash; max. 10 MB
                 </p>
               </div>
               <span className="px-6 py-2.5 rounded-full text-sm font-semibold bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors pointer-events-none">
-                Selecionar Arquivo
+                Select File
               </span>
             </div>
           </div>
         )}
 
-        {/* PREVIEW DA IMAGEM (antes da análise) */}
-        {arquivo && !carregando && !mostrarResultado && (
+        {/* IMAGE PREVIEW (before the analysis) */}
+        {file && !loading && !showResult && (
           <div className="max-w-2xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 bg-[var(--color-bg-surface)] rounded-2xl p-6 border border-[var(--color-border)] shadow-[var(--shadow-card)] animate-[fadeSlideUp_0.4s_ease]">
             <div className="flex items-center gap-5">
               <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-[var(--color-border)] flex-shrink-0 bg-[var(--color-bg-body)]">
                 <img
-                  src={arquivo.previewUrl}
+                  src={file.previewUrl}
                   alt="Preview"
                   className="w-full h-full object-cover"
                 />
               </div>
               <div>
                 <p className="font-bold text-[var(--color-text-primary)] text-base leading-snug max-w-[200px] truncate">
-                  {arquivo.name}
+                  {file.name}
                 </p>
                 <p className="text-sm text-[var(--color-primary)] font-medium mt-0.5 flex items-center gap-1.5">
-                  <span>✅</span> Pronto para análise &bull; {arquivo.size}
+                  <span>✅</span> Ready for analysis &bull; {file.size}
                 </p>
               </div>
             </div>
             <div className="flex gap-3 w-full sm:w-auto">
               <button
-                onClick={resetar}
+                onClick={reset}
                 className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold border-2 border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-primary)] hover:text-[var(--color-text-primary)] hover:-translate-y-0.5 transition-all duration-200"
               >
-                🗑️ Cancelar
+                🗑️ Cancel
               </button>
               <button
-                onClick={analisar}
+                onClick={analyze}
                 className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-7 py-2.5 rounded-full text-sm font-bold bg-gradient-to-br from-[var(--color-primary)] to-[#2ba882] text-white shadow-[var(--shadow-btn)] hover:shadow-[0_8px_24px_rgba(45,149,105,0.4)] hover:-translate-y-0.5 transition-all duration-200"
               >
                 ✨ Analisar Agora
@@ -509,8 +506,8 @@ export default function IaScanPage() {
           </div>
         )}
 
-        {/* LOADING (processamento) */}
-        {carregando && (
+        {/* LOADING (processing) */}
+        {loading && (
           <div
             className="flex flex-col items-center justify-center py-20 text-center animate-[fadeSlideUp_0.4s_ease]"
             aria-live="polite"
@@ -521,18 +518,17 @@ export default function IaScanPage() {
               Analisando imagem...
             </h3>
             <p className="text-[var(--color-text-secondary)] max-w-sm text-sm">
-              Nossa IA está identificando o material e calculando o impacto
-              ambiental.
+              Our AI is identifying the material and calculating the environmental impact.
             </p>
           </div>
         )}
 
-        {/* RESULTADOS */}
-        {sucesso && data && (
-          <ResultadoSucesso data={data as any} onReset={resetar} />
+        {/* RESULTS */}
+        {success && data && (
+          <SuccessResult data={data as any} onReset={reset} />
         )}
-        {insuficiente && data && (
-          <ResultadoInsuficiente data={data as any} onReset={resetar} />
+        {insufficient && data && (
+          <InsufficientResult data={data as any} onReset={reset} />
         )}
       </div>
     </main>

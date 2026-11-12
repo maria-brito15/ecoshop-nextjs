@@ -1,26 +1,26 @@
 // Capacidade SCAN — docs/capabilities/ecoscan/spec.md
 import {
   email,
-  criarUsuarioDireto,
+  createUserDirectly,
   cookieDe,
   req,
   stubFetch,
   json,
-  encerrar,
+  closeConnections,
 } from "./helpers";
 import { test, after, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { POST as scan } from "@/app/api/ia/scan/route";
 
-after(encerrar);
+after(closeConnections);
 
-let restaurar: (() => void) | undefined;
+let restore: (() => void) | undefined;
 beforeEach(() => {
   process.env.GEMINI_KEY = "chave-gemini-de-teste-123";
 });
-afterEach(() => restaurar?.());
+afterEach(() => restore?.());
 
-const CAMPOS = [
+const FIELDS = [
   "impacto_ambiental",
   "tempo_decomposicao",
   "onde_descartar",
@@ -28,7 +28,7 @@ const CAMPOS = [
   "dicas_sustentaveis",
   "beneficios_reciclagem",
 ];
-const analiseGemini = () =>
+const geminiAnalysis = () =>
   json({
     candidates: [
       {
@@ -36,7 +36,7 @@ const analiseGemini = () =>
           parts: [
             {
               text: JSON.stringify(
-                Object.fromEntries(CAMPOS.map((c) => [c, `texto de ${c}`])),
+                Object.fromEntries(FIELDS.map((c) => [c, `text of ${c}`])),
               ),
             },
           ],
@@ -51,12 +51,12 @@ const azure = (tag: string, p: number) =>
       { tagName: "outros", probability: 1 - p },
     ],
   });
-const ehAzure = (url: string) => url.startsWith("https://azure.test");
+const isAzure = (url: string) => url.startsWith("https://azure.test");
 
-async function enviar(arquivo: File | null) {
-  const u = await criarUsuarioDireto(email("scan"), "CLIENTE");
+async function submit(file: File | null) {
+  const u = await createUserDirectly(email("scan"), "CLIENTE");
   const form = new FormData();
-  if (arquivo) form.set("image", arquivo);
+  if (file) form.set("image", file);
   return scan(
     req("/api/ia/scan", { method: "POST", cookie: await cookieDe(u), form }),
   );
@@ -66,76 +66,72 @@ const png = () =>
     type: "image/png",
   });
 
-test("REQ-SCAN-01: material identificado com confiança suficiente devolve a análise de 6 campos", async () => {
-  restaurar = stubFetch((url) =>
-    ehAzure(url) ? azure("plastico", 0.93) : analiseGemini(),
+test("REQ-SCAN-01: a material identified with enough confidence returns the 6-field analysis", async () => {
+  restore = stubFetch((url) =>
+    isAzure(url) ? azure("plastico", 0.93) : geminiAnalysis(),
   );
-  const res = await enviar(png());
+  const res = await submit(png());
   assert.equal(res.status, 200);
   const c = await res.json();
   assert.equal(c.sucesso, true);
   assert.equal(c.material, "plastico");
   assert.equal(c.confianca, 93);
-  for (const campo of CAMPOS)
-    assert.ok(c.analise_sustentabilidade[campo], campo);
+  for (const field of FIELDS)
+    assert.ok(c.analise_sustentabilidade[field], field);
 });
 
-test("REQ-SCAN-02: confiança abaixo do limiar responde 422 sem chamar o Gemini", async () => {
-  let chamouGemini = false;
-  restaurar = stubFetch((url) => {
-    if (!ehAzure(url)) chamouGemini = true;
+test("REQ-SCAN-02: confidence below the threshold returns 422 without calling Gemini", async () => {
+  let calledGemini = false;
+  restore = stubFetch((url) => {
+    if (!isAzure(url)) calledGemini = true;
     return json({ predictions: [{ tagName: "vidro", probability: 0.4 }] });
   });
-  const res = await enviar(png());
+  const res = await submit(png());
   assert.equal(res.status, 422);
   const c = await res.json();
   assert.equal(c.sucesso, false);
   assert.equal(c.confianca, 40);
-  assert.equal(chamouGemini, false);
+  assert.equal(calledGemini, false);
 });
 
-test("REQ-SCAN-03: a tag 'outros' nunca é considerada identificação, mesmo com confiança alta", async () => {
-  restaurar = stubFetch(() => azure("outros", 0.99));
-  assert.equal((await enviar(png())).status, 422);
+test("REQ-SCAN-03: the 'outros' tag is never treated as an identification, even with high confidence", async () => {
+  restore = stubFetch(() => azure("outros", 0.99));
+  assert.equal((await submit(png())).status, 422);
 });
 
-test("REQ-SCAN-04: se o Gemini devolve conteúdo inválido, usa a análise de contingência (200)", async () => {
-  restaurar = stubFetch((url) =>
-    ehAzure(url)
+test("REQ-SCAN-04: if Gemini returns invalid content, the fallback analysis is used (200)", async () => {
+  restore = stubFetch((url) =>
+    isAzure(url)
       ? azure("papel", 0.9)
       : json({
-          candidates: [{ content: { parts: [{ text: "isto não é JSON" }] } }],
+          candidates: [{ content: { parts: [{ text: "this is not JSON" }] } }],
         }),
   );
-  const res = await enviar(png());
+  const res = await submit(png());
   assert.equal(res.status, 200);
   const c = await res.json();
   assert.equal(c.sucesso, true);
   assert.match(c.analise_sustentabilidade.impacto_ambiental, /papel/);
 });
 
-test(
-  "REQ-SCAN-05: se a rede do Gemini falha, usa a análise de contingência (200)",
-  { todo: "D4: hoje a exceção vira 500" },
-  async () => {
-    restaurar = stubFetch((url) => {
-      if (ehAzure(url)) return azure("metal", 0.9);
-      throw new TypeError("fetch failed");
-    });
-    assert.equal((await enviar(png())).status, 200);
-  },
-);
+test("REQ-SCAN-05: if the Gemini network fails, the fallback analysis is used (200)", async () => {
+  restore = stubFetch((url) => {
+    if (isAzure(url)) return azure("metal", 0.9);
+    throw new TypeError("fetch failed");
+  });
+  assert.equal((await submit(png())).status, 200);
+});
 
-test("REQ-SCAN-06: arquivo ausente, formato inválido ou acima de 10 MB responde 400", async () => {
-  restaurar = stubFetch(() => azure("papel", 0.9));
-  assert.equal((await enviar(null)).status, 400);
+test("REQ-SCAN-06: missing file, invalid format or above 10 MB returns 400", async () => {
+  restore = stubFetch(() => azure("papel", 0.9));
+  assert.equal((await submit(null)).status, 400);
   assert.equal(
-    (await enviar(new File(["x"], "a.txt", { type: "text/plain" }))).status,
+    (await submit(new File(["x"], "a.txt", { type: "text/plain" }))).status,
     400,
   );
   assert.equal(
     (
-      await enviar(
+      await submit(
         new File([new Uint8Array(10 * 1024 * 1024 + 1)], "g.png", {
           type: "image/png",
         }),
@@ -145,9 +141,9 @@ test("REQ-SCAN-06: arquivo ausente, formato inválido ou acima de 10 MB responde
   );
 });
 
-test("REQ-SCAN-07: se o Azure não responde, a resposta é 422 com sugestão (não 500)", async () => {
-  restaurar = stubFetch(() => json({}, 500));
-  const res = await enviar(png());
+test("REQ-SCAN-07: if Azure does not respond, the answer is 422 with a suggestion (not 500)", async () => {
+  restore = stubFetch(() => json({}, 500));
+  const res = await submit(png());
   assert.equal(res.status, 422);
   assert.equal((await res.json()).sucesso, false);
 });

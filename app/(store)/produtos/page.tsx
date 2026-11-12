@@ -1,41 +1,40 @@
 // app/(store)/produtos/page.tsx
 
 /**
- * ============================================================================
- * PÁGINA DE LISTAGEM DE PRODUTOS
- * ============================================================================
- * Rota: "/produtos"
+ * PRODUCT LISTING PAGE
  *
- * Página principal do catálogo de produtos do EcoShop.
- * Permite que usuários naveguem, filtrem e busquem produtos sustentáveis.
+ * Route: "/produtos"
  *
- * Funcionalidades:
- * - Listagem paginada de produtos (12 por página)
- * - Filtros: categoria, faixa de preço, busca textual
- * - Ordenação: relevância, preço (crescente/decrescente), nome (A-Z/Z-A)
- * - Layout responsivo com sidebar (desktop) e menu lateral (mobile)
- * - Skeletons durante carregamento
- * - Lazy loading com Intersection Observer
+ * EcoShop's main product catalog page.
+ * Lets users browse, filter and search sustainable products.
  *
- * @see lib/hooks/useProdutos.ts - Hook useListarProdutos
- * @see lib/hooks/useCategorias.ts - Hook useListarCategorias
- * ============================================================================
+ * Features:
+ * - Paginated product listing (12 per page)
+ * - Filters: category, price range, text search
+ * - Sorting: relevance, price (ascending/descending), name (A-Z/Z-A)
+ * - Responsive layout with a sidebar (desktop) and side menu (mobile)
+ * - Skeletons while loading
+ * - Lazy loading with Intersection Observer
+ *
+ * @see lib/hooks/useProducts.ts - useListProducts hook
+ * @see lib/hooks/useCategories.ts - useListCategories hook
  */
 
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useListarProdutos } from "@/lib/hooks/useProdutos";
-import { useListarCategorias } from "@/lib/hooks/useCategorias";
+import { useListProducts, type ProductOrder } from "@/lib/hooks/useProducts";
+import { useListCategories } from "@/lib/hooks/useCategories";
+import { useListBrands } from "@/lib/hooks/useBrands";
 import type { Produto, ProdutoCertificado } from "@/types/api";
 
 // ----------------------------------------------------------------------------
 // COMPONENTE: SKELETON CARD
 // ----------------------------------------------------------------------------
-// Exibido durante o carregamento dos produtos. Mantém a mesma estrutura
-// do ProductCard para evitar layout shift (CLS).
+// Shown while the products load. Keeps the same structure
+// as ProductCard to avoid layout shift (CLS).
 
 function SkeletonCard() {
   return (
@@ -57,10 +56,10 @@ function SkeletonCard() {
 // ----------------------------------------------------------------------------
 // COMPONENTE: PRODUCT CARD
 // ----------------------------------------------------------------------------
-// Card individual de produto com lazy loading via Intersection Observer.
-// A animação de entrada só ocorre quando o card entra na viewport.
+// Individual product card with lazy loading via Intersection Observer.
+// The entrance animation only plays when the card enters the viewport.
 
-function ProductCard({ produto, index }: { produto: Produto; index: number }) {
+function ProductCard({ produto: product, index }: { produto: Produto; index: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -80,15 +79,15 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
     return () => obs.disconnect();
   }, []);
 
-  const precoFormatado = Number(produto.preco).toLocaleString("pt-BR", {
+  const formattedPrice = Number(product.preco).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
 
-  // Delay escalonado para cada card (0ms, 80ms, 160ms...)
+  // Staggered delay for each card (0ms, 80ms, 160ms...)
   const delay = Math.min(index % 6, 5) * 80;
-  const categoriaNome = produto.categoria?.nome ?? "Categoria";
-  const marcaNome = produto.marca?.nome ?? "Marca";
+  const categoryName = product.categoria?.nome ?? "Category";
+  const brandName = product.marca?.nome ?? "Brand";
 
   return (
     <div
@@ -100,15 +99,15 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
       }}
     >
       <Link
-        href={`/produtos/${produto.id}`}
+        href={`/produtos/${product.id}`}
         className="group block rounded-[var(--radius-card)] overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-surface)] transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-[var(--shadow-xl)] hover:border-[var(--color-primary)] h-full flex flex-col"
       >
-        {/* Área da imagem */}
+        {/* Image area */}
         <div className="relative h-56 bg-[var(--color-bg-body)] flex items-center justify-center overflow-hidden">
-          {produto.fotoUrl ? (
+          {product.fotoUrl ? (
             <Image
-              src={produto.fotoUrl}
-              alt={produto.nome}
+              src={product.fotoUrl}
+              alt={product.nome}
               fill
               className="card-img object-cover"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -122,7 +121,7 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
             </span>
           )}
 
-          {/* Badge da categoria */}
+          {/* Category badge */}
           <span
             className={`
               absolute top-3 left-3
@@ -133,10 +132,10 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
               border border-[var(--color-primary)]/20
             `}
           >
-            {categoriaNome}
+            {categoryName}
           </span>
 
-          {/* Overlay com "Ver detalhes" que aparece no hover */}
+          {/* Overlay with "View details" that appears on hover */}
           <div
             className={`
               absolute inset-0 flex items-center justify-center
@@ -159,10 +158,10 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
           </div>
         </div>
 
-        {/* Conteúdo textual do card */}
+        {/* Card text content */}
         <div className="p-5 flex flex-col gap-2 flex-1">
           <span className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-tertiary)]">
-            {marcaNome}
+            {brandName}
           </span>
 
           <h3
@@ -173,24 +172,24 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
               transition-colors duration-200
             `}
           >
-            {produto.nome}
+            {product.nome}
           </h3>
 
-          {/* Descrição (limitada a 2 linhas) */}
-          {produto.descricao && (
+          {/* Description (limited to 2 lines) */}
+          {product.descricao && (
             <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">
-              {produto.descricao}
+              {product.descricao}
             </p>
           )}
 
-          {/* Certificados do produto (máximo 2) */}
-          {produto.certificados && produto.certificados.length > 0 && (
+          {/* Product certificates (maximum 2) */}
+          {product.certificados && product.certificados.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1">
-              {produto.certificados
+              {product.certificados
                 .slice(0, 2)
-                .map(({ certificado }: ProdutoCertificado) => (
+                .map(({ certificado: certificate }: ProdutoCertificado) => (
                   <span
-                    key={certificado.id}
+                    key={certificate.id}
                     className={`
                       text-[10px] font-bold px-2 py-0.5 rounded-full
                       bg-[var(--color-primary-light)]
@@ -198,13 +197,13 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
                       border border-[var(--color-primary)]/20
                     `}
                   >
-                    ✓ {certificado.nome}
+                    ✓ {certificate.nome}
                   </span>
                 ))}
             </div>
           )}
 
-          {/* Preço e selo Eco */}
+          {/* Price and Eco badge */}
           <div
             className={`
               mt-auto pt-4
@@ -218,7 +217,7 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
                 text-[var(--color-primary)]
               `}
             >
-              {precoFormatado}
+              {formattedPrice}
             </span>
 
             <span
@@ -237,78 +236,72 @@ function ProductCard({ produto, index }: { produto: Produto; index: number }) {
 }
 
 // ----------------------------------------------------------------------------
-// PÁGINA PRINCIPAL
+// MAIN PAGE
 // ----------------------------------------------------------------------------
 
-export default function ProdutosPage() {
-  // Estados de paginação e filtros
+export default function ProductsPage() {
+  // Pagination and filter states
   const [page, setPage] = useState(1);
-  const [nome, setNome] = useState("");
-  const [busca, setBusca] = useState("");
-  const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
-  const [maxPreco, setMaxPreco] = useState(1000);
-  const [precoInput, setPrecoInput] = useState(1000);
-  const [sortBy, setSortBy] = useState("relevancia");
+  const [name, setName] = useState("");
+  const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
+  const [brandId, setBrandId] = useState<number | undefined>(undefined);
+  const [maxPrice, setMaxPrice] = useState(1000);
+  const [priceInput, setPriceInput] = useState(1000);
+  const [sortBy, setSortBy] = useState<ProductOrder>("relevancia");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Hooks de dados
-  const { data, carregando, erro } = useListarProdutos(
-    page,
-    12,
-    categoriaId,
-    busca,
-  );
-  const { data: catData } = useListarCategorias();
-
-  const produtos = data?.produtos ?? [];
-  const total = data?.total ?? 0;
-  const totalPaginas = Math.ceil(total / 12);
-  const categorias = catData?.categorias ?? [];
-
-  // Ordenação local (cliente-side)
-  const produtosSorted = [...produtos].sort((a, b) => {
-    const precoA = Number(a.preco);
-    const precoB = Number(b.preco);
-    if (sortBy === "preco_asc") return precoA - precoB;
-    if (sortBy === "preco_desc") return precoB - precoA;
-    if (sortBy === "nome_asc") return a.nome.localeCompare(b.nome);
-    if (sortBy === "nome_desc") return b.nome.localeCompare(a.nome);
-    return 0;
+  // Data hooks — sorting, brand and maximum price are applied by the
+  // server to the whole catalog, not just the current page (REQ-CAT-06/07).
+  const { data, loading: loading, error: error } = useListProducts(page, 12, categoryId, search, {
+    marcaId: brandId,
+    precoMax: maxPrice < 1000 ? maxPrice : undefined,
+    sort: sortBy,
   });
+  const { data: catData } = useListCategories();
+  const { data: brandsData } = useListBrands();
 
-  const produtosFiltrados = produtosSorted.filter(
-    (p) => Number(p.preco) <= maxPreco,
+  const products = data?.produtos ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.ceil(total / 12);
+  const categories = catData?.categorias ?? [];
+  const brands = (brandsData?.marcas ?? []).filter(
+    (m) => m.status === "APROVADA",
   );
 
   // --------------------------------------------------------------------------
   // HANDLERS
   // --------------------------------------------------------------------------
 
-  function handleBuscar(e: React.FormEvent) {
+  function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     setPage(1);
-    setBusca(nome);
+    setSearch(name);
   }
 
-  // Debounce no filtro de preço para evitar re-renders excessivos
-  function handlePrecoChange(val: number) {
-    setPrecoInput(val);
+  // Debounce on the price filter to avoid excessive re-renders
+  function handlePriceChange(val: number) {
+    setPriceInput(val);
     clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => setMaxPreco(val), 300);
+    debounceRef.current = setTimeout(() => {
+      setMaxPrice(val);
+      setPage(1);
+    }, 300);
   }
 
-  function limparFiltros() {
-    setNome("");
-    setBusca("");
-    setCategoriaId(undefined);
-    setMaxPreco(1000);
-    setPrecoInput(1000);
+  function clearFilters() {
+    setName("");
+    setSearch("");
+    setCategoryId(undefined);
+    setBrandId(undefined);
+    setMaxPrice(1000);
+    setPriceInput(1000);
     setSortBy("relevancia");
     setPage(1);
   }
 
-  const pricePercent = ((precoInput / 1000) * 100).toFixed(1);
+  const pricePercent = ((priceInput / 1000) * 100).toFixed(1);
 
   // --------------------------------------------------------------------------
   // RENDER
@@ -316,7 +309,7 @@ export default function ProdutosPage() {
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
-      {/* HEADER DA PÁGINA COM BREADCRUMB */}
+      {/* PAGE HEADER WITH BREADCRUMB */}
       <div
         className={`
           border-b border-[var(--color-border)]
@@ -325,13 +318,13 @@ export default function ProdutosPage() {
         `}
       >
         <div className="container-eco">
-          {/* Breadcrumb de navegação */}
+          {/* Navigation breadcrumb */}
           <nav className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] mb-5">
             <Link
               href="/"
               className="flex items-center gap-1.5 hover:text-[var(--color-primary)] transition-colors"
             >
-              🏠 Início
+              🏠 Home
             </Link>
             <span className="text-[var(--color-border)]">›</span>
             <span className="font-semibold text-[var(--color-text-primary)]">
@@ -339,39 +332,39 @@ export default function ProdutosPage() {
             </span>
           </nav>
 
-          {/* Título e contador */}
+          {/* Title and counter */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="font-display text-3xl md:text-4xl font-extrabold text-[var(--color-text-primary)]">
-                Produtos <span className="text-gradient-eco">Sustentáveis</span>
+                Produtos <span className="text-gradient-eco">Sustainable</span>
               </h1>
-              {!carregando && (
+              {!loading && (
                 <p className="text-[var(--color-text-secondary)] mt-1 text-sm">
                   {total > 0 ? (
                     <>
                       <span className="font-bold text-[var(--color-primary)]">
-                        {produtosFiltrados.length}
+                        {total}
                       </span>{" "}
-                      produto{produtosFiltrados.length !== 1 ? "s" : ""}{" "}
-                      encontrado{produtosFiltrados.length !== 1 ? "s" : ""}
+                      product{total !== 1 ? "s" : ""}{" "}
+                      encontrado{total !== 1 ? "s" : ""}
                     </>
                   ) : (
-                    "Nenhum produto encontrado"
+                    "No products found"
                   )}
                 </p>
               )}
             </div>
 
-            {/* Barra de busca */}
+            {/* Search bar */}
             <form
-              onSubmit={handleBuscar}
+              onSubmit={handleSearch}
               className="flex gap-2 w-full sm:w-auto sm:min-w-[320px]"
             >
               <input
                 type="text"
-                placeholder="Buscar produto..."
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
+                placeholder="Search product..."
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 className={`
                   flex-1 px-4 py-2.5 rounded-xl text-sm font-medium
                   bg-[var(--color-bg-body)]
@@ -394,18 +387,18 @@ export default function ProdutosPage() {
                   transition-all
                 `}
               >
-                Buscar
+                Search
               </button>
             </form>
           </div>
         </div>
       </div>
 
-      {/* CONTEÚDO PRINCIPAL COM SIDEBAR */}
+      {/* MAIN CONTENT WITH SIDEBAR */}
       <div className="container-eco py-8">
         <div className="flex gap-8 items-start">
           {/* ================================================================ */}
-          {/* SIDEBAR DESKTOP */}
+          {/* DESKTOP SIDEBAR */}
           {/* ================================================================ */}
           <aside
             className={`
@@ -424,7 +417,7 @@ export default function ProdutosPage() {
               scrollbarColor: "var(--color-border) transparent",
             }}
           >
-            {/* Header do sidebar com botão limpar */}
+            {/* Sidebar header with clear button */}
             <div
               className={`
                 flex items-center justify-between
@@ -437,7 +430,7 @@ export default function ProdutosPage() {
                 <span>⚙</span> Filtros
               </h2>
               <button
-                onClick={limparFiltros}
+                onClick={clearFilters}
                 className={`
                   text-xs font-semibold text-[var(--color-text-tertiary)]
                   hover:text-[var(--color-error)] transition-colors
@@ -449,7 +442,7 @@ export default function ProdutosPage() {
               </button>
             </div>
 
-            {/* Filtro por categorias */}
+            {/* Category filter */}
             <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3 flex items-center gap-2">
                 <span>🏷</span> Categorias
@@ -458,44 +451,44 @@ export default function ProdutosPage() {
                 <li>
                   <button
                     onClick={() => {
-                      setCategoriaId(undefined);
+                      setCategoryId(undefined);
                       setPage(1);
                     }}
                     className={`
                       w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium
                       transition-all duration-150 flex items-center justify-between
                       ${
-                        categoriaId === undefined
+                        categoryId === undefined
                           ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold"
                           : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface-hover)] hover:text-[var(--color-text-primary)]"
                       }
                     `}
                   >
                     <span>Todas</span>
-                    {categoriaId === undefined && (
+                    {categoryId === undefined && (
                       <span className="text-xs">✓</span>
                     )}
                   </button>
                 </li>
-                {categorias.map((cat) => (
+                {categories.map((cat) => (
                   <li key={cat.id}>
                     <button
                       onClick={() => {
-                        setCategoriaId(cat.id);
+                        setCategoryId(cat.id);
                         setPage(1);
                       }}
                       className={`
                         w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium
                         transition-all duration-150 flex items-center justify-between
                         ${
-                          categoriaId === cat.id
+                          categoryId === cat.id
                             ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold"
                             : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface-hover)] hover:text-[var(--color-text-primary)]"
                         }
                       `}
                     >
                       <span>{cat.nome}</span>
-                      {categoriaId === cat.id && (
+                      {categoryId === cat.id && (
                         <span className="text-xs">✓</span>
                       )}
                     </button>
@@ -504,18 +497,73 @@ export default function ProdutosPage() {
               </ul>
             </div>
 
-            {/* Filtro por faixa de preço (slider) */}
+            {/* Brand filter */}
+            {brands.length > 0 && (
+              <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3 flex items-center gap-2">
+                  <span>🤝</span> Marcas
+                </p>
+                <ul className="flex flex-col gap-0.5">
+                  <li>
+                    <button
+                      onClick={() => {
+                        setBrandId(undefined);
+                        setPage(1);
+                      }}
+                      className={`
+                        w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium
+                        transition-all duration-150 flex items-center justify-between
+                        ${
+                          brandId === undefined
+                            ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold"
+                            : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface-hover)] hover:text-[var(--color-text-primary)]"
+                        }
+                      `}
+                    >
+                      <span>Todas</span>
+                      {brandId === undefined && (
+                        <span className="text-xs">✓</span>
+                      )}
+                    </button>
+                  </li>
+                  {brands.map((m) => (
+                    <li key={m.id}>
+                      <button
+                        onClick={() => {
+                          setBrandId(m.id);
+                          setPage(1);
+                        }}
+                        className={`
+                          w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium
+                          transition-all duration-150 flex items-center justify-between
+                          ${
+                            brandId === m.id
+                              ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold"
+                              : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface-hover)] hover:text-[var(--color-text-primary)]"
+                          }
+                        `}
+                      >
+                        <span>{m.nome}</span>
+                        {brandId === m.id && <span className="text-xs">✓</span>}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Price range filter (slider) */}
             <div className="px-4 py-5 border-b border-[var(--color-border)]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-4 flex items-center gap-2">
-                <span>💰</span> Faixa de Preço
+                <span>💰</span> Price Range
               </p>
               <input
                 type="range"
                 min={0}
                 max={1000}
                 step={10}
-                value={precoInput}
-                onChange={(e) => handlePrecoChange(Number(e.target.value))}
+                value={priceInput}
+                onChange={(e) => handlePriceChange(Number(e.target.value))}
                 style={{
                   background: `linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ${pricePercent}%, var(--color-border) ${pricePercent}%, var(--color-border) 100%)`,
                 }}
@@ -535,18 +583,18 @@ export default function ProdutosPage() {
               />
               <div className="flex justify-between items-center mt-3">
                 <span className="text-xs text-[var(--color-text-tertiary)] font-medium">
-                  Até
+                  Up to
                 </span>
                 <span className="text-lg font-extrabold font-display text-[var(--color-primary)]">
-                  R$ {precoInput.toLocaleString("pt-BR")}
+                  R$ {priceInput.toLocaleString("pt-BR")}
                 </span>
               </div>
             </div>
 
-            {/* Botão limpar (mobile) */}
+            {/* Clear button (mobile) */}
             <div className="px-4 py-4">
               <button
-                onClick={limparFiltros}
+                onClick={clearFilters}
                 className={`
                   w-full py-3 rounded-xl text-sm font-bold
                   border-2 border-dashed border-[var(--color-border)]
@@ -562,10 +610,10 @@ export default function ProdutosPage() {
           </aside>
 
           {/* ================================================================ */}
-          {/* ÁREA DE LISTAGEM DOS PRODUTOS */}
+          {/* PRODUCT LISTING AREA */}
           {/* ================================================================ */}
           <div className="flex-1 min-w-0">
-            {/* Barra de ordenação e filtro mobile */}
+            {/* Sort bar and mobile filter */}
             <div
               className={`
                 flex flex-col sm:flex-row sm:items-center justify-between gap-3
@@ -576,7 +624,7 @@ export default function ProdutosPage() {
               `}
             >
               <div className="flex items-center gap-3">
-                {/* Botão para abrir sidebar no mobile */}
+                {/* Button to open the sidebar on mobile */}
                 <button
                   onClick={() => setSidebarOpen(true)}
                   className={`
@@ -589,35 +637,40 @@ export default function ProdutosPage() {
                   `}
                 >
                   ⚙ Filtros
-                  {(categoriaId !== undefined || maxPreco < 1000) && (
+                  {(categoryId !== undefined ||
+                    brandId !== undefined ||
+                    maxPrice < 1000) && (
                     <span className="w-2 h-2 rounded-full bg-[var(--color-primary)]" />
                   )}
                 </button>
 
-                {/* Contador de resultados */}
+                {/* Result counter */}
                 <p className="text-sm font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
                   <span className="text-[var(--color-primary)]">📦</span>
-                  {carregando ? (
-                    "Carregando..."
+                  {loading ? (
+                    "Loading..."
                   ) : (
                     <>
                       <span className="font-extrabold text-[var(--color-primary)]">
-                        {produtosFiltrados.length}
+                        {total}
                       </span>{" "}
-                      produto{produtosFiltrados.length !== 1 ? "s" : ""}
+                      product{total !== 1 ? "s" : ""}
                     </>
                   )}
                 </p>
               </div>
 
-              {/* Seletor de ordenação */}
+              {/* Sort selector */}
               <div className="flex items-center gap-3">
                 <label className="text-sm font-semibold text-[var(--color-text-secondary)] whitespace-nowrap hidden sm:block">
-                  Ordenar por:
+                  Sort by:
                 </label>
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e) => {
+                    setSortBy(e.target.value as ProductOrder);
+                    setPage(1);
+                  }}
                   className={`
                     text-sm font-medium
                     px-3 py-2 rounded-xl
@@ -635,17 +688,17 @@ export default function ProdutosPage() {
                     backgroundPosition: "right 10px center",
                   }}
                 >
-                  <option value="relevancia">Relevância</option>
-                  <option value="preco_asc">Menor Preço</option>
-                  <option value="preco_desc">Maior Preço</option>
-                  <option value="nome_asc">Nome (A-Z)</option>
-                  <option value="nome_desc">Nome (Z-A)</option>
+                  <option value="relevancia">Relevance</option>
+                  <option value="preco_asc">Lowest Price</option>
+                  <option value="preco_desc">Highest Price</option>
+                  <option value="nome_asc">Name (A-Z)</option>
+                  <option value="nome_desc">Name (Z-A)</option>
                 </select>
               </div>
             </div>
 
-            {/* Estado de erro */}
-            {erro && (
+            {/* Error state */}
+            {error && (
               <div
                 className={`
                   flex flex-col items-center justify-center
@@ -660,19 +713,19 @@ export default function ProdutosPage() {
                   Ops! Algo deu errado.
                 </h3>
                 <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-                  {erro}
+                  {error}
                 </p>
                 <button
                   onClick={() => window.location.reload()}
                   className="btn-primary text-sm"
                 >
-                  Tentar novamente
+                  Try again
                 </button>
               </div>
             )}
 
             {/* Skeletons (loading) */}
-            {carregando && !erro && (
+            {loading && !error && (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <SkeletonCard key={i} />
@@ -680,8 +733,8 @@ export default function ProdutosPage() {
               </div>
             )}
 
-            {/* Nenhum produto encontrado */}
-            {!carregando && !erro && produtosFiltrados.length === 0 && (
+            {/* No products found */}
+            {!loading && !error && products.length === 0 && (
               <div
                 className={`
                   flex flex-col items-center justify-center
@@ -693,29 +746,28 @@ export default function ProdutosPage() {
               >
                 <span className="text-6xl mb-4 opacity-40">🔍</span>
                 <h3 className="font-display font-bold text-xl text-[var(--color-text-primary)] mb-2">
-                  Nenhum produto encontrado
+                  No products found
                 </h3>
                 <p className="text-[var(--color-text-secondary)] text-sm mb-6 max-w-sm">
-                  Não encontramos produtos que correspondam aos filtros
-                  aplicados.
+                  We found no products matching the applied filters.
                 </p>
-                <button onClick={limparFiltros} className="btn-primary">
+                <button onClick={clearFilters} className="btn-primary">
                   🔄 Limpar Filtros
                 </button>
               </div>
             )}
 
-            {/* Grid de produtos */}
-            {!carregando && !erro && produtosFiltrados.length > 0 && (
+            {/* Product grid */}
+            {!loading && !error && products.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                {produtosFiltrados.map((produto, i) => (
-                  <ProductCard key={produto.id} produto={produto} index={i} />
+                {products.map((product, i) => (
+                  <ProductCard key={product.id} produto={product} index={i} />
                 ))}
               </div>
             )}
 
-            {/* Paginação */}
-            {totalPaginas > 1 && !carregando && (
+            {/* Pagination */}
+            {totalPages > 1 && !loading && (
               <div className="flex items-center justify-center gap-3 mt-10">
                 <button
                   onClick={() => setPage((p) => p - 1)}
@@ -733,7 +785,7 @@ export default function ProdutosPage() {
                 </button>
 
                 <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(totalPaginas, 5) }, (_, i) => {
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                     const p = i + 1;
                     return (
                       <button
@@ -752,7 +804,7 @@ export default function ProdutosPage() {
                       </button>
                     );
                   })}
-                  {totalPaginas > 5 && (
+                  {totalPages > 5 && (
                     <span className="text-[var(--color-text-tertiary)] px-2">
                       …
                     </span>
@@ -761,7 +813,7 @@ export default function ProdutosPage() {
 
                 <button
                   onClick={() => setPage((p) => p + 1)}
-                  disabled={page === totalPaginas}
+                  disabled={page === totalPages}
                   className={`
                     flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm
                     border border-[var(--color-border)]
@@ -771,7 +823,7 @@ export default function ProdutosPage() {
                     transition-all
                   `}
                 >
-                  Próxima →
+                  Next →
                 </button>
               </div>
             )}
@@ -780,16 +832,16 @@ export default function ProdutosPage() {
       </div>
 
       {/* ================================================================ */}
-      {/* SIDEBAR MOBILE (OVERLAY) */}
+      {/* MOBILE SIDEBAR (OVERLAY) */}
       {/* ================================================================ */}
       {sidebarOpen && (
         <>
-          {/* Backdrop escuro */}
+          {/* Dark backdrop */}
           <div
             onClick={() => setSidebarOpen(false)}
             className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
           />
-          {/* Menu lateral */}
+          {/* Side menu */}
           <aside
             className={`
               fixed top-0 left-0 bottom-0 z-50 w-[300px]
@@ -801,7 +853,7 @@ export default function ProdutosPage() {
             `}
             style={{ animation: "slideInLeft 0.3s ease" }}
           >
-            {/* Header do mobile */}
+            {/* Mobile header */}
             <div
               className={`
                 flex items-center justify-between
@@ -824,7 +876,7 @@ export default function ProdutosPage() {
               </button>
             </div>
 
-            {/* Filtros (versão mobile) */}
+            {/* Filters (mobile version) */}
             <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3">
                 🏷 Categorias
@@ -833,24 +885,24 @@ export default function ProdutosPage() {
                 <li>
                   <button
                     onClick={() => {
-                      setCategoriaId(undefined);
+                      setCategoryId(undefined);
                       setPage(1);
                       setSidebarOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${categoriaId === undefined ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
+                    className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${categoryId === undefined ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
                   >
                     Todas
                   </button>
                 </li>
-                {categorias.map((cat) => (
+                {categories.map((cat) => (
                   <li key={cat.id}>
                     <button
                       onClick={() => {
-                        setCategoriaId(cat.id);
+                        setCategoryId(cat.id);
                         setPage(1);
                         setSidebarOpen(false);
                       }}
-                      className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${categoriaId === cat.id ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
+                      className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${categoryId === cat.id ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
                     >
                       {cat.nome}
                     </button>
@@ -859,18 +911,55 @@ export default function ProdutosPage() {
               </ul>
             </div>
 
-            {/* Slider de preço (mobile) */}
+            {/* Brand filter (mobile) */}
+            {brands.length > 0 && (
+              <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3">
+                  🤝 Brands
+                </p>
+                <ul className="flex flex-col gap-0.5">
+                  <li>
+                    <button
+                      onClick={() => {
+                        setBrandId(undefined);
+                        setPage(1);
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${brandId === undefined ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
+                    >
+                      Todas
+                    </button>
+                  </li>
+                  {brands.map((m) => (
+                    <li key={m.id}>
+                      <button
+                        onClick={() => {
+                          setBrandId(m.id);
+                          setPage(1);
+                          setSidebarOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${brandId === m.id ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
+                      >
+                        {m.nome}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Price slider (mobile) */}
             <div className="px-4 py-5">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-4">
-                💰 Faixa de Preço
+                💰 Price Range
               </p>
               <input
                 type="range"
                 min={0}
                 max={1000}
                 step={10}
-                value={precoInput}
-                onChange={(e) => handlePrecoChange(Number(e.target.value))}
+                value={priceInput}
+                onChange={(e) => handlePriceChange(Number(e.target.value))}
                 style={{
                   background: `linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ${pricePercent}%, var(--color-border) ${pricePercent}%, var(--color-border) 100%)`,
                 }}
@@ -878,19 +967,19 @@ export default function ProdutosPage() {
               />
               <div className="flex justify-between items-center mt-3">
                 <span className="text-xs text-[var(--color-text-tertiary)]">
-                  Até
+                  Up to
                 </span>
                 <span className="text-lg font-extrabold font-display text-[var(--color-primary)]">
-                  R$ {precoInput.toLocaleString("pt-BR")}
+                  R$ {priceInput.toLocaleString("pt-BR")}
                 </span>
               </div>
             </div>
 
-            {/* Botão limpar (mobile) */}
+            {/* Clear button (mobile) */}
             <div className="px-4 py-4 mt-auto border-t border-[var(--color-border)]">
               <button
                 onClick={() => {
-                  limparFiltros();
+                  clearFilters();
                   setSidebarOpen(false);
                 }}
                 className="w-full py-3 rounded-xl text-sm font-bold border-2 border-dashed border-[var(--color-border)] text-[var(--color-text-tertiary)] hover:border-[var(--color-error)] hover:text-[var(--color-error)] transition-all uppercase tracking-wide"
@@ -902,7 +991,7 @@ export default function ProdutosPage() {
         </>
       )}
 
-      {/* Estilos para animação do slide-in no mobile */}
+      {/* Styles for the slide-in animation on mobile */}
       <style jsx>{`
         @keyframes slideInLeft {
           from {

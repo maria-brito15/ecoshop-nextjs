@@ -1,6 +1,6 @@
 ---
 paths: ["prisma/**"]
 ---
-- Mudança de schema exige migration versionada (`prisma migrate dev`) e ADR citado (ADR-0006).
-- Não edite migration já aplicada; crie outra.
-- `prisma/schema.prisma` é a única cópia do schema.
+- A schema change requires a versioned migration (`prisma migrate dev`) and a cited ADR (ADR-0006).
+- Do not edit an already applied migration; create another one.
+- `prisma/schema.prisma` is the only copy of the schema.

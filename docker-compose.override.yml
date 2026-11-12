@@ -1,0 +1,43 @@
+# =============================================================================
+# DOCKER COMPOSE - DEVELOPMENT ONLY
+# =============================================================================
+# Docker Compose loads this file on its own together with docker-compose.yml
+# when you run `docker compose up` WITHOUT -f. On a server, use
+# `docker compose -f docker-compose.prod.yml ...`: this file is not included.
+#
+# What it adds (REQ-OPS-08/09):
+# - Postgres and Redis ports published only on 127.0.0.1, for debugging
+#   and for `npm run dev` outside Docker;
+# - demo seed (users, brands, products) with SEED_USER_PASSWORD.
+#
+# Additional required variable: SEED_USER_PASSWORD (12+ characters).
+# =============================================================================
+
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  seed-demo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    container_name: ecoshop-seed-demo
+    environment:
+      DATABASE_URL: postgresql://ecoshop:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/ecoshop
+      SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:?set SEED_USER_PASSWORD in .env (12+ characters)}
+    command: npx tsx prisma/seed.ts
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    restart: "no"
+
+  app:
+    depends_on:
+      seed-demo:
+        condition: service_completed_successfully

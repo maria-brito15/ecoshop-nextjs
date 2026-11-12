@@ -1,20 +1,18 @@
 // lib/db.ts
 
 /**
- * ============================================================================
  * DATABASE CONNECTION
- * ============================================================================
- * Este módulo gerencia a conexão com o banco de dados PostgreSQL usando Prisma ORM.
  *
- * Características importantes:
- * - Singleton pattern: reutiliza a mesma conexão em todo o ciclo de vida da aplicação
- * - Adapter PostgreSQL nativo (pg) para maior performance
- * - Proxy para lazy loading — evita inicialização prematura do PrismaClient
+ * This module manages the PostgreSQL connection using the Prisma ORM.
  *
- * IMPORTANTE: O PrismaClient é instanciado apenas na primeira vez que é usado.
- * Isso evita múltiplas conexões em desenvolvimento (hot reload) e otimiza
- * o uso de recursos em produção.
- * ============================================================================
+ * Important characteristics:
+ * - Singleton pattern: reuses the same connection for the whole application lifetime
+ * - Native PostgreSQL adapter (pg) for better performance
+ * - Proxy for lazy loading — avoids premature PrismaClient initialization
+ *
+ * IMPORTANT: The PrismaClient is only instantiated the first time it is used.
+ * This avoids multiple connections in development (hot reload) and optimizes
+ * resource use in production.
  */
 
 import { PrismaClient } from "@prisma/client";
@@ -22,27 +20,27 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 
 /**
- * Referência global para o singleton do PrismaClient.
- * Usa globalThis para persistir entre hot reloads em desenvolvimento.
- * Em produção, a variável é única por instância do servidor.
+ * Global reference to the PrismaClient singleton.
+ * Uses globalThis to persist across hot reloads in development.
+ * In production, the variable is unique per server instance.
  */
 let _prisma: PrismaClient | undefined;
 
 /**
- * Cria ou retorna a instância existente do PrismaClient.
- * A conexão só é estabelecida quando esta função é chamada pela primeira vez.
+ * Creates or returns the existing PrismaClient instance.
+ * The connection is only established the first time this function is called.
  *
- * @returns {PrismaClient} Instância configurada do PrismaClient
- * @throws {Error} Se DATABASE_URL não estiver definida no ambiente
+ * @returns {PrismaClient} Configured PrismaClient instance
+ * @throws {Error} If DATABASE_URL is not defined in the environment
  *
- * Configuração do adapter:
- * - pg.Pool: gerenciador de pool de conexões PostgreSQL
- * - PrismaPg: adaptador oficial do Prisma para PostgreSQL
+ * Adapter configuration:
+ * - pg.Pool: PostgreSQL connection pool manager
+ * - PrismaPg: Prisma's official PostgreSQL adapter
  *
- * O pool de conexões gerencia automaticamente:
- * - Reutilização de conexões
- * - Limite máximo de conexões simultâneas
- * - Timeout e reconexão em falhas
+ * The connection pool automatically manages:
+ * - Connection reuse
+ * - Maximum number of simultaneous connections
+ * - Timeout and reconnection on failure
  */
 function getPrisma(): PrismaClient {
   if (_prisma) return _prisma;
@@ -50,38 +48,38 @@ function getPrisma(): PrismaClient {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error(
-      "[lib/db] DATABASE_URL não definida. Configure a variável de ambiente.",
+      "[lib/db] DATABASE_URL is not set. Configure the environment variable.",
     );
   }
 
-  // Cria pool de conexões PostgreSQL
+  // Creates the PostgreSQL connection pool
   const pool = new pg.Pool({ connectionString });
   const adapter = new PrismaPg(pool);
 
-  // Instancia o PrismaClient com o adapter
+  // Instantiates the PrismaClient with the adapter
   _prisma = new PrismaClient({ adapter });
   return _prisma;
 }
 
 /**
- * Proxy do PrismaClient que permite lazy loading.
+ * PrismaClient proxy that enables lazy loading.
  *
- * Por que um Proxy?
- * - O PrismaClient tem muitas propriedades e métodos
- * - Inicializar ele prematuramente conectaria ao banco mesmo se não usado
- * - O proxy atrasa a inicialização até o primeiro acesso a qualquer propriedade
+ * Why a Proxy?
+ * - The PrismaClient has many properties and methods
+ * - Initializing it prematurely would connect to the database even if unused
+ * - The proxy delays initialization until the first access to any property
  *
- * Como usar:
+ * How to use:
  * ```ts
  * import { prisma } from "@/lib/db";
- * const usuarios = await prisma.usuario.findMany();
+ * const users = await prisma.usuario.findMany();
  * ```
  *
- * Na primeira vez que qualquer método (findMany, create, etc.) for chamado,
- * o getPrisma() é executado, estabelecendo a conexão.
+ * The first time any method (findMany, create, etc.) is called,
+ * getPrisma() runs, establishing the connection.
  */
 export const prisma = new Proxy({} as PrismaClient, {
   get(_, prop) {
-    return (getPrisma() as any)[prop];
+    return Reflect.get(getPrisma(), prop);
   },
 });

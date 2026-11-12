@@ -1,78 +1,87 @@
 // app/api/produtos/route.ts
 
 /**
- * ============================================================================
- * PRODUTOS API ROUTES
- * ============================================================================
- * Endpoints para gerenciamento de produtos.
+ * PRODUCTS API ROUTES
  *
- * GET /api/produtos - Lista produtos com paginação e filtros (público)
- * POST /api/produtos - Cria novo produto (requer ADMIN)
+ * Endpoints for managing products.
  *
- * Filtros suportados no GET:
- * - page: número da página (padrão: 1)
- * - size: itens por página (padrão: 12)
- * - categoriaId: filtrar por categoria
- * - nome: busca textual por nome
+ * GET /api/produtos - List products with pagination and filters (public)
+ * POST /api/produtos - Create a new product (requires ADMIN)
  *
- * @see services/produto.service.ts - Lógica de negócio
- * ============================================================================
+ * Filters supported on GET:
+ * - page: page number (default: 1)
+ * - size: items per page (default: 12)
+ * - categoriaId: filter by category
+ * - marcaId: filter by brand (REQ-CAT-07)
+ * - precoMax: maximum price (REQ-CAT-06)
+ * - sort: relevancia (default) | preco_asc | preco_desc | nome_asc | nome_desc (REQ-CAT-06)
+ * - nome: text search by name
+ *
+ * @see services/product.service.ts - Business logic
  */
 
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS } from "@/lib/http/responses";
-import { produtoSchema } from "@/lib/schemas/produto";
-import { listarProdutos, criarProduto } from "@/services/produto.service";
+import { ERRORS, mapError } from "@/lib/http/responses";
+import { productSchema, listProductsQuerySchema } from "@/lib/schemas/product";
+import { listProducts, createProduct } from "@/services/product.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/produtos - Lista produtos com paginação e filtros
+ * GET /api/produtos - List products with pagination and filters
  *
- * @query page - Número da página (default: 1)
- * @query size - Itens por página (default: 12)
- * @query categoriaId - Filtrar por categoria (opcional)
- * @query nome - Busca textual (opcional, case-insensitive)
- * @returns { produtos: Produto[], page: number, size: number, total: number }
- * @status 200 - Lista retornada com sucesso
- * @status 500 - Erro ao listar produtos
+ * @query page - Page number (default: 1)
+ * @query size - Items per page (default: 12)
+ * @query categoriaId - Filter by category (optional)
+ * @query marcaId - Filter by brand (optional, REQ-CAT-07)
+ * @query precoMax - Maximum price (optional, REQ-CAT-06)
+ * @query sort - relevancia (default) | preco_asc | preco_desc | nome_asc | nome_desc (REQ-CAT-06)
+ * @query nome - Text search (optional, case-insensitive)
+ * @returns { produtos: Product[], page: number, size: number, total: number }
+ * @status 200 - List returned successfully
+ * @status 500 - Error listing products
  */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const resultado = await listarProdutos(searchParams);
-    return NextResponse.json(resultado);
-  } catch {
-    return ERROS.interno("listar produtos");
+    const parsed = listProductsQuerySchema.safeParse(
+      Object.fromEntries(searchParams),
+    );
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
+
+    const result = await listProducts(parsed.data);
+    return NextResponse.json(result);
+  } catch (err) {
+    return ERRORS.internal("list products", err);
   }
 }
 
 /**
- * POST /api/produtos - Cria novo produto
+ * POST /api/produtos - Create a new product
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
  * @body { nome: string, descricao?: string, preco: number, categoriaId: number, marcaId: number }
- * @returns { produto: Produto }
- * @status 201 - Produto criado
- * @status 400 - Dados inválidos
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 500 - Erro ao criar produto
+ * @returns { produto: Product }
+ * @status 201 - Product created
+ * @status 400 - Invalid data
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 500 - Error creating product
  */
 export async function POST(req: NextRequest) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
     const body = await req.json();
-    const parsed = produtoSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    const parsed = productSchema.safeParse(body);
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const produto = await criarProduto(parsed.data);
-    return NextResponse.json({ produto }, { status: 201 });
-  } catch {
-    return ERROS.interno("criar produto");
+    const product = await createProduct(parsed.data);
+    return NextResponse.json({ produto: product }, { status: 201 });
+  } catch (err) {
+    return mapError(err, "Product") ?? ERRORS.internal("create product", err);
   }
 }

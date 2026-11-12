@@ -1,74 +1,72 @@
 // app/api/ia/scan/route.ts
 
 /**
- * ============================================================================
- * IA SCAN API ROUTE - ECOSCAN
- * ============================================================================
- * Rota de API para análise de imagens com IA (reconhecimento de produtos recicláveis).
+ * AI SCAN API ROUTE - ECOSCAN
  *
- * POST /api/ia/scan - Analisa imagem e retorna informações de reciclagem
+ * API route for AI image analysis (recognition of recyclable items).
  *
- * Endpoint privado - requer autenticação (usuário logado).
+ * POST /api/ia/scan - Analyzes an image and returns recycling information
  *
- * Fluxo:
- * 1. Verifica autenticação do usuário (requireAuth)
- * 2. Extrai arquivo do FormData
- * 3. Valida tipo e tamanho do arquivo
- * 4. Converte para Buffer para processamento
- * 5. Chama serviço de IA para análise da imagem
- * 6. Retorna resultado (sucesso com dados ou erro)
+ * Private endpoint - requires authentication (signed-in user).
  *
- * Limites:
- * - Tamanho máximo: 10MB
- * - Formatos aceitos: JPG, PNG, GIF, WebP
+ * Flow:
+ * 1. Checks the user's authentication (requireAuth)
+ * 2. Extracts the file from the FormData
+ * 3. Validates the file type and size
+ * 4. Converts it to a Buffer for processing
+ * 5. Calls the AI service to analyze the image
+ * 6. Returns the result (success with data or error)
  *
- * @see lib/ai/analisar-imagem.ts - Orquestração da análise
- * ============================================================================
+ * Limits:
+ * - Maximum size: 10MB
+ * - Accepted formats: JPG, PNG, GIF, WebP
+ *
+ * @see lib/ai/analyze-image.ts - Analysis orchestration
  */
 
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { analisarImagem } from "@/lib/ai";
-import { ERROS } from "@/lib/http/responses";
+import { ERRORS } from "@/lib/http/responses";
 import { requireAuth } from "@/app/_middleware/auth";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
 /**
- * POST /api/ia/scan - Analisa imagem
+ * POST /api/ia/scan - Analyzes an image
  *
- * Requer autenticação (usuário logado).
+ * Requires authentication (signed-in user).
  *
- * @body FormData com campo 'image' (arquivo)
- * @returns ResultadoScan (sucesso ou falha)
- * @status 200 - Análise bem-sucedida
- * @status 401 - Não autenticado
- * @status 400 - Dados inválidos (arquivo ausente, tipo errado, tamanho excedido)
- * @status 422 - Imagem não pôde ser analisada (formato não suportado pela IA)
- * @status 500 - Erro interno
+ * @body FormData with an 'image' field (file)
+ * @returns ScanResult (success or failure)
+ * @status 200 - Analysis successful
+ * @status 401 - Not authenticated
+ * @status 400 - Invalid data (missing file, wrong type, size exceeded)
+ * @status 422 - The image could not be analyzed (format not supported by the AI)
+ * @status 500 - Internal error
  */
 export async function POST(req: NextRequest) {
-  const authErro = await requireAuth(req);
-  if (authErro) return authErro;
+  const authError = await requireAuth(req);
+  if (authError) return authError;
 
   try {
     const formData = await req.formData();
     const file = formData.get("image") as File | null;
 
     if (!file) {
-      return ERROS.dadosInvalidos("Nenhuma imagem enviada");
+      return ERRORS.invalidData("Nenhuma imagem enviada");
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return ERROS.dadosInvalidos(
-        "Formato inválido. Use: jpg, jpeg, png, gif ou webp",
+      return ERRORS.invalidData(
+        "Invalid format. Use: jpg, jpeg, png, gif or webp",
       );
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return ERROS.dadosInvalidos("Arquivo muito grande (máx: 10MB)");
+      return ERRORS.invalidData("File too large (max: 10MB)");
     }
 
     const arrayBuffer = await file.arrayBuffer();
@@ -76,12 +74,12 @@ export async function POST(req: NextRequest) {
 
     const imageId = `analise_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 
-    const resultado = await analisarImagem(buffer, imageId);
+    const result = await analisarImagem(buffer, imageId);
 
-    return NextResponse.json(resultado, {
-      status: resultado.sucesso ? 200 : 422,
+    return NextResponse.json(result, {
+      status: result.sucesso ? 200 : 422,
     });
-  } catch {
-    return ERROS.interno("processar análise");
+  } catch (err) {
+    return ERRORS.internal("process analysis", err);
   }
 }

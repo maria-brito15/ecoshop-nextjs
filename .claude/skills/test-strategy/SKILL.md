@@ -1,15 +1,15 @@
 ---
 name: test-strategy
-description: Use ao escrever ou revisar testes do EcoShop: ligar teste a REQ, escolher nível, tratar defeitos conhecidos como caracterização e manter a suíte determinística.
+description: Use when writing or reviewing EcoShop tests: link a test to a REQ, pick the level, treat known defects as characterization and keep the suite deterministic.
 ---
 
-# Estratégia de testes (ADR-0016)
+# Test strategy (ADR-0016)
 
-- Local: `tests/integration/*.test.ts`, `node:test` via `tsx`, contra Postgres e Redis reais; Azure e Gemini com `stubFetch`.
-- Título: `test("REQ-XXX-NN: comportamento observável", …)`. `trace-check` liga REQ ↔ teste ↔ `status.md`.
-- Primeiro import: `./helpers` (define o ambiente). Chame `encerrar` em `after`.
-- Dados únicos por execução: `email("nome")`; IP novo por requisição (`ipNovo`) para não colidir no rate limit; `limparRateLimit()` quando o teste conta tentativas.
-- Defeito conhecido: `test("REQ-…", { todo: "motivo" }, …)` descreve o comportamento CORRETO e fica pendente; remova o `todo` no commit que corrige.
-- Verificação manual: `skip` + evidência `manual: AAAA-MM-DD …` em `status.md`.
-- Ordem: caso feliz, cada regra de negócio, erros (400/401/403/404/409/429/5xx), limites.
-- Não teste implementação; teste status, corpo e efeito no banco.
+- Location: `tests/integration/*.test.ts`, `node:test` via `tsx`, against real Postgres and Redis; Azure and Gemini with `stubFetch`.
+- Title: `test("REQ-XXX-NN: observable behavior", …)`. `trace-check` links REQ ↔ test ↔ `status.md`.
+- First import: `./helpers` (sets the environment). Call `closeConnections` in `after`.
+- Unique data per run: `email("name")`; a fresh IP per request (`newIp`) so rate limits do not collide; `clearRateLimit()` when the test counts attempts.
+- Known defect: `test("REQ-…", { todo: "reason" }, …)` describes the CORRECT behavior and stays pending; remove the `todo` in the commit that fixes it.
+- Manual verification: `skip` + `manual: YYYY-MM-DD …` evidence in `status.md`.
+- Order: happy path, each business rule, errors (400/401/403/404/409/429/5xx), limits.
+- Do not test the implementation; test the status, body and effect on the database.

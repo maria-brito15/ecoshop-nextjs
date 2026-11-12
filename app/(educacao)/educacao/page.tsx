@@ -1,37 +1,35 @@
 // app/(educacao)/educacao/page.tsx
 
 /**
- * ============================================================================
- * PÁGINA DE EDUCAÇÃO AMBIENTAL
- * ============================================================================
- * Rota: "/educacao"
+ * ENVIRONMENTAL EDUCATION PAGE
  *
- * Página educativa do EcoShop, responsável por conscientizar usuários
- * sobre sustentabilidade, reciclagem e práticas ecológicas.
+ * Route: "/educacao"
  *
- * Funcionalidades:
- * - Artigos educativos sobre meio ambiente
- * - Dicas práticas de reciclagem por tipo de material
- * - Quiz interativo para testar conhecimentos
+ * EcoShop's educational page, meant to raise users' awareness
+ * about sustainability, recycling and ecological practices.
  *
- * Conteúdos abordados:
- * - O que é Ecologia (produtores, consumidores, decompositores)
- * - Pilares da Sustentabilidade (ambiental, social, econômico)
- * - Coleta seletiva e cores das lixeiras
- * - Tempo de decomposição de materiais
+ * Features:
+ * - Educational articles about the environment
+ * - Practical recycling tips by material type
+ * - Interactive quiz to test knowledge
  *
- * @see app/components/Header.tsx - Navegação para esta página
- * ============================================================================
+ * Topics covered:
+ * - What is Ecology (producers, consumers, decomposers)
+ * - Pillars of Sustainability (environmental, social, economic)
+ * - Selective collection and bin colors
+ * - Decomposition time of materials
+ *
+ * @see app/components/Header.tsx - Navigation to this page
  */
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
-type Aba = "artigos" | "dicas" | "quiz";
+type Tab = "artigos" | "dicas" | "quiz";
 
-type Artigo = {
+type Article = {
   tag: "verde" | "agua" | "energia" | "consumo";
   tagLabel: string;
   tagColor: string;
@@ -42,14 +40,14 @@ type Artigo = {
   body: string;
 };
 
-type Dica = {
+type Tip = {
   icon: string;
   title: string;
   color: string;
   tips: string[];
 };
 
-type Questao = {
+type Question = {
   q: string;
   opts: string[];
   ans: number;
@@ -57,36 +55,36 @@ type Questao = {
 };
 
 // ----------------------------------------------------------------------------
-// CONTEÚDO ESTÁTICO
+// STATIC CONTENT
 // ----------------------------------------------------------------------------
 
 /**
- * Artigos educativos sobre sustentabilidade.
- * Cada artigo tem tag, ícone, título, tempo de leitura e conteúdo completo.
+ * Educational articles about sustainability.
+ * Each article has a tag, icon, title, reading time and full content.
  */
-const ARTIGOS: Artigo[] = [
+const ARTICLES: Article[] = [
   {
     tag: "verde",
     tagLabel: "Meio ambiente",
     tagColor:
       "bg-[var(--color-primary-light)] text-[var(--color-primary-dark)]",
     icon: "🌿",
-    title: "Por que a coleta seletiva importa?",
+    title: "Why does selective collection matter?",
     time: "4 min",
     summary:
-      "A separação correta do lixo reduz em até 30% o volume enviado aos aterros sanitários e viabiliza a cadeia de reciclagem.",
-    body: "A coleta seletiva é o primeiro passo para uma cadeia de reciclagem eficiente. Quando separamos o lixo corretamente em casa, facilitamos o trabalho das cooperativas de catadores e reduzimos drasticamente o volume de resíduos que vai para aterros sanitários.\n\nEstudos indicam que municípios com programas ativos de coleta seletiva reduzem em até 30% o material destinado a aterros. Isso prolonga a vida útil desses espaços e diminui a emissão de metano, gás altamente poluente.\n\nO passo mais simples: separe lixo seco (plástico, papel, metal, vidro) do lixo úmido (restos de comida). Muitos municípios oferecem coleta diferenciada para cada tipo.",
+      "Correctly separating waste cuts the volume sent to landfills by up to 30% and makes the recycling chain viable.",
+    body: "Selective collection is the first step toward an efficient recycling chain. When we separate waste correctly at home, we make the work of waste-picker cooperatives easier and drastically reduce the volume of waste going to landfills.\n\nStudies indicate that municipalities with active selective collection programs cut the material sent to landfills by up to 30%. This extends the lifespan of those sites and reduces emissions of methane, a highly polluting gas.\n\nThe simplest step: separate dry waste (plastic, paper, metal, glass) from wet waste (food scraps). Many municipalities offer separate collection for each type.",
   },
   {
     tag: "agua",
-    tagLabel: "Água",
+    tagLabel: "Water",
     tagColor: "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
     icon: "💧",
-    title: "Como reduzir o consumo de água em casa",
+    title: "How to reduce water consumption at home",
     time: "3 min",
     summary:
-      "Pequenos hábitos diários podem economizar centenas de litros por mês sem abrir mão do conforto.",
-    body: "O consumo consciente de água começa nos pequenos hábitos. Fechar a torneira ao escovar os dentes economiza até 12 litros por minuto. No banho, reduzir o tempo em apenas dois minutos pode poupar cerca de 24 litros por dia.\n\nAlém dos hábitos, é possível adaptar a casa: arejadores nas torneiras reduzem o fluxo sem prejudicar a sensação de pressão, e descargas com acionamento duplo economizam até 60% de água por uso.\n\nReutilizar a água da máquina de lavar para limpar calçadas ou regar plantas é outra prática simples com grande impacto acumulado ao longo do mês.",
+      "Small daily habits can save hundreds of liters per month without giving up comfort.",
+    body: "Conscious water use starts with small habits. Turning off the tap while brushing your teeth saves up to 12 liters per minute. In the shower, cutting just two minutes can save about 24 liters per day.\n\nBeyond habits, you can adapt the house: aerators on taps reduce flow without hurting the feeling of pressure, and dual-flush toilets save up to 60% of water per use.\n\nReusing washing machine water to clean sidewalks or water plants is another simple practice with a large cumulative impact over the month.",
   },
   {
     tag: "energia",
@@ -94,11 +92,11 @@ const ARTIGOS: Artigo[] = [
     tagColor:
       "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
     icon: "⚡",
-    title: "Eficiência energética: o que muda na prática",
+    title: "Energy efficiency: what changes in practice",
     time: "5 min",
     summary:
-      "Trocar lâmpadas incandescentes por LED e desligar aparelhos em standby pode reduzir até 20% da conta de luz.",
-    body: "A eficiência energética é uma das formas mais acessíveis de reduzir o impacto ambiental. Lâmpadas LED consomem até 80% menos energia do que as incandescentes e duram muito mais tempo, o que compensa rapidamente o investimento inicial.\n\nAparelhos em modo standby representam de 5% a 12% do consumo total de energia de uma residência. Desligá-los da tomada quando não estão em uso é um hábito simples e eficaz.\n\nEletrodomésticos com o selo Procel A são mais eficientes e, no longo prazo, mais econômicos.",
+      "Replacing incandescent bulbs with LEDs and unplugging standby devices can cut up to 20% of the electricity bill.",
+    body: "Energy efficiency is one of the most accessible ways to reduce environmental impact. LED bulbs use up to 80% less energy than incandescent ones and last much longer, which quickly pays back the initial investment.\n\nDevices in standby mode account for 5% to 12% of a household's total energy consumption. Unplugging them when not in use is a simple and effective habit.\n\nAppliances with the Procel A label are more efficient and, in the long run, cheaper.",
   },
   {
     tag: "consumo",
@@ -106,29 +104,29 @@ const ARTIGOS: Artigo[] = [
     tagColor:
       "bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300",
     icon: "🛒",
-    title: "Consumo consciente além do clichê",
+    title: "Conscious consumption beyond the cliché",
     time: "6 min",
     summary:
-      "Antes de comprar, pergunte: preciso disso? O que acontece quando descarto? Entenda o ciclo de vida dos produtos.",
-    body: "Consumo consciente não significa comprar menos de forma absoluta — significa comprar com mais intenção. Antes de qualquer compra, vale perguntar: preciso disso agora? Existe uma alternativa mais durável? O que acontece com esse produto quando eu descartar?\n\nO conceito de ciclo de vida considera todas as etapas: extração de matéria-prima, fabricação, transporte, uso e descarte.\n\nPriorizar marcas com certificações socioambientais, comprar usado quando possível e reparar antes de descartar são escolhas que, somadas, criam uma diferença real.",
+      "Before buying, ask: do I need this? What happens when I throw it away? Understand the life cycle of products.",
+    body: "Conscious consumption does not mean buying less in absolute terms — it means buying with more intention. Before any purchase, it is worth asking: do I need this right now? Is there a more durable alternative? What happens to this product when I throw it away?\n\nThe life cycle concept considers every stage: raw material extraction, manufacturing, transport, use and disposal.\n\nPrioritizing brands with social and environmental certifications, buying second-hand when possible and repairing before discarding are choices that, added together, make a real difference.",
   },
 ];
 
 /**
- * Dicas de reciclagem por tipo de material.
- * Cada material tem ícone, cor e lista de orientações.
+ * Recycling tips by material type.
+ * Each material has an icon, a color and a list of guidelines.
  */
-const DICAS: Dica[] = [
+const TIPS: Tip[] = [
   {
     icon: "♻️",
-    title: "Plástico",
+    title: "Plastic",
     color:
       "bg-red-50 text-red-600 border-red-200 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/30",
     tips: [
-      "Enxágue embalagens antes de descartar",
-      "Retire rótulos de papel",
-      "Amasse para ocupar menos espaço",
-      "Lixeira vermelha da coleta seletiva",
+      "Rinse packaging before discarding",
+      "Remove paper labels",
+      "Crush it to take up less space",
+      "Red selective collection bin",
     ],
   },
   {
@@ -137,10 +135,10 @@ const DICAS: Dica[] = [
     color:
       "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/30",
     tips: [
-      "Evite papéis engordurados ou molhados",
-      "Caixas devem ser desmontadas",
-      "Papel higiênico e guardanapo não são recicláveis",
-      "Lixeira azul da coleta seletiva",
+      "Avoid greasy or wet paper",
+      "Boxes should be flattened",
+      "Toilet paper and napkins are not recyclable",
+      "Blue selective collection bin",
     ],
   },
   {
@@ -149,10 +147,10 @@ const DICAS: Dica[] = [
     color:
       "bg-green-50 text-green-700 border-green-200 dark:bg-green-500/15 dark:text-green-400 dark:border-green-500/30",
     tips: [
-      "Não misture com outros materiais",
-      "Tampa de metal pode ir separada",
-      "Vidro quebrado: embale com cuidado",
-      "Lixeira verde da coleta seletiva",
+      "Do not mix with other materials",
+      "The metal lid can go separately",
+      "Broken glass: wrap it carefully",
+      "Green selective collection bin",
     ],
   },
   {
@@ -161,22 +159,22 @@ const DICAS: Dica[] = [
     color:
       "bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30",
     tips: [
-      "Amasse latas para economizar espaço",
-      "Limpe resíduos de alimentos",
-      "Aerossóis vazios podem ser descartados aqui",
-      "Lixeira amarela da coleta seletiva",
+      "Crush cans to save space",
+      "Clean off food residue",
+      "Empty aerosol cans can be discarded here",
+      "Yellow selective collection bin",
     ],
   },
   {
     icon: "🌱",
-    title: "Orgânico",
+    title: "Organic",
     color:
       "bg-[var(--color-primary-light)] text-[var(--color-primary-dark)] border-[var(--color-border)]",
     tips: [
-      "Restos de comida viram composto",
-      "Cascas e borra de café são ótimos para hortas",
-      "Lixeira marrom onde disponível",
-      "Evite misturar com plástico ou papel",
+      "Food scraps become compost",
+      "Peels and coffee grounds are great for gardens",
+      "Brown bin where available",
+      "Avoid mixing with plastic or paper",
     ],
   },
   {
@@ -185,53 +183,53 @@ const DICAS: Dica[] = [
     color:
       "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/15 dark:text-purple-400 dark:border-purple-500/30",
     tips: [
-      "Pilhas e baterias: pontos de coleta em supermercados",
-      "Medicamentos: farmácias têm descarte gratuito",
-      "Eletrônicos: leve a assistências técnicas ou fabricantes",
-      "Nunca jogue óleo de cozinha na pia",
+      "Batteries: collection points in supermarkets",
+      "Medicines: pharmacies offer free disposal",
+      "Electronics: take them to repair shops or manufacturers",
+      "Never pour cooking oil down the sink",
     ],
   },
 ];
 
 /**
- * Perguntas do quiz sobre sustentabilidade.
- * Cada questão tem pergunta, opções, resposta correta e explicação.
+ * Quiz questions about sustainability.
+ * Each question has a prompt, options, the correct answer and an explanation.
  */
-const QUESTOES: Questao[] = [
+const QUESTIONS: Question[] = [
   {
-    q: "Qual cor de lixeira é usada para plástico na coleta seletiva?",
+    q: "Which bin color is used for plastic in selective collection?",
     opts: ["Azul", "Vermelha", "Verde", "Amarela"],
     ans: 1,
-    exp: "A lixeira vermelha é padronizada para plásticos no sistema de coleta seletiva brasileiro.",
+    exp: "The red bin is the standard color for plastics in the Brazilian selective collection system.",
   },
   {
-    q: "Qual gás é produzido pela decomposição de matéria orgânica em aterros sanitários?",
-    opts: ["CO₂", "Ozônio", "Metano", "Nitrogênio"],
+    q: "Which gas is produced by the decomposition of organic matter in landfills?",
+    opts: ["CO₂", "Ozone", "Metano", "Nitrogen"],
     ans: 2,
-    exp: "O metano (CH₄) é liberado na decomposição anaeróbica. É um gás de efeito estufa muito mais potente que o CO₂.",
+    exp: "Methane (CH₄) is released by anaerobic decomposition. It is a greenhouse gas far more potent than CO₂.",
   },
   {
-    q: "Quanto tempo leva aproximadamente para uma sacola plástica se decompor?",
+    q: "Approximately how long does a plastic bag take to decompose?",
     opts: ["10 anos", "50 anos", "400 anos", "10.000 anos"],
     ans: 2,
-    exp: "Sacolas plásticas comuns levam entre 400 e 1.000 anos para se decompor completamente no ambiente.",
+    exp: "Common plastic bags take between 400 and 1,000 years to decompose completely in the environment.",
   },
   {
-    q: "Qual destes itens NÃO é reciclável na coleta seletiva convencional?",
+    q: "Which of these items is NOT recyclable in conventional selective collection?",
     opts: [
-      "Lata de alumínio",
-      "Papel higiênico usado",
+      "Aluminum can",
+      "Used toilet paper",
       "Garrafa PET",
       "Jornal",
     ],
     ans: 1,
-    exp: "Papel higiênico usado está contaminado e não pode ser reciclado. Latas, PET e jornais são recicláveis.",
+    exp: "Used toilet paper is contaminated and cannot be recycled. Cans, PET and newspapers are recyclable.",
   },
   {
-    q: "Fechar a torneira ao escovar os dentes economiza quanto por minuto?",
+    q: "How much does turning off the tap while brushing your teeth save per minute?",
     opts: ["2 litros", "6 litros", "12 litros", "20 litros"],
     ans: 2,
-    exp: "Uma torneira aberta gasta em média 12 litros por minuto. Fechar durante a escovação é um dos hábitos de maior impacto.",
+    exp: "An open tap uses on average 12 liters per minute. Turning it off while brushing is one of the habits with the greatest impact.",
   },
 ];
 
@@ -240,9 +238,9 @@ const QUESTOES: Questao[] = [
 // ----------------------------------------------------------------------------
 
 /**
- * Hook para animação de revelação ao rolar a página.
- * Detecta quando elementos com classe "animate-on-scroll" entram na viewport
- * e adiciona a classe "visible" para trigger da animação CSS.
+ * Hook for the reveal-on-scroll animation.
+ * Detects when elements with the "animate-on-scroll" class enter the viewport
+ * and adds the "visible" class to trigger the CSS animation.
  */
 function useScrollReveal(deps: unknown[] = []) {
   useEffect(() => {
@@ -276,59 +274,59 @@ function useScrollReveal(deps: unknown[] = []) {
 }
 
 // ----------------------------------------------------------------------------
-// COMPONENTES DAS ABAS
+// TAB COMPONENTS
 // ----------------------------------------------------------------------------
 
-const ABAS: { id: Aba; label: string; icon: string }[] = [
+const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "artigos", label: "Artigos", icon: "📖" },
-  { id: "dicas", label: "Dicas de reciclagem", icon: "♻️" },
+  { id: "dicas", label: "Recycling tips", icon: "♻️" },
   { id: "quiz", label: "Quiz", icon: "🧠" },
 ];
 
 /**
- * Seção de artigos educativos.
- * Exibe lista de artigos em cards. Ao clicar, expande para leitura completa.
+ * Educational articles section.
+ * Shows a list of articles as cards. Clicking expands it for full reading.
  */
-function SecaoArtigos({
-  onArtigoChange,
+function ArticlesSection({
+  onArtigoChange: onArticleChange,
 }: {
-  onArtigoChange?: (aberto: boolean) => void;
+  onArtigoChange?: (open: boolean) => void;
 }) {
-  const [aberto, setAberto] = useState<Artigo | null>(null);
+  const [open, setOpen] = useState<Article | null>(null);
 
-  function abrirArtigo(artigo: Artigo) {
-    setAberto(artigo);
-    onArtigoChange?.(true);
+  function openArticle(article: Article) {
+    setOpen(article);
+    onArticleChange?.(true);
   }
 
-  function fecharArtigo() {
-    setAberto(null);
-    onArtigoChange?.(false);
+  function closeArticle() {
+    setOpen(null);
+    onArticleChange?.(false);
   }
 
-  // Visualização expandida do artigo
-  if (aberto) {
+  // Expanded article view
+  if (open) {
     return (
       <div className="animate-[fadeSlideUp_0.4s_ease]">
         <button
-          onClick={fecharArtigo}
+          onClick={closeArticle}
           className="inline-flex items-center gap-2 mb-8 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
         >
-          ← Voltar para artigos
+          ← Back to articles
         </button>
 
         <div className="max-w-3xl">
-          <span className={`badge-eco mb-4 inline-flex ${aberto.tagColor}`}>
-            {aberto.icon} {aberto.tagLabel}
+          <span className={`badge-eco mb-4 inline-flex ${open.tagColor}`}>
+            {open.icon} {open.tagLabel}
           </span>
           <p className="text-xs text-[var(--color-text-tertiary)] font-semibold uppercase tracking-wider mb-3">
-            {aberto.time} de leitura
+            {open.time} read
           </p>
           <h2 className="font-display text-3xl md:text-4xl font-extrabold text-[var(--color-text-primary)] mb-6 leading-tight">
-            {aberto.title}
+            {open.title}
           </h2>
           <div className="prose max-w-none">
-            {aberto.body.split(/\n\n+/).map((p, i) => (
+            {open.body.split(/\n\n+/).map((p, i) => (
               <p
                 key={i}
                 className="text-[var(--color-text-secondary)] leading-8 mb-5 text-base"
@@ -345,29 +343,29 @@ function SecaoArtigos({
   // Grid de artigos
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {ARTIGOS.map((artigo, i) => (
+      {ARTICLES.map((article, i) => (
         <article
           key={i}
           className="card-eco flex flex-col p-7 cursor-pointer relative overflow-hidden group"
-          onClick={() => abrirArtigo(artigo)}
+          onClick={() => openArticle(article)}
         >
           <div className="absolute top-0 left-0 w-1 h-full bg-[var(--color-primary)] opacity-0 group-hover:opacity-100 transition-opacity" />
 
           <div className="flex items-center gap-3 mb-4">
-            <span className={`badge-eco text-xs ${artigo.tagColor}`}>
-              {artigo.icon} {artigo.tagLabel}
+            <span className={`badge-eco text-xs ${article.tagColor}`}>
+              {article.icon} {article.tagLabel}
             </span>
             <span className="text-xs text-[var(--color-text-tertiary)] ml-auto">
-              ⏱ {artigo.time}
+              ⏱ {article.time}
             </span>
           </div>
 
           <h3 className="font-display text-lg font-bold text-[var(--color-text-primary)] mb-3 leading-snug group-hover:text-[var(--color-primary)] transition-colors">
-            {artigo.title}
+            {article.title}
           </h3>
 
           <p className="text-[var(--color-text-secondary)] text-sm leading-6 flex-1 mb-5">
-            {artigo.summary}
+            {article.summary}
           </p>
 
           <span className="text-sm font-semibold text-[var(--color-primary)] group-hover:gap-2 flex items-center gap-1 transition-all">
@@ -380,25 +378,25 @@ function SecaoArtigos({
 }
 
 /**
- * Seção de dicas de reciclagem.
- * Exibe cards com orientações específicas por tipo de material.
+ * Recycling tips section.
+ * Shows cards with guidance specific to each material type.
  */
-function SecaoDicas() {
-  const [selecionada, setSelecionada] = useState<Dica>(DICAS[0]);
+function TipsSection() {
+  const [selected, setSelected] = useState<Tip>(TIPS[0]);
 
   return (
     <div>
       <div className="flex flex-wrap gap-3 mb-8">
-        {DICAS.map((d, i) => (
+        {TIPS.map((d, i) => (
           <button
             key={i}
-            onClick={() => setSelecionada(d)}
+            onClick={() => setSelected(d)}
             className={`
               inline-flex items-center gap-2
               px-4 py-2 rounded-full text-sm font-semibold
               border transition-all duration-200
               ${
-                selecionada.title === d.title
+                selected.title === d.title
                   ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-[var(--shadow-btn)]"
                   : "bg-[var(--color-bg-surface)] border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
               }
@@ -410,18 +408,18 @@ function SecaoDicas() {
       </div>
 
       <div
-        key={selecionada.title}
+        key={selected.title}
         className="bg-[var(--color-bg-surface)] rounded-2xl p-8 border border-[var(--color-border)] shadow-[var(--shadow-card)] animate-[fadeSlideUp_0.35s_ease]"
       >
         <div className="flex items-center gap-4 mb-6">
           <div
-            className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl border ${selecionada.color}`}
+            className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl border ${selected.color}`}
           >
-            {selecionada.icon}
+            {selected.icon}
           </div>
           <div>
             <h3 className="font-display text-xl font-bold text-[var(--color-text-primary)]">
-              {selecionada.title}
+              {selected.title}
             </h3>
             <p className="text-sm text-[var(--color-text-secondary)]">
               Como descartar corretamente
@@ -430,7 +428,7 @@ function SecaoDicas() {
         </div>
 
         <ul className="space-y-3">
-          {selecionada.tips.map((tip, i) => (
+          {selected.tips.map((tip, i) => (
             <li
               key={i}
               className="flex items-start gap-3 p-3 rounded-xl bg-[var(--color-bg-body)] border border-[var(--color-border)] text-[var(--color-text-secondary)] text-sm leading-6"
@@ -448,56 +446,56 @@ function SecaoDicas() {
 }
 
 /**
- * Seção do quiz interativo.
- * Perguntas de múltipla escolha com pontuação e explicações.
+ * Interactive quiz section.
+ * Multiple-choice questions with scoring and explanations.
  */
-function SecaoQuiz() {
-  const [indice, setIndice] = useState(0);
+function QuizSection() {
+  const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
-  const [escolha, setEscolha] = useState<number | null>(null);
-  const [finalizado, setFinalizado] = useState(false);
+  const [choice, setChoice] = useState<number | null>(null);
+  const [finished, setFinished] = useState(false);
 
-  const questao = QUESTOES[indice];
-  const progresso = (indice / QUESTOES.length) * 100;
+  const question = QUESTIONS[index];
+  const progress = (index / QUESTIONS.length) * 100;
 
-  function responder(i: number) {
-    if (escolha !== null) return;
-    setEscolha(i);
-    if (i === questao.ans) setScore((s) => s + 1);
+  function answer(i: number) {
+    if (choice !== null) return;
+    setChoice(i);
+    if (i === question.ans) setScore((s) => s + 1);
   }
 
-  function avancar() {
-    if (indice + 1 >= QUESTOES.length) setFinalizado(true);
+  function advance() {
+    if (index + 1 >= QUESTIONS.length) setFinished(true);
     else {
-      setIndice((n) => n + 1);
-      setEscolha(null);
+      setIndex((n) => n + 1);
+      setChoice(null);
     }
   }
 
-  function reiniciar() {
-    setIndice(0);
+  function reset() {
+    setIndex(0);
     setScore(0);
-    setEscolha(null);
-    setFinalizado(false);
+    setChoice(null);
+    setFinished(false);
   }
 
   // Tela de resultados
-  if (finalizado) {
-    const pct = Math.round((score / QUESTOES.length) * 100);
+  if (finished) {
+    const pct = Math.round((score / QUESTIONS.length) * 100);
     const emoji = pct >= 80 ? "🏆" : pct >= 60 ? "🌟" : "📚";
     const msg =
       pct >= 80
-        ? "Parabéns! Você é um expert em sustentabilidade!"
+        ? "Congratulations! You are a sustainability expert!"
         : pct >= 60
-          ? "Muito bom! Continue aprendendo!"
-          : "Continue estudando — você vai melhorar!";
+          ? "Very good! Keep learning!"
+          : "Keep studying — you will get better!";
 
     return (
       <div className="max-w-lg mx-auto text-center animate-[fadeSlideUp_0.4s_ease]">
         <div className="bg-[var(--color-bg-surface)] rounded-2xl p-10 border border-[var(--color-border)] shadow-[var(--shadow-card)]">
           <span className="text-6xl block mb-4">{emoji}</span>
           <h3 className="font-display text-2xl font-extrabold text-[var(--color-text-primary)] mb-2">
-            Quiz concluído!
+            Quiz completed!
           </h3>
           <p className="text-[var(--color-text-secondary)] mb-6">{msg}</p>
 
@@ -529,16 +527,16 @@ function SecaoQuiz() {
                 {pct}%
               </span>
               <span className="text-sm text-[var(--color-text-tertiary)] mt-1">
-                {score}/{QUESTOES.length}
+                {score}/{QUESTIONS.length}
               </span>
             </div>
           </div>
 
           <button
-            onClick={reiniciar}
+            onClick={reset}
             className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-sm font-bold bg-[var(--color-primary)] text-white shadow-[var(--shadow-btn)] hover:bg-[var(--color-primary-hover)] hover:-translate-y-0.5 transition-all"
           >
-            🔄 Tentar novamente
+            🔄 Try again
           </button>
         </div>
       </div>
@@ -554,48 +552,48 @@ function SecaoQuiz() {
             🧠 Quiz Ambiental
           </span>
           <h3 className="font-display text-2xl font-bold mb-1">
-            Teste seus conhecimentos
+            Test your knowledge
           </h3>
           <p className="text-white/90 text-sm">
-            Pergunta {indice + 1} de {QUESTOES.length}
+            Pergunta {index + 1} of {QUESTIONS.length}
           </p>
 
           <div className="mt-5 h-2 rounded-full bg-white/20 overflow-hidden">
             <div
               className="h-full bg-[var(--color-primary)] rounded-full transition-all duration-500"
-              style={{ width: `${progresso}%` }}
+              style={{ width: `${progress}%` }}
             />
           </div>
         </div>
 
         <div className="bg-[var(--color-bg-surface)] p-8">
           <div className="flex items-center justify-between mb-6 text-sm">
-            <span className="text-[var(--color-text-tertiary)]">Pontuação</span>
+            <span className="text-[var(--color-text-tertiary)]">Score</span>
             <span className="font-bold text-[var(--color-primary)]">
               {score} acerto{score !== 1 ? "s" : ""}
             </span>
           </div>
 
           <p className="font-display text-lg font-bold text-[var(--color-text-primary)] mb-6 leading-snug">
-            {questao.q}
+            {question.q}
           </p>
 
           <div className="space-y-3 mb-6">
-            {questao.opts.map((opt, i) => {
-              const respondido = escolha !== null;
-              const eCorreta = i === questao.ans;
-              const eEscolhida = i === escolha;
+            {question.opts.map((opt, i) => {
+              const answered = choice !== null;
+              const isCorrect = i === question.ans;
+              const isChosen = i === choice;
 
               let cls =
                 "w-full text-left px-5 py-3.5 rounded-xl border-2 font-medium text-sm transition-all duration-200 ";
 
-              if (!respondido) {
+              if (!answered) {
                 cls +=
                   "border-[var(--color-border)] text-[var(--color-text-primary)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-light)]";
-              } else if (eCorreta) {
+              } else if (isCorrect) {
                 cls +=
                   "border-emerald-400 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300";
-              } else if (eEscolhida) {
+              } else if (isChosen) {
                 cls +=
                   "border-red-400 bg-red-50 text-red-800 dark:bg-red-500/15 dark:text-red-300";
               } else {
@@ -606,25 +604,25 @@ function SecaoQuiz() {
               return (
                 <button
                   key={i}
-                  onClick={() => responder(i)}
-                  disabled={respondido}
+                  onClick={() => answer(i)}
+                  disabled={answered}
                   className={cls}
                 >
                   <span className="flex items-center gap-3">
                     <span
                       className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold border-2 ${
-                        !respondido
+                        !answered
                           ? "border-[var(--color-border)] text-[var(--color-text-tertiary)]"
-                          : eCorreta
+                          : isCorrect
                             ? "border-emerald-400 bg-emerald-400 text-white"
-                            : eEscolhida
+                            : isChosen
                               ? "border-red-400 bg-red-400 text-white"
                               : "border-[var(--color-border)] text-[var(--color-text-tertiary)]"
                       }`}
                     >
-                      {respondido && eCorreta
+                      {answered && isCorrect
                         ? "✓"
-                        : respondido && eEscolhida
+                        : answered && isChosen
                           ? "✕"
                           : String.fromCharCode(65 + i)}
                     </span>
@@ -635,28 +633,28 @@ function SecaoQuiz() {
             })}
           </div>
 
-          {escolha !== null && (
+          {choice !== null && (
             <div
               className={`p-4 rounded-xl text-sm mb-6 leading-6 border animate-[fadeSlideUp_0.3s_ease] ${
-                escolha === questao.ans
+                choice === question.ans
                   ? "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-500/15 dark:border-emerald-500/30 dark:text-emerald-300"
                   : "bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-500/15 dark:border-amber-500/30 dark:text-amber-300"
               }`}
             >
               <strong>
-                {escolha === questao.ans ? "✅ Correto! " : "❌ Incorreto. "}
+                {choice === question.ans ? "✅ Correto! " : "❌ Incorreto. "}
               </strong>
-              {questao.exp}
+              {question.exp}
             </div>
           )}
 
-          {escolha !== null && (
+          {choice !== null && (
             <button
-              onClick={avancar}
+              onClick={advance}
               className="w-full py-3.5 rounded-full text-sm font-bold bg-[var(--color-primary)] text-white shadow-[var(--shadow-btn)] hover:bg-[var(--color-primary-hover)] hover:-translate-y-0.5 transition-all animate-[fadeSlideUp_0.3s_ease]"
             >
-              {indice + 1 < QUESTOES.length
-                ? "Próxima pergunta →"
+              {index + 1 < QUESTIONS.length
+                ? "Next question →"
                 : "Ver resultado →"}
             </button>
           )}
@@ -667,14 +665,14 @@ function SecaoQuiz() {
 }
 
 // ----------------------------------------------------------------------------
-// PÁGINA PRINCIPAL
+// MAIN PAGE
 // ----------------------------------------------------------------------------
 
-export default function EducacaoPage() {
-  const [aba, setAba] = useState<Aba>("artigos");
-  const [artigoAberto, setArtigoAberto] = useState(false);
+export default function EducationPage() {
+  const [tab, setTab] = useState<Tab>("artigos");
+  const [openArticle, setOpenArticle] = useState(false);
 
-  useScrollReveal([aba, artigoAberto]);
+  useScrollReveal([tab, openArticle]);
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)]">
@@ -683,24 +681,23 @@ export default function EducacaoPage() {
         <div className="container-eco">
           <div className="animate-on-scroll">
             <span className="badge-eco mb-6 mx-auto">
-              🎓 Centro de Aprendizado
+              🎓 Learning Center
             </span>
             <h1 className="font-display text-5xl md:text-6xl font-extrabold leading-tight mb-6">
-              Conhecimento para <br className="hidden sm:block" />
+              Knowledge for <br className="hidden sm:block" />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-primary)] to-blue-500">
                 mudar o mundo
               </span>
             </h1>
             <p className="text-[var(--color-text-secondary)] text-lg max-w-2xl mx-auto leading-relaxed">
-              Entenda como suas escolhas impactam o planeta e descubra, passo a
-              passo, como fazer parte da solução.
+              Understand how your choices impact the planet and discover, step by step, how to be part of the solution.
             </p>
           </div>
         </div>
       </section>
 
       <div className="container-eco pb-24">
-        {/* SEÇÃO: O QUE É ECOLOGIA? */}
+        {/* SECTION: WHAT IS ECOLOGY? */}
         <section className="animate-on-scroll mb-20">
           <div className="flex items-center gap-5 mb-4">
             <div className="w-14 h-14 rounded-2xl bg-[var(--color-primary-light)] flex items-center justify-center text-2xl flex-shrink-0">
@@ -711,14 +708,12 @@ export default function EducacaoPage() {
                 Fundamentos
               </span>
               <h2 className="font-display text-2xl md:text-3xl font-bold text-[var(--color-text-primary)] leading-tight">
-                O que é Ecologia?
+                What is Ecology?
               </h2>
             </div>
           </div>
           <p className="text-[var(--color-text-secondary)] text-base leading-7 mb-8 max-w-3xl pl-[calc(3.5rem+1.25rem)]">
-            A ecologia é a ciência que estuda as interações entre os seres vivos
-            e o meio ambiente. É como uma grande rede onde tudo está conectado —
-            plantas, animais, ar, água, solo e nós.
+            Ecology is the science that studies the interactions between living beings and the environment. It is like a large web where everything is connected — plants, animals, air, water, soil and us.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
@@ -726,17 +721,17 @@ export default function EducacaoPage() {
               {
                 icon: "🌿",
                 title: "Produtores",
-                desc: "Plantas e algas que produzem seu próprio alimento através da fotossíntese, convertendo luz solar em energia vital.",
+                desc: "Plants and algae that make their own food through photosynthesis, converting sunlight into vital energy.",
               },
               {
                 icon: "🐾",
                 title: "Consumidores",
-                desc: "Animais que se alimentam de outros seres vivos. Podem ser herbívoros, carnívoros ou onívoros.",
+                desc: "Animals that feed on other living beings. They can be herbivores, carnivores or omnivores.",
               },
               {
                 icon: "♻️",
                 title: "Decompositores",
-                desc: "Fungos e bactérias que decompõem matéria orgânica, reciclando nutrientes essenciais para o solo.",
+                desc: "Fungi and bacteria that break down organic matter, recycling nutrients essential to the soil.",
               },
             ].map((card) => (
               <div
@@ -765,8 +760,7 @@ export default function EducacaoPage() {
               Conceito Fundamental
             </p>
             <blockquote className="text-2xl md:text-3xl font-semibold italic leading-snug mb-4">
-              &ldquo;Na natureza nada se cria, nada se perde, tudo se
-              transforma&rdquo;
+              &ldquo;In nature nothing is created, nothing is lost, everything is transformed&rdquo;
             </blockquote>
             <cite className="text-white/60 text-sm not-italic">
               — Antoine Lavoisier
@@ -774,7 +768,7 @@ export default function EducacaoPage() {
           </div>
         </section>
 
-        {/* SEÇÃO: PILARES DA SUSTENTABILIDADE */}
+        {/* SECTION: PILLARS OF SUSTAINABILITY */}
         <section className="animate-on-scroll mb-20">
           <div className="flex items-center gap-5 mb-4">
             <div className="w-14 h-14 rounded-2xl bg-[var(--color-primary-light)] flex items-center justify-center text-2xl flex-shrink-0">
@@ -790,9 +784,7 @@ export default function EducacaoPage() {
             </div>
           </div>
           <p className="text-[var(--color-text-secondary)] text-base leading-7 mb-8 max-w-3xl pl-[calc(3.5rem+1.25rem)]">
-            Sustentabilidade significa atender às necessidades do presente sem
-            comprometer a capacidade das futuras gerações de atenderem às suas
-            próprias necessidades.
+            Sustainability means meeting the needs of the present without compromising the ability of future generations to meet their own needs.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
@@ -807,14 +799,14 @@ export default function EducacaoPage() {
               {
                 icon: "👥",
                 label: "Social",
-                desc: "Garantir bem-estar e justiça",
+                desc: "Ensuring well-being and justice",
                 bg: "bg-blue-50 dark:bg-blue-500/15",
                 color: "text-blue-600 dark:text-blue-400",
               },
               {
                 icon: "🪙",
-                label: "Econômico",
-                desc: "Desenvolvimento viável e justo",
+                label: "Economic",
+                desc: "Viable and fair development",
                 bg: "bg-amber-50 dark:bg-amber-500/15",
                 color: "text-amber-600 dark:text-amber-400",
               },
@@ -846,25 +838,24 @@ export default function EducacaoPage() {
             </div>
             <div>
               <h4 className="font-bold text-amber-700 dark:text-amber-400 mb-1">
-                Dica Rápida
+                Quick Tip
               </h4>
               <p className="text-amber-700/80 dark:text-amber-500 text-sm leading-6">
-                Pequenas ações diárias fazem a diferença! Comece economizando
-                água, separando o lixo e escolhendo produtos duráveis.
+                Small daily actions make a difference! Start by saving water, separating waste and choosing durable products.
               </p>
             </div>
           </div>
         </section>
 
-        {/* SEÇÃO: ARTIGOS / DICAS / QUIZ (TABS) */}
+        {/* SECTION: ARTICLES / TIPS / QUIZ (TABS) */}
         <section className="animate-on-scroll">
           <div className="flex items-center gap-2 mb-8 flex-wrap">
-            {ABAS.map((a) => (
+            {TABS.map((a) => (
               <button
                 key={a.id}
-                onClick={() => setAba(a.id)}
+                onClick={() => setTab(a.id)}
                 className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
-                  aba === a.id
+                  tab === a.id
                     ? "bg-[var(--color-primary)] text-white shadow-[var(--shadow-btn)]"
                     : "bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
                 }`}
@@ -874,30 +865,29 @@ export default function EducacaoPage() {
             ))}
           </div>
 
-          <div key={aba} className="animate-[fadeSlideUp_0.35s_ease]">
-            {aba === "artigos" && (
-              <SecaoArtigos onArtigoChange={setArtigoAberto} />
+          <div key={tab} className="animate-[fadeSlideUp_0.35s_ease]">
+            {tab === "artigos" && (
+              <ArticlesSection onArtigoChange={setOpenArticle} />
             )}
-            {aba === "dicas" && <SecaoDicas />}
-            {aba === "quiz" && <SecaoQuiz />}
+            {tab === "dicas" && <TipsSection />}
+            {tab === "quiz" && <QuizSection />}
           </div>
         </section>
 
-        {/* CALL-TO-ACTION FINAL */}
+        {/* FINAL CALL-TO-ACTION */}
         <section className="animate-on-scroll mt-20">
           <div className="text-center p-12 rounded-3xl bg-[var(--color-primary-light)] border border-dashed border-[var(--color-primary)]/50 dark:bg-[rgba(45,149,105,0.1)]">
             <h2 className="font-display text-3xl font-extrabold text-[var(--color-text-primary)] mb-3">
-              Pronto para agir?
+              Ready to act?
             </h2>
             <p className="text-[var(--color-text-secondary)] mb-8 max-w-md mx-auto">
-              Visite nossa loja e descubra produtos que ajudam você a ter uma
-              vida mais sustentável hoje mesmo.
+              Visit our store and discover products that help you live a more sustainable life today.
             </p>
             <Link
               href="/produtos"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-base font-bold bg-[var(--color-primary)] text-white shadow-[0_4px_12px_rgba(45,149,105,0.3)] hover:bg-[var(--color-primary-hover)] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(45,149,105,0.4)] transition-all duration-200"
             >
-              🛍️ Ver Produtos Eco-Friendly
+              🛍️ See Eco-Friendly Products
             </Link>
           </div>
         </section>

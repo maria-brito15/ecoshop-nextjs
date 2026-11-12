@@ -1,6 +1,6 @@
 ---
 paths: ["services/**"]
 ---
-- Services contêm regra de negócio e acesso ao Prisma; não conhecem `Request`/`Response`.
-- Selecione campos explicitamente em dados de usuário (`USUARIO_PUBLICO`); nunca devolva `senha`.
-- Mutação que afeta listagens invalida o cache (`lib/cache`, ADR-0009).
+- Services hold business rules and Prisma access; they know nothing about `Request`/`Response`.
+- Select fields explicitly on user data (`PUBLIC_USER_FIELDS`); never return `senha`.
+- A mutation that affects listings invalidates the cache (`lib/cache`, ADR-0009).

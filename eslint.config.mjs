@@ -21,12 +21,11 @@ const config = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     // Constitution, Art. V: Route Handlers e páginas não acessam o Prisma direto.
-    // Hoje há handlers que violam (débito registrado): por isso "warn" até a
-    // spec de mudança que os migra para services; depois vira "error".
+    // Os handlers foram migrados para services (spec 012): a regra agora é "error".
     files: ["app/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [
-        "warn",
+        "error",
         {
           paths: [
             {

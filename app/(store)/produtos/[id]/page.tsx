@@ -1,36 +1,35 @@
 // app/(store)/produtos/[id]/page.tsx
 
 /**
- * ============================================================================
- * PÁGINA DE DETALHE DO PRODUTO
- * ============================================================================
- * Rota: "/produtos/[id]"
+ * PRODUCT DETAIL PAGE
  *
- * Página de detalhamento completo de um produto específico.
- * Exibe todas as informações disponíveis sobre o produto.
+ * Route: "/produtos/[id]"
  *
- * Funcionalidades:
- * - Imagem principal do produto (fallback para ícone)
- * - Preço e opções de parcelamento
- * - Descrição detalhada
- * - Ficha técnica (especificações)
- * - Certificados de sustentabilidade
- * - Métricas de impacto ambiental (estimativas)
- * - Tabs organizando o conteúdo
+ * Full detail page for a specific product.
+ * Shows all available information about the product.
  *
- * Estados de carregamento:
- * - Skeleton durante o fetch
- * - Mensagem amigável se produto não encontrado
+ * Features:
+ * - Main product image (fallback to an icon)
+ * - Price and installment options
+ * - Detailed description
+ * - Technical sheet (specifications)
+ * - Sustainability certificates
+ * - Environmental impact metrics (estimates)
+ * - Tabs organizing the content
  *
- * @see lib/hooks/useProdutos.ts - Hook useBuscarProduto
- * ============================================================================
+ * Loading states:
+ * - Skeleton during the fetch
+ * - Friendly message if the product is not found
+ *
+ * @see lib/hooks/useProducts.ts - useGetProduct hook
  */
 
 "use client";
 
-import { use, useState, useEffect, useRef } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
-import { useBuscarProduto } from "@/lib/hooks/useProdutos";
+import { useGetProduct } from "@/lib/hooks/useProducts";
+import { useListPhotos } from "@/lib/hooks/usePhotos";
 import type { Certificado } from "@/types/api";
 
 type Props = {
@@ -39,12 +38,24 @@ type Props = {
 
 type Tab = "sobre" | "specs" | "certificados";
 
+/**
+ * Item of the local visited-products history (REQ-PERF-05).
+ * Same shape read by app/(perfil)/perfil/page.tsx under the key "ecoshop_history".
+ */
+type HistoryItem = {
+  produtoId: number;
+  nome: string;
+  fotoUrl?: string;
+  preco: number;
+  visitadoEm: string;
+};
+
 // ----------------------------------------------------------------------------
 // COMPONENTES
 // ----------------------------------------------------------------------------
 
 /**
- * Skeleton exibido enquanto os dados do produto carregam.
+ * Skeleton shown while the product data loads.
  */
 function SkeletonDetail() {
   return (
@@ -92,10 +103,10 @@ function CertBadge({ cert }: { cert: Certificado }) {
 }
 
 /**
- * Card de impacto ambiental (estimativas baseadas no preço do produto).
+ * Environmental impact card (estimates based on the product price).
  */
-function ImpactCard({ preco }: { preco: number }) {
-  const val = Number(preco);
+function ImpactCard({ preco: price }: { preco: number }) {
+  const val = Number(price);
   const co2 = (val * 0.012).toFixed(1) + "kg";
   const water = Math.round(val * 0.8) + "L";
   const trees = val > 200 ? "2" : "1";
@@ -109,8 +120,8 @@ function ImpactCard({ preco }: { preco: number }) {
       <div className="grid grid-cols-3 gap-3">
         {[
           { value: co2, label: "CO₂ Evitado" },
-          { value: water, label: "Água Poupada" },
-          { value: trees, label: "Árvores" },
+          { value: water, label: "Water Saved" },
+          { value: trees, label: "Trees" },
         ].map(({ value, label }) => (
           <div
             key={label}
@@ -125,12 +136,15 @@ function ImpactCard({ preco }: { preco: number }) {
           </div>
         ))}
       </div>
+      <p className="text-[10px] text-[var(--color-text-tertiary)] italic mt-3">
+        Illustrative estimate calculated from the price — there is no real data source per product yet (REQ-CONT-05).
+      </p>
     </div>
   );
 }
 
 /**
- * Tabs de navegação entre Sobre, Ficha Técnica e Certificados.
+ * Navigation tabs between About, Technical Sheet and Certificates.
  */
 function Tabs({
   activeTab,
@@ -142,8 +156,8 @@ function Tabs({
   hasCerts: boolean;
 }) {
   const tabs: { id: Tab; label: string }[] = [
-    { id: "sobre", label: "Sobre o Produto" },
-    { id: "specs", label: "Ficha Técnica" },
+    { id: "sobre", label: "About the Product" },
+    { id: "specs", label: "Technical Sheet" },
     ...(hasCerts ? [{ id: "certificados" as Tab, label: "Certificados" }] : []),
   ];
 
@@ -163,36 +177,64 @@ function Tabs({
 }
 
 // ----------------------------------------------------------------------------
-// PÁGINA PRINCIPAL
+// MAIN PAGE
 // ----------------------------------------------------------------------------
 
-export default function ProdutoPage({ params }: Props) {
+export default function ProductPage({ params }: Props) {
   const { id } = use(params);
-  const { data, carregando, erro } = useBuscarProduto(Number(id));
+  const { data, loading: loading, error: error } = useGetProduct(Number(id));
+  const { data: photosData } = useListPhotos(Number(id));
   const [activeTab, setActiveTab] = useState<Tab>("sobre");
   const [imgLoaded, setImgLoaded] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setHeroVisible(true), 80);
     return () => clearTimeout(timer);
   }, []);
 
-  // Estado de carregamento
-  if (carregando) return <SkeletonDetail />;
+  // Record the visit in the local history (REQ-PERF-05): the History tab of the
+  // profile (app/(perfil)/perfil/page.tsx) reads the same key. No backend
+  // because the history is per browser, not per account (ADR-0004).
+  useEffect(() => {
+    const product = data?.produto;
+    if (!product) return;
+    try {
+      const raw = localStorage.getItem("ecoshop_history");
+      const history: HistoryItem[] = raw ? JSON.parse(raw) : [];
+      const withoutDuplicate = history.filter((h) => h.produtoId !== product.id);
+      const updated = [
+        {
+          produtoId: product.id,
+          nome: product.nome,
+          fotoUrl: product.fotoUrl,
+          preco: Number(product.preco),
+          visitadoEm: new Date().toISOString(),
+        },
+        ...withoutDuplicate,
+      ].slice(0, 50);
+      localStorage.setItem("ecoshop_history", JSON.stringify(updated));
+    } catch {
+      // localStorage unavailable (e.g. private mode); history is not critical
+    }
+  }, [data?.produto]);
 
-  // Produto não encontrado
-  if (erro) {
+  // Estado de carregamento
+  if (loading) return <SkeletonDetail />;
+
+  // Product not found
+  if (error) {
     return (
       <main className="min-h-screen bg-[var(--color-bg-body)] flex items-center justify-center">
         <div className="text-center p-8 max-w-md">
           <div className="text-6xl mb-4">🌿</div>
           <h2 className="font-display text-2xl font-bold text-[var(--color-text-primary)] mb-2">
-            Produto não encontrado
+            Product not found
           </h2>
-          <p className="text-[var(--color-text-secondary)] mb-6">{erro}</p>
+          <p className="text-[var(--color-text-secondary)] mb-6">{error}</p>
           <Link href="/produtos" className="btn-primary">
-            ← Voltar para produtos
+            ← Back to products
           </Link>
         </div>
       </main>
@@ -201,22 +243,25 @@ export default function ProdutoPage({ params }: Props) {
 
   if (!data?.produto) return null;
 
-  const produto = data.produto;
-  const categoriaNome = produto.categoria?.nome ?? "Categoria";
-  const categoriaDescricao = produto.categoria?.descricao;
-  const marcaNome = produto.marca?.nome ?? "Marca";
-  const marcaDescricao = produto.marca?.descricao;
-  const precoNumerico = Number(produto.preco);
-  const precoFormatado = precoNumerico.toLocaleString("pt-BR", {
+  const product = data.produto;
+  const categoryName = product.categoria?.nome ?? "Category";
+  const categoryDescription = product.categoria?.descricao;
+  const brandName = product.marca?.nome ?? "Brand";
+  const brandDescription = product.marca?.descricao;
+  const numericPrice = Number(product.preco);
+  const formattedPrice = numericPrice.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
-  const parcelas = 12;
-  const valorParcela = (precoNumerico / parcelas).toLocaleString("pt-BR", {
+  const installments = 12;
+  const installmentValue = (numericPrice / installments).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
-  const hasCerts = !!(produto.certificados && produto.certificados.length > 0);
+  const hasCerts = !!(product.certificados && product.certificados.length > 0);
+  const photos = photosData?.fotos ?? [];
+  const mainImage =
+    selectedPhoto ?? product.fotoUrl ?? photos[0]?.url ?? null;
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)] pb-20">
@@ -232,11 +277,11 @@ export default function ProdutoPage({ params }: Props) {
           >
             ←
           </span>
-          Voltar para produtos
+          Back to products
         </Link>
       </div>
 
-      {/* CONTEÚDO PRINCIPAL */}
+      {/* MAIN CONTENT */}
       <div
         className="container-eco"
         style={{
@@ -247,13 +292,13 @@ export default function ProdutoPage({ params }: Props) {
         }}
       >
         <section className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-10 lg:gap-16 mt-4 mb-10 lg:items-start">
-          {/* IMAGEM DO PRODUTO */}
+          {/* PRODUCT IMAGE */}
           <div className="relative">
             <div className="relative bg-[var(--color-bg-surface)] rounded-[2rem] overflow-hidden border border-[var(--color-border)] shadow-[var(--shadow-card)] aspect-square flex items-center justify-center p-8 group">
-              {produto.fotoUrl ? (
+              {mainImage ? (
                 <img
-                  src={produto.fotoUrl}
-                  alt={produto.nome}
+                  src={mainImage}
+                  alt={product.nome}
                   onLoad={() => setImgLoaded(true)}
                   className={`max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
                 />
@@ -268,7 +313,7 @@ export default function ProdutoPage({ params }: Props) {
               <div className="absolute top-5 left-5 flex flex-col gap-2 z-10">
                 {hasCerts && (
                   <span className="badge-eco text-[11px] py-1 px-3 backdrop-blur-md bg-[rgba(209,250,229,0.92)] text-[#065f46] border border-[#a7f3d0] font-bold uppercase tracking-wide shadow-sm">
-                    ✦ Certificado
+                    ✦ Certificate
                   </span>
                 )}
                 <span className="badge-eco text-[11px] py-1 px-3 backdrop-blur-md bg-[rgba(224,242,254,0.92)] text-[#075985] border border-[#bae6fd] font-bold uppercase tracking-wide shadow-sm">
@@ -276,59 +321,86 @@ export default function ProdutoPage({ params }: Props) {
                 </span>
               </div>
             </div>
+
+            {/* PHOTO GALLERY (REQ-MIDIA-04) */}
+            {photos.length > 0 && (
+              <div className="flex gap-3 mt-4 overflow-x-auto pb-1">
+                {photos.map((photo) => (
+                  <button
+                    key={photo.nome}
+                    type="button"
+                    onClick={() => {
+                      setImgLoaded(false);
+                      setSelectedPhoto(photo.url);
+                    }}
+                    aria-label={`View photo ${photo.nome}`}
+                    className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors ${
+                      mainImage === photo.url
+                        ? "border-[var(--color-primary)]"
+                        : "border-[var(--color-border)] hover:border-[var(--color-primary-light)]"
+                    }`}
+                  >
+                    <img
+                      src={photo.url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* INFORMAÇÕES DO PRODUTO */}
+          {/* PRODUCT INFORMATION */}
           <div className="flex flex-col gap-5">
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-2">
-                {categoriaNome}
+                {categoryName}
               </p>
               <h1 className="font-display text-3xl md:text-4xl font-extrabold text-[var(--color-text-primary)] leading-tight">
-                {produto.nome}
+                {product.nome}
               </h1>
               <p className="text-sm text-[var(--color-text-tertiary)] mt-1 font-medium">
                 por{" "}
                 <span className="text-[var(--color-text-secondary)]">
-                  {marcaNome}
+                  {brandName}
                 </span>
               </p>
             </div>
 
-            {/* Avaliação estática */}
+            {/* Static rating */}
             <div className="flex items-center gap-2">
               <span className="text-[#f59e0b] text-base tracking-tight">
                 ★★★★★
               </span>
               <span className="text-xs text-[var(--color-text-tertiary)]">
-                (produto verificado)
+                (verified product)
               </span>
             </div>
 
-            {/* Preço */}
+            {/* Price */}
             <div className="py-5 border-t border-b border-[var(--color-border)]">
               <p className="font-display text-4xl font-extrabold text-[var(--color-text-primary)] leading-none mb-1">
-                {precoFormatado}
+                {formattedPrice}
               </p>
               <p className="text-sm text-[var(--color-text-secondary)]">
-                em até{" "}
+                up to{" "}
                 <strong className="text-[var(--color-text-primary)]">
-                  {parcelas}x de {valorParcela}
+                  {installments}x of {installmentValue}
                 </strong>{" "}
-                sem juros
+                interest-free
               </p>
             </div>
 
-            {/* Botão de compra */}
+            {/* Buy button */}
             <div className="flex flex-col gap-3">
               <button className="w-full py-4 rounded-full font-bold text-base text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] flex items-center justify-center gap-3 shadow-[var(--shadow-btn)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(45,149,105,0.4)] active:translate-y-0">
-                <span>Comprar na Loja Parceira</span>
+                <span>Buy at the Partner Store</span>
                 <span className="text-sm opacity-80">↗</span>
               </button>
               <div className="flex items-center justify-center gap-5 text-xs text-[var(--color-text-tertiary)]">
                 <span className="flex items-center gap-1.5">
-                  <span className="text-[var(--color-primary)]">✓</span> Produto
-                  Verificado
+                  <span className="text-[var(--color-primary)]">✓</span> Verified Product
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="text-[var(--color-primary)]">🔒</span> Compra
@@ -337,12 +409,12 @@ export default function ProdutoPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Impacto ambiental */}
-            <ImpactCard preco={produto.preco} />
+            {/* Environmental impact */}
+            <ImpactCard preco={product.preco} />
           </div>
         </section>
 
-        {/* TABS COM CONTEÚDO DETALHADO */}
+        {/* TABS WITH DETAILED CONTENT */}
         <section
           className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[1.5rem] overflow-hidden shadow-[var(--shadow-card)]"
           style={{
@@ -359,16 +431,16 @@ export default function ProdutoPage({ params }: Props) {
           />
 
           <div className="p-6 md:p-10">
-            {/* TAB: SOBRE O PRODUTO */}
+            {/* TAB: ABOUT THE PRODUCT */}
             {activeTab === "sobre" && (
               <div className="animate-[fadeSlideUp_0.4s_ease_forwards]">
-                {produto.descricao ? (
+                {product.descricao ? (
                   <p className="text-base md:text-lg leading-relaxed text-[var(--color-text-secondary)] mb-8">
-                    {produto.descricao}
+                    {product.descricao}
                   </p>
                 ) : (
                   <p className="text-[var(--color-text-tertiary)] italic mb-8">
-                    Descrição não disponível.
+                    Description not available.
                   </p>
                 )}
                 <div>
@@ -378,11 +450,11 @@ export default function ProdutoPage({ params }: Props) {
                   </h4>
                   <ul className="flex flex-col gap-3">
                     {[
-                      "Produção ética e responsável",
-                      "Material reciclável e sustentável",
-                      "Sem componentes prejudiciais ao meio ambiente",
-                      `Categoria: ${categoriaNome}`,
-                      `Marca: ${marcaNome}`,
+                      "Ethical and responsible production",
+                      "Recyclable and sustainable material",
+                      "No components harmful to the environment",
+                      `Category: ${categoryName}`,
+                      `Brand: ${brandName}`,
                     ].map((item) => (
                       <li
                         key={item}
@@ -399,25 +471,25 @@ export default function ProdutoPage({ params }: Props) {
               </div>
             )}
 
-            {/* TAB: FICHA TÉCNICA */}
+            {/* TAB: TECHNICAL SHEET */}
             {activeTab === "specs" && (
               <div className="animate-[fadeSlideUp_0.4s_ease_forwards]">
                 <table className="w-full border-collapse">
                   <tbody>
                     {[
-                      ["Nome", produto.nome],
-                      ["Categoria", categoriaNome],
-                      ["Marca", marcaNome],
-                      ...(categoriaDescricao
-                        ? [["Sobre a Categoria", categoriaDescricao]]
+                      ["Nome", product.nome],
+                      ["Category", categoryName],
+                      ["Brand", brandName],
+                      ...(categoryDescription
+                        ? [["About the Category", categoryDescription]]
                         : []),
-                      ...(marcaDescricao
-                        ? [["Sobre a Marca", marcaDescricao]]
+                      ...(brandDescription
+                        ? [["About the Brand", brandDescription]]
                         : []),
-                      ["Preço", precoFormatado],
+                      ["Price", formattedPrice],
                       [
-                        "Adicionado em",
-                        new Date(produto.criadoEm).toLocaleDateString("pt-BR", {
+                        "Added on",
+                        new Date(product.criadoEm).toLocaleDateString("pt-BR", {
                           year: "numeric",
                           month: "long",
                           day: "numeric",
@@ -441,33 +513,29 @@ export default function ProdutoPage({ params }: Props) {
               </div>
             )}
 
-            {/* TAB: CERTIFICADOS */}
+            {/* TAB: CERTIFICATES */}
             {activeTab === "certificados" &&
               hasCerts &&
-              produto.certificados && (
+              product.certificados && (
                 <div className="animate-[fadeSlideUp_0.4s_ease_forwards]">
                   <div className="mb-6">
                     <h4 className="font-display font-bold text-[var(--color-text-primary)] text-lg mb-1">
-                      Certificações & Selos
+                      Certifications & Seals
                     </h4>
                     <p className="text-sm text-[var(--color-text-secondary)]">
-                      Este produto possui {produto.certificados.length}{" "}
-                      certificado{produto.certificados.length > 1 ? "s" : ""} de
-                      sustentabilidade reconhecido
-                      {produto.certificados.length > 1 ? "s" : ""}.
+                      This product has {product.certificados.length}{" "}
+                      recognized sustainability certificate
+                      {product.certificados.length > 1 ? "s" : ""}.
                     </p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {produto.certificados.map(({ certificado }) => (
-                      <CertBadge key={certificado.id} cert={certificado} />
+                    {product.certificados.map(({ certificado: certificate }) => (
+                      <CertBadge key={certificate.id} cert={certificate} />
                     ))}
                   </div>
                   <div className="mt-6 p-5 rounded-2xl border border-dashed border-[var(--color-primary)] bg-[var(--color-primary-light)]">
                     <p className="text-sm text-[var(--color-primary-dark)] leading-relaxed font-medium">
-                      🌿 Todos os certificados são verificados e emitidos por
-                      órgãos reconhecidos internacionalmente. Eles garantem que
-                      este produto atende a padrões rigorosos de
-                      sustentabilidade e responsabilidade ambiental.
+                      🌿 All certificates are verified and issued by internationally recognized bodies. They ensure that this product meets strict sustainability and environmental responsibility standards.
                     </p>
                   </div>
                 </div>

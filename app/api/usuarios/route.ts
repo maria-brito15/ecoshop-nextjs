@@ -1,82 +1,77 @@
 // app/api/usuarios/route.ts
 
 /**
- * ============================================================================
- * USUARIOS API ROUTES (ADMIN)
- * ============================================================================
- * Endpoints administrativos para gerenciamento de usuários.
+ * USERS API ROUTES (ADMIN)
  *
- * GET /api/usuarios - Lista todos os usuários (requer ADMIN)
- * POST /api/usuarios - Cria novo usuário (requer ADMIN)
+ * Administrative endpoints for user management.
  *
- * Diferencia do POST /api/users (público):
- * - Este é restrito a ADMIN
- * - Permite criar usuários de qualquer tipo (incluindo ADMIN)
+ * GET /api/usuarios - List all users (requires ADMIN)
+ * POST /api/usuarios - Create a new user (requires ADMIN)
  *
- * @see services/usuario.service.ts - Lógica de negócio
- * ============================================================================
+ * Difference from POST /api/users (public):
+ * - This one is restricted to ADMIN
+ * - Allows creating users of any type (including ADMIN)
+ *
+ * @see services/user.service.ts - Business logic
  */
 
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS } from "@/lib/http/responses";
-import { cadastroAdminSchema } from "@/lib/schemas/usuario";
-import { listarUsuarios, criarUsuario } from "@/services/usuario.service";
+import { ERRORS, mapError } from "@/lib/http/responses";
+import { adminRegistrationSchema } from "@/lib/schemas/user";
+import { listUsers, createUser } from "@/services/user.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/usuarios - Lista todos os usuários
+ * GET /api/usuarios - List all users
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
- * @returns { usuarios: Usuario[] }
- * @status 200 - Lista retornada
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 500 - Erro ao listar usuários
+ * @returns { usuarios: User[] }
+ * @status 200 - List returned
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 500 - Error listing users
  */
 export async function GET(req: NextRequest) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
-    const usuarios = await listarUsuarios();
-    return NextResponse.json({ usuarios });
-  } catch {
-    return ERROS.interno("listar usuários");
+    const users = await listUsers();
+    return NextResponse.json({ usuarios: users });
+  } catch (err) {
+    return ERRORS.internal("list users", err);
   }
 }
 
 /**
- * POST /api/usuarios - Cria novo usuário (admin)
+ * POST /api/usuarios - Create a new user (admin)
  *
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  *
  * @body { nome: string, email: string, telefone?: string, senha: string, tipo?: "CLIENTE" | "MARCA" | "ADMIN" }
- * @returns { usuario: Usuario }
- * @status 201 - Usuário criado
- * @status 400 - Dados inválidos
- * @status 401 - Não autenticado
- * @status 403 - Não é ADMIN
- * @status 409 - Email já cadastrado
- * @status 500 - Erro ao criar usuário
+ * @returns { usuario: User }
+ * @status 201 - User created
+ * @status 400 - Invalid data
+ * @status 401 - Not authenticated
+ * @status 403 - Not ADMIN
+ * @status 409 - Email already registered
+ * @status 500 - Error creating user
  */
 export async function POST(req: NextRequest) {
-  const authErro = await requireAdmin(req);
-  if (authErro) return authErro;
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
 
   try {
     const body = await req.json();
-    const parsed = cadastroAdminSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    const parsed = adminRegistrationSchema.safeParse(body);
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const usuario = await criarUsuario(parsed.data);
-    return NextResponse.json({ usuario }, { status: 201 });
+    const user = await createUser(parsed.data);
+    return NextResponse.json({ usuario: user }, { status: 201 });
   } catch (err) {
-    if (err instanceof Error && err.message === "EMAIL_JA_CADASTRADO") {
-      return ERROS.conflito("Email já cadastrado");
-    }
-    return ERROS.interno("criar usuário");
+    return mapError(err, "User") ?? ERRORS.internal("create user", err);
   }
 }

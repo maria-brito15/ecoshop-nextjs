@@ -1,16 +1,17 @@
-# SCAN · Status de implementação
+# SCAN · Implementation status
 
-Legenda: ✅ implementado e testado · ◐ parcial ou sem teste · ❌ não implementado ou defeituoso · ❔ incerto, precisa verificação. Evidência: `test: <arquivo>` ou `manual: AAAA-MM-DD <o quê>` ou `código: <onde>`.
+Legend: ✅ implemented and tested · ◐ partial or untested · ❌ not implemented or defective · ❔ uncertain, needs verification. Evidence: `test: <file>` or `manual: YYYY-MM-DD <what>` or `code: <where>`.
 
 ## Status
 
-| REQ | Status | Evidência | Verificado em |
+| REQ | Status | Evidence | Verified on |
 |---|---|---|---|
 | REQ-SCAN-01 | ✅ | test: tests/integration/ecoscan.test.ts | 2026-11-10 |
 | REQ-SCAN-02 | ✅ | test: tests/integration/ecoscan.test.ts | 2026-11-10 |
 | REQ-SCAN-03 | ✅ | test: tests/integration/ecoscan.test.ts | 2026-11-10 |
 | REQ-SCAN-04 | ✅ | test: tests/integration/ecoscan.test.ts | 2026-11-10 |
-| REQ-SCAN-05 | ❌ | código: a exceção não é capturada e vira 500 (D4); teste todo em ecoscan.test.ts | 2026-11-10 |
+| REQ-SCAN-05 | ✅ | test: tests/integration/input-and-errors.test.ts (`analyzeImage` with Gemini throwing → fallback, run without a database); the route test in ecoscan.test.ts lost its `todo` and **was not run** (needs a database). Fixed in 009: `generateText` catches the failure | 2026-11-11 |
 | REQ-SCAN-06 | ✅ | test: tests/integration/ecoscan.test.ts | 2026-11-10 |
 | REQ-SCAN-07 | ✅ | test: tests/integration/ecoscan.test.ts | 2026-11-10 |
-| REQ-SCAN-08 | ◐ | código: app/(ia-scan); sem teste de interface | 2026-11-10 |
+| REQ-SCAN-08 | ◐ | code: app/(ia-scan); no UI test | 2026-11-10 |
+| REQ-SCAN-09 | ✅ | test: tests/integration/input-and-errors.test.ts (`fetchWithTimeout` and the two providers with a short injected timeout). Default timeouts (Azure 10 s, Gemini 20 s) are initial values **without measurement** | 2026-11-11 |

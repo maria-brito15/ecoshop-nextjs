@@ -1,72 +1,75 @@
 // app/api/ia/chat/route.ts
 
 /**
- * ============================================================================
- * IA CHAT API ROUTE - GEMINI
- * ============================================================================
- * Rota de API para chat com IA (Gemini) sobre sustentabilidade e reciclagem.
+ * AI CHAT API ROUTE - GEMINI
  *
- * POST /api/ia/chat - Envia mensagem e recebe resposta da IA
+ * API route for chatting with the AI (Gemini) about sustainability and recycling.
  *
- * Endpoint público - não requer autenticação.
- * Utiliza modelo Gemini 2.0 Flash do Google.
+ * POST /api/ia/chat - Sends a message and receives the AI reply
  *
- * Fluxo:
- * 1. Valida entrada do usuário (mensagem e histórico)
- * 2. Verifica se API key do Gemini está configurada
- * 3. Constrói o histórico completo com system prompt
- * 4. Chama a API do Gemini com configurações de temperatura
- * 5. Retorna a resposta gerada
+ * Requires authentication and applies a per-user rate limit.
+ * Uses Google's Gemini 2.0 Flash model.
  *
- * Parâmetros de geração (generationConfig):
- * - temperature: 0.8 → controla criatividade
- * - topK: 40 → número de palavras candidatas consideradas
+ * Flow:
+ * 1. Validates the user input (message and history)
+ * 2. Checks that the Gemini API key is configured
+ * 3. Builds the full history with the system prompt
+ * 4. Calls the Gemini API with temperature settings
+ * 5. Returns the generated reply
+ *
+ * Generation parameters (generationConfig):
+ * - temperature: 0.8 → controls creativity
+ * - topK: 40 → number of candidate words considered
  * - topP: 0.95 → nucleus sampling
- * - maxOutputTokens: 1024 → limite máximo da resposta
+ * - maxOutputTokens: 1024 → maximum response length
  *
- * @see lib/ai/providers/gemini-chat.ts - Cliente Gemini
- * ============================================================================
+ * @see lib/ai/providers/gemini-chat.ts - Gemini client
  */
 
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { ERROS } from "@/lib/http/responses";
-import { chatSchema } from "@/lib/schemas/ia-chat";
-import { gerarTexto, GEMINI_MODEL } from "@/lib/ai/providers/gemini-chat";
+import { ERRORS } from "@/lib/http/responses";
+import { chatSchema } from "@/lib/schemas/ai-chat";
+import {
+  generateWithHistory,
+  isGeminiConfigured,
+} from "@/lib/ai/providers/gemini-chat";
 import { requireAuth } from "@/app/_middleware/auth";
 import { getSession } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 
-const SYSTEM_PROMPT = `Você é um assistente especialista em sustentabilidade e reciclagem da EcoShop. Responda em português. Seja objetivo e informativo. Forneça dicas práticas sobre descarte correto, reciclagem e alternativas sustentáveis.`;
+const SYSTEM_PROMPT = `You are an expert assistant in sustainability and recycling for EcoShop. Answer in English. Be objective and informative. Give practical tips on proper disposal, recycling and sustainable alternatives.`;
 
 /**
- * POST /api/ia/chat - Chat com assistente IA
+ * POST /api/ia/chat - Chat with the AI assistant
  *
  * @body { mensagem: string, historico?: ChatMessage[] }
  * @returns { resposta: string }
- * @status 200 - Resposta gerada com sucesso
- * @status 400 - Dados inválidos
- * @status 503 - IA não configurada (chave ausente)
- * @status 502 - IA retornou erro
- * @status 500 - Erro interno no servidor
+ * @status 200 - Reply generated successfully
+ * @status 400 - Invalid data
+ * @status 401 - Not authenticated
+ * @status 429 - Too many messages (rate limit)
+ * @status 503 - AI not configured (missing key)
+ * @status 502 - AI returned an error
+ * @status 500 - Internal server error
  */
-// Limite por usuário: o chat consome a cota paga do Gemini (D3).
-const LIMITE_MENSAGENS = 20;
-const JANELA_SEGUNDOS = 60;
+// Per-user limit: the chat consumes the paid Gemini quota (D3).
+const MESSAGE_LIMIT = 20;
+const WINDOW_SECONDS = 60;
 
 export async function POST(req: NextRequest) {
-  const authErro = await requireAuth(req);
-  if (authErro) return authErro;
+  const authError = await requireAuth(req);
+  if (authError) return authError;
 
   const session = await getSession(req);
-  const { bloqueado } = await rateLimit(`chat:${session!.id}`, {
-    limite: LIMITE_MENSAGENS,
-    janelaSegundos: JANELA_SEGUNDOS,
+  const { blocked: blocked } = await rateLimit(`chat:${session!.id}`, {
+    limit: MESSAGE_LIMIT,
+    windowSeconds: WINDOW_SECONDS,
   });
-  if (bloqueado) {
+  if (blocked) {
     return NextResponse.json(
-      { erro: "Muitas mensagens. Aguarde 1 minuto e tente novamente." },
+      { erro: "Too many messages. Wait 1 minute and try again." },
       { status: 429 },
     );
   }
@@ -74,14 +77,13 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const parsed = chatSchema.safeParse(body);
-    if (!parsed.success) return ERROS.dadosInvalidos(parsed.error.flatten());
+    if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const { mensagem, historico } = parsed.data;
+    const { mensagem: message, historico: history } = parsed.data;
 
-    const geminiKey = process.env.GEMINI_KEY ?? "";
-    if (!geminiKey || geminiKey === "sua_chave") {
+    if (!isGeminiConfigured()) {
       return NextResponse.json(
-        { erro: "Serviço de IA não configurado" },
+        { erro: "AI service not configured" },
         { status: 503 },
       );
     }
@@ -92,50 +94,29 @@ export async function POST(req: NextRequest) {
         role: "model",
         parts: [
           {
-            text: "Entendido! Estou pronto para ajudar com questões de sustentabilidade e reciclagem.",
+            text: "Understood! I am ready to help with sustainability and recycling questions.",
           },
         ],
       },
-      ...historico,
-      { role: "user", parts: [{ text: mensagem }] },
+      ...history,
+      { role: "user", parts: [{ text: message }] },
     ];
 
-    const resposta = await gerarTextoWithHistory(contents, geminiKey);
+    // Never throws: failure, timeout or invalid response become `null` (502).
+    const response = await generateWithHistory(contents, {
+      temperature: 0.8,
+      maxOutputTokens: 1024,
+    });
 
-    if (!resposta) {
+    if (!response) {
       return NextResponse.json(
-        { erro: "Erro ao gerar resposta da IA" },
+        { erro: "Error generating the AI response" },
         { status: 502 },
       );
     }
 
-    return NextResponse.json({ resposta });
-  } catch {
-    return ERROS.interno("processar chat");
+    return NextResponse.json({ resposta: response });
+  } catch (err) {
+    return ERRORS.internal("processar chat", err);
   }
-}
-
-async function gerarTextoWithHistory(
-  contents: unknown[],
-  apiKey: string,
-): Promise<string | null> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents,
-      generationConfig: {
-        temperature: 0.8,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1024,
-      },
-    }),
-  });
-
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
 }

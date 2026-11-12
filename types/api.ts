@@ -1,60 +1,60 @@
 // types/api.ts
 
 /**
- * ============================================================================
  * API REQUEST/RESPONSE TYPES
- * ============================================================================
- * Este arquivo contém os tipos para todas as requisições e respostas das
- * APIs do EcoShop. Cada rota pública tem seu tipo de request/response
- * documentado aqui.
  *
- * Organização por entidade (produtos, categorias, marcas, etc.) seguindo
- * a estrutura RESTful da API.
- * ============================================================================
+ * This file contains the types for all requests and responses of the
+ * EcoShop APIs. Each public route has its request/response type
+ * documented here.
+ *
+ * Organized by entity (products, categories, brands, etc.) following
+ * the API's RESTful structure.
  */
 
-import type { ResultadoScan } from "./ai";
+import type { ScanResult } from "./ai";
 import type {
-  Foto,
-  FotosResponse,
-  Produto,
-  Categoria,
-  Marca,
-  Certificado,
-  ProdutoCertificado,
-  Usuario,
-  UsuarioResumido,
-  TipoUsuario,
+  Photo,
+  PhotosResponse,
+  Product,
+  Category,
+  Brand,
+  BrandStatus,
+  Certificate,
+  ProductCertificate,
+  User,
+  UserSummary,
+  UserType,
 } from "./domain";
 
-// Re-exporta tipos de domínio para conveniência
+// Re-exports domain types for convenience
 export type {
-  Foto,
-  FotosResponse,
-  Produto,
-  Categoria,
-  Marca,
-  Certificado,
-  ProdutoCertificado,
-  Usuario,
-  UsuarioResumido,
-  TipoUsuario,
+  Photo as Foto,
+  PhotosResponse as FotosResponse,
+  Product as Produto,
+  Category as Categoria,
+  Brand as Marca,
+  BrandStatus as StatusMarca,
+  Certificate as Certificado,
+  ProductCertificate as ProdutoCertificado,
+  User as Usuario,
+  UserSummary as UsuarioResumido,
+  UserType as TipoUsuario,
 };
 
 // Re-exporta tipos de IA
-export type { ResultadoScan, ChatResponse } from "./ai";
+export type { ScanResult as ResultadoScan, ChatResponse } from "./ai";
 
 /**
- * ScanResponse é o tipo retornado pelo endpoint POST /api/ia/scan.
- * É idêntico a ResultadoScan — mantido para compatibilidade.
+ * ScanResponse is the type returned by the POST /api/ia/scan endpoint.
+ * It is identical to ScanResult — kept for compatibility.
  */
-export type ScanResponse = ResultadoScan;
+export type ScanResponse = ScanResult;
 
-// --- TIPOS DE PRODUTO ---
+// --- PRODUCT TYPES ---
 
 /**
- * Interface para o corpo da requisição de chat (re-exportada para compatibilidade).
- * Mantida separada para evitar dependência circular com types/ai.ts
+ * Interface for the chat request body (re-exported for compatibility).
+ * Kept separate to avoid a circular dependency with types/ai.ts
  */
 export interface ChatBody {
   mensagem: string;
@@ -65,34 +65,34 @@ export interface ChatBody {
 }
 
 /**
- * Resposta paginada da listagem de produtos.
- * GET /api/produtos?page=1&size=12&categoriaId=5&nome=camiseta
+ * Paginated response of the product listing.
+ * GET /api/produtos?page=1&size=12&categoriaId=5&nome=t-shirt
  */
-export interface ListaProdutosResponse {
-  /** Array de produtos da página atual (ordenados por id ascendente) */
-  produtos: Produto[];
-  /** Número da página atual (1-indexado) */
+export interface ListProductsResponse {
+  /** Array of products of the current page (ordered by ascending id) */
+  produtos: Product[];
+  /** Current page number (1-indexed) */
   page: number;
-  /** Quantidade de itens por página (padrão: 12) */
+  /** Number of items per page (default: 12) */
   size: number;
-  /** Total de produtos que atendem aos filtros (antes da paginação) */
+  /** Total products matching the filters (before pagination) */
   total: number;
 }
 
 /**
- * Resposta da busca de um produto específico.
+ * Response of fetching a specific product.
  * GET /api/produtos/{id}
  */
-export interface BuscarProdutoResponse {
-  produto: Produto;
+export interface GetProductResponse {
+  produto: Product;
 }
 
 /**
- * Corpo da requisição para criar um novo produto.
+ * Request body to create a new product.
  * POST /api/produtos
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  */
-export interface CriarProdutoBody {
+export interface CreateProductBody {
   nome: string;
   descricao?: string;
   preco: number;
@@ -101,230 +101,241 @@ export interface CriarProdutoBody {
 }
 
 /**
- * Resposta da criação de um produto.
- * Retorna o produto recém-criado com ID gerado.
+ * Response of creating a product.
+ * Returns the newly created product with the generated ID.
  * Status: 201 Created
  */
-export interface CriarProdutoResponse {
-  produto: Produto;
+export interface CreateProductResponse {
+  produto: Product;
 }
 
 /**
- * Corpo da requisição para atualizar um produto.
+ * Request body to update a product.
  * PUT /api/produtos/{id}
- * Todos os campos são opcionais — atualização parcial permitida.
- * Requer autenticação ADMIN.
+ * All fields are optional — partial updates are allowed.
+ * Requires ADMIN authentication.
  */
-export interface AtualizarProdutoBody {
+export interface UpdateProductBody {
   nome?: string;
   descricao?: string;
   preco?: number;
   categoriaId?: number;
   marcaId?: number;
+  /** Fully replaces the certificate links (REQ-PROD-05); `[]` removes all */
+  certificadoIds?: number[];
 }
 
 /**
- * Resposta da atualização de um produto.
- * Retorna o produto com os dados atualizados.
+ * Response of updating a product.
+ * Returns the product with the updated data.
  */
-export interface AtualizarProdutoResponse {
-  produto: Produto;
+export interface UpdateProductResponse {
+  produto: Product;
 }
 
 // --- TIPOS DE CATEGORIA ---
 
 /**
- * Resposta da listagem de categorias.
+ * Response of the category listing.
  * GET /api/categorias
- * Endpoint público (não requer autenticação).
+ * Public endpoint (no authentication required).
  */
-export interface ListaCategoriasResponse {
-  categorias: Categoria[];
+export interface ListCategoriesResponse {
+  categorias: Category[];
 }
 
 /**
- * Resposta da busca de uma categoria específica.
+ * Response of fetching a specific category.
  * GET /api/categorias/{id}
  */
-export interface BuscarCategoriaResponse {
-  categoria: Categoria;
+export interface GetCategoryResponse {
+  categoria: Category;
 }
 
 /**
- * Corpo da requisição para criar uma nova categoria.
+ * Request body to create a new category.
  * POST /api/categorias
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  */
-export interface CriarCategoriaBody {
+export interface CreateCategoryBody {
   nome: string;
   descricao?: string;
 }
 
 /**
- * Resposta da criação de uma categoria.
+ * Response of creating a category.
  * Status: 201 Created
  */
-export interface CriarCategoriaResponse {
-  categoria: Categoria;
+export interface CreateCategoryResponse {
+  categoria: Category;
 }
 
 /**
- * Corpo da requisição para atualizar uma categoria.
+ * Request body to update a category.
  * PUT /api/categorias/{id}
- * Atualização parcial (apenas campos enviados são alterados).
- * Requer autenticação ADMIN.
+ * Partial update (only the fields sent are changed).
+ * Requires ADMIN authentication.
  */
-export interface AtualizarCategoriaBody {
+export interface UpdateCategoryBody {
   nome?: string;
   descricao?: string;
 }
 
 /**
- * Resposta da atualização de uma categoria.
+ * Response of updating a category.
  */
-export interface AtualizarCategoriaResponse {
-  categoria: Categoria;
+export interface UpdateCategoryResponse {
+  categoria: Category;
 }
 
-// --- TIPOS DE MARCA ---
+// --- BRAND TYPES ---
 
 /**
- * Resposta da listagem de marcas.
+ * Response of the brand listing.
  * GET /api/marcas
- * Endpoint público (usuários podem visualizar marcas antes de comprar).
+ * Public endpoint (users can see brands before buying).
  */
-export interface ListaMarcasResponse {
-  marcas: Marca[];
+export interface ListBrandsResponse {
+  marcas: Brand[];
 }
 
 /**
- * Resposta da busca de uma marca específica.
+ * Response of fetching a specific brand.
  * GET /api/marcas/{id}
  */
-export interface BuscarMarcaResponse {
-  marca: Marca;
+export interface GetBrandResponse {
+  marca: Brand;
 }
 
 /**
- * Corpo da requisição para criar uma nova marca.
+ * Request body to create a new brand.
  * POST /api/marcas
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  */
-export interface CriarMarcaBody {
+export interface CreateBrandBody {
   nome: string;
   descricao?: string;
   usuarioId: number;
 }
 
 /**
- * Resposta da criação de uma marca.
+ * Response of creating a brand.
  * Status: 201 Created
  */
-export interface CriarMarcaResponse {
-  marca: Marca;
+export interface CreateBrandResponse {
+  marca: Brand;
 }
 
 /**
- * Corpo da requisição para atualizar uma marca.
+ * Request body to update a brand.
  * PUT /api/marcas/{id}
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  */
-export interface AtualizarMarcaBody {
+export interface UpdateBrandBody {
   nome?: string;
   descricao?: string;
 }
 
 /**
- * Resposta da atualização de uma marca.
+ * Response of updating a brand.
  */
-export interface AtualizarMarcaResponse {
-  marca: Marca;
+export interface UpdateBrandResponse {
+  marca: Brand;
+}
+
+/**
+ * Response of approving a pending brand.
+ * POST /api/marcas/{id}/aprovar
+ * Requires ADMIN authentication. REQ-USR-03, ADR-0018.
+ */
+export interface ApproveBrandResponse {
+  marca: Brand;
 }
 
 // --- TIPOS DE CERTIFICADO ---
 
 /**
- * Resposta da listagem de certificados.
+ * Response of the certificate listing.
  * GET /api/certificados
- * Endpoint público (certificações são exibidas nos produtos).
+ * Public endpoint (certifications are shown on products).
  */
-export interface ListaCertificadosResponse {
-  certificados: Certificado[];
+export interface ListCertificatesResponse {
+  certificados: Certificate[];
 }
 
 /**
- * Resposta da busca de um certificado específico.
+ * Response of fetching a specific certificate.
  * GET /api/certificados/{id}
  */
-export interface BuscarCertificadoResponse {
-  certificado: Certificado;
+export interface GetCertificateResponse {
+  certificado: Certificate;
 }
 
 /**
- * Corpo da requisição para criar um novo certificado.
+ * Request body to create a new certificate.
  * POST /api/certificados
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  */
-export interface CriarCertificadoBody {
+export interface CreateCertificateBody {
   nome: string;
   descricao?: string;
   orgaoEmissor: string;
 }
 
 /**
- * Resposta da criação de um certificado.
+ * Response of creating a certificate.
  * Status: 201 Created
  */
-export interface CriarCertificadoResponse {
-  certificado: Certificado;
+export interface CreateCertificateResponse {
+  certificado: Certificate;
 }
 
 /**
- * Corpo da requisição para atualizar um certificado.
+ * Request body to update a certificate.
  * PUT /api/certificados/{id}
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  */
-export interface AtualizarCertificadoBody {
+export interface UpdateCertificateBody {
   nome?: string;
   descricao?: string;
   orgaoEmissor?: string;
 }
 
 /**
- * Resposta da atualização de um certificado.
+ * Response of updating a certificate.
  */
-export interface AtualizarCertificadoResponse {
-  certificado: Certificado;
+export interface UpdateCertificateResponse {
+  certificado: Certificate;
 }
 
-// --- TIPOS DE USUÁRIO ---
+// --- USER TYPES ---
 
 /**
- * Resposta da listagem de usuários (admin).
+ * Response of the user listing (admin).
  * GET /api/usuarios
- * Requer autenticação ADMIN.
+ * Requires ADMIN authentication.
  */
-export interface ListaUsuariosResponse {
-  usuarios: Usuario[];
+export interface ListUsersResponse {
+  usuarios: User[];
 }
 
 /**
- * Resposta da busca de um usuário específico.
+ * Response of fetching a specific user.
  * GET /api/usuarios/{id}
- * Usuários comuns só podem ver o próprio perfil.
- * Admin pode ver qualquer usuário.
+ * Regular users can only see their own profile.
+ * Admin can see any user.
  */
-export interface BuscarUsuarioResponse {
-  usuario: Usuario;
+export interface GetUserResponse {
+  usuario: User;
 }
 
 /**
- * Corpo da requisição para criar usuário (admin).
+ * Request body to create a user (admin).
  * POST /api/usuarios
- * Requer autenticação ADMIN.
- * Permite criar usuários de qualquer tipo (inclusive ADMIN).
+ * Requires ADMIN authentication.
+ * Allows creating users of any type (including ADMIN).
  */
-export interface CriarUsuarioBody {
+export interface CreateUserBody {
   nome: string;
   email: string;
   telefone?: string;
@@ -333,17 +344,17 @@ export interface CriarUsuarioBody {
 }
 
 /**
- * Resposta da criação de um usuário (admin).
+ * Response of creating a user (admin).
  */
-export interface CriarUsuarioResponse {
-  usuario: Usuario;
+export interface CreateUserResponse {
+  usuario: User;
 }
 
 /**
- * Corpo da requisição para atualizar um usuário.
+ * Request body to update a user.
  * PUT /api/usuarios/{id}
  */
-export interface AtualizarUsuarioBody {
+export interface UpdateUserBody {
   nome?: string;
   email?: string;
   telefone?: string;
@@ -351,18 +362,18 @@ export interface AtualizarUsuarioBody {
 }
 
 /**
- * Resposta da atualização de um usuário.
+ * Response of updating a user.
  */
-export interface AtualizarUsuarioResponse {
-  usuario: Usuario;
+export interface UpdateUserResponse {
+  usuario: User;
 }
 
-// --- TIPOS DE AUTENTICAÇÃO ---
+// --- AUTHENTICATION TYPES ---
 
 /**
- * Corpo da requisição de login.
+ * Login request body.
  * POST /api/auth
- * Endpoint público.
+ * Public endpoint.
  */
 export interface LoginBody {
   email: string;
@@ -370,8 +381,8 @@ export interface LoginBody {
 }
 
 /**
- * Resposta do login bem-sucedido.
- * O token JWT é armazenado em cookie httpOnly (não retornado no corpo).
+ * Response of a successful login.
+ * The JWT is stored in an httpOnly cookie (not returned in the body).
  */
 export interface LoginResponse {
   ok: boolean;
@@ -383,23 +394,31 @@ export interface LoginResponse {
 }
 
 /**
- * Corpo da requisição de registro público.
+ * Public registration request body.
  * POST /api/users
- * Endpoint público — qualquer pessoa pode criar conta.
- * Por padrão, tipo é "CLIENTE".
+ * Public endpoint — anyone can create an account.
+ * By default, the type is "CLIENTE".
+ *
+ * `marcaNome` is required when `tipo: "MARCA"` (REQ-AUTH-14): the request
+ * stays pending until an ADMIN approves it (REQ-AUTH-11, ADR-0018).
  */
-export interface RegistroBody {
+export interface RegistrationBody {
   nome: string;
   email: string;
   telefone?: string;
   senha: string;
+  tipo?: "CLIENTE" | "MARCA";
+  marcaNome?: string;
+  marcaDescricao?: string;
 }
 
 /**
- * Resposta do registro bem-sucedido.
- * O usuário é automaticamente logado (cookie JWT é setado).
+ * Response of a successful registration.
+ * The user is logged in automatically (JWT cookie is set).
+ * `marcaPendente: true` indicates that the registration as MARCA is still awaiting
+ * approval from an ADMIN — for now the user has CLIENTE rights.
  */
-export interface RegistroResponse {
+export interface RegistrationResponse {
   ok: boolean;
   usuario: {
     id: number;
@@ -407,20 +426,21 @@ export interface RegistroResponse {
     nome: string;
     tipo: string;
   };
+  marcaPendente?: boolean;
 }
 
 /**
- * Resposta genérica para operações que retornam apenas ok/erro.
- * Usada em DELETE, logout, etc.
+ * Generic response for operations that return only ok/error.
+ * Used in DELETE, logout, etc.
  */
 export interface OkResponse {
   ok: boolean;
 }
 
 /**
- * Resposta do endpoint /api/auth/me
- * Retorna os dados do usuário atualmente autenticado (ou null).
+ * Response of the /api/auth/me endpoint
+ * Returns the currently authenticated user's data (or null).
  */
 export interface AuthMeResponse {
-  usuario: UsuarioResumido | null;
+  usuario: UserSummary | null;
 }
