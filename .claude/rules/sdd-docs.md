@@ -1,7 +1,7 @@
 ---
 paths: ["docs/**", "specs/**", ".specify/**"]
 ---
-- `docs/discovery/**` é retrato congelado: não edite.
-- Constitution e ADR "Aceito" só mudam por pedido explícito do dono (emenda/ADR que substitui).
-- Spec viva: toda linha de `status.md` tem evidência; ✅ exige teste ativo ou `manual: AAAA-MM-DD …`.
-- Depois de editar, rode `npm run sdd:check`.
+- `docs/discovery/**` is a frozen snapshot: do not edit it.
+- The Constitution and "Aceito" (Accepted) ADRs only change on the owner's explicit request (amendment / superseding ADR).
+- Living spec: every `status.md` line has evidence; ✅ requires an active test or `manual: YYYY-MM-DD …`.
+- After editing, run `npm run sdd:check`.

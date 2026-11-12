@@ -1,8 +1,8 @@
 ---
 paths: ["app/api/**"]
 ---
-- Valide a entrada com Zod (`lib/schemas`) antes de usar; erro de validação → 400 com `{ erro }`.
-- Decisão de acesso no handler: `requireAuth`/`requireAdmin` (`app/_middleware/auth.ts`) e checagem de dono (ADR-0017). 401 sem sessão, 403 sem permissão.
-- Chame `services/`; não importe `@/lib/db` no handler (Art. V).
-- Mapeie erros conhecidos (404, 409) em vez de deixar virar 500; nunca devolva hash de senha.
-- Mudou comportamento? Atualize o REQ e o teste `REQ-…` na mesma mudança.
+- Validate input with Zod (`lib/schemas`) before using it; validation error → 400 with `{ erro }`.
+- Access decision in the handler: `requireAuth`/`requireAdmin` (`app/_middleware/auth.ts`) and owner check (ADR-0017). 401 without a session, 403 without permission.
+- Call `services/`; do not import `@/lib/db` in the handler (Art. V).
+- Map known errors (404, 409) instead of letting them become 500; never return a password hash.
+- Changed behavior? Update the REQ and the `REQ-…` test in the same change.

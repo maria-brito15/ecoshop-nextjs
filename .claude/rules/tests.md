@@ -1,6 +1,6 @@
 ---
 paths: ["tests/**"]
 ---
-- Título `REQ-XXX-NN: …`; veja a skill `test-strategy`.
-- Importe `./helpers` primeiro; use dados únicos; não dependa da ordem entre arquivos.
-- Defeito conhecido: `{ todo: "motivo" }` descrevendo o comportamento correto.
+- Title `REQ-XXX-NN: …`; see the `test-strategy` skill.
+- Import `./helpers` first; use unique data; do not depend on the order between files.
+- Known defect: `{ todo: "reason" }` describing the correct behavior.
