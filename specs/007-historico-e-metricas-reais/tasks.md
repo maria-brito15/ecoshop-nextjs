@@ -1,12 +1,12 @@
-# Tarefas: 007-historico-e-metricas-reais
+# Tasks: 007-historico-e-metricas-reais
 
-| ID | Tarefa | REQ | Depende de | Feito quando | OK |
+| ID | Task | REQ | Depends on | Done when | OK |
 |---|---|---|---|---|---|
-| T1 | `app/(store)/produtos/[id]/page.tsx`: grava `ecoshop_history` (dedup, mais recente primeiro, corte em 50) | REQ-PERF-05 | — | lógica verificada por simulação em Node (dedup/ordem/limite) | [x] |
-| T2 | `app/(perfil)/perfil/page.tsx`: lê a lista completa; aba Histórico renderiza os itens reais | REQ-PERF-05 | T1 | código compila (`tsc`), lint sem erro novo | [x] |
-| T3 | `ImpactCard` ganha `fonte`; as 3 métricas declaram a fonte (real ou estimativa ilustrativa) | REQ-PERF-06 | T2 | nenhuma métrica sem `fonte` | [x] |
-| T4 | Consolidar `conta-e-perfil/{spec,status}.md`; remover linha do backlog de `pendentes.md` | — | T1–T3 | `npm run sdd:check` passa | [x] |
+| T1 | `app/(store)/produtos/[id]/page.tsx`: writes `ecoshop_history` (dedup, most recent first, cut at 50) | REQ-PERF-05 | — | logic verified by simulation in Node (dedup/order/limit) | [x] |
+| T2 | `app/(perfil)/perfil/page.tsx`: reads the complete list; the History tab renders the real items | REQ-PERF-05 | T1 | the code compiles (`tsc`), lint with no new error | [x] |
+| T3 | `ImpactCard` gains `fonte`; the 3 metrics declare the source (real or illustrative estimate) | REQ-PERF-06 | T2 | no metric without `fonte` | [x] |
+| T4 | Consolidate `conta-e-perfil/{spec,status}.md`; remove the backlog row from `pendentes.md` | — | T1–T3 | `npm run sdd:check` passes | [x] |
 
-## Nota
+## Note
 
-REQ-PERF-05/06 ficam ◐, não ✅: a lógica central (gravação, dedup, ordem, limite) foi verificada por simulação em Node fora do React, e não há suíte de componente no projeto para testar a renderização automaticamente. Falta verificação manual no navegador (indisponível nesta sessão) para confirmar que a aba Histórico e as legendas de Impacto aparecem como esperado na tela.
+REQ-PERF-05/06 stay ◐, not ✅: the core logic (writing, dedup, order, limit) was verified by simulation in Node outside React, and there is no component suite in the project to test the rendering automatically. A manual check in the browser (unavailable in this session) is missing to confirm that the History tab and the Impact captions appear as expected on screen.

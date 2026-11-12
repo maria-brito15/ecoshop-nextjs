@@ -1,14 +1,14 @@
-# Tarefas: 006-vinculo-produto-certificado
+# Tasks: 006-vinculo-produto-certificado
 
-| ID | Tarefa | REQ | Depende de | Feito quando | OK |
+| ID | Task | REQ | Depends on | Done when | OK |
 |---|---|---|---|---|---|
-| T1 | Testes falhando: REQ-PROD-05 (substituição completa, `[]` remove tudo, id inexistente não é 500) em `tests/integration/catalog.test.ts` | REQ-PROD-05 | — | testes existem e falham (campo ignorado pelo schema) | [x] |
-| T2 | `lib/schemas/product.ts`: `certificadoIds` em `atualizarProdutoSchema` | REQ-PROD-05 | T1 | schema aceita o campo | [x] |
-| T3 | `services/product.service.ts::atualizarProduto`: transação que substitui o vínculo | REQ-PROD-05 | T2 | T1 passa | [x] |
-| T4 | `types/api.ts`: `AtualizarProdutoBody.certificadoIds` | REQ-PROD-05 | T3 | compila | [x] |
-| T5 | Painel: checklist de certificados no modal de edição | REQ-PROD-05 | T4 | código compila (`tsc`), lint sem erro novo | [x] |
-| T6 | Consolidar `gestao-de-produtos/{spec,status}.md`; remover linha do backlog de `pendentes.md` | — | T1–T5 | `npm run sdd:check` passa | [x] |
+| T1 | Failing tests: REQ-PROD-05 (full replacement, `[]` removes all, a nonexistent id is not 500) in `tests/integration/catalog.test.ts` | REQ-PROD-05 | — | the tests exist and fail (field ignored by the schema) | [x] |
+| T2 | `lib/schemas/product.ts`: `certificadoIds` in `updateProductSchema` | REQ-PROD-05 | T1 | the schema accepts the field | [x] |
+| T3 | `services/product.service.ts::updateProduct`: a transaction that replaces the link | REQ-PROD-05 | T2 | T1 passes | [x] |
+| T4 | `types/api.ts`: `UpdateProductBody.certificadoIds` | REQ-PROD-05 | T3 | compiles | [x] |
+| T5 | Dashboard: certificate checklist in the edit modal | REQ-PROD-05 | T4 | the code compiles (`tsc`), lint with no new error | [x] |
+| T6 | Consolidate `gestao-de-produtos/{spec,status}.md`; remove the backlog row from `pendentes.md` | — | T1–T5 | `npm run sdd:check` passes | [x] |
 
-## Nota
+## Note
 
-REQ-PROD-05 fica ✅: a lógica decisiva (substituição do vínculo, remoção total, erro de FK) está na API e coberta por teste de integração real contra Postgres. A UI do painel (checklist de certificados) não foi verificada visualmente no navegador (indisponível nesta sessão), mas só espelha o que a API já garante corretamente.
+REQ-PROD-05 stays ✅: the deciding logic (replacing the link, total removal, FK error) is in the API and covered by a real integration test against Postgres. The dashboard UI (certificate checklist) was not visually verified in the browser (unavailable in this session), but it only mirrors what the API already guarantees correctly.

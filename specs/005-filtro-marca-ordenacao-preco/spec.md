@@ -1,55 +1,55 @@
-# Spec de mudança: 005-filtro-marca-ordenacao-preco
+# Change spec: 005-filtro-marca-ordenacao-preco
 
-- **Trilha:** correção (REQ-CAT-06/07 já existiam na spec; o servidor nunca implementou de fato — não é mudança de regra)
-- **Capacidades afetadas:** CAT (`docs/capabilities/catalogo`)
-- **Status:** Consolidada
-- **Autor / aprovador:** Claude / Arthur (feature escolhida do backlog em 2026-11-11) · **Data:** 2026-11-11
+- **Track:** fix (REQ-CAT-06/07 already existed in the spec; the server never actually implemented them — not a rule change)
+- **Affected capabilities:** CAT (`docs/capabilities/catalogo`)
+- **Status:** Consolidated
+- **Author / approver:** Claude / Arthur (feature chosen from the backlog on 2026-11-11) · **Date:** 2026-11-11
 
-## Problema
+## Problem
 
-`GET /api/produtos` não aceita `marcaId`, `precoMax` nem `sort`. A tela `/produtos` simulava os três no cliente: ordenava e filtrava por preço só os produtos da página já paginada pelo servidor (`produtosSorted`/`produtosFiltrados` sobre `data.produtos`), e não tinha filtro por marca algum. Isso viola diretamente REQ-CAT-06 ("aplicar ao catálogo inteiro, não apenas à página exibida") e deixa REQ-CAT-07 inexistente.
+`GET /api/produtos` does not accept `marcaId`, `precoMax` or `sort`. The `/produtos` screen simulated all three on the client: it sorted and filtered by price only the products of the page already paginated by the server (`produtosSorted`/`produtosFiltrados` over `data.produtos`), and had no brand filter at all. This directly violates REQ-CAT-06 ("apply to the whole catalog, not only to the displayed page") and leaves REQ-CAT-07 nonexistent.
 
-## Fora de escopo
+## Out of scope
 
-- Qualquer outro filtro novo (ex.: por certificado).
-- Mudar o tamanho de página (continua 12).
-- Persistir a preferência de ordenação entre sessões.
+- Any other new filter (e.g. by certificate).
+- Changing the page size (stays 12).
+- Persisting the sort preference between sessions.
 
-## Comportamento atual (fato, com evidência)
+## Current behavior (fact, with evidence)
 
-- `lib/schemas/product.ts` (`listarProdutosQuerySchema`): sem `marcaId`, `precoMax`, `sort`.
-- `services/product.service.ts::listarProdutos`: `orderBy: { id: "asc" }` fixo; `where` só filtra `categoriaId`/`nome`.
-- `app/(store)/produtos/page.tsx:270-283` (antes da mudança): ordenava e filtrava por preço com `Array.prototype.sort`/`.filter` sobre os 12 itens já devolvidos pela página atual — e o contador "N produtos encontrados" mostrava esse N local, não o total real.
+- `lib/schemas/product.ts` (`listProductsQuerySchema`): without `marcaId`, `precoMax`, `sort`.
+- `services/product.service.ts::listProducts`: fixed `orderBy: { id: "asc" }`; `where` only filters `categoriaId`/`nome`.
+- `app/(store)/produtos/page.tsx:270-283` (before the change): sorted and filtered by price with `Array.prototype.sort`/`.filter` over the 12 items already returned by the current page — and the "N products found" counter showed that local N, not the real total.
 - `docs/capabilities/catalogo/status.md`: REQ-CAT-06/07 ❌.
 
-## Requisitos
+## Requirements
 
-| ID | Requisito (EARS) | Critério de aceite | Novo / Altera |
+| ID | Requirement (EARS) | Acceptance criterion | New / Changes |
 |---|---|---|---|
-| REQ-CAT-06 | Quando o visitante ordena por preço ou nome, ou limita o preço máximo, o sistema deve aplicar a ordenação e o limite ao catálogo inteiro, não apenas à página exibida. | `GET /api/produtos?sort=preco_desc&size=5` → os 5 itens são os 5 mais caros de todo o conjunto filtrado; a página 2 continua a mesma ordenação global. `precoMax` muda o `total`, não só o que é exibido | Já existia (❌→✅) |
-| REQ-CAT-07 | Quando o visitante filtra por marca, o sistema deve devolver somente produtos dela. | `GET /api/produtos?marcaId=N` → só produtos da marca N | Já existia (❌→✅) |
+| REQ-CAT-06 | When the visitor sorts by price or name, or caps the maximum price, the system shall apply the sort and the cap to the whole catalog, not only to the displayed page. | `GET /api/produtos?sort=preco_desc&size=5` → the 5 items are the 5 most expensive of the whole filtered set; page 2 keeps the same global ordering. `precoMax` changes the `total`, not only what is shown | Already existed (❌→✅) |
+| REQ-CAT-07 | When the visitor filters by brand, the system shall return only its products. | `GET /api/produtos?marcaId=N` → only products of brand N | Already existed (❌→✅) |
 
-## Cenários e casos-limite
+## Scenarios and edge cases
 
-- `sort` ausente ou `relevancia`: mantém o comportamento atual (`orderBy: id asc`).
-- `sort` inválido (fora do enum): 400 (mesma validação Zod que já cobre `page`/`size`).
-- `precoMax` combinado com `categoriaId`/`marcaId`/`nome`: todos os filtros se combinam em `AND` (mesmo padrão já usado por `categoriaId`/`nome`).
-- Painel ADMIN (`size=100`, sem os novos filtros): continua funcionando sem alteração, pois todos os novos parâmetros são opcionais.
-- Filtro de marca na tela: só lista marcas com `status === "APROVADA"` (ADR-0018) — uma marca pendente não aparece como opção de filtro no catálogo público.
+- `sort` absent or `relevancia`: keeps the current behavior (`orderBy: id asc`).
+- Invalid `sort` (outside the enum): 400 (the same Zod validation that already covers `page`/`size`).
+- `precoMax` combined with `categoriaId`/`marcaId`/`nome`: all filters combine with `AND` (the same pattern already used by `categoriaId`/`nome`).
+- ADMIN dashboard (`size=100`, without the new filters): keeps working unchanged, since all the new parameters are optional.
+- Brand filter on the screen: only lists brands with `status === "APROVADA"` (ADR-0018) — a pending brand does not appear as a filter option in the public catalog.
 
-## Regras de negócio e restrições
+## Business rules and constraints
 
-- Nenhuma regra nova; BR-CAT-01 (preço decimal positivo) não muda.
-- O filtro e a ordenação são resolvidos pelo Prisma (`where`/`orderBy`), não em memória — é isso que garante "catálogo inteiro" em vez de "página atual".
+- No new rule; BR-CAT-01 (positive decimal price) does not change.
+- The filter and the sort are resolved by Prisma (`where`/`orderBy`), not in memory — that is what guarantees "whole catalog" instead of "current page".
 
-## Interfaces afetadas
+## Affected interfaces
 
-`GET /api/produtos` (query `marcaId`, `precoMax`, `sort`) · `lib/hooks/useProducts.ts` (`useListarProdutos` ganha um 5º parâmetro opcional) · `app/(store)/produtos/page.tsx` (filtro por marca na UI; remove a ordenação/filtro client-side).
+`GET /api/produtos` (query `marcaId`, `precoMax`, `sort`) · `lib/hooks/useProducts.ts` (`useListProducts` gains an optional 5th parameter) · `app/(store)/produtos/page.tsx` (brand filter in the UI; removes the client-side sort/filter).
 
-## Delta na spec viva
+## Delta in the living spec
 
-`catalogo/status.md`: REQ-CAT-06 ❌→✅, REQ-CAT-07 ❌→✅ (ambos com teste). `catalogo/spec.md`: resolve as duas perguntas abertas. `pendentes.md`: remove a linha do filtro por marca/ordenação do backlog.
+`catalogo/status.md`: REQ-CAT-06 ❌→✅, REQ-CAT-07 ❌→✅ (both with a test). `catalogo/spec.md`: resolves the two open questions. `pendentes.md`: removes the brand filter/sort row from the backlog.
 
-## Perguntas em aberto
+## Open questions
 
-Nenhuma bloqueante.
+None blocking.

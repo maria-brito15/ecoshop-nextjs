@@ -1,48 +1,48 @@
-# Plano: 005-filtro-marca-ordenacao-preco
+# Plan: 005-filtro-marca-ordenacao-preco
 
 - **Spec:** ./spec.md
-- **ADRs que segue:** ADR-0018 (status de marca — só marcas APROVADA aparecem no filtro) · **ADRs novos/que substitui:** nenhum
+- **ADRs it follows:** ADR-0018 (brand status — only APROVADA brands appear in the filter) · **New ADRs / ones it supersedes:** none
 
-## Abordagem técnica
+## Technical approach
 
-Tudo resolvido no banco (Prisma), não em memória:
-1. `lib/schemas/product.ts`: `listarProdutosQuerySchema` ganha `marcaId` (coerce number), `precoMax` (coerce number positivo) e `sort` (enum `relevancia|preco_asc|preco_desc|nome_asc|nome_desc`, default `relevancia`).
-2. `services/product.service.ts::listarProdutos`: `where` ganha `marcaId`/`preco: { lte: precoMax }` quando presentes; `orderBy` vira um mapa fixo (`ORDEM_POR_SORT`) indexado por `sort`, em vez do `{ id: "asc" }` fixo. `skip`/`take` continuam no Prisma, então a ordenação/filtro valem para a contagem (`total`) e para qualquer página.
-3. `app/api/produtos/route.ts`: só documentação (a validação e a passagem de `searchParams` já eram genéricas).
-4. `lib/hooks/useProducts.ts::useListarProdutos`: 5º parâmetro opcional `filtros: { marcaId?, precoMax?, sort? }`, para não quebrar as duas chamadas existentes que só usam `(page, size)`.
-5. `app/(store)/produtos/page.tsx`: remove `produtosSorted`/`produtosFiltrados` (ordenação/filtro client-side); passa `marcaId`/`precoMax`/`sort` para o hook; os contadores de "N produtos encontrados" passam a usar `total` (do servidor) em vez do tamanho do array da página; novo bloco de filtro por marca (desktop e mobile), só com marcas `status === "APROVADA"` (ADR-0018); muda `sort`/preço reseta a página para 1 (evita página vazia depois de um filtro reduzir o total).
+Everything resolved in the database (Prisma), not in memory:
+1. `lib/schemas/product.ts`: `listProductsQuerySchema` gains `marcaId` (coerce number), `precoMax` (coerce positive number) and `sort` (enum `relevancia|preco_asc|preco_desc|nome_asc|nome_desc`, default `relevancia`).
+2. `services/product.service.ts::listProducts`: `where` gains `marcaId`/`preco: { lte: precoMax }` when present; `orderBy` becomes a fixed map (`ORDER_BY_SORT`) indexed by `sort`, instead of the fixed `{ id: "asc" }`. `skip`/`take` stay in Prisma, so the sort/filter applies to the count (`total`) and to any page.
+3. `app/api/produtos/route.ts`: documentation only (the validation and the passing of `searchParams` were already generic).
+4. `lib/hooks/useProducts.ts::useListProducts`: optional 5th parameter `filtros: { marcaId?, precoMax?, sort? }`, so as not to break the two existing calls that only use `(page, size)`.
+5. `app/(store)/produtos/page.tsx`: removes `produtosSorted`/`produtosFiltrados` (client-side sort/filter); passes `marcaId`/`precoMax`/`sort` to the hook; the "N products found" counters now use `total` (from the server) instead of the size of the page array; a new brand filter block (desktop and mobile), only with brands `status === "APROVADA"` (ADR-0018); changing `sort`/price resets the page to 1 (avoids an empty page after a filter reduces the total).
 
-Alternativa descartada: continuar ordenando/filtrando no cliente, mas sobre `size=100` (pedir tudo de uma vez). Rejeitada: multiplica o payload por página mesmo sem precisar, e ainda exigiria paginação manual no cliente — mais código para o mesmo resultado que o Prisma já faz de graça.
+Discarded alternative: keep sorting/filtering on the client, but over `size=100` (ask for everything at once). Rejected: it multiplies the payload per page even without need, and would still require manual pagination on the client — more code for the same result that Prisma already does for free.
 
 ## Constitution Check
 
-| Artigo | Aplica? | Cumprido? | Observação |
+| Article | Applies? | Met? | Note |
 |---|---|---|---|
-| II Testes por REQ | sim | sim | REQ-CAT-06 (2 testes: sort cross-page, precoMax) e REQ-CAT-07 (1 teste) |
-| V Camadas | sim | sim | handler chama `services/`; filtro/ordenação ficam no service |
-| XI Sem dado inventado | sim | sim | filtro de marca só lista marcas reais e aprovadas |
+| II Tests per REQ | yes | yes | REQ-CAT-06 (2 tests: cross-page sort, precoMax) and REQ-CAT-07 (1 test) |
+| V Layers | yes | yes | handler calls `services/`; filter/sort stay in the service |
+| XI No invented data | yes | yes | the brand filter only lists real, approved brands |
 
-## Arquivos afetados
+## Affected files
 
-| Arquivo | Mudança | REQ |
+| File | Change | REQ |
 |---|---|---|
-| `lib/schemas/product.ts` | `marcaId`, `precoMax`, `sort` em `listarProdutosQuerySchema` | REQ-CAT-06, REQ-CAT-07 |
-| `services/product.service.ts` | `where`/`orderBy` dinâmicos | REQ-CAT-06, REQ-CAT-07 |
-| `app/api/produtos/route.ts` | doc dos novos query params | REQ-CAT-06, REQ-CAT-07 |
-| `lib/hooks/useProducts.ts` | `useListarProdutos` ganha `filtros` opcional | REQ-CAT-06, REQ-CAT-07 |
-| `app/(store)/produtos/page.tsx` | remove ordenação/filtro client-side; filtro de marca na UI; contadores usam `total` | REQ-CAT-06, REQ-CAT-07 |
-| `tests/integration/catalog.test.ts` | 3 testes novos | REQ-CAT-06, REQ-CAT-07 |
+| `lib/schemas/product.ts` | `marcaId`, `precoMax`, `sort` in `listProductsQuerySchema` | REQ-CAT-06, REQ-CAT-07 |
+| `services/product.service.ts` | dynamic `where`/`orderBy` | REQ-CAT-06, REQ-CAT-07 |
+| `app/api/produtos/route.ts` | docs of the new query params | REQ-CAT-06, REQ-CAT-07 |
+| `lib/hooks/useProducts.ts` | `useListProducts` gains an optional `filtros` | REQ-CAT-06, REQ-CAT-07 |
+| `app/(store)/produtos/page.tsx` | removes client-side sort/filter; brand filter in the UI; counters use `total` | REQ-CAT-06, REQ-CAT-07 |
+| `tests/integration/catalog.test.ts` | 3 new tests | REQ-CAT-06, REQ-CAT-07 |
 | `docs/capabilities/catalogo/{spec,status}.md` | REQ-CAT-06/07 ❌→✅ | REQ-CAT-06, REQ-CAT-07 |
-| `docs/architecture/adr/pendentes.md` | remove a linha do backlog | — |
+| `docs/architecture/adr/pendentes.md` | removes the backlog row | — |
 
-## Plano de verificação
+## Verification plan
 
-Integração (`tests/integration/catalog.test.ts`): REQ-CAT-06 com `sort=preco_desc` em duas páginas (`size=5`, páginas 1 e 2) confirmando ordem decrescente contínua pelos 14 produtos; REQ-CAT-06 com `precoMax=15` confirmando `total=6` mesmo com `size=3`; REQ-CAT-07 com uma segunda marca e um produto exclusivo dela. REQ-CAT-01 a 05 e REQ-PROD-01/02 continuam passando sem alteração (não regressão). Manual: não feito (sem navegador nesta sessão) — mas a lógica de UI é testável via leitura do código, já que toda a decisão de filtro/ordenação migrou para a API, já coberta por teste.
+Integration (`tests/integration/catalog.test.ts`): REQ-CAT-06 with `sort=preco_desc` on two pages (`size=5`, pages 1 and 2) confirming a continuous descending order across the 14 products; REQ-CAT-06 with `precoMax=15` confirming `total=6` even with `size=3`; REQ-CAT-07 with a second brand and a product exclusive to it. REQ-CAT-01 to 05 and REQ-PROD-01/02 keep passing unchanged (non-regression). Manual: not done (no browser in this session) — but the UI logic is testable by reading the code, since all the filter/sort decision migrated to the API, already covered by a test.
 
-## Riscos e reversão
+## Risks and rollback
 
-Risco: `precoMax`/`sort`/`marcaId` combinados com cache (`chaveProdutos`) gerarem chaves inconsistentes. Mitigado: `chaveProdutos` já serializa `searchParams.toString()` genericamente, incluindo qualquer parâmetro novo automaticamente — sem mudança necessária em `lib/cache/keys.ts`. Reversão: reverter `services/product.service.ts` e `lib/schemas/product.ts` ao `where`/`orderBy` fixos; a UI e o hook toleram a ausência desses parâmetros (são todos opcionais).
+Risk: `precoMax`/`sort`/`marcaId` combined with the cache (`productKey`) generating inconsistent keys. Mitigated: `productKey` already serializes `searchParams.toString()` generically, including any new parameter automatically — no change needed in `lib/cache/keys.ts`. Rollback: revert `services/product.service.ts` and `lib/schemas/product.ts` to the fixed `where`/`orderBy`; the UI and the hook tolerate the absence of these parameters (they are all optional).
 
 ## Complexity Tracking
 
-Sem violações.
+No violations.

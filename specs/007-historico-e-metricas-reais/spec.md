@@ -1,56 +1,56 @@
-# Spec de mudança: 007-historico-e-metricas-reais
+# Change spec: 007-historico-e-metricas-reais
 
-- **Trilha:** correção (REQ-PERF-05/06 já existiam na spec; o código lia uma chave que nunca gravava)
-- **Capacidades afetadas:** PERF (`docs/capabilities/conta-e-perfil`)
-- **Status:** Consolidada
-- **Autor / aprovador:** Claude / Arthur (feature escolhida do backlog em 2026-11-11) · **Data:** 2026-11-11
+- **Track:** fix (REQ-PERF-05/06 already existed in the spec; the code read a key that it never wrote)
+- **Affected capabilities:** PERF (`docs/capabilities/conta-e-perfil`)
+- **Status:** Consolidated
+- **Author / approver:** Claude / Arthur (feature chosen from the backlog on 2026-11-11) · **Date:** 2026-11-11
 
-## Problema
+## Problem
 
-`app/(perfil)/perfil/page.tsx` já lia a chave `localStorage.ecoshop_history` para contar produtos visitados, mas nada em todo o código a gravava — `historyCount` era sempre `0`, a aba "Histórico" sempre mostrava o estado vazio, e as métricas de "Impacto" (derivadas de `historyCount`) eram sempre zero, sem nenhuma indicação de que os fatores de conversão (50L, 0,3) eram estimativas inventadas.
+`app/(perfil)/perfil/page.tsx` already read the `localStorage.ecoshop_history` key to count visited products, but nothing in the whole code wrote it — `historyCount` was always `0`, the "History" tab always showed the empty state, and the "Impact" metrics (derived from `historyCount`) were always zero, with no indication that the conversion factors (50L, 0.3) were invented estimates.
 
-## Fora de escopo
+## Out of scope
 
-- Histórico por conta (servidor/Postgres), sincronizado entre dispositivos. O histórico é por navegador (ver "Decisão" abaixo).
-- Qualquer fonte científica real de impacto ambiental (não existe no projeto; mesma decisão já tomada para REQ-CONT-02/05).
-- REQ-CONT-02 e REQ-CONT-05: já estavam ✅/◐ por rotulagem (resolvidos em 2026-11-10, commit `35a75a6`); a linha do backlog que os citava junto com REQ-PERF-05/06 estava desatualizada — nenhuma mudança adicional neles aqui.
+- Per-account history (server/Postgres), synchronized between devices. The history is per browser (see "Decision" below).
+- Any real scientific source of environmental impact (it does not exist in the project; the same decision already taken for REQ-CONT-02/05).
+- REQ-CONT-02 and REQ-CONT-05: they were already ✅/◐ through labeling (resolved on 2026-11-10, commit `35a75a6`); the backlog row that cited them together with REQ-PERF-05/06 was outdated — no additional change to them here.
 
-## Decisão (sem ADR: segue o padrão já implícito no código)
+## Decision (no ADR: it follows the pattern already implicit in the code)
 
-O histórico fica em `localStorage`, não em uma tabela nova. O código já lia dessa chave antes desta mudança (só faltava escrever); criar uma tabela de histórico no Postgres seria uma extensão de escopo não pedida, e o padrão "sem backend quando não precisa" já aparece em ADR-0004/ADR-0011. Se o dono quiser histórico por conta (sincronizado entre dispositivos) no futuro, isso é uma decisão de arquitetura nova, não esta correção.
+The history stays in `localStorage`, not in a new table. The code already read from that key before this change (it only lacked writing); creating a history table in Postgres would be an unrequested scope extension, and the "no backend when not needed" pattern already appears in ADR-0004/ADR-0011. If the owner wants a per-account history (synchronized between devices) in the future, that is a new architecture decision, not this fix.
 
-## Comportamento atual (fato, com evidência)
+## Current behavior (fact, with evidence)
 
-- `app/(perfil)/perfil/page.tsx:464-472` (antes): lia `ecoshop_history`, mas nenhum arquivo gravava essa chave.
-- `app/(store)/produtos/[id]/page.tsx`: não tinha nenhum efeito de gravação de histórico.
-- As três métricas de "Impacto" (`ImpactCard`) não tinham nenhuma legenda de fonte.
+- `app/(perfil)/perfil/page.tsx:464-472` (before): read `ecoshop_history`, but no file wrote that key.
+- `app/(store)/produtos/[id]/page.tsx`: had no history-writing effect.
+- The three "Impact" metrics (`ImpactCard`) had no source caption.
 - `docs/capabilities/conta-e-perfil/status.md`: REQ-PERF-05/06 ❌.
 
-## Requisitos
+## Requirements
 
-| ID | Requisito (EARS) | Critério de aceite | Novo / Altera |
+| ID | Requirement (EARS) | Acceptance criterion | New / Changes |
 |---|---|---|---|
-| REQ-PERF-05 | Quando o usuário visita um produto, o sistema deve registrar no histórico e mostrá-lo na aba Histórico do perfil. | Visitar 2 produtos distintos → aba Histórico mostra os 2, mais recente primeiro; revisitar um produto não duplica a entrada | Já existia (❌→◐, ver nota de verificação) |
-| REQ-PERF-06 | Quando o usuário abre a aba Impacto, o sistema deve exibir métricas derivadas de dados reais do próprio usuário. | "Explorador Verde" é a contagem real do histórico; as outras duas métricas (fatores de conversão inventados) ficam rotuladas como estimativa ilustrativa, com a fórmula declarada | Já existia (❌→◐, ver nota de verificação) |
+| REQ-PERF-05 | When the user visits a product, the system shall record it in the history and show it in the History tab of the profile. | Visiting 2 distinct products → the History tab shows the 2, most recent first; revisiting a product does not duplicate the entry | Already existed (❌→◐, see the verification note) |
+| REQ-PERF-06 | When the user opens the Impact tab, the system shall show metrics derived from the user's own real data. | "Explorador Verde" is the real count of the history; the other two metrics (invented conversion factors) stay labeled as an illustrative estimate, with the formula declared | Already existed (❌→◐, see the verification note) |
 
-## Cenários e casos-limite
+## Scenarios and edge cases
 
-- `localStorage` indisponível (modo privado/navegador bloqueando): a gravação falha silenciosamente (try/catch); a leitura também cai para lista vazia — a página não quebra.
-- Histórico com mais de 50 itens: mantém só os 50 mais recentes (limite arbitrário para não crescer sem fim; documentado no código).
-- Produto sem `fotoUrl`: o item do histórico mostra o ícone 🌱, igual ao resto do site.
+- `localStorage` unavailable (private mode/browser blocking): the write fails silently (try/catch); the read also falls back to an empty list — the page does not break.
+- History with more than 50 items: keeps only the 50 most recent (an arbitrary limit so it does not grow forever; documented in the code).
+- A product without `fotoUrl`: the history item shows the 🌱 icon, like the rest of the site.
 
-## Regras de negócio e restrições
+## Business rules and constraints
 
-- Constitution Art. XI: as duas métricas com fator inventado (50L, 0,3) ficam com a fonte declarada na própria tela, mesmo padrão de REQ-CONT-02/05.
+- Constitution Art. XI: the two metrics with an invented factor (50L, 0.3) have the source declared on the screen itself, the same pattern as REQ-CONT-02/05.
 
-## Interfaces afetadas
+## Affected interfaces
 
-`app/(store)/produtos/[id]/page.tsx` (grava `ecoshop_history`) · `app/(perfil)/perfil/page.tsx` (lê e renderiza a lista; rotula as métricas).
+`app/(store)/produtos/[id]/page.tsx` (writes `ecoshop_history`) · `app/(perfil)/perfil/page.tsx` (reads and renders the list; labels the metrics).
 
-## Delta na spec viva
+## Delta in the living spec
 
-`conta-e-perfil/status.md`: REQ-PERF-05/06 ❌→◐ (código; falta verificação manual no navegador — a lógica de histórico foi verificada por simulação em Node, não pela UI real). `conta-e-perfil/spec.md`: resolve a primeira pergunta aberta. `pendentes.md`: remove a linha do backlog.
+`conta-e-perfil/status.md`: REQ-PERF-05/06 ❌→◐ (code; manual check in the browser missing — the history logic was verified by simulation in Node, not through the real UI). `conta-e-perfil/spec.md`: resolves the first open question. `pendentes.md`: removes the backlog row.
 
-## Perguntas em aberto
+## Open questions
 
-A pergunta aberta #2 da spec viva ("o usuário pode alterar o próprio e-mail e senha?") continua sem resposta, sem relação com esta mudança.
+Open question #2 of the living spec ("can the user change their own email and password?") stays unanswered, unrelated to this change.

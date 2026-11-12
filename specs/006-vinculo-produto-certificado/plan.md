@@ -1,47 +1,47 @@
-# Plano: 006-vinculo-produto-certificado
+# Plan: 006-vinculo-produto-certificado
 
 - **Spec:** ./spec.md
-- **ADRs que segue:** nenhum específico · **ADRs novos/que substitui:** nenhum
+- **ADRs it follows:** none specific · **New ADRs / ones it supersedes:** none
 
-## Abordagem técnica
+## Technical approach
 
-1. `lib/schemas/product.ts`: `atualizarProdutoSchema` ganha `certificadoIds?: number[]` (array de inteiros, opcional).
-2. `services/product.service.ts::atualizarProduto`: separa `certificadoIds` do resto do corpo (`produtoData`). Dentro de um `prisma.$transaction`: atualiza os campos escalares (se houver algum) ou só confirma que o produto existe (`findUniqueOrThrow`, garante 404 mesmo quando só `certificadoIds` é enviado); se `certificadoIds !== undefined`, remove todo o vínculo atual (`produtoCertificado.deleteMany`) e cria o novo, deduplicado (`produtoCertificado.createMany`); devolve o produto com `certificados` incluído.
-3. `app/api/produtos/[id]/route.ts`: só documentação — a validação e o repasse ao service já eram genéricos.
-4. `types/api.ts`: `AtualizarProdutoBody` ganha `certificadoIds?: number[]`.
-5. Painel (`app/(admin)/painel/page.tsx`, `SecaoProdutos`): estado `certificadoIds`; ao abrir "Editar", pré-marca os certificados já vinculados (`produto.certificados.map(pc => pc.certificado.id)`); checklist de certificados visível só no modo edição (criação não tem produto ainda); `handleSalvar` manda `certificadoIds` só no PUT.
+1. `lib/schemas/product.ts`: `updateProductSchema` gains `certificadoIds?: number[]` (an array of integers, optional).
+2. `services/product.service.ts::updateProduct`: separates `certificadoIds` from the rest of the body (`produtoData`). Inside a `prisma.$transaction`: updates the scalar fields (if there are any) or only confirms that the product exists (`findUniqueOrThrow`, guarantees 404 even when only `certificadoIds` is sent); if `certificadoIds !== undefined`, removes the whole current link (`produtoCertificado.deleteMany`) and creates the new one, deduplicated (`produtoCertificado.createMany`); returns the product with `certificados` included.
+3. `app/api/produtos/[id]/route.ts`: documentation only — the validation and the pass-through to the service were already generic.
+4. `types/api.ts`: `UpdateProductBody` gains `certificadoIds?: number[]`.
+5. Dashboard (`app/(admin)/painel/page.tsx`, `ProductsSection`): a `certificadoIds` state; when opening "Edit", it pre-checks the already linked certificates (`produto.certificados.map(pc => pc.certificado.id)`); the certificate checklist is visible only in edit mode (creation has no product yet); `handleSave` sends `certificadoIds` only on the PUT.
 
-Alternativa descartada: endpoint dedicado (`POST/DELETE /api/produtos/{id}/certificados`). Rejeitada porque o critério de aceite já pedido pelo dono é explicitamente "PUT com certificadoIds atualiza o vínculo" — um endpoint novo seria escopo além do pedido.
+Discarded alternative: a dedicated endpoint (`POST/DELETE /api/produtos/{id}/certificados`). Rejected because the acceptance criterion already requested by the owner is explicitly "PUT with certificadoIds updates the link" — a new endpoint would be scope beyond the request.
 
 ## Constitution Check
 
-| Artigo | Aplica? | Cumprido? | Observação |
+| Article | Applies? | Met? | Note |
 |---|---|---|---|
-| II Testes por REQ | sim | sim | REQ-PROD-05: substituição completa, remoção total (`[]`), e id inexistente não é 500 |
-| V Camadas | sim | sim | handler chama `services/`; transação fica no service |
-| VII Erros | sim | sim | `certificadoId` inexistente mapeado a 409 (`mapeiaErroPrisma`, P2003), não 500 |
+| II Tests per REQ | yes | yes | REQ-PROD-05: full replacement, total removal (`[]`), and a nonexistent id is not 500 |
+| V Layers | yes | yes | handler calls `services/`; the transaction stays in the service |
+| VII Errors | yes | yes | a nonexistent `certificadoId` mapped to 409 (`mapError`, P2003), not 500 |
 
-## Arquivos afetados
+## Affected files
 
-| Arquivo | Mudança | REQ |
+| File | Change | REQ |
 |---|---|---|
-| `lib/schemas/product.ts` | `certificadoIds` em `atualizarProdutoSchema` | REQ-PROD-05 |
-| `services/product.service.ts` | `atualizarProduto` substitui o vínculo numa transação | REQ-PROD-05 |
-| `app/api/produtos/[id]/route.ts` | doc do novo campo | REQ-PROD-05 |
-| `types/api.ts` | `AtualizarProdutoBody.certificadoIds` | REQ-PROD-05 |
-| `app/(admin)/painel/page.tsx` | checklist de certificados no modal de edição de produto | REQ-PROD-05 |
-| `tests/integration/catalog.test.ts` | 2 testes novos | REQ-PROD-05 |
+| `lib/schemas/product.ts` | `certificadoIds` in `updateProductSchema` | REQ-PROD-05 |
+| `services/product.service.ts` | `updateProduct` replaces the link in a transaction | REQ-PROD-05 |
+| `app/api/produtos/[id]/route.ts` | docs of the new field | REQ-PROD-05 |
+| `types/api.ts` | `UpdateProductBody.certificadoIds` | REQ-PROD-05 |
+| `app/(admin)/painel/page.tsx` | certificate checklist in the product edit modal | REQ-PROD-05 |
+| `tests/integration/catalog.test.ts` | 2 new tests | REQ-PROD-05 |
 | `docs/capabilities/gestao-de-produtos/{spec,status}.md` | REQ-PROD-05 ❌→✅ | REQ-PROD-05 |
-| `docs/architecture/adr/pendentes.md` | remove a linha do backlog | — |
+| `docs/architecture/adr/pendentes.md` | removes the backlog row | — |
 
-## Plano de verificação
+## Verification plan
 
-Integração (`tests/integration/catalog.test.ts`): substituir vínculo (2 certificados → 1 → nenhum) e confirmar o array devolvido em cada etapa; `certificadoId` inexistente não gera 500. REQ-PROD-01 a 04 continuam passando sem alteração. Manual: não feito (sem navegador nesta sessão), mas a lógica decisiva está na API, coberta por teste; a UI só reflete o que a API já faz.
+Integration (`tests/integration/catalog.test.ts`): replace the link (2 certificates → 1 → none) and confirm the array returned at each step; a nonexistent `certificadoId` does not produce 500. REQ-PROD-01 to 04 keep passing unchanged. Manual: not done (no browser in this session), but the deciding logic is in the API, covered by a test; the UI only reflects what the API already does.
 
-## Riscos e reversão
+## Risks and rollback
 
-Risco: a transação ficar parcialmente aplicada se a criação falhar no meio do `createMany`. Mitigado pelo próprio `$transaction` (atomicidade do Postgres — se `createMany` falhar por FK, o `deleteMany` anterior também é revertido). Reversão: remover `certificadoIds` do schema e do service (a coluna/tabela não muda, só volta a não ser editável pela API).
+Risk: the transaction being partially applied if creation fails midway through `createMany`. Mitigated by `$transaction` itself (Postgres atomicity — if `createMany` fails on an FK, the earlier `deleteMany` is also rolled back). Rollback: remove `certificadoIds` from the schema and the service (the column/table does not change, it just stops being editable through the API).
 
 ## Complexity Tracking
 
-Sem violações.
+No violations.

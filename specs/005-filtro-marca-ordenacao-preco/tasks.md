@@ -1,14 +1,14 @@
-# Tarefas: 005-filtro-marca-ordenacao-preco
+# Tasks: 005-filtro-marca-ordenacao-preco
 
-| ID | Tarefa | REQ | Depende de | Feito quando | OK |
+| ID | Task | REQ | Depends on | Done when | OK |
 |---|---|---|---|---|---|
-| T1 | Testes falhando: REQ-CAT-06 (sort cross-page, precoMax) e REQ-CAT-07 (marcaId) em `tests/integration/catalog.test.ts` | REQ-CAT-06, REQ-CAT-07 | — | testes existem e falham (400/sem efeito, pois os params não existem ainda) | [x] |
-| T2 | `lib/schemas/product.ts`: `marcaId`, `precoMax`, `sort` em `listarProdutosQuerySchema` | REQ-CAT-06, REQ-CAT-07 | T1 | schema aceita os 3 params | [x] |
-| T3 | `services/product.service.ts::listarProdutos`: `where`/`orderBy` dinâmicos (`ORDEM_POR_SORT`) | REQ-CAT-06, REQ-CAT-07 | T2 | T1 passa | [x] |
-| T4 | `lib/hooks/useProducts.ts::useListarProdutos`: 5º parâmetro `filtros` opcional | REQ-CAT-06, REQ-CAT-07 | T3 | compila sem quebrar as 2 chamadas existentes | [x] |
-| T5 | `app/(store)/produtos/page.tsx`: remove ordenação/filtro client-side; filtro de marca (desktop+mobile, só `APROVADA`); contadores usam `total`; reset de página ao mudar sort/preço | REQ-CAT-06, REQ-CAT-07 | T4 | código compila (`tsc`), lint sem erro novo | [x] |
-| T6 | Consolidar `catalogo/{spec,status}.md`; remover linha do backlog de `pendentes.md` | — | T1–T5 | `npm run sdd:check` passa | [x] |
+| T1 | Failing tests: REQ-CAT-06 (cross-page sort, precoMax) and REQ-CAT-07 (marcaId) in `tests/integration/catalog.test.ts` | REQ-CAT-06, REQ-CAT-07 | — | the tests exist and fail (400/no effect, since the params do not exist yet) | [x] |
+| T2 | `lib/schemas/product.ts`: `marcaId`, `precoMax`, `sort` in `listProductsQuerySchema` | REQ-CAT-06, REQ-CAT-07 | T1 | the schema accepts the 3 params | [x] |
+| T3 | `services/product.service.ts::listProducts`: dynamic `where`/`orderBy` (`ORDER_BY_SORT`) | REQ-CAT-06, REQ-CAT-07 | T2 | T1 passes | [x] |
+| T4 | `lib/hooks/useProducts.ts::useListProducts`: optional 5th parameter `filtros` | REQ-CAT-06, REQ-CAT-07 | T3 | compiles without breaking the 2 existing calls | [x] |
+| T5 | `app/(store)/produtos/page.tsx`: removes client-side sort/filter; brand filter (desktop+mobile, only `APROVADA`); counters use `total`; page reset when changing sort/price | REQ-CAT-06, REQ-CAT-07 | T4 | the code compiles (`tsc`), lint with no new error | [x] |
+| T6 | Consolidate `catalogo/{spec,status}.md`; remove the backlog row from `pendentes.md` | — | T1–T5 | `npm run sdd:check` passes | [x] |
 
-## Nota
+## Note
 
-REQ-CAT-06/07 ficaram ✅ (não ◐): diferente das mudanças anteriores de UI pura, aqui a lógica decisiva (ordenação, filtro, contagem) está inteira na API e coberta por teste de integração real contra Postgres — não depende de verificação visual no navegador para estar correta. A única parte não verificada visualmente é a aparência da nova lista de marcas na sidebar, que é só apresentação sobre dados já corretos.
+REQ-CAT-06/07 became ✅ (not ◐): unlike the earlier pure-UI changes, here the deciding logic (sorting, filtering, counting) is entirely in the API and covered by a real integration test against Postgres — it does not depend on a visual check in the browser to be correct. The only part not visually verified is the appearance of the new brand list in the sidebar, which is only presentation over data that is already correct.

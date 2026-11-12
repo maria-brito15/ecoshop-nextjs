@@ -1,41 +1,41 @@
-# Plano: 007-historico-e-metricas-reais
+# Plan: 007-historico-e-metricas-reais
 
 - **Spec:** ./spec.md
-- **ADRs que segue:** ADR-0004 (UI client-side), ADR-0011 (precedente de "sem backend quando não precisa") · **ADRs novos/que substitui:** nenhum
+- **ADRs it follows:** ADR-0004 (client-side UI), ADR-0011 (precedent of "no backend when not needed") · **New ADRs / ones it supersedes:** none
 
-## Abordagem técnica
+## Technical approach
 
-1. `app/(store)/produtos/[id]/page.tsx`: novo `useEffect` (depende de `data?.produto`) que lê `ecoshop_history`, remove qualquer entrada antiga do mesmo produto (evita duplicata ao revisitar), insere a nova no topo, corta em 50 itens, e regrava. Tudo em `try/catch` — histórico não é crítico, não pode quebrar a página se `localStorage` falhar.
-2. `app/(perfil)/perfil/page.tsx`: troca o `historyCount` (só um número) por `historico: HistoricoItem[]` (a lista completa); a aba "Histórico" passa a renderizar essa lista (link para o produto, foto, nome, preço, data da visita) em vez de sempre mostrar o estado vazio; o estado vazio só aparece quando `historico.length === 0`.
-3. `ImpactCard` ganha uma prop obrigatória `fonte: string`, renderizada como legenda abaixo do valor — nenhuma métrica fica sem fonte declarada (Art. XI). "Explorador Verde" declara que é contagem real; as outras duas declaram a fórmula inventada como estimativa ilustrativa.
+1. `app/(store)/produtos/[id]/page.tsx`: a new `useEffect` (depends on `data?.produto`) that reads `ecoshop_history`, removes any old entry of the same product (avoids a duplicate on revisit), inserts the new one at the top, cuts to 50 items, and writes it back. All inside `try/catch` — the history is not critical, it must not break the page if `localStorage` fails.
+2. `app/(perfil)/perfil/page.tsx`: replaces `historyCount` (just a number) with `historico: HistoryItem[]` (the complete list); the "History" tab now renders that list (link to the product, photo, name, price, visit date) instead of always showing the empty state; the empty state only appears when `historico.length === 0`.
+3. `ImpactCard` gains a required prop `fonte: string`, rendered as a caption below the value — no metric is left without a declared source (Art. XI). "Explorador Verde" declares that it is a real count; the other two declare the invented formula as an illustrative estimate.
 
-Alternativa descartada: tabela `HistoricoVisualizacao` no Postgres, vinculada ao `usuarioId`. Rejeitada nesta mudança porque (a) o código já pressupunha `localStorage` antes desta correção — mudar para o banco seria trocar a arquitetura, não só corrigir o defeito; (b) exigiria uma decisão de dono sobre reter esse dado por quanto tempo e se usuários anônimos (sem conta) também veem histórico, o que esta mudança não foi pedida para decidir.
+Discarded alternative: a `HistoricoVisualizacao` table in Postgres, linked to `usuarioId`. Rejected in this change because (a) the code already presupposed `localStorage` before this fix — moving to the database would change the architecture, not only fix the defect; (b) it would require an owner decision on how long to retain this data and whether anonymous users (without an account) also see a history, which this change was not asked to decide.
 
 ## Constitution Check
 
-| Artigo | Aplica? | Cumprido? | Observação |
+| Article | Applies? | Met? | Note |
 |---|---|---|---|
-| II Testes por REQ | sim | parcial | sem suíte de componente no projeto (ADR-0016 só cobre API); lógica de dedup/ordem/limite verificada por simulação em Node (não é teste automatizado no repo) |
-| V Camadas | sim | sim | nenhuma chamada a `lib/db`; é só `localStorage` no cliente |
-| XI Sem dado inventado | sim | sim | as duas métricas com fator inventado agora declaram a fórmula e que é estimativa |
+| II Tests per REQ | yes | partial | no component suite in the project (ADR-0016 only covers the API); the dedup/order/limit logic verified by simulation in Node (not an automated test in the repo) |
+| V Layers | yes | yes | no call to `lib/db`; it is only `localStorage` on the client |
+| XI No invented data | yes | yes | the two metrics with an invented factor now declare the formula and that it is an estimate |
 
-## Arquivos afetados
+## Affected files
 
-| Arquivo | Mudança | REQ |
+| File | Change | REQ |
 |---|---|---|
-| `app/(store)/produtos/[id]/page.tsx` | grava `ecoshop_history` ao visitar um produto | REQ-PERF-05 |
-| `app/(perfil)/perfil/page.tsx` | lê e renderiza a lista real; `ImpactCard` ganha `fonte` | REQ-PERF-05, REQ-PERF-06 |
+| `app/(store)/produtos/[id]/page.tsx` | writes `ecoshop_history` when visiting a product | REQ-PERF-05 |
+| `app/(perfil)/perfil/page.tsx` | reads and renders the real list; `ImpactCard` gains `fonte` | REQ-PERF-05, REQ-PERF-06 |
 | `docs/capabilities/conta-e-perfil/{spec,status}.md` | REQ-PERF-05/06 ❌→◐ | REQ-PERF-05, REQ-PERF-06 |
-| `docs/architecture/adr/pendentes.md` | remove a linha do backlog | — |
+| `docs/architecture/adr/pendentes.md` | removes the backlog row | — |
 
-## Plano de verificação
+## Verification plan
 
-Sem teste de integração (não é API) nem suíte de componente no projeto. Verificação feita por simulação em Node da função de gravação (dedup, ordem mais-recente-primeiro, corte em 50) — todas as três propriedades confirmadas. Manual pendente: abrir dois produtos diferentes, ver os dois na aba Histórico; revisitar um, confirmar que não duplica; abrir a aba Impacto e confirmar as legendas de fonte — não feito nesta sessão por falta de navegador.
+No integration test (it is not an API) nor a component suite in the project. Verification done by simulation in Node of the write function (dedup, most-recent-first order, cut at 50) — all three properties confirmed. Manual pending: open two different products, see both in the History tab; revisit one, confirm it does not duplicate; open the Impact tab and confirm the source captions — not done in this session for lack of a browser.
 
-## Riscos e reversão
+## Risks and rollback
 
-Risco: usuário com `localStorage` cheio ou bloqueado não tem histórico — degrada para o estado vazio atual, sem erro. Reversão: remover o `useEffect` de gravação e voltar o `ImpactCard`/aba Histórico ao estado anterior (a leitura already tolera a chave ausente).
+Risk: a user with a full or blocked `localStorage` has no history — it degrades to the current empty state, without error. Rollback: remove the write `useEffect` and return `ImpactCard`/the History tab to the previous state (the read already tolerates the missing key).
 
 ## Complexity Tracking
 
-Sem violações.
+No violations.
