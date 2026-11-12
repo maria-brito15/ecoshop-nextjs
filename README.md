@@ -3,7 +3,7 @@
 A showcase (catalog) of sustainable products with an AI material scanner. Full-stack portfolio project: Next.js 15, TypeScript, PostgreSQL, Redis, Docker, Azure Custom Vision and Google Gemini.
 
 > **Scope:** EcoShop is a catalog. There is no cart, order or payment.
-> **Status:** under development, not in production. What is implemented and what is missing is in [`docs/capabilities/README.md`](docs/capabilities/README.md) (written in Portuguese).
+> **Status:** under development, not in production. What is implemented and what is missing is in [`docs/capabilities/README.md`](docs/capabilities/README.md) (written in English).
 
 ## What it does
 
@@ -50,12 +50,12 @@ Snapshot in [`docs/discovery/2026-11-coleta/`](docs/discovery/2026-11-coleta) (P
 - `npm test`: 47 tests (40 pass, 6 `todo`, 1 `skip`); the `todo`s cover known defects.
 - **CI:** all 5 recorded GitHub Actions runs failed in the `Lint & Build` job (logs expired; cause unknown).
 - `npm run sdd:check` fails **on Windows** because of path separators in the scripts (`scripts/sdd/lib.mjs`); not confirmed on Linux.
-- Observed defects: `/ia-scan` is open to visitors (REQ-AUTZ-08 requires login) and the profile's viewed-products history is never written (REQ-PERF-05).
+- Observed defects: `/ai-scan` is open to visitors (REQ-AUTZ-08 requires login) and the profile's viewed-products history is never written (REQ-PERF-05).
 - The real Azure Custom Vision integration was not exercised (placeholder endpoint in the local environment).
 
 ## Spec-Driven Development
 
-Project rules: [`.specify/memory/constitution.md`](.specify/memory/constitution.md) · behavior per capability: [`docs/capabilities/`](docs/capabilities/README.md) · decisions: [`docs/architecture/adr/`](docs/architecture/adr/README.md) · workflow: [`docs/guides/sdd-flow.md`](docs/guides/sdd-flow.md) · Claude Code instructions: [`CLAUDE.md`](CLAUDE.md). The code base and the documentation are English-only (ADR-0022); `docs/discovery/` is a frozen snapshot and stays in Portuguese.
+Project rules: [`.specify/memory/constitution.md`](.specify/memory/constitution.md) · behavior per capability: [`docs/capabilities/`](docs/capabilities/README.md) · decisions: [`docs/architecture/adr/`](docs/architecture/adr/README.md) · workflow: [`docs/guides/sdd-flow.md`](docs/guides/sdd-flow.md) · Claude Code instructions: [`CLAUDE.md`](CLAUDE.md). The code base and the documentation are English-only (ADR-0023); `docs/discovery/` is a frozen snapshot and stays in Portuguese.
 
 ## Stack
 

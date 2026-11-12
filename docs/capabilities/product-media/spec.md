@@ -12,14 +12,14 @@ ADMIN (write) · everyone (read).
 
 ## Business rules
 
-- **BR-MIDIA-01** — The photo is stored on the local filesystem (`public/data_fotos/`, prefix `{produtoId}_`) and served as a static file (ADR-0011, ratified on 2026-11-10). The previous text of this rule said "database as bytes" — that was never in the code; it was the wrong spec, fixed together with the ADR.
+- **BR-MIDIA-01** — The photo is stored on the local filesystem (`public/data_photos/`, prefix `{productId}_`) and served as a static file (ADR-0011, ratified on 2026-11-10). The previous text of this rule said "database as bytes" — that was never in the code; it was the wrong spec, fixed together with the ADR.
 - ~~BR-MIDIA-02 — Each product has at most one main photo.~~ Removed on 2026-11-10: it was never true in the code, which always accepted several photos per product (it is 1:N through the file name prefix).
 
 ## Requirements
 
 | ID | Requirement (EARS) | Acceptance |
 |---|---|---|
-| REQ-MIDIA-01 | When an ADMIN uploads a valid image for a product, the system shall store it and make it accessible by URL. | POST on /api/produtos/[id]/fotos → 201 and a GET of the URL returns the image |
+| REQ-MIDIA-01 | When an ADMIN uploads a valid image for a product, the system shall store it and make it accessible by URL. | POST on /api/products/[id]/photos → 201 and a GET of the URL returns the image |
 | REQ-MIDIA-02 | If the uploaded file is not an allowed image or exceeds the size limit, the system shall refuse it with 400. | A .txt file → 400; a file above the limit → 400 |
 | REQ-MIDIA-03 | When an ADMIN removes a photo, the system shall delete it and stop showing it. | DELETE → 200 and the URL starts responding 404 |
 | REQ-MIDIA-04 | When the product has several photos, the system shall show the gallery on the product page. | A product with 3 photos shows 3 thumbnails |
@@ -33,7 +33,7 @@ Photos in the database increase its size and the backup cost (NFR-DES-01 to be v
 
 ## Interfaces
 
-/api/produtos/[id]/fotos (+ subroutes) · dashboard (Products tab).
+/api/products/[id]/photos (+ subroutes) · dashboard (Products tab).
 
 ## Applicable NFRs
 

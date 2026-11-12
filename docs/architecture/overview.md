@@ -13,7 +13,7 @@ flowchart LR
     RH --> SV[Services]
     SV --> CA[Cache lib/cache]
     RH --> AI[lib/ai]
-    SV --> FS[(public/data_fotos)]
+    SV --> FS[(public/data_photos)]
   end
   H -->|fetch /api| MW
   SV --> DB[(PostgreSQL)]
@@ -26,7 +26,7 @@ flowchart LR
 - Route Handler: parsing, validation (Zod), authorization, error mapping.
 - Service: rules, persistence, cache.
 - Adapters (`lib/ai/providers`, `lib/redis`): no business rules.
-- Authorization per handler (ADR-0017); the middleware authenticates and restricts `/painel` pages.
+- Authorization per handler (ADR-0017); the middleware authenticates and restricts `/dashboard` pages.
 
 ## Effective authorization (per route)
 Source of truth: `docs/capabilities/authorization/spec.md`.

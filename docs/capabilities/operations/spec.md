@@ -1,6 +1,6 @@
 # OPS · Operations (running, health, build and delivery)
 
-> Living spec. Source of truth for the expected behavior. Last review: 2026-11-11. ADRs: ADR-0006 · ADR-0016 · ADR-0019 · ADR-0020
+> Living spec. Source of truth for the expected behavior. Last review: 2026-11-12. ADRs: ADR-0023 · ADR-0006 · ADR-0016 · ADR-0019 · ADR-0020
 
 ## Goal
 
@@ -19,7 +19,7 @@ The person who operates or develops the system.
 
 | ID | Requirement (EARS) | Acceptance |
 |---|---|---|
-| REQ-OPS-01 | When the health endpoint is queried, the system shall respond 200 with `status: "ok"` if the database and Redis respond, 200 with `status: "degradado"` if only Redis (optional) fails, and 503 with `status: "indisponivel"` if the database fails. | GET /api/health with both up → 200 `ok`; Redis down → 200 `degradado`; database down → 503 |
+| REQ-OPS-01 | When the health endpoint is queried, the system shall respond 200 with `status: "ok"` if the database and Redis respond, 200 with `status: "degraded"` if only Redis (optional) fails, and 503 with `status: "unavailable"` if the database fails. | GET /api/health with both up → 200 `ok`; Redis down → 200 `degraded`; database down → 503 |
 | REQ-OPS-02 | When the environment comes up for the first time with Docker, the system shall create an ADMIN user for dashboard access, with the password given in `ADMIN_PASSWORD` (no embedded password; see REQ-OPS-09). | docker compose up on an empty database, with `ADMIN_PASSWORD` set, allows ADMIN login |
 | REQ-OPS-03 | When the environment restarts, the system shall preserve the registered data. | docker compose up again keeps the products |
 | REQ-OPS-04 | When a change is proposed, the pipeline shall run lint, types, integration tests, spec validation and build. | The CI job contains the 5 steps |
@@ -37,8 +37,12 @@ The person who operates or develops the system.
 | REQ-OPS-16 | The system shall obtain the client IP from the N-th entry, counted from the end, of `x-forwarded-for` (N = `TRUST_PROXY_HOPS`, default 1); with N = 0, ignore the header. | `9.9.9.9, 203.0.113.7` with N = 1 → `203.0.113.7` (the value forged by the client does not count) |
 | REQ-OPS-17 | When several simultaneous accesses ask for the same key with an empty cache, the system shall run a single lookup against the source and share the result. | 8 concurrent calls → 1 execution of the `fetcher` |
 | REQ-OPS-18 | When the application starts with `NODE_ENV=production`, the system shall refuse to start if `DATABASE_URL` is missing or is not a PostgreSQL URL, listing all configuration problems at once and without revealing values; `REDIS_URL` is optional. | Production without `DATABASE_URL` (or `mysql://…`) → exits with code 1 naming the variable |
-| REQ-OPS-19 | When a route responds 500, the system shall record a structured log (one JSON line, with the context and the cause), without secrets: sensitive keys and credentials in URLs are masked; the response body carries no detail of the cause. | `ERRORS.internal(context, cause)` responds 500 and writes the `internal_error` event; `senha`, `token`, `*_KEY`, `redis://:senha@…` appear as `[REDACTED]` |
+| REQ-OPS-19 | When a route responds 500, the system shall record a structured log (one JSON line, with the context and the cause), without secrets: sensitive keys and credentials in URLs are masked; the response body carries no detail of the cause. | `ERRORS.internal(context, cause)` responds 500 and writes the `internal_error` event; `password`, `token`, `*_KEY`, `redis://:password@…` appear as `[REDACTED]` |
 | REQ-OPS-20 | When a change is proposed, the pipeline shall fail if the number of lint warnings exceeds the recorded ceiling (which can only go down) and shall audit the production dependencies, failing on a high or critical vulnerability; Dependabot shall propose npm, Docker and actions updates. | CI with `eslint --max-warnings <ceiling>` and `npm audit --omit=dev --audit-level=high`; `.github/dependabot.yml` with npm |
+| REQ-OPS-21 | The system shall define its database (Prisma models, tables, columns, enums) and every migration with English names only, and the migrations shall build an empty database that matches `schema.prisma` with no drift (ADR-0023). | One migration folder `*_init`; the schema and the SQL have no Portuguese name; `prisma migrate diff` on a database built from the migrations reports no difference |
+| REQ-OPS-22 | The system shall use English names for API paths, page URLs, JSON keys, multipart fields, AI prompt/response fields, identifiers, messages and UI copy; the old Portuguese paths shall not exist (ADR-0023). | No Portuguese contract name in `app/`, `lib/`, `services/`, `types/`, `config/`, `prisma/`, `scripts/ops/` and `tests/`; `/api/produtos` and `/painel` answer 404 |
+| REQ-OPS-23 | When the contract is renamed, the system shall keep its behavior: the same rules, validations and status codes, with the test IDs unchanged. | The whole suite passes against a database built from the single `init`; lint, `tsc`, build and the boot check pass |
+| REQ-OPS-24 | The living specs, guides, `sdd.config.json`, the Claude rules and the Constitution shall cite the English names and ADR-0023. | `npm run sdd:check` passes; no living document cites a Portuguese path or field |
 
 ## Edge cases
 

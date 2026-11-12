@@ -1,6 +1,6 @@
 # CONT · Institutional and educational content
 
-> Living spec. Source of truth for the expected behavior. Last review: 2026-11-10. ADRs: ADR-0022 (supersedes ADR-0014)
+> Living spec. Source of truth for the expected behavior. Last review: 2026-11-10. ADRs: ADR-0023 (supersedes ADR-0022)
 
 ## Goal
 
@@ -18,10 +18,10 @@ Visitor and users.
 
 | ID | Requirement (EARS) | Acceptance |
 |---|---|---|
-| REQ-CONT-01 | When a visitor opens the home page, the system shall show the EcoShop presentation and access to the catalog. | Home renders with a link to /produtos |
+| REQ-CONT-01 | When a visitor opens the home page, the system shall show the EcoShop presentation and access to the catalog. | Home renders with a link to /products |
 | REQ-CONT-02 | When the home page shows metrics without a real source, the system shall label them as illustrative, visibly next to the number. | The home page shows "Illustrative numbers — no real data source yet" next to the metrics |
-| REQ-CONT-03 | When a visitor opens the education area, the system shall show the educational content. | /educacao renders the content |
-| REQ-CONT-04 | When a visitor opens the About page, the system shall show the team and the mission. | /sobre renders |
+| REQ-CONT-03 | When a visitor opens the education area, the system shall show the educational content. | /education renders the content |
+| REQ-CONT-04 | When a visitor opens the About page, the system shall show the team and the mission. | /about renders |
 | REQ-CONT-05 | When a product shows a computed (not registered) environmental impact, the system shall label it as an illustrative estimate, visibly next to the number. | The product page shows "Illustrative estimate calculated from the price" next to the impact card |
 
 ## Edge cases
@@ -30,7 +30,7 @@ Static content; no access rules.
 
 ## Interfaces
 
-Pages /, /educacao, /sobre.
+Pages /, /education, /about.
 
 ## Applicable NFRs
 

@@ -20,7 +20,7 @@ Authenticated user (any role).
 
 | ID | Requirement (EARS) | Acceptance |
 |---|---|---|
-| REQ-SCAN-01 | When a valid image is sent and the material is identified with confidence equal to or above the threshold, the system shall return the material, the confidence and the sustainability analysis with 6 fields. | 200 response with sucesso, material, confianca and the 6 analysis fields |
+| REQ-SCAN-01 | When a valid image is sent and the material is identified with confidence equal to or above the threshold, the system shall return the material, the confidence and the sustainability analysis with 6 fields. | 200 response with success, material, confidence and the 6 analysis fields |
 | REQ-SCAN-02 | If the confidence is below the threshold, the system shall respond 422 without querying Gemini. | Azure with 0.4 → 422 and no call to Gemini |
 | REQ-SCAN-03 | If the best tag is "outros", the system shall treat the image as unidentified, even with high confidence. | Azure returns outros 0.95 → 422 |
 | REQ-SCAN-04 | If Gemini returns invalid content, the system shall respond 200 with the fallback analysis. | Gemini returns text without JSON → 200 with the default analysis |
@@ -36,7 +36,7 @@ The tags recognized by the Azure model are still few and are not documented (own
 
 ## Interfaces
 
-POST /api/ia/scan (multipart, field file) · Azure Custom Vision (prediction) · Gemini 2.0 Flash · page /ia-scan.
+POST /api/ai/scan (multipart, field file) · Azure Custom Vision (prediction) · Gemini 2.0 Flash · page /ai-scan.
 
 ## Applicable NFRs
 

@@ -10,8 +10,8 @@ Legend: ✅ implemented and tested · ◐ partial or untested · ❌ not impleme
 | REQ-CAT-02 | ✅ | test: tests/integration/catalog.test.ts | 2026-11-10 |
 | REQ-CAT-03 | ✅ | test: tests/integration/catalog.test.ts | 2026-11-10 |
 | REQ-CAT-04 | ✅ | test: tests/integration/catalog.test.ts | 2026-11-10 |
-| REQ-CAT-05 | ✅ | test: tests/integration/catalog.test.ts (fixed D9: lib/schemas/product.ts has listProductsQuerySchema, validated in app/api/produtos/route.ts) | 2026-11-10 |
-| REQ-CAT-06 | ✅ | test: tests/integration/catalog.test.ts (sort and precoMax applied in the database, confirmed across pages) | 2026-11-11 |
+| REQ-CAT-05 | ✅ | test: tests/integration/catalog.test.ts (fixed D9: lib/schemas/product.ts has listProductsQuerySchema, validated in app/api/products/route.ts) | 2026-11-10 |
+| REQ-CAT-06 | ✅ | test: tests/integration/catalog.test.ts (sort and maxPrice applied in the database, confirmed across pages) | 2026-11-11 |
 | REQ-CAT-07 | ✅ | test: tests/integration/catalog.test.ts | 2026-11-11 |
 | REQ-CAT-08 | ◐ | code: services/product.service.ts (getProduct includes certificates); no test | 2026-11-10 |
 | REQ-CAT-09 | ✅ | test: tests/integration/input-and-errors.test.ts | 2026-11-11 |

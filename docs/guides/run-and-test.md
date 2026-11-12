@@ -16,7 +16,7 @@ Note (known defects, see `docs/capabilities/operations/status.md`): the seed use
 
 ## Tests
 1. With Postgres and Redis up and `DATABASE_URL`/`REDIS_URL` pointing to a **test** database (the tests create data with `@test.local` emails).
-2. `npx prisma migrate deploy`
+2. `npx prisma migrate deploy` (a database created before ADR-0023 has the old Portuguese schema: recreate it with `npx prisma migrate reset`, which destroys its data; the project keeps a single `init` migration)
 3. `npm test` — expected: all pass; `todo` tests are known defects.
 
 ## Full checks (the CI ones)

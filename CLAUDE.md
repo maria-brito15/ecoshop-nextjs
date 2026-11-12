@@ -10,9 +10,9 @@ Showcase/catalog of sustainable products (no cart, order or payment). Next.js 15
 - Changes in progress or past: `specs/NNN-*/` (Spec Kit; immutable after the merge).
 - Code → capability map and sensitive paths → ADR: `sdd.config.json`.
 
-## Language (ADR-0022)
-- English is the single language: identifiers, files, comments, messages, tests and docs.
-- Kept as they are (external contract or existing data): API route paths and JSON keys (`/api/produtos`, `nome`, `preco`, …), Prisma models/fields and DB names, enum values (`CLIENTE`, `MARCA`, `ADMIN`, `PENDENTE`, …), proper nouns, and capability codes/requirement IDs (`REQ-AUTZ-07`).
+## Language (ADR-0023)
+- English is the single language: identifiers, files, comments, messages, tests and docs. That includes the wire and data contract: API paths and JSON keys (`/api/products`, `name`, `price`, …), Prisma models/fields, tables and columns, and enum values (`CUSTOMER`, `BRAND`, `ADMIN`, `PENDING`, …).
+- Kept as they are: proper nouns, capability codes/requirement IDs (`REQ-AUTZ-07`), the Azure Custom Vision material tags (`plastico`, `vidro`, `outros`; they are labels in the trained model) and the legacy sample secrets the validator rejects.
 - UI copy is English for now; i18n comes later.
 
 ## Flow

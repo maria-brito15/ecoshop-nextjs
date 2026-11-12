@@ -124,11 +124,11 @@
 
 ## Article XIV · Code and language conventions
 
-1. **English** is the single language of the project: identifiers, files and folders, comments, messages (log, error, validation, interface), tests and documentation (ADR-0022). Kept as they are, being an external contract or existing data: API paths and JSON keys, database models/fields/tables, enum values, proper nouns, and the capability codes/requirement IDs. The glossary lives in `docs/product/glossary.md`.
+1. **English** is the single language of the project: identifiers, files and folders, comments, messages (log, error, validation, interface), tests and documentation (ADR-0023). The wire and data contract is English too (ADR-0023): API paths and JSON keys, database models, fields, tables and enum values. Only proper nouns and the capability codes/requirement IDs keep their names. The glossary lives in `docs/product/glossary.md`.
 2. A component/page does not exceed ~300 lines without justification; pages are composed of components per capability.
 3. ESLint + Prettier are mandatory in CI.
 
-**Why:** a single language keeps the code consistent and open to people who work in English, without breaking the external contract; pages of 900–1,500 lines prevent testing and specifying in parts.
+**Why:** a single language keeps the code and the contract consistent and open to people who work in English; pages of 900–1,500 lines prevent testing and specifying in parts.
 **Verification:** lint (CI); the size limit as a warning.
 
 ## Article XV · Use of AI agents

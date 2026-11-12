@@ -14,15 +14,15 @@ People want to consume and dispose with less environmental impact, but do not kn
 | Role | Who | Can |
 |---|---|---|
 | Visitor | Anyone | See the catalog, product, education, about; sign up; sign in |
-| CLIENTE | Registered user | Besides the visitor: EcoScan, AI chat, see/edit their own profile |
-| MARCA | Represents a brand | **Being defined.** Can be chosen at sign-up **subject to approval by an ADMIN** (not implemented yet: today sign-up creates MARCA directly). What MARCA can do beyond CLIENTE: open question |
+| CUSTOMER | Registered user | Besides the visitor: EcoScan, AI chat, see/edit their own profile |
+| BRAND | Represents a brand | **Being defined.** Can be chosen at sign-up **subject to approval by an ADMIN** (not implemented yet: today sign-up creates BRAND directly). What BRAND can do beyond CUSTOMER: open question |
 | ADMIN | The EcoShop team | Everything, including managing products, categories, brands, certificates, photos and users |
 
 ## Capabilities
 See `docs/capabilities/README.md`.
 
 ## Open questions
-1. What can a MARCA user do? (manage their own products? only be displayed?)
+1. What can a BRAND user do? (manage their own products? only be displayed?)
 2. Real source for the home page metrics and the per-product "impact" (illustrative today; the owner wants real sources).
 3. Which materials the Azure Custom Vision model recognizes (few tags today, undocumented).
 4. Should the Education content be editable by the admin or stay in the code?

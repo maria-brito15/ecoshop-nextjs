@@ -8,7 +8,7 @@ Legend: ✅ implemented and tested · ◐ partial or untested · ❌ not impleme
 |---|---|---|---|
 | REQ-USR-01 | ✅ | test: tests/integration/authentication.test.ts | 2026-11-10 |
 | REQ-USR-02 | ✅ | test: tests/integration/authentication.test.ts | 2026-11-10 |
-| REQ-USR-03 | ✅ | test: tests/integration/users.test.ts (ADR-0018: POST /api/marcas/[id]/aprovar) | 2026-11-10 |
+| REQ-USR-03 | ✅ | test: tests/integration/users.test.ts (ADR-0018: POST /api/brands/[id]/approve) | 2026-11-10 |
 | REQ-USR-04 | ❌ | decided (2026-11-10): stays in the backlog; the current README no longer promises this, but the API exists and the user management screen is still not implemented. See docs/architecture/adr/pending.md | 2026-11-10 |
 | REQ-USR-05 | ✅ | test: tests/integration/users.test.ts | 2026-11-10 |
 | REQ-USR-06 | ✅ | test: tests/integration/input-and-errors.test.ts (GET, PUT, DELETE of users and brand approval; order session → id) | 2026-11-11 |

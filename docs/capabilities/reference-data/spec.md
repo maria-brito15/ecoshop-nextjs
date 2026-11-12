@@ -20,10 +20,10 @@ ADMIN (write); everyone (read, see AUTZ-02).
 
 | ID | Requirement (EARS) | Acceptance |
 |---|---|---|
-| REQ-REF-01 | When an ADMIN creates a valid category, the system shall respond 201. | POST /api/categorias → 201 |
+| REQ-REF-01 | When an ADMIN creates a valid category, the system shall respond 201. | POST /api/categories → 201 |
 | REQ-REF-02 | If the given name already exists, the system shall respond 409 when creating a category, brand or certificate. | Duplicate name → 409 |
 | REQ-REF-03 | If a category, brand or certificate has links, the system shall respond 409 when deleting it. | DELETE of a category with products → 409 |
-| REQ-REF-04 | If an ADMIN creates a brand for a user who is neither of type MARCA nor ADMIN, the system shall refuse. | POST /api/marcas with a CLIENTE user → 409; with a nonexistent user → 404 |
+| REQ-REF-04 | If an ADMIN creates a brand for a user who is neither of type BRAND nor ADMIN, the system shall refuse. | POST /api/brands with a CUSTOMER user → 409; with a nonexistent user → 404 |
 | REQ-REF-05 | If the `id` in the category, brand or certificate routes is not a positive integer, the system shall respond 400. | `abc`, `0`, `1.5` → 400 on GET, PUT and DELETE |
 
 ## Edge cases
@@ -32,7 +32,7 @@ Creating a brand requires typing the user ID in the dashboard. Changing a brand 
 
 ## Interfaces
 
-/api/categorias, /api/marcas, /api/certificados (+ /[id]) · dashboard (tabs).
+/api/categories, /api/brands, /api/certificates (+ /[id]) · dashboard (tabs).
 
 ## Applicable NFRs
 
@@ -44,4 +44,4 @@ Category hierarchy.
 
 ## Open questions
 
-1. ~~Does the owner of a brand need to be of type MARCA (REQ-REF-04)?~~ Decided (2026-11-10): must be MARCA or ADMIN; `services/brand.service.ts` refuses CLIENTE with 409.
+1. ~~Does the owner of a brand need to be of type BRAND (REQ-REF-04)?~~ Decided (2026-11-10): must be BRAND or ADMIN; `services/brand.service.ts` refuses CUSTOMER with 409.

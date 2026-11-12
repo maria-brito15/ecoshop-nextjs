@@ -23,14 +23,14 @@
     },
     "PERF": {
       "folder": "account-and-profile",
-      "code": ["app/(perfil)/**", "app/api/usuarios/[id]/**"]
+      "code": ["app/(profile)/**", "app/api/users/[id]/**"]
     },
     "CAT": {
       "folder": "catalog",
       "code": [
         "app/(store)/**",
-        "app/api/produtos/route.ts",
-        "app/api/produtos/[id]/route.ts",
+        "app/api/products/route.ts",
+        "app/api/products/[id]/route.ts",
         "services/product.service.ts",
         "lib/hooks/useProducts.ts"
       ]
@@ -38,8 +38,8 @@
     "PROD": {
       "folder": "product-management",
       "code": [
-        "app/(admin)/painel/**",
-        "app/api/produtos/**",
+        "app/(admin)/dashboard/**",
+        "app/api/products/**",
         "services/product.service.ts",
         "lib/schemas/product.ts"
       ]
@@ -47,9 +47,9 @@
     "REF": {
       "folder": "reference-data",
       "code": [
-        "app/api/categorias/**",
-        "app/api/marcas/**",
-        "app/api/certificados/**",
+        "app/api/categories/**",
+        "app/api/brands/**",
+        "app/api/certificates/**",
         "services/category.service.ts",
         "services/brand.service.ts",
         "services/certificate.service.ts",
@@ -61,28 +61,28 @@
     "MIDIA": {
       "folder": "product-media",
       "code": [
-        "app/api/produtos/[id]/fotos/**",
+        "app/api/products/[id]/photos/**",
         "services/photo.service.ts",
         "lib/hooks/usePhotos.ts"
       ]
     },
     "USR": {
       "folder": "user-management",
-      "code": ["app/api/usuarios/**", "services/user.service.ts"]
+      "code": ["app/api/users/**", "services/user.service.ts"]
     },
     "SCAN": {
       "folder": "ecoscan",
       "code": [
         "lib/ai/**",
-        "app/api/ia/scan/**",
-        "app/(ia-scan)/**",
+        "app/api/ai/scan/**",
+        "app/(ai-scan)/**",
         "types/ai.ts"
       ]
     },
     "CHAT": {
       "folder": "sustainability-chat",
       "code": [
-        "app/api/ia/chat/**",
+        "app/api/ai/chat/**",
         "lib/schemas/ai-chat.ts",
         "lib/ai/providers/gemini-chat.ts"
       ]
@@ -91,8 +91,8 @@
       "folder": "institutional-content",
       "code": [
         "app/page.tsx",
-        "app/(educacao)/**",
-        "app/(sobre)/**",
+        "app/(education)/**",
+        "app/(about)/**",
         "app/layout.tsx",
         "app/components/**"
       ]

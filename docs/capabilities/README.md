@@ -15,7 +15,7 @@
 | SCAN | [ecoscan](ecoscan/spec.md) | 8 | 1 | 0 | 0 | 9 |
 | CHAT | [sustainability-chat](sustainability-chat/spec.md) | 8 | 1 | 0 | 0 | 9 |
 | CONT | [institutional-content](institutional-content/spec.md) | 0 | 5 | 0 | 0 | 5 |
-| OPS | [operations](operations/spec.md) | 13 | 7 | 0 | 0 | 20 |
-| **Total** | | 87 | 28 | 1 | 1 | 117 |
+| OPS | [operations](operations/spec.md) | 17 | 7 | 0 | 0 | 24 |
+| **Total** | | 91 | 28 | 1 | 1 | 121 |
 
 Legend: ✅ implemented and tested · ◐ partial or untested · ❌ does not meet the spec · ❔ not verified.

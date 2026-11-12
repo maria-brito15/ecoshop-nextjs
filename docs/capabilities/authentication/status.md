@@ -16,7 +16,7 @@ Legend: ✅ implemented and tested · ◐ partial or untested · ❌ not impleme
 | REQ-AUTH-08 | ✅ | test: tests/integration/authentication.test.ts | 2026-11-10 |
 | REQ-AUTH-09 | ✅ | test: tests/integration/authentication.test.ts | 2026-11-10 |
 | REQ-AUTH-10 | ✅ | test: tests/integration/authentication.test.ts | 2026-11-10 |
-| REQ-AUTH-11 | ✅ | test: tests/integration/authentication.test.ts (ADR-0018: sign-up as MARCA stays CLIENTE + Marca PENDENTE) | 2026-11-10 |
+| REQ-AUTH-11 | ✅ | test: tests/integration/authentication.test.ts (ADR-0018: sign-up as BRAND stays CUSTOMER + Brand PENDING) | 2026-11-10 |
 | REQ-AUTH-12 | ◐ | code: lib/schemas/user.ts (min 8); no automated test | 2026-11-10 |
 | REQ-AUTH-13 | ❔ | pending ADR P02: today the token is valid for up to 7 days | 2026-11-10 |
 | REQ-AUTH-14 | ✅ | test: tests/integration/authentication.test.ts | 2026-11-10 |
