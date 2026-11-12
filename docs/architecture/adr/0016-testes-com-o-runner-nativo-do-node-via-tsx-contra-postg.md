@@ -1,32 +1,32 @@
-# ADR-0016: Testes com o runner nativo do Node (via tsx) contra Postgres e Redis reais
+# ADR-0016: Tests with Node's native runner (via tsx) against real Postgres and Redis
 
-- Status: Aceito
-- Data: 2026-11-10
-- Decisores: Arthur (autorização geral) e Claude
-- Origem: nova
-- Capacidades: processo
+- Status: Accepted
+- Date: 2026-11-10
+- Deciders: Arthur (general authorization) and Claude
+- Origin: new
+- Capabilities: process
 
-## Contexto
-Não existia nenhum teste. A Constitution (Art. II) exige testes por REQ, incluindo integração com Postgres real.
+## Context
+There were no tests at all. The Constitution (Art. II) requires tests per REQ, including integration with a real Postgres.
 
-## Problema
-Qual ferramenta de teste, sem adicionar dependência desnecessária?
+## Problem
+Which test tool, without adding an unnecessary dependency?
 
-## Alternativas
-| Opção | Resolve | Custa | Bloqueia |
+## Alternatives
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. `node:test` + `tsx` (escolhida, provisória) | Zero dependência nova; suficiente para services e Route Handlers | Sem utilidades de componente React | — |
-| B. Vitest | Ecossistema, mocks, watch | Dependência nova | — |
-| C. Jest | Conhecido | Config pesada com ESM/TS | — |
+| A. `node:test` + `tsx` (chosen, provisional) | Zero new dependencies; enough for services and Route Handlers | No React component utilities | — |
+| B. Vitest | Ecosystem, mocks, watch | A new dependency | — |
+| C. Jest | Familiar | Heavy config with ESM/TS | — |
 
-## Decisão
-Opção A para unidade/integração; Playwright para E2E quando houver jornada que justifique (não há ainda). Reavaliar (Vitest) se surgirem testes de componente.
+## Decision
+Option A for unit/integration; Playwright for E2E when there is a journey that justifies it (none yet). Reassess (Vitest) if component tests appear.
 
-## Justificativa
-Menor pilha que cobre a pirâmide atual; `tsx` já é dependência.
+## Rationale
+The smallest stack that covers the current pyramid; `tsx` is already a dependency.
 
-## Consequências
-Testes exigem `DATABASE_URL` e `REDIS_URL`; o CI sobe os serviços. Afeta: `tests/**`, CI.
+## Consequences
+Tests require `DATABASE_URL` and `REDIS_URL`; CI brings up the services. Affects: `tests/**`, CI.
 
-## Verificação
-`npm test` no CI.
+## Verification
+`npm test` in CI.

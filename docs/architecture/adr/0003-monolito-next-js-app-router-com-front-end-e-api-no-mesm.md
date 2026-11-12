@@ -1,34 +1,34 @@
-# ADR-0003: Monólito Next.js (App Router) com front-end e API no mesmo deploy
+# ADR-0003: Next.js monolith (App Router) with front end and API in the same deploy
 
-- Status: Inferido
-- Data: desconhecida (sem histórico git no pacote analisado)
-- Decisores: desconhecido (decisão histórica)
-- Origem: inferida do código
-- Capacidades: todas
+- Status: Inferred
+- Date: unknown (no git history in the analyzed package)
+- Deciders: unknown (historical decision)
+- Origin: inferred from the code
+- Capabilities: all
 
-> **Decisão inferida:** o código mostra este estado; não há prova de que foi uma escolha formal. As alternativas foram reconstruídas. Pode ser ratificada (novo ADR Aceito) ou substituída.
+> **Inferred decision:** the code shows this state; there is no proof that it was a formal choice. The alternatives were reconstructed. It can be ratified (a new Accepted ADR) or superseded.
 
-## Contexto
-Evidência: `app/` (páginas por Route Group) e `app/api/**` (17 Route Handlers) no mesmo projeto; `output: 'standalone'` em `next.config.ts`; um único Dockerfile para a aplicação.
+## Context
+Evidence: `app/` (pages per Route Group) and `app/api/**` (17 Route Handlers) in the same project; `output: 'standalone'` in `next.config.ts`; a single Dockerfile for the application.
 
-## Problema
-Como organizar front-end e back-end de um projeto de uma pessoa?
+## Problem
+How do we organize front end and back end for a one-person project?
 
-## Alternativas
-| Opção | Resolve | Custa | Bloqueia |
+## Alternatives
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. Monólito Next.js (atual) | Um deploy, um repositório, tipos compartilhados | Acopla ciclo de vida de UI e API | API reutilizável por outros clientes |
-| B. SPA + API separada | Escala e versiona separadamente | Dois deploys e contratos para manter | Simplicidade |
-| C. Server Components acessando serviços direto | Menos HTTP interno | Reescrita da UI | — |
+| A. Next.js monolith (current) | One deploy, one repository, shared types | Couples the UI and API lifecycles | An API reusable by other clients |
+| B. SPA + separate API | Scales and versions separately | Two deploys and contracts to maintain | Simplicity |
+| C. Server Components accessing services directly | Less internal HTTP | UI rewrite | — |
 
-## Decisão
-Manter A (decisão histórica). Não há evidência de que foi comparada com B ou C.
+## Decision
+Keep A (historical decision). There is no evidence that it was compared with B or C.
 
-## Justificativa
-Inferida: adequada ao tamanho do projeto (6 entidades, uma pessoa).
+## Rationale
+Inferred: suited to the size of the project (6 entities, one person).
 
-## Consequências
-Não há consumidor externo da API hoje; se surgir, reavaliar. Afeta: estrutura geral.
+## Consequences
+There is no external consumer of the API today; if one appears, reassess. Affects: the overall structure.
 
-## Verificação
-Revisão quando houver segundo cliente da API.
+## Verification
+Review when there is a second client of the API.

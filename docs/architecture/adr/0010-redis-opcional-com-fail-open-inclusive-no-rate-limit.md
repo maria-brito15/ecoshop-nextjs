@@ -1,35 +1,35 @@
-# ADR-0010: Redis opcional com fail-open, inclusive no rate limit
+# ADR-0010: Optional Redis with fail-open, including in the rate limit
 
-- Status: Substituído
-- Substituído por: ADR-0020
-- Data: desconhecida (sem histórico git no pacote analisado)
-- Decisores: desconhecido (decisão histórica)
-- Origem: inferida do código
-- Capacidades: AUTH, OPS
+- Status: Superseded
+- Superseded by: ADR-0020
+- Date: unknown (no git history in the analyzed package)
+- Deciders: unknown (historical decision)
+- Origin: inferred from the code
+- Capabilities: AUTH, OPS
 
-> **Decisão inferida:** o código mostra este estado; não há prova de que foi uma escolha formal. As alternativas foram reconstruídas. Pode ser ratificada (novo ADR Aceito) ou substituída.
+> **Inferred decision:** the code shows this state; there is no proof that it was a formal choice. The alternatives were reconstructed. It can be ratified (a new Accepted ADR) or superseded.
 
-## Contexto
-Evidência: `lib/redis.ts` engole erros; `lib/rate-limit.ts` retorna `bloqueado: false` se o Redis falha; `/api/health` devolve 503 quando só o Redis cai.
+## Context
+Evidence: `lib/redis.ts` swallows errors; `lib/rate-limit.ts` returns `bloqueado: false` if Redis fails; `/api/health` returns 503 when only Redis goes down.
 
-## Problema
-O que acontece quando o Redis está fora?
+## Problem
+What happens when Redis is down?
 
-## Alternativas
-| Opção | Resolve | Custa | Bloqueia |
+## Alternatives
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. Fail-open (atual) | Disponibilidade | Sem limite de tentativas de login sem Redis | — |
-| B. Fail-closed no rate limit | Segurança | Login indisponível sem Redis | — |
-| C. Fallback em memória por instância | Meio-termo | Limite por instância | — |
+| A. Fail-open (current) | Availability | No limit on login attempts without Redis | — |
+| B. Fail-closed on the rate limit | Security | Login unavailable without Redis | — |
+| C. In-memory fallback per instance | Middle ground | Limit per instance | — |
 
-## Decisão
-Manter A como histórica; pendente (P04). Inconsistência a decidir: health tratar Redis como obrigatório contradiz 'opcional'.
+## Decision
+Keep A as historical; pending (P04). Inconsistency to decide: health treating Redis as required contradicts "optional".
 
-## Justificativa
-Inferida: degradação graciosa declarada no README.
+## Rationale
+Inferred: graceful degradation declared in the README.
 
-## Consequências
-Brute-force sem Redis. Afeta: `lib/redis.ts`, `lib/rate-limit.ts`, `api/health`.
+## Consequences
+Brute force without Redis. Affects: `lib/redis.ts`, `lib/rate-limit.ts`, `api/health`.
 
-## Verificação
-Testes de adaptador com Redis simulado em falha (Art. VIII).
+## Verification
+Adapter tests with Redis simulated as failing (Art. VIII).

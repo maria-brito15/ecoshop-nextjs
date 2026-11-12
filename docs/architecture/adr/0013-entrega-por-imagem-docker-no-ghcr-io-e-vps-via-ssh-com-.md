@@ -1,34 +1,34 @@
-# ADR-0013: Entrega por imagem Docker no ghcr.io e VPS via SSH com Compose
+# ADR-0013: Delivery by Docker image on ghcr.io and a VPS via SSH with Compose
 
-- Status: Substituído
-- Substituído por: ADR-0019
-- Data: desconhecida (sem histórico git no pacote analisado)
-- Decisores: desconhecido (decisão histórica)
-- Origem: inferida do código
-- Capacidades: OPS
+- Status: Superseded
+- Superseded by: ADR-0019
+- Date: unknown (no git history in the analyzed package)
+- Deciders: unknown (historical decision)
+- Origin: inferred from the code
+- Capabilities: OPS
 
-> **Decisão inferida:** o código mostra este estado; não há prova de que foi uma escolha formal. As alternativas foram reconstruídas. Pode ser ratificada (novo ADR Aceito) ou substituída.
+> **Inferred decision:** the code shows this state; there is no proof that it was a formal choice. The alternatives were reconstructed. It can be ratified (a new Accepted ADR) or superseded.
 
-## Contexto
-Evidência: `.github/workflows/ci.yml` (docker → deploy), `docker-compose.yml`, serviço `migrate`. O projeto ainda não está em produção.
+## Context
+Evidence: `.github/workflows/ci.yml` (docker → deploy), `docker-compose.yml`, `migrate` service. The project is not in production yet.
 
-## Problema
-Como publicar a aplicação?
+## Problem
+How do we publish the application?
 
-## Alternativas
-| Opção | Resolve | Custa | Bloqueia |
+## Alternatives
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. Docker + VPS por SSH (atual) | Controle total | Operação manual do servidor | — |
-| B. PaaS (ex.: Vercel + Postgres gerenciado) | Menos operação | Redis e filesystem a repensar | — |
+| A. Docker + VPS over SSH (current) | Full control | Manual server operation | — |
+| B. PaaS (e.g. Vercel + managed Postgres) | Less operation | Redis and filesystem to rethink | — |
 
-## Decisão
-Manter A como histórica; ratificar quando houver produção.
+## Decision
+Keep A as historical; ratify when there is production.
 
-## Justificativa
-Inferida.
+## Rationale
+Inferred.
 
-## Consequências
-Seed destrutivo no `compose up` (D5). Afeta: Dockerfile, Compose, workflow.
+## Consequences
+Destructive seed on `compose up` (D5). Affects: Dockerfile, Compose, workflow.
 
-## Verificação
+## Verification
 —

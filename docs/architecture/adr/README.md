@@ -5,25 +5,25 @@
 
 | ADR | Decision | Status | Relation |
 |---|---|---|---|
-| [ADR-0001](docs\architecture\adr\0001-adotar-sdd-com-spec-viva-por-capacidade-e-specs-de-muda.md) | Adotar SDD com spec viva por capacidade e specs de mudança do Spec Kit | Aceito |  |
-| [ADR-0002](docs\architecture\adr\0002-usar-o-github-spec-kit-com-estrutura-escrita-a-mao-ate-.md) | Usar o GitHub Spec Kit com estrutura escrita à mão até fixar uma versão | Aceito |  |
-| [ADR-0003](docs\architecture\adr\0003-monolito-next-js-app-router-com-front-end-e-api-no-mesm.md) | Monólito Next.js (App Router) com front-end e API no mesmo deploy | Inferido |  |
-| [ADR-0004](docs\architecture\adr\0004-ui-100-client-side-consumindo-a-propria-api-via-hooks-c.md) | UI 100% client-side consumindo a própria API via hooks com cache em memória | Inferido |  |
-| [ADR-0005](docs\architecture\adr\0005-camadas-handler-service-prisma-organizadas-por-pasta-te.md) | Camadas handler → service → Prisma, organizadas por pasta técnica | Inferido |  |
-| [ADR-0006](docs\architecture\adr\0006-postgresql-com-prisma-7-e-driver-adapter-pg.md) | PostgreSQL com Prisma 7 e driver adapter `pg` | Inferido |  |
-| [ADR-0007](docs\architecture\adr\0007-sessao-stateless-jwt-hs256-em-cookie-httponly-por-7-dia.md) | Sessão stateless: JWT HS256 em cookie httpOnly por 7 dias, sem revogação | Substituído | superseded by ADR-0021 |
-| [ADR-0008](docs\architecture\adr\0008-autorizacao-em-duas-camadas-middleware-por-prefixo-e-gu.md) | Autorização em duas camadas: middleware por prefixo e guard por handler | Substituído | superseded by ADR-0017 |
-| [ADR-0009](docs\architecture\adr\0009-cache-aside-em-redis-com-invalidacao-por-prefixo-mais-c.md) | Cache-aside em Redis com invalidação por prefixo, mais cache de 30 s no cliente | Inferido |  |
-| [ADR-0010](docs\architecture\adr\0010-redis-opcional-com-fail-open-inclusive-no-rate-limit.md) | Redis opcional com fail-open, inclusive no rate limit | Substituído | superseded by ADR-0020 |
-| [ADR-0011](docs\architecture\adr\0011-fotos-de-produto-no-filesystem-local-sem-metadados-no-b.md) | Fotos de produto no filesystem local, sem metadados no banco | Aceito |  |
-| [ADR-0012](docs\architecture\adr\0012-ia-em-duas-etapas-azure-custom-vision-classifica-e-gemi.md) | IA em duas etapas: Azure Custom Vision classifica e Gemini explica, com fallback estático | Inferido |  |
-| [ADR-0013](docs\architecture\adr\0013-entrega-por-imagem-docker-no-ghcr-io-e-vps-via-ssh-com-.md) | Entrega por imagem Docker no ghcr.io e VPS via SSH com Compose | Substituído | superseded by ADR-0019 |
-| [ADR-0014](docs\architecture\adr\0014-dominio-codigo-e-mensagens-em-portugues-termos-de-frame.md) | Domínio, código e mensagens em português; termos de framework em inglês | Substituído | superseded by ADR-0022 |
-| [ADR-0015](docs\architecture\adr\0015-eslint-9-flat-config-e-prettier-no-lugar-de-next-lint.md) | ESLint 9 (flat config) e Prettier, no lugar de `next lint` | Aceito |  |
-| [ADR-0016](docs\architecture\adr\0016-testes-com-o-runner-nativo-do-node-via-tsx-contra-postg.md) | Testes com o runner nativo do Node (via tsx) contra Postgres e Redis reais | Aceito |  |
-| [ADR-0017](docs\architecture\adr\0017-autorizacao-decidida-no-handler-por-politica-declarada-.md) | Autorização decidida no handler por política declarada; middleware só filtra páginas e rotas só-admin | Aceito | supersedes ADR-0008 |
-| [ADR-0018](docs\architecture\adr\0018-status-de-aprovacao-fica-na-marca-nao-no-usuario.md) | Status de aprovação de cadastro MARCA fica na `Marca`, não no `Usuario` | Aceito |  |
-| [ADR-0019](docs\architecture\adr\0019-entrega-por-imagem-no-ghcr-com-compose-versionado-migrate-antes-saude-e-reversao.md) | Entrega por imagem no GHCR com compose versionado; migrations antes, verificação de saúde e reversão | Aceito | supersedes ADR-0013 |
-| [ADR-0020](docs\architecture\adr\0020-redis-opcional-falha-rapida-rate-limit-em-memoria-sem-redis-e-saude-degradada.md) | Redis opcional com falha rápida, rate limit em memória sem Redis e saúde "degradada" | Aceito | supersedes ADR-0010 |
-| [ADR-0021](docs\architecture\adr\0021-sessao-com-acesso-curto-e-renovacao-revogavel-no-redis.md) | Sessão com acesso curto (JWT, 15 min) e renovação opaca e revogável no Redis | Aceito | supersedes ADR-0007 |
-| [ADR-0022](docs\architecture\adr\0022-english-as-the-single-project-language.md) | English as the single language of code, comments, messages and documentation | Aceito | supersedes ADR-0014 |
+| [ADR-0001](0001-adotar-sdd-com-spec-viva-por-capacidade-e-specs-de-muda.md) | Adopt SDD with a living spec per capability and Spec Kit change specs | Accepted |  |
+| [ADR-0002](0002-usar-o-github-spec-kit-com-estrutura-escrita-a-mao-ate-.md) | Use GitHub Spec Kit with a hand-written structure until a version is pinned | Accepted |  |
+| [ADR-0003](0003-monolito-next-js-app-router-com-front-end-e-api-no-mesm.md) | Next.js monolith (App Router) with front end and API in the same deploy | Inferred |  |
+| [ADR-0004](0004-ui-100-client-side-consumindo-a-propria-api-via-hooks-c.md) | 100% client-side UI consuming its own API via hooks with an in-memory cache | Inferred |  |
+| [ADR-0005](0005-camadas-handler-service-prisma-organizadas-por-pasta-te.md) | Handler → service → Prisma layers, organized by technical folder | Inferred |  |
+| [ADR-0006](0006-postgresql-com-prisma-7-e-driver-adapter-pg.md) | PostgreSQL with Prisma 7 and the `pg` driver adapter | Inferred |  |
+| [ADR-0007](0007-sessao-stateless-jwt-hs256-em-cookie-httponly-por-7-dia.md) | Stateless session: JWT HS256 in an httpOnly cookie for 7 days, without revocation | Superseded | superseded by ADR-0021 |
+| [ADR-0008](0008-autorizacao-em-duas-camadas-middleware-por-prefixo-e-gu.md) | Authorization in two layers: middleware by prefix and a guard per handler | Superseded | superseded by ADR-0017 |
+| [ADR-0009](0009-cache-aside-em-redis-com-invalidacao-por-prefixo-mais-c.md) | Cache-aside in Redis with prefix invalidation, plus a 30 s client cache | Inferred |  |
+| [ADR-0010](0010-redis-opcional-com-fail-open-inclusive-no-rate-limit.md) | Optional Redis with fail-open, including in the rate limit | Superseded | superseded by ADR-0020 |
+| [ADR-0011](0011-fotos-de-produto-no-filesystem-local-sem-metadados-no-b.md) | Product photos on the local filesystem, without metadata in the database | Accepted |  |
+| [ADR-0012](0012-ia-em-duas-etapas-azure-custom-vision-classifica-e-gemi.md) | AI in two stages: Azure Custom Vision classifies and Gemini explains, with a static fallback | Inferred |  |
+| [ADR-0013](0013-entrega-por-imagem-docker-no-ghcr-io-e-vps-via-ssh-com-.md) | Delivery by Docker image on ghcr.io and a VPS via SSH with Compose | Superseded | superseded by ADR-0019 |
+| [ADR-0014](0014-dominio-codigo-e-mensagens-em-portugues-termos-de-frame.md) | Domain, code and messages in Portuguese; framework terms in English | Superseded | superseded by ADR-0022 |
+| [ADR-0015](0015-eslint-9-flat-config-e-prettier-no-lugar-de-next-lint.md) | ESLint 9 (flat config) and Prettier, instead of `next lint` | Accepted |  |
+| [ADR-0016](0016-testes-com-o-runner-nativo-do-node-via-tsx-contra-postg.md) | Tests with Node's native runner (via tsx) against real Postgres and Redis | Accepted |  |
+| [ADR-0017](0017-autorizacao-decidida-no-handler-por-politica-declarada-.md) | Authorization decided in the handler by declared policy; the middleware only filters pages and admin-only routes | Accepted | supersedes ADR-0008 |
+| [ADR-0018](0018-status-de-aprovacao-fica-na-marca-nao-no-usuario.md) | The approval status of a MARCA sign-up lives on `Marca`, not on `Usuario` | Accepted |  |
+| [ADR-0019](0019-entrega-por-imagem-no-ghcr-com-compose-versionado-migrate-antes-saude-e-reversao.md) | Delivery by image on GHCR with a versioned compose; migrations first, health check and rollback | Accepted | supersedes ADR-0013 |
+| [ADR-0020](0020-redis-opcional-falha-rapida-rate-limit-em-memoria-sem-redis-e-saude-degradada.md) | Optional Redis with fast failure, in-memory rate limit without Redis and "degraded" health | Accepted | supersedes ADR-0010 |
+| [ADR-0021](0021-sessao-com-acesso-curto-e-renovacao-revogavel-no-redis.md) | Session with a short access token (JWT, 15 min) and an opaque, revocable refresh token in Redis | Accepted | supersedes ADR-0007 |
+| [ADR-0022](0022-english-as-the-single-project-language.md) | English as the single language of code, comments, messages and documentation | Accepted | supersedes ADR-0014 |

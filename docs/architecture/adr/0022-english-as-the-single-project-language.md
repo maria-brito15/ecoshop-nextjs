@@ -1,13 +1,13 @@
 # ADR-0022: English as the single language of code, comments, messages and documentation
 
-- Status: Aceito
-- Data: 2026-11-11
-- Decisores: dono do projeto (choices "Keep the wire contract", "Add i18n later" and "Update the project rules", 2026-11-11) e Claude
-- Origem: nova (substitui o ADR-0014)
-- Capacidades: todas
-- Substitui: ADR-0014
+- Status: Accepted
+- Date: 2026-11-11
+- Deciders: project owner (choices "Keep the wire contract", "Add i18n later" and "Update the project rules", 2026-11-11) and Claude
+- Origin: new (supersedes ADR-0014)
+- Capabilities: all
+- Supersedes: ADR-0014
 
-> Note: the metadata keys and the status vocabulary above (`Status`, `Aceito`, `Substitui`, …) are read by `scripts/sdd/*` and are still in Portuguese. Migrating that tooling vocabulary is listed in "Consequences".
+> Note: the metadata keys and the status vocabulary above (`Status`, `Accepted`, `Supersedes`, …) were translated on 2026-11-12, when `scripts/sdd/*` started accepting both the English and the legacy Portuguese vocabulary (see "Consequences").
 
 ## Context
 

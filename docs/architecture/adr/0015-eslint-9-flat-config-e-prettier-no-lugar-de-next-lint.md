@@ -1,31 +1,31 @@
-# ADR-0015: ESLint 9 (flat config) e Prettier, no lugar de `next lint`
+# ADR-0015: ESLint 9 (flat config) and Prettier, instead of `next lint`
 
-- Status: Aceito
-- Data: 2026-11-10
-- Decisores: Arthur (autorização geral) e Claude
-- Origem: nova
-- Capacidades: processo
+- Status: Accepted
+- Date: 2026-11-10
+- Deciders: Arthur (general authorization) and Claude
+- Origin: new
+- Capabilities: process
 
-## Contexto
-`npm run lint` chamava `next lint`, depreciado no Next 15, sem ESLint instalado: o comando abria um assistente interativo e falhava no CI (D10), impedindo os jobs de docker e deploy.
+## Context
+`npm run lint` called `next lint`, deprecated in Next 15, without ESLint installed: the command opened an interactive wizard and failed in CI (D10), blocking the docker and deploy jobs.
 
-## Problema
-Como ter lint que funcione no CI sem refatorar em massa?
+## Problem
+How do we get a lint that works in CI without a mass refactor?
 
-## Alternativas
-| Opção | Resolve | Custa | Bloqueia |
+## Alternatives
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. ESLint 9 + eslint-config-next + Prettier (escolhida) | Padrão da ecossistema, funciona no CI | 31 avisos preexistentes | — |
-| B. Biome | Uma ferramenta | Menos regras de Next/React | — |
+| A. ESLint 9 + eslint-config-next + Prettier (chosen) | Ecosystem standard, works in CI | 31 pre-existing warnings | — |
+| B. Biome | One tool | Fewer Next/React rules | — |
 
-## Decisão
-Opção A. Regras que produziam erro no código existente (`no-explicit-any`, `no-empty-object-type`, `no-html-link-for-pages`) ficam como **aviso** até serem corrigidas por specs de mudança; código novo deve estar limpo. `no-restricted-imports` de `@/lib/db` em `app/**` aplica o Art. V (aviso por ora).
+## Decision
+Option A. Rules that produced errors in the existing code (`no-explicit-any`, `no-empty-object-type`, `no-html-link-for-pages`) stay as a **warning** until fixed by change specs; new code must be clean. `no-restricted-imports` of `@/lib/db` in `app/**` applies Art. V (a warning for now).
 
-## Justificativa
-Destrava o CI sem uma refatoração em massa.
+## Rationale
+It unblocks CI without a mass refactor.
 
-## Consequências
-Avisos podem ser ignorados; revisar na Fase 4. Afeta: `eslint.config.mjs`, `package.json`, CI.
+## Consequences
+Warnings can be ignored; review in Phase 4. Affects: `eslint.config.mjs`, `package.json`, CI.
 
-## Verificação
-`npm run lint` no CI.
+## Verification
+`npm run lint` in CI.

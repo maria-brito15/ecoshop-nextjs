@@ -1,33 +1,33 @@
-# ADR-0005: Camadas handler → service → Prisma, organizadas por pasta técnica
+# ADR-0005: Handler → service → Prisma layers, organized by technical folder
 
-- Status: Inferido
-- Data: desconhecida (sem histórico git no pacote analisado)
-- Decisores: desconhecido (decisão histórica)
-- Origem: inferida do código
-- Capacidades: todas
+- Status: Inferred
+- Date: unknown (no git history in the analyzed package)
+- Deciders: unknown (historical decision)
+- Origin: inferred from the code
+- Capabilities: all
 
-> **Decisão inferida:** o código mostra este estado; não há prova de que foi uma escolha formal. As alternativas foram reconstruídas. Pode ser ratificada (novo ADR Aceito) ou substituída.
+> **Inferred decision:** the code shows this state; there is no proof that it was a formal choice. The alternatives were reconstructed. It can be ratified (a new Accepted ADR) or superseded.
 
-## Contexto
-Evidência: `app/api/**/route.ts` chama `services/*.service.ts`, que usam `lib/db`; schemas em `lib/schemas`. Exceções: `api/auth`, `api/auth/me`, `api/auth/refresh`, `api/users` e `api/health` usam Prisma direto.
+## Context
+Evidence: `app/api/**/route.ts` calls `services/*.service.ts`, which use `lib/db`; schemas in `lib/schemas`. Exceptions: `api/auth`, `api/auth/me`, `api/auth/refresh`, `api/users` and `api/health` use Prisma directly.
 
-## Problema
-Onde mora cada responsabilidade?
+## Problem
+Where does each responsibility live?
 
-## Alternativas
-| Opção | Resolve | Custa | Bloqueia |
+## Alternatives
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. Camadas por pasta técnica (atual) | Simples de navegar | Domínio espalhado por pastas | — |
-| B. Módulos verticais por domínio | Coesão por capacidade | Reorganização grande | — |
+| A. Layers by technical folder (current) | Simple to navigate | Domain spread across folders | — |
+| B. Vertical modules by domain | Cohesion per capability | Large reorganization | — |
 
-## Decisão
-Ratificar A, com a regra da Constitution (Art. V): handler não acessa Prisma. As exceções existentes são débito registrado (lint em 'warn').
+## Decision
+Ratify A, with the Constitution rule (Art. V): a handler does not access Prisma. The existing exceptions are recorded debt (lint at "warn").
 
-## Justificativa
-A convenção já é seguida em 12 dos 17 handlers; fixá-la evita erosão.
+## Rationale
+The convention is already followed in 12 of the 17 handlers; fixing it prevents erosion.
 
-## Consequências
-Migrar os handlers que violam é uma spec de mudança futura. Afeta: `app/api/**`, `services/**`.
+## Consequences
+Migrating the handlers that violate it is a future change spec. Affects: `app/api/**`, `services/**`.
 
-## Verificação
-ESLint `no-restricted-imports` (aviso agora; erro depois da migração).
+## Verification
+ESLint `no-restricted-imports` (a warning now; an error after the migration).

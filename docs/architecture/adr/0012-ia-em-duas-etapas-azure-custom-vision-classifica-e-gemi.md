@@ -1,34 +1,34 @@
-# ADR-0012: IA em duas etapas: Azure Custom Vision classifica e Gemini explica, com fallback estático
+# ADR-0012: AI in two stages: Azure Custom Vision classifies and Gemini explains, with a static fallback
 
-- Status: Inferido
-- Data: desconhecida (sem histórico git no pacote analisado)
-- Decisores: desconhecido (decisão histórica)
-- Origem: inferida do código
-- Capacidades: SCAN, CHAT
+- Status: Inferred
+- Date: unknown (no git history in the analyzed package)
+- Deciders: unknown (historical decision)
+- Origin: inferred from the code
+- Capabilities: SCAN, CHAT
 
-> **Decisão inferida:** o código mostra este estado; não há prova de que foi uma escolha formal. As alternativas foram reconstruídas. Pode ser ratificada (novo ADR Aceito) ou substituída.
+> **Inferred decision:** the code shows this state; there is no proof that it was a formal choice. The alternatives were reconstructed. It can be ratified (a new Accepted ADR) or superseded.
 
-## Contexto
-Evidência: `lib/ai/analyze-image.ts`; `providers/azure-vision.ts`, `providers/gemini-chat.ts`; limiar `AI_CONFIDENCE_THRESHOLD` (0,7) e tag `outros`; fallback `analiseBasica`. O modelo Azure e suas tags são artefatos externos ao repositório (poucas tags hoje, segundo o dono).
+## Context
+Evidence: `lib/ai/analyze-image.ts`; `providers/azure-vision.ts`, `providers/gemini-chat.ts`; threshold `AI_CONFIDENCE_THRESHOLD` (0.7) and tag `outros`; fallback `fallbackAnalysis`. The Azure model and its tags are artifacts external to the repository (few tags today, according to the owner).
 
-## Problema
-Como identificar o material de uma foto e explicar o descarte?
+## Problem
+How do we identify the material in a photo and explain its disposal?
 
-## Alternativas
-| Opção | Resolve | Custa | Bloqueia |
+## Alternatives
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. Classificador + LLM (atual) | Classes controladas; custo menor por foto | Dois fornecedores; modelo precisa de treino | — |
-| B. LLM multimodal único | Simplicidade | Menos controle das classes | — |
-| C. Classificador + conteúdo curado | Sem custo de LLM | Conteúdo a manter | — |
+| A. Classifier + LLM (current) | Controlled classes; lower cost per photo | Two vendors; the model needs training | — |
+| B. A single multimodal LLM | Simplicity | Less control over the classes | — |
+| C. Classifier + curated content | No LLM cost | Content to maintain | — |
 
-## Decisão
-Manter A como histórica; escopo da IA pendente (P06).
+## Decision
+Keep A as historical; the scope of the AI is pending (P06).
 
-## Justificativa
-Inferida.
+## Rationale
+Inferred.
 
-## Consequências
-Rede do Gemini sem try/catch derruba o scan (D4). Afeta: `lib/ai/**`, `api/ia/**`.
+## Consequences
+Gemini's network without try/catch takes the scan down (D4). Affects: `lib/ai/**`, `api/ia/**`.
 
-## Verificação
-Testes com provedores simulados (Art. VIII).
+## Verification
+Tests with simulated providers (Art. VIII).

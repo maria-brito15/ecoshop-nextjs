@@ -1,34 +1,34 @@
-# ADR-0014: Domínio, código e mensagens em português; termos de framework em inglês
+# ADR-0014: Domain, code and messages in Portuguese; framework terms in English
 
-- Status: Substituído
-- Substituído por: ADR-0022
-- Data: desconhecida (sem histórico git no pacote analisado)
-- Decisores: desconhecido (decisão histórica)
-- Origem: inferida do código
-- Capacidades: todas
+- Status: Superseded
+- Superseded by: ADR-0022
+- Date: unknown (no git history in the analyzed package)
+- Deciders: unknown (historical decision)
+- Origin: inferred from the code
+- Capabilities: all
 
-> **Decisão inferida:** o código mostra este estado; não há prova de que foi uma escolha formal. As alternativas foram reconstruídas. Pode ser ratificada (novo ADR Aceito) ou substituída.
+> **Inferred decision:** the code shows this state; there is no proof that it was a formal choice. The alternatives were reconstructed. It can be ratified (a new Accepted ADR) or superseded.
 
-## Contexto
-Evidência: entidades (`Produto`, `Marca`), funções (`listarProdutos`), mensagens e rotas (`/produtos`, `/api/categorias`) em português.
+## Context
+Evidence: entities (`Produto`, `Marca`), functions (`listarProdutos`), messages and routes (`/produtos`, `/api/categorias`) in Portuguese.
 
-## Problema
-Qual idioma para o domínio?
+## Problem
+Which language for the domain?
 
-## Alternativas
-| Opção | Resolve | Custa | Bloqueia |
+## Alternatives
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. Português (atual) | Linguagem ubíqua com o domínio | Mistura com termos de framework | — |
-| B. Inglês no código | Convenção comum | Reescrever | — |
+| A. Portuguese (current) | Ubiquitous language with the domain | Mixes with framework terms | — |
+| B. English in the code | Common convention | Rewriting | — |
 
-## Decisão
-Ratificar A (vira Art. XIV.1 da Constitution).
+## Decision
+Ratify A (it becomes Art. XIV.1 of the Constitution).
 
-## Justificativa
-Já é consistente no código.
+## Rationale
+It is already consistent in the code.
 
-## Consequências
-Glossário em docs/product/glossario.md.
+## Consequences
+Glossary in docs/product/glossario.md.
 
-## Verificação
-Revisão.
+## Verification
+Review.

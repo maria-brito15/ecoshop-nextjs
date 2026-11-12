@@ -1,56 +1,56 @@
-# ADR-0020: Redis opcional com falha rápida, rate limit em memória sem Redis e saúde "degradada"
+# ADR-0020: Optional Redis with fast failure, in-memory rate limit without Redis and "degraded" health
 
-- Status: Aceito
-- Data: 2026-11-11
-- Decisores: dono do projeto (decisão "memória local" de 2026-11-11 para o rate limit sem Redis) e Claude
-- Origem: nova (ratifica e corrige o ADR-0010)
-- Capacidades: OPS, AUTH
-- Substitui: ADR-0010
+- Status: Accepted
+- Date: 2026-11-11
+- Deciders: project owner ("local memory" decision of 2026-11-11 for the rate limit without Redis) and Claude
+- Origin: new (ratifies and corrects ADR-0010)
+- Capabilities: OPS, AUTH
+- Supersedes: ADR-0010
 
-## Contexto
+## Context
 
-O ADR-0010 (Inferido) descrevia o estado do código: o Redis é opcional e tudo "libera" quando ele falha, inclusive o rate limit. A auditoria de 2026-11-11 encontrou quatro problemas nesse desenho:
+ADR-0010 (Inferred) described the state of the code: Redis is optional and everything "lets through" when it fails, including the rate limit. The audit of 2026-11-11 found four problems in that design:
 
-- O node-redis enfileira comandos enquanto está desconectado e não tem tempo limite: com o Redis fora, as requisições podiam ficar penduradas em vez de "degradar".
-- O rate limit liberava tudo sem Redis (fail-open sem decisão registrada; Constitution Art. VIII.3) e usava `INCR` e `EXPIRE` separados, que deixavam a chave sem validade se o processo caísse entre os dois.
-- O IP do cliente vinha do primeiro valor de `x-forwarded-for`, que o próprio cliente escreve.
-- `/api/health` devolvia 503 quando só o Redis caía, contrariando Art. XIII.2 e derrubando o deploy e o healthcheck.
+- node-redis queues commands while it is disconnected and has no timeout: with Redis down, requests could hang instead of "degrading".
+- The rate limit let everything through without Redis (a fail-open with no recorded decision; Constitution Art. VIII.3) and used separate `INCR` and `EXPIRE`, which left the key without an expiry if the process died between the two.
+- The client IP came from the first value of `x-forwarded-for`, which the client itself writes.
+- `/api/health` returned 503 when only Redis went down, contradicting Art. XIII.2 and taking down the deploy and the healthcheck.
 
-O dono decidiu (2026-11-11) que, sem Redis, o rate limit usa memória local. O projeto roda com uma instância (resposta do dono).
+The owner decided (2026-11-11) that, without Redis, the rate limit uses local memory. The project runs with one instance (owner's answer).
 
-## Problema
+## Problem
 
-Como manter o Redis opcional sem pendurar requisições, sem abrir mão do rate limit e sem reportar "indisponível" quando só uma dependência opcional cai?
+How do we keep Redis optional without hanging requests, without giving up the rate limit and without reporting "unavailable" when only an optional dependency goes down?
 
-## Alternativas
+## Alternatives
 
-| Opção | Resolve | Custa | Bloqueia |
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. Falha rápida + rate limit em memória + saúde "degradada" (escolhida) | Redis fora não pendura nem libera o limite; saúde correta | Limite por instância e perdido ao reiniciar; fila offline do cliente ainda existe (com tamanho máximo) | Rate limit global entre várias instâncias sem Redis |
-| B. Manter fail-open (ADR-0010) | Nenhuma mudança | Sem Redis, nenhum limite de login, cadastro ou chat | Qualquer proteção contra força bruta sem Redis |
-| C. Fail-closed (sem Redis, bloquear) | Mais seguro | Login e cadastro param quando o Redis cai | Disponibilidade do núcleo do sistema |
-| D. Desligar a fila offline do cliente (`disableOfflineQueue`) | Falha imediata | Comandos emitidos antes de a conexão estabelecer falham no início do processo e nos testes | — |
+| A. Fast failure + in-memory rate limit + "degraded" health (chosen) | Redis down neither hangs nor lifts the limit; correct health | Limit per instance and lost on restart; the client's offline queue still exists (with a maximum size) | A global rate limit across several instances without Redis |
+| B. Keep fail-open (ADR-0010) | No change | Without Redis, no limit on login, sign-up or chat | Any protection against brute force without Redis |
+| C. Fail-closed (without Redis, block) | Safer | Login and sign-up stop when Redis goes down | Availability of the system's core |
+| D. Turn off the client's offline queue (`disableOfflineQueue`) | Immediate failure | Commands issued before the connection is established fail at process start and in tests | — |
 
-## Decisão
+## Decision
 
-Opção A.
+Option A.
 
-- Todo comando Redis tem tempo limite (300 ms; varredura por padrão, 3 s), a fila offline tem tamanho máximo (100) e a reconexão recua até 5 s. Falha vira "miss" e é registrada no máximo a cada 30 s.
-- Contagem do rate limit atômica (`SET chave 0 EX janela NX` + `INCR` numa transação). Sem Redis, contador em memória do processo.
-- O IP do cliente é a N-ésima entrada, contada do fim, de `x-forwarded-for`, com N = `TRUST_PROXY_HOPS` (padrão 1, o proxy reverso do compose de publicação). Com 0, o cabeçalho é ignorado.
-- `/api/health`: 200 se o banco responde (Redis fora = `degradado`); 503 só se o banco falha.
-- A chave de cache da listagem de produtos sai dos filtros validados, em ordem fixa (REQ-CAT-10), e acessos simultâneos à mesma chave dividem uma só busca (REQ-OPS-17).
+- Every Redis command has a timeout (300 ms; scan by default, 3 s), the offline queue has a maximum size (100) and reconnection backs off up to 5 s. A failure becomes a "miss" and is logged at most every 30 s.
+- Atomic rate-limit counting (`SET key 0 EX window NX` + `INCR` in a transaction). Without Redis, an in-memory counter in the process.
+- The client IP is the N-th entry, counted from the end, of `x-forwarded-for`, with N = `TRUST_PROXY_HOPS` (default 1, the reverse proxy of the publishing compose). With 0, the header is ignored.
+- `/api/health`: 200 if the database responds (Redis down = `degradado`); 503 only if the database fails.
+- The product listing cache key comes from the validated filters, in a fixed order (REQ-CAT-10), and simultaneous accesses to the same key share a single lookup (REQ-OPS-17).
 
-## Justificativa
+## Rationale
 
-Mantém o Redis opcional (diferencial do projeto) sem custar disponibilidade nem segurança. A reserva em memória é aceitável porque há uma instância; com várias, o limite efetivo fica N vezes maior e o ADR deve ser revisitado.
+It keeps Redis optional (a differentiator of the project) without costing availability or security. The in-memory reservation is acceptable because there is one instance; with several, the effective limit becomes N times larger and the ADR must be revisited.
 
-## Consequências
+## Consequences
 
-- Sem Redis, cada processo conta sozinho; reiniciar zera a contagem.
-- `/api/health` passa a ter o campo `status` ("ok", "degradado", "indisponivel"), além de `ok` e `services`.
-- Afeta: `lib/redis.ts`, `lib/rate-limit.ts`, `lib/cache/**`, `services/health.service.ts`, `app/api/health/route.ts`, `services/product.service.ts`, `lib/schemas/product.ts`.
+- Without Redis, each process counts on its own; restarting resets the count.
+- `/api/health` now has the `status` field ("ok", "degradado", "indisponivel"), besides `ok` and `services`.
+- Affects: `lib/redis.ts`, `lib/rate-limit.ts`, `lib/cache/**`, `services/health.service.ts`, `app/api/health/route.ts`, `services/product.service.ts`, `lib/schemas/product.ts`.
 
-## Verificação
+## Verification
 
-`tests/integration/redis-and-cache.test.ts`, incluindo um processo filho apontando para um Redis inexistente que mede o tempo de cada operação.
+`tests/integration/redis-and-cache.test.ts`, including a child process pointing to a nonexistent Redis that measures the time of each operation.

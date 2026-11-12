@@ -1,34 +1,34 @@
-# ADR-0004: UI 100% client-side consumindo a própria API via hooks com cache em memória
+# ADR-0004: 100% client-side UI consuming its own API via hooks with an in-memory cache
 
-- Status: Inferido
-- Data: desconhecida (sem histórico git no pacote analisado)
-- Decisores: desconhecido (decisão histórica)
-- Origem: inferida do código
-- Capacidades: CAT, PROD, REF, PERF
+- Status: Inferred
+- Date: unknown (no git history in the analyzed package)
+- Deciders: unknown (historical decision)
+- Origin: inferred from the code
+- Capabilities: CAT, PROD, REF, PERF
 
-> **Decisão inferida:** o código mostra este estado; não há prova de que foi uma escolha formal. As alternativas foram reconstruídas. Pode ser ratificada (novo ADR Aceito) ou substituída.
+> **Inferred decision:** the code shows this state; there is no proof that it was a formal choice. The alternatives were reconstructed. It can be ratified (a new Accepted ADR) or superseded.
 
-## Contexto
-Evidência: todas as páginas têm `"use client"`; `lib/hooks/useFetch.ts` mantém `Map` com TTL de 30 s e stale-while-revalidate; `useMutation.ts` invalida por substring de URL.
+## Context
+Evidence: all pages have `"use client"`; `lib/hooks/useFetch.ts` keeps a `Map` with a 30 s TTL and stale-while-revalidate; `useMutation.ts` invalidates by URL substring.
 
-## Problema
-Como a UI busca e mantém dados frescos?
+## Problem
+How does the UI fetch data and keep it fresh?
 
-## Alternativas
-| Opção | Resolve | Custa | Bloqueia |
+## Alternatives
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. Hooks próprios (atual) | Sem dependência | Reimplementa cache, deduplicação e invalidação (frágil por substring) | — |
-| B. TanStack Query / SWR | Cache, deduplicação e invalidação prontos | Dependência nova | — |
-| C. Server Components com `fetch` do Next | Menos JS no cliente, SEO | Reescrever páginas | — |
+| A. Own hooks (current) | No dependency | Reimplements cache, deduplication and invalidation (fragile by substring) | — |
+| B. TanStack Query / SWR | Cache, deduplication and invalidation ready-made | A new dependency | — |
+| C. Server Components with Next's `fetch` | Less client JS, SEO | Rewriting pages | — |
 
-## Decisão
-Manter A por ora (histórica). Decisão definitiva fica pendente (P07) para quando as páginas grandes forem decompostas.
+## Decision
+Keep A for now (historical). The definitive decision is pending (P07) for when the large pages are decomposed.
 
-## Justificativa
-Inferida: funciona e não exige dependência.
+## Rationale
+Inferred: it works and requires no dependency.
 
-## Consequências
-O cache do cliente pode mostrar dado de até 30 s; a invalidação por substring é frágil. Afeta: `lib/hooks/**`, páginas.
+## Consequences
+The client cache may show data up to 30 s old; substring invalidation is fragile. Affects: `lib/hooks/**`, pages.
 
-## Verificação
+## Verification
 —

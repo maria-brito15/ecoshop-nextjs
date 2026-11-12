@@ -1,11 +1,11 @@
-# Arquitetura do EcoShop (visão atual)
+# EcoShop architecture (current view)
 
-Descrição verificada no código em 2026-11 (ver `docs/discovery/2026-11-baseline/02-arquitetura-atual.md` para o detalhe). Decisões: `docs/architecture/adr/`.
+Description verified against the code in 2026-11 (see `docs/discovery/2026-11-baseline/02-arquitetura-atual.md` for the detail). Decisions: `docs/architecture/adr/`.
 
 ```mermaid
 flowchart LR
   subgraph Browser
-    P[Páginas client] --> H[Hooks useFetch/useMutation<br/>cache Map 30s]
+    P[Client pages] --> H[Hooks useFetch/useMutation<br/>Map cache 30s]
   end
   subgraph Next[Next.js - Node]
     MW[Edge middleware] --> RH[Route Handlers app/api]
@@ -22,11 +22,11 @@ flowchart LR
   AI --> GEM[Gemini]
 ```
 
-## Regras estruturais (Constitution, Art. V)
-- Route Handler: parse, validação (Zod), autorização, mapeamento de erro.
-- Service: regras, persistência, cache.
-- Adaptadores (`lib/ai/providers`, `lib/redis`): sem regra de negócio.
-- Autorização por handler (ADR-0017); o middleware autentica e restringe páginas `/painel`.
+## Structural rules (Constitution, Art. V)
+- Route Handler: parsing, validation (Zod), authorization, error mapping.
+- Service: rules, persistence, cache.
+- Adapters (`lib/ai/providers`, `lib/redis`): no business rules.
+- Authorization per handler (ADR-0017); the middleware authenticates and restricts `/painel` pages.
 
-## Autorização efetiva (por rota)
-Fonte de verdade: `docs/capabilities/autorizacao/spec.md`.
+## Effective authorization (per route)
+Source of truth: `docs/capabilities/autorizacao/spec.md`.

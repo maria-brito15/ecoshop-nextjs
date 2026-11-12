@@ -68,7 +68,7 @@ const linhas = [
   "|---|---|---|---|",
   ...adrs.map(
     (a) =>
-      `| [${a.id}](${a.arquivo.split("/").pop()}) | ${a.titulo} | ${a.status} | ${a.substituidoPor ? "superseded by " + a.substituidoPor : a.substitui ? "supersedes " + a.substitui : ""} |`,
+      `| [${a.id}](${a.arquivo.split(/[\\/]/).pop()}) | ${a.titulo} | ${a.status} | ${a.substituidoPor ? "superseded by " + a.substituidoPor : a.substitui ? "supersedes " + a.substitui : ""} |`,
   ),
   "",
 ];

@@ -1,18 +1,18 @@
-# Decisões arquiteturais pendentes
+# Pending architectural decisions
 
-Ainda **não são ADRs**: faltam decisão e dados. Cada uma vira ADR (próximo número livre) quando uma spec de mudança precisar dela. Alternativas e recomendação inicial em `docs/discovery/2026-11-baseline/06-inventario-adrs.md`.
+These are **not ADRs yet**: they still lack a decision and data. Each one becomes an ADR (next free number) when a change spec needs it. Alternatives and an initial recommendation in `docs/discovery/2026-11-baseline/06-inventario-adrs.md`.
 
-| Código | Decisão | Depende de | Quando decidir |
+| Code | Decision | Depends on | When to decide |
 |---|---|---|---|
-| P02 | Política de sessão (revogação, duração) — substitui o ADR-0007 se mudar | Não há produção ainda: bom momento | Antes do primeiro deploy |
-| P04 | Rate limit sem Redis (fail-open/closed/memória) | — | Antes do primeiro deploy |
-| P05 | Estratégia de consistência de cache | Medição de necessidade real | Spec de catálogo |
-| P06 | Escopo do modelo Azure (tags do Custom Vision) — a parte "chat com UI" foi resolvida em 2026-11-10 (`specs/004-chat-flutuante/spec.md`: botão flutuante) | Tags do Azure documentadas | Spec do EcoScan, se mudar |
-| P07 | Busca de dados na UI (hooks × Server Components × biblioteca) | Decomposição das páginas | Quando as páginas forem componentizadas |
-| P09 | Contrato de API (tabela na spec × OpenAPI) | Surgir consumidor externo | Sob demanda |
+| P02 | Session policy (revocation, duration) — supersedes ADR-0007 if it changes | There is no production yet: a good time | Before the first deploy |
+| P04 | Rate limit without Redis (fail-open/closed/memory) | — | Before the first deploy |
+| P05 | Cache consistency strategy | Measurement of real need | Catalog spec |
+| P06 | Scope of the Azure model (Custom Vision tags) — the "chat with UI" part was resolved on 2026-11-10 (`specs/004-chat-flutuante/spec.md`: floating button) | Azure tags documented | EcoScan spec, if it changes |
+| P07 | Data fetching in the UI (hooks × Server Components × library) | Decomposition of the pages | When the pages are componentized |
+| P09 | API contract (table in the spec × OpenAPI) | An external consumer appearing | On demand |
 
-Resolvidas: P03 (armazenamento de mídia) foi ratificada em 2026-11-10 como ADR-0011 Aceito — mantém filesystem local. P11 (aprovação de cadastro MARCA) foi ratificada em 2026-11-10 como ADR-0018 Aceito — status fica na `Marca`.
+Resolved: P03 (media storage) was ratified on 2026-11-10 as ADR-0011 Accepted — keeps the local filesystem. P11 (MARCA sign-up approval) was ratified on 2026-11-10 as ADR-0018 Accepted — the status lives on `Marca`.
 
-## Funcionalidades decididas, ainda não construídas
+## Features decided, not yet built
 
-Não são decisões de arquitetura (por isso não entram na tabela acima); são respostas do dono (`docs/discovery/2026-11-baseline/11-respostas-e-correcoes-iniciais.md`). Backlog de 2026-11-10 totalmente implementado em 2026-11-11 (aprovação de MARCA — ADR-0018; chat flutuante; galeria de fotos; filtro/ordenação do catálogo; vínculo produto↔certificado; histórico e métricas de impacto). Nenhum item pendente no momento.
+These are not architecture decisions (that is why they are not in the table above); they are the owner's answers (`docs/discovery/2026-11-baseline/11-respostas-e-correcoes-iniciais.md`). The 2026-11-10 backlog was fully implemented on 2026-11-11 (MARCA approval — ADR-0018; floating chat; photo gallery; catalog filter/sort; product↔certificate link; history and impact metrics). No pending item at the moment.

@@ -1,32 +1,32 @@
-# ADR-0002: Usar o GitHub Spec Kit com estrutura escrita à mão até fixar uma versão
+# ADR-0002: Use GitHub Spec Kit with a hand-written structure until a version is pinned
 
-- Status: Aceito
-- Data: 2026-11-10
-- Decisores: Arthur (autorização geral) e Claude
-- Origem: nova
-- Capacidades: processo
+- Status: Accepted
+- Date: 2026-11-10
+- Deciders: Arthur (general authorization) and Claude
+- Origin: new
+- Capabilities: process
 
-## Contexto
-O Spec Kit muda rápido (extensões, presets, comandos ora `/speckit.plan`, ora skills `speckit-plan`). O ambiente que criou esta estrutura não alcançava o repositório do Spec Kit, então `specify init` não pôde ser executado.
+## Context
+Spec Kit changes fast (extensions, presets, commands that are sometimes `/speckit.plan`, sometimes `speckit-plan` skills). The environment that created this structure could not reach the Spec Kit repository, so `specify init` could not be run.
 
-## Problema
-Como começar a usar o fluxo sem fixar premissas erradas sobre a ferramenta?
+## Problem
+How do we start using the flow without fixing wrong assumptions about the tool?
 
-## Alternativas
-| Opção | Resolve | Custa | Bloqueia |
+## Alternatives
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. Escrever `.specify/` à mão seguindo a convenção documentada (escolhida) | Funciona já; fácil de reconciliar | Pode divergir da versão real | — |
-| B. Esperar para rodar `specify init` | Estrutura oficial | Bloqueia o resto | Fases 1–7 |
-| C. Não usar Spec Kit | Menos dependência | Perde roteiro e templates | Objetivo de aprendizado |
+| A. Write `.specify/` by hand following the documented convention (chosen) | Works now; easy to reconcile | May diverge from the real version | — |
+| B. Wait to run `specify init` | Official structure | Blocks everything else | Phases 1–7 |
+| C. Do not use Spec Kit | Less dependency | Loses the roadmap and templates | The learning goal |
 
-## Decisão
-Opção A. Estrutura em `.specify/` documentada em `.specify/README.md`. **Pendência aberta:** rodar `specify init --here --integration claude` numa cópia, com versão fixada, comparar e registrar a versão neste ADR (que então ganha uma seção 'Versão fixada').
+## Decision
+Option A. Structure in `.specify/` documented in `.specify/README.md`. **Open item:** run `specify init --here --integration claude` on a copy, with a pinned version, compare and record the version in this ADR (which then gains a "Pinned version" section).
 
-## Justificativa
-Decisão reversível e de baixo custo; o valor está nos artefatos (Constitution, templates), não no gerador.
+## Rationale
+A reversible, low-cost decision; the value is in the artifacts (Constitution, templates), not in the generator.
 
-## Consequências
-Negativas: os comandos `/speckit.*` podem esperar arquivos diferentes dos escritos aqui. Mitigação: reconciliação documentada. Afeta: `.specify/**`.
+## Consequences
+Negative: the `/speckit.*` commands may expect different files from the ones written here. Mitigation: documented reconciliation. Affects: `.specify/**`.
 
-## Verificação
-Revisão obrigatória na primeira vez em que `/speckit.*` for executado.
+## Verification
+Mandatory review the first time `/speckit.*` is run.

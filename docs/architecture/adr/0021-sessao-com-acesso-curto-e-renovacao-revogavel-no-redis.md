@@ -1,51 +1,51 @@
-# ADR-0021: Sessão com acesso curto (JWT, 15 min) e renovação opaca e revogável no Redis
+# ADR-0021: Session with a short access token (JWT, 15 min) and an opaque, revocable refresh token in Redis
 
-- Status: Aceito
-- Data: 2026-11-11
-- Decisores: dono do projeto (opção "token curto + refresh" e "sem Redis a renovação é negada", 2026-11-11) e Claude
-- Origem: nova (ratifica e substitui o ADR-0007)
-- Capacidades: AUTH, AUTZ
-- Substitui: ADR-0007
+- Status: Accepted
+- Date: 2026-11-11
+- Deciders: project owner (options "short token + refresh" and "without Redis, refresh is denied", 2026-11-11) and Claude
+- Origin: new (ratifies and supersedes ADR-0007)
+- Capabilities: AUTH, AUTZ
+- Supersedes: ADR-0007
 
-## Contexto
+## Context
 
-O ADR-0007 (Inferido): JWT HS256 de 7 dias em cookie httpOnly, sem revogação. A auditoria de 2026-11-11 mostrou que um admin rebaixado, um usuário excluído ou uma sessão sequestrada continuam valendo por até 7 dias, e que trocar a senha não encerra nenhuma sessão. O dono escolheu token de acesso curto com renovação revogável (P02) e, sem Redis, renovação negada. O projeto roda com uma instância.
+ADR-0007 (Inferred): a 7-day HS256 JWT in an httpOnly cookie, without revocation. The audit of 2026-11-11 showed that a demoted admin, a deleted user or a hijacked session stay valid for up to 7 days, and that changing the password ends no session. The owner chose a short access token with a revocable refresh (P02) and, without Redis, refresh denied. The project runs with one instance.
 
-## Problema
+## Problem
 
-Como permitir revogar sessões e propagar mudança de papel sem consultar o banco a cada requisição?
+How do we allow revoking sessions and propagating a role change without querying the database on every request?
 
-## Alternativas
+## Alternatives
 
-| Opção | Resolve | Custa | Bloqueia |
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. JWT de acesso curto + token de renovação opaco no Redis (escolhida) | Revogação e releitura do papel a cada renovação; verificação do acesso continua sem rede | Depende do Redis para renovar; um cookie a mais; janela de até 15 min para acesso já emitido | — |
-| B. Coluna de versão de sessão em `Usuario` | Revogação imediata sem Redis | Uma consulta ao banco por requisição autenticada (ou cache) | Verificação sem rede no middleware (edge) |
-| C. Manter o ADR-0007 | Nenhuma mudança | Sem revogação por 7 dias | Qualquer resposta a sessão sequestrada |
+| A. Short access JWT + opaque refresh token in Redis (chosen) | Revocation and re-reading the role at each refresh; access verification still needs no network | Depends on Redis to refresh; one more cookie; a window of up to 15 min for an access token already issued | — |
+| B. Session version column on `Usuario` | Immediate revocation without Redis | A database query per authenticated request (or a cache) | Network-free verification in the middleware (edge) |
+| C. Keep ADR-0007 | No change | No revocation for 7 days | Any response to a hijacked session |
 
-## Decisão
+## Decision
 
-Opção A.
+Option A.
 
-- **Acesso:** JWT HS256, cookie `token`, 15 minutos (`lib/auth/constants.ts`). Verificado sem consultar o Redis, inclusive no middleware.
-- **Renovação:** 256 bits aleatórios, cookie `refresh` (httpOnly, `SameSite=lax`, `secure` em produção, 7 dias). No Redis só fica o hash SHA-256 (`refresh:<hash>` → id do usuário; `refresh_usuario:<id>` → conjunto de hashes).
-- **Uso único (rotação):** renovar apaga o token com `GETDEL` e emite um par novo; dois pedidos simultâneos com o mesmo token renovam só um. O papel do usuário é relido do banco.
-- **Revogação:** logout revoga o token da sessão; trocar a senha e excluir o usuário revogam todos os dele.
-- **Sem Redis:** login funciona, sem token de renovação (a sessão vive 15 min); renovar responde 503 e limpa os cookies (o usuário entra de novo).
-- **Páginas:** o middleware, ao ver acesso expirado com `refresh` presente, redireciona para `GET /api/auth/refresh?next=…`, que renova e volta (só caminho local).
-- **Compatibilidade:** sessões anteriores (cookie `token` de 7 dias, sem `refresh`) continuam valendo até expirar; para elas o `POST /api/auth/refresh` mantém o comportamento antigo (reemite se o papel mudou).
+- **Access:** HS256 JWT, `token` cookie, 15 minutes (`lib/auth/constants.ts`). Verified without querying Redis, including in the middleware.
+- **Refresh:** 256 random bits, `refresh` cookie (httpOnly, `SameSite=lax`, `secure` in production, 7 days). Only the SHA-256 hash is kept in Redis (`refresh:<hash>` → user id; `refresh_user:<id>` → set of hashes).
+- **Single use (rotation):** refreshing deletes the token with `GETDEL` and issues a new pair; two simultaneous requests with the same token refresh only one. The user's role is re-read from the database.
+- **Revocation:** logout revokes the session's token; changing the password and deleting the user revoke all of the user's.
+- **Without Redis:** login works, without a refresh token (the session lives 15 min); refresh responds 503 and clears the cookies (the user signs in again).
+- **Pages:** the middleware, on seeing an expired access token with `refresh` present, redirects to `GET /api/auth/refresh?next=…`, which refreshes and returns (local path only).
+- **Compatibility:** earlier sessions (7-day `token` cookie, without `refresh`) stay valid until they expire; for them `POST /api/auth/refresh` keeps the old behavior (reissues if the role changed).
 
-## Justificativa
+## Rationale
 
-Troca disponibilidade do Redis para renovação (aceita pelo dono) por revogação real e por uma janela máxima conhecida (15 min) entre mudança de papel e efeito. O valor de 15 minutos é inicial, sem medição de uso ❔.
+It trades Redis availability for refresh (accepted by the owner) for real revocation and a known maximum window (15 min) between a role change and its effect. The 15-minute value is initial, with no usage measurement ❔.
 
-## Consequências
+## Consequences
 
-- Em ambiente com Redis instável, usuários logados são deslogados a cada 15 minutos.
-- Acesso já emitido não é revogável antes de expirar (máx. 15 min).
-- Trocar a PRÓPRIA senha exige `senhaAtual` (REQ-AUTH-21).
-- Afeta: `lib/auth/**`, `services/session.service.ts`, `services/user.service.ts`, `app/api/auth/**`, `app/api/users/route.ts`, `middleware.ts`.
+- In an environment with unstable Redis, logged-in users are logged out every 15 minutes.
+- An access token already issued cannot be revoked before it expires (max. 15 min).
+- Changing one's OWN password requires `senhaAtual` (REQ-AUTH-21).
+- Affects: `lib/auth/**`, `services/session.service.ts`, `services/user.service.ts`, `app/api/auth/**`, `app/api/users/route.ts`, `middleware.ts`.
 
-## Verificação
+## Verification
 
-`tests/integration/session.test.ts`: serviço com armazém em memória; armazém real no Redis (hash, uso único, revogação); middleware; e, com banco, cookies do login e senha atual.
+`tests/integration/session.test.ts`: service with an in-memory store; real store in Redis (hash, single use, revocation); middleware; and, with a database, login cookies and current password.

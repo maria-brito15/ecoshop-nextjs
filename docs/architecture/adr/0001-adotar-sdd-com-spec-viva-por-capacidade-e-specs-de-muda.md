@@ -1,32 +1,32 @@
-# ADR-0001: Adotar SDD com spec viva por capacidade e specs de mudança do Spec Kit
+# ADR-0001: Adopt SDD with a living spec per capability and Spec Kit change specs
 
-- Status: Aceito
-- Data: 2026-11-10
-- Decisores: Arthur (autorização geral) e Claude
-- Origem: nova
-- Capacidades: todas
+- Status: Accepted
+- Date: 2026-11-10
+- Deciders: Arthur (general authorization) and Claude
+- Origin: new
+- Capabilities: all
 
-## Contexto
-O EcoShop é um sistema existente (brownfield). O diagnóstico (docs/discovery/2026-11-baseline) mostra intenção espalhada no README e nos comentários, divergindo do código (ex.: D1), sem testes e sem registro de decisões. O Spec Kit gera uma spec por feature, que envelhece depois do merge.
+## Context
+EcoShop is an existing (brownfield) system. The diagnosis (docs/discovery/2026-11-baseline) shows intent scattered across the README and the comments, diverging from the code (e.g. D1), with no tests and no record of decisions. Spec Kit generates one spec per feature, which ages after the merge.
 
-## Problema
-Como ter uma fonte de verdade do comportamento que não envelheça, mantendo o fluxo de comandos do Spec Kit?
+## Problem
+How do we get a source of truth for behavior that does not age, while keeping the Spec Kit command flow?
 
-## Alternativas
-| Opção | Resolve | Custa | Bloqueia |
+## Alternatives
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. Só Spec Kit (spec por feature) | Fluxo pronto | Specs antigas envelhecem; ninguém sabe o comportamento atual sem ler todas | Visão do presente |
-| B. Spec Kit + spec viva por capacidade (escolhida) | Presente sempre legível; histórico imutável | Passo de consolidação em todo PR | Nada relevante |
-| C. Adicionar OpenSpec | Spec viva nativa por deltas | Segunda ferramenta e segundo conjunto de artefatos-fonte | Simplicidade |
+| A. Spec Kit only (one spec per feature) | Ready-made flow | Old specs age; nobody knows the current behavior without reading them all | A view of the present |
+| B. Spec Kit + living spec per capability (chosen) | The present is always readable; immutable history | A consolidation step in every PR | Nothing relevant |
+| C. Add OpenSpec | Native living spec through deltas | A second tool and a second set of source artifacts | Simplicity |
 
-## Decisão
-Opção B. `specs/NNN-*` (Spec Kit) registra uma mudança e fica imutável após o merge; `docs/capabilities/<cap>/` é a spec viva, atualizada na consolidação (gate G4). Três trilhas proporcionais ao tamanho da mudança (doc 03 do pacote de planejamento, preservado em docs/discovery).
+## Decision
+Option B. `specs/NNN-*` (Spec Kit) records a change and is immutable after the merge; `docs/capabilities/<cap>/` is the living spec, updated at consolidation (gate G4). Three tracks proportional to the size of the change (doc 03 of the planning package, preserved in docs/discovery).
 
-## Justificativa
-Dá a ideia de 'lei consolidada + emendas' sem segunda ferramenta, e mantém um único artefato-fonte por tipo de conhecimento.
+## Rationale
+It gives the idea of "consolidated law + amendments" without a second tool, and keeps a single source artifact per kind of knowledge.
 
-## Consequências
-Positivas: o presente fica legível; drift detectável por script. Negativas: custo de consolidação em cada PR; exige disciplina nas trilhas. Afeta: toda mudança de comportamento.
+## Consequences
+Positive: the present stays readable; drift is detectable by script. Negative: consolidation cost in every PR; it demands discipline in the tracks. Affects: every behavior change.
 
-## Verificação
-`npm run sdd:check` no CI; template de PR exige capacidades e REQs.
+## Verification
+`npm run sdd:check` in CI; the PR template requires capabilities and REQs.

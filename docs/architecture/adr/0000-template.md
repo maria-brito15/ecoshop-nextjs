@@ -1,30 +1,30 @@
-# ADR-NNNN: <decisão em uma frase>
+# ADR-NNNN: <decision in one sentence>
 
-- Status: Proposto | Aceito | Inferido | Substituído
-- Data: AAAA-MM-DD
-- Decisores: <quem>
-- Origem: nova | inferida do código
-- Capacidades: <ex.: AUTZ, PERF>
-- Substitui: ADR-XXXX            (opcional)
-- Substituído por: ADR-XXXX      (opcional; só em ADR com Status: Substituído)
+- Status: Proposed | Accepted | Inferred | Superseded
+- Date: YYYY-MM-DD
+- Deciders: <who>
+- Origin: new | inferred from the code
+- Capabilities: <e.g.: AUTH, PERF>
+- Supersedes: ADR-XXXX            (optional)
+- Superseded by: ADR-XXXX         (optional; only on an ADR with Status: Superseded)
 
-## Contexto
-<Forças reais: requisitos, restrições, evidências no código.>
+## Context
+<Real forces: requirements, constraints, evidence in the code.>
 
-## Problema
-<A pergunta que a decisão responde.>
+## Problem
+<The question the decision answers.>
 
-## Alternativas
-| Opção | Resolve | Custa | Bloqueia |
+## Alternatives
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
 
-## Decisão
+## Decision
 
-## Justificativa
-<Qual trade-off foi aceito.>
+## Rationale
+<Which trade-off was accepted.>
 
-## Consequências
-<Positivas, negativas, o que fica bloqueado; arquivos, specs e testes afetados.>
+## Consequences
+<Positive, negative, what stays blocked; files, specs and tests affected.>
 
-## Verificação
-<Como saberemos que a decisão está sendo seguida.>
+## Verification
+<How we will know the decision is being followed.>

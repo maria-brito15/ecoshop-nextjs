@@ -1,33 +1,33 @@
-# ADR-0006: PostgreSQL com Prisma 7 e driver adapter `pg`
+# ADR-0006: PostgreSQL with Prisma 7 and the `pg` driver adapter
 
-- Status: Inferido
-- Data: desconhecida (sem histórico git no pacote analisado)
-- Decisores: desconhecido (decisão histórica)
-- Origem: inferida do código
-- Capacidades: todas
+- Status: Inferred
+- Date: unknown (no git history in the analyzed package)
+- Deciders: unknown (historical decision)
+- Origin: inferred from the code
+- Capabilities: all
 
-> **Decisão inferida:** o código mostra este estado; não há prova de que foi uma escolha formal. As alternativas foram reconstruídas. Pode ser ratificada (novo ADR Aceito) ou substituída.
+> **Inferred decision:** the code shows this state; there is no proof that it was a formal choice. The alternatives were reconstructed. It can be ratified (a new Accepted ADR) or superseded.
 
-## Contexto
-Evidência: `prisma/schema.prisma`, `lib/db.ts` (`PrismaPg` + `pg.Pool`), `prisma.config.ts`, imagem `postgres:16-alpine`.
+## Context
+Evidence: `prisma/schema.prisma`, `lib/db.ts` (`PrismaPg` + `pg.Pool`), `prisma.config.ts`, image `postgres:16-alpine`.
 
-## Problema
-Qual banco e acesso a dados?
+## Problem
+Which database and data access?
 
-## Alternativas
-| Opção | Resolve | Custa | Bloqueia |
+## Alternatives
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. Postgres + Prisma (atual) | Tipagem forte, migrations | Cliente gerado, peso do Prisma | — |
-| B. Drizzle | SQL mais explícito | Reescrever services | — |
+| A. Postgres + Prisma (current) | Strong typing, migrations | Generated client, Prisma's weight | — |
+| B. Drizzle | More explicit SQL | Rewriting services | — |
 
-## Decisão
-Ratificar A.
+## Decision
+Ratify A.
 
-## Justificativa
-Combina com o domínio relacional (FKs, unicidade).
+## Rationale
+It fits the relational domain (FKs, uniqueness).
 
-## Consequências
-Dependência do `prisma generate` no build e no CI. Afeta: `prisma/**`, `lib/db.ts`.
+## Consequences
+Dependence on `prisma generate` in the build and in CI. Affects: `prisma/**`, `lib/db.ts`.
 
-## Verificação
-`prisma migrate deploy` nos testes e no CI.
+## Verification
+`prisma migrate deploy` in the tests and in CI.

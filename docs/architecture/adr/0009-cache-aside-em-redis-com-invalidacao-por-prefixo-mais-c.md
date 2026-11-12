@@ -1,34 +1,34 @@
-# ADR-0009: Cache-aside em Redis com invalidação por prefixo, mais cache de 30 s no cliente
+# ADR-0009: Cache-aside in Redis with prefix invalidation, plus a 30 s client cache
 
-- Status: Inferido
-- Data: desconhecida (sem histórico git no pacote analisado)
-- Decisores: desconhecido (decisão histórica)
-- Origem: inferida do código
-- Capacidades: CAT, PROD, REF
+- Status: Inferred
+- Date: unknown (no git history in the analyzed package)
+- Deciders: unknown (historical decision)
+- Origin: inferred from the code
+- Capabilities: CAT, PROD, REF
 
-> **Decisão inferida:** o código mostra este estado; não há prova de que foi uma escolha formal. As alternativas foram reconstruídas. Pode ser ratificada (novo ADR Aceito) ou substituída.
+> **Inferred decision:** the code shows this state; there is no proof that it was a formal choice. The alternatives were reconstructed. It can be ratified (a new Accepted ADR) or superseded.
 
-## Contexto
-Evidência: `lib/cache/*` (`comCache`, `PREFIX`, `TTL`), invalidação por `SCAN`+`DEL`. Lacuna: produtos embutem marca e categoria, mas mudar uma marca não invalida `produtos:*`.
+## Context
+Evidence: `lib/cache/*` (`withCache`, `PREFIX`, `TTL`), invalidation by `SCAN`+`DEL`. Gap: products embed the brand and category, but changing a brand does not invalidate `produtos:*`.
 
-## Problema
-Como reduzir leituras no banco mantendo coerência aceitável?
+## Problem
+How do we reduce database reads while keeping acceptable consistency?
 
-## Alternativas
-| Opção | Resolve | Custa | Bloqueia |
+## Alternatives
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. Cache-aside por prefixo (atual) | Simples | Invalidação cruzada manual e esquecível | — |
-| B. Tags por entidade | Invalidação precisa | Mais código | — |
-| C. Sem cache | Consistência total | Mais carga no banco | — |
+| A. Cache-aside by prefix (current) | Simple | Manual, forgettable cross invalidation | — |
+| B. Tags per entity | Precise invalidation | More code | — |
+| C. No cache | Full consistency | More load on the database | — |
 
-## Decisão
-Manter A como histórica; política de consistência por recurso pendente (P05, com medição).
+## Decision
+Keep A as historical; the per-resource consistency policy is pending (P05, with measurement).
 
-## Justificativa
-Inferida.
+## Rationale
+Inferred.
 
-## Consequências
-Dado velho por até 3–5 min após mutações cruzadas. Afeta: `lib/cache/**`, `services/**`.
+## Consequences
+Stale data for up to 3–5 min after cross mutations. Affects: `lib/cache/**`, `services/**`.
 
-## Verificação
-Testes 'mutação X → leitura Y' (Art. IX).
+## Verification
+"Mutation X → read Y" tests (Art. IX).

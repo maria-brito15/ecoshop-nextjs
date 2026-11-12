@@ -1,31 +1,31 @@
-# ADR-0008: Autorização em duas camadas: middleware por prefixo e guard por handler
+# ADR-0008: Authorization in two layers: middleware by prefix and a guard per handler
 
-- Status: Substituído
-- Data: 2026-11-10
-- Decisores: Arthur (autorização geral) e Claude
-- Origem: inferida do código
-- Capacidades: AUTZ
-- Substituído por: ADR-0017
+- Status: Superseded
+- Date: 2026-11-10
+- Deciders: Arthur (general authorization) and Claude
+- Origin: inferred from the code
+- Capabilities: AUTZ
+- Superseded by: ADR-0017
 
-## Contexto
-Evidência: `middleware.ts` + `config/protected-routes.ts` (por prefixo) e `app/_middleware/auth.ts` (`requireAuth`/`requireAdmin`). Divergiam: o middleware exigia ADMIN em `/api/usuarios/*`, enquanto o handler permitia o próprio usuário (D1).
+## Context
+Evidence: `middleware.ts` + `config/protected-routes.ts` (by prefix) and `app/_middleware/auth.ts` (`requireAuth`/`requireAdmin`). They diverged: the middleware required ADMIN on `/api/usuarios/*`, while the handler allowed the user themselves (D1).
 
-## Problema
-Onde mora a decisão de quem pode o quê?
+## Problem
+Where does the decision of who can do what live?
 
-## Alternativas
-| Opção | Resolve | Custa | Bloqueia |
+## Alternatives
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. Duas camadas (atual) | Defesa em profundidade | Regras duplicadas que divergem | — |
+| A. Two layers (current) | Defense in depth | Duplicated rules that diverge | — |
 
-## Decisão
-Descrição histórica do estado antes do ADR-0017, que a substitui.
+## Decision
+Historical description of the state before ADR-0017, which supersedes it.
 
-## Justificativa
+## Rationale
 —
 
-## Consequências
-Causa do defeito D1.
+## Consequences
+Cause of defect D1.
 
-## Verificação
+## Verification
 —

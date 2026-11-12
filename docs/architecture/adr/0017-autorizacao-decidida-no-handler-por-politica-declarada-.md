@@ -1,33 +1,33 @@
-# ADR-0017: Autorização decidida no handler por política declarada; middleware só filtra páginas e rotas só-admin
+# ADR-0017: Authorization decided in the handler by declared policy; the middleware only filters pages and admin-only routes
 
-- Status: Aceito
-- Data: 2026-11-10
-- Decisores: Arthur (autorização geral) e Claude
-- Origem: nova
-- Capacidades: AUTZ, PERF
-- Substitui: ADR-0008
+- Status: Accepted
+- Date: 2026-11-10
+- Deciders: Arthur (general authorization) and Claude
+- Origin: new
+- Capabilities: AUTZ, PERF
+- Supersedes: ADR-0008
 
-## Contexto
-D1: o middleware exigia ADMIN em todo `/api/usuarios/*`, mas `GET/PUT /api/usuarios/[id]` foi escrito para permitir o próprio usuário; a página de perfil o usa. O middleware (Edge) não conhece o dono do recurso. Aprovação: autorização geral de Arthur em 2026-11-10 para executar o roadmap; **revisar** se quiser outra opção.
+## Context
+D1: the middleware required ADMIN on every `/api/usuarios/*`, but `GET/PUT /api/usuarios/[id]` was written to allow the user themselves; the profile page uses it. The middleware (Edge) does not know the owner of the resource. Approval: Arthur's general authorization on 2026-11-10 to run the roadmap; **review** if another option is wanted.
 
-## Problema
-Onde mora a decisão de acesso por recurso?
+## Problem
+Where does the per-resource access decision live?
 
-## Alternativas
-| Opção | Resolve | Custa | Bloqueia |
+## Alternatives
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. No handler (escolhida) | Uma fonte de verdade por rota; suporta 'próprio recurso' | Cada handler precisa declarar o guard; o teste da matriz cobre | — |
-| B. Só no middleware | Centralizado | Não sabe o dono do recurso no Edge | Regras por recurso |
-| C. Duas camadas geradas da mesma tabela | Defesa em profundidade | Complexidade | — |
+| A. In the handler (chosen) | One source of truth per route; supports "own resource" | Each handler must declare the guard; the matrix test covers it | — |
+| B. Only in the middleware | Centralized | Does not know the resource owner on the Edge | Per-resource rules |
+| C. Two layers generated from the same table | Defense in depth | Complexity | — |
 
-## Decisão
-Opção A. O middleware passa a exigir apenas **autenticação** em `/api/usuarios` (401 sem login); o nível de acesso (admin ou próprio) é decidido pelo handler. A página `/painel` continua restrita a ADMIN no middleware (não há 'próprio recurso' ali).
+## Decision
+Option A. The middleware now requires only **authentication** on `/api/usuarios` (401 without login); the access level (admin or own) is decided by the handler. The `/painel` page stays restricted to ADMIN in the middleware (there is no "own resource" there).
 
-## Justificativa
-BR-06 ('usuário vê/edita só o próprio perfil, exceto ADMIN') exige conhecer o recurso.
+## Rationale
+BR-06 ("a user sees/edits only their own profile, except ADMIN") requires knowing the resource.
 
-## Consequências
-Rotas novas devem declarar acesso no handler; matriz coberta por teste. Afeta: `config/protected-routes.ts`, `api/usuarios/**`.
+## Consequences
+New routes must declare access in the handler; the matrix is covered by a test. Affects: `config/protected-routes.ts`, `api/usuarios/**`.
 
-## Verificação
-Testes REQ-AUTZ-*/REQ-PERF-* em `tests/integration`.
+## Verification
+REQ-AUTZ-*/REQ-PERF-* tests in `tests/integration`.

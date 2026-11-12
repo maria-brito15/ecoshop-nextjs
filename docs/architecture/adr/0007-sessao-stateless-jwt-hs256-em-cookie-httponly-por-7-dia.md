@@ -1,35 +1,35 @@
-# ADR-0007: Sessão stateless: JWT HS256 em cookie httpOnly por 7 dias, sem revogação
+# ADR-0007: Stateless session: JWT HS256 in an httpOnly cookie for 7 days, without revocation
 
-- Status: Substituído
-- Substituído por: ADR-0021
-- Data: desconhecida (sem histórico git no pacote analisado)
-- Decisores: desconhecido (decisão histórica)
-- Origem: inferida do código
-- Capacidades: AUTH, AUTZ
+- Status: Superseded
+- Superseded by: ADR-0021
+- Date: unknown (no git history in the analyzed package)
+- Deciders: unknown (historical decision)
+- Origin: inferred from the code
+- Capabilities: AUTH, AUTZ
 
-> **Decisão inferida:** o código mostra este estado; não há prova de que foi uma escolha formal. As alternativas foram reconstruídas. Pode ser ratificada (novo ADR Aceito) ou substituída.
+> **Inferred decision:** the code shows this state; there is no proof that it was a formal choice. The alternatives were reconstructed. It can be ratified (a new Accepted ADR) or superseded.
 
-## Contexto
-Evidência: `lib/auth/jwt.ts` (`setExpirationTime('7d')`, cookie `httpOnly`, `sameSite: lax`); `/api/auth/refresh` só reemite se o tipo mudou. O README diz `SameSite=Strict`, o código usa `lax`.
+## Context
+Evidence: `lib/auth/jwt.ts` (`setExpirationTime('7d')`, `httpOnly` cookie, `sameSite: lax`); `/api/auth/refresh` only reissues if the type changed. The README says `SameSite=Strict`, the code uses `lax`.
 
-## Problema
-Como manter sessão e quão rápido uma mudança de papel ou exclusão deve valer?
+## Problem
+How do we keep a session, and how fast should a role change or a deletion take effect?
 
-## Alternativas
-| Opção | Resolve | Custa | Bloqueia |
+## Alternatives
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. JWT longo sem revogação (atual) | Simples; funciona no Edge | Usuário excluído ou rebaixado mantém acesso até 7 dias | — |
-| B. JWT curto + refresh em Redis/banco | Revogação rápida | Mais componentes | — |
-| C. Sessão em banco | Revogação imediata | Leitura de banco por requisição | Edge sem acesso ao banco |
+| A. Long JWT without revocation (current) | Simple; works on the Edge | A deleted or demoted user keeps access for up to 7 days | — |
+| B. Short JWT + refresh in Redis/database | Fast revocation | More components | — |
+| C. Session in the database | Immediate revocation | A database read per request | Edge without database access |
 
-## Decisão
-Manter A como histórica. Decisão definitiva pendente (P02): ainda sem produção, é o melhor momento de decidir.
+## Decision
+Keep A as historical. The definitive decision is pending (P02): with no production yet, it is the best moment to decide.
 
-## Justificativa
-Inferida: simplicidade.
+## Rationale
+Inferred: simplicity.
 
-## Consequências
-Risco aceito implicitamente. Afeta: `lib/auth/**`, `middleware.ts`.
+## Consequences
+Implicitly accepted risk. Affects: `lib/auth/**`, `middleware.ts`.
 
-## Verificação
-REQ-AUTH em docs/capabilities/autenticacao.
+## Verification
+REQ-AUTH in docs/capabilities/autenticacao.

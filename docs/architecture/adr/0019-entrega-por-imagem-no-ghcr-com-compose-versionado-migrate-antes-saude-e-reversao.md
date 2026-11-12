@@ -1,50 +1,50 @@
-# ADR-0019: Entrega por imagem no GHCR com compose versionado; migrations antes, verificação de saúde e reversão
+# ADR-0019: Delivery by image on GHCR with a versioned compose; migrations first, health check and rollback
 
-- Status: Aceito
-- Data: 2026-11-11
-- Decisores: dono do projeto (G1 da `specs/008-operacao-segura/spec.md` e autonomia técnica concedida em 2026-11-11) e Claude
-- Origem: nova (ratifica e detalha o ADR-0013)
-- Capacidades: OPS
-- Substitui: ADR-0013
+- Status: Accepted
+- Date: 2026-11-11
+- Deciders: project owner (G1 of `specs/008-operacao-segura/spec.md` and the technical autonomy granted on 2026-11-11) and Claude
+- Origin: new (ratifies and details ADR-0013)
+- Capabilities: OPS
+- Supersedes: ADR-0013
 
-## Contexto
+## Context
 
-O ADR-0013 (Inferido) descrevia o estado do código: imagem no ghcr.io e servidor por SSH. A auditoria de 2026-11-11 mostrou que esse desenho não era reproduzível a partir do repositório: o deploy fazia `docker compose pull app` com um compose que só tinha `build:`, subia a aplicação nova **antes** de aplicar as migrations, não verificava a saúde nem sabia voltar, dependia de um compose do servidor fora do repositório e de uma action de terceiros para o SSH. O destino serve HTTPS (resposta do dono). O projeto ainda não está em produção.
+ADR-0013 (Inferred) described the state of the code: an image on ghcr.io and a server over SSH. The audit of 2026-11-11 showed that this design was not reproducible from the repository: the deploy ran `docker compose pull app` with a compose that only had `build:`, started the new application **before** applying the migrations, did not check health nor know how to go back, depended on a compose on the server outside the repository and on a third-party action for SSH. The target serves HTTPS (owner's answer). The project is not in production yet.
 
-## Problema
+## Problem
 
-Como publicar a aplicação de forma reproduzível, sem janela de código novo com schema velho, e com volta automática à versão anterior se a nova não ficar saudável?
+How do we publish the application reproducibly, without a window of new code with the old schema, and with an automatic return to the previous version if the new one does not become healthy?
 
-## Alternativas
+## Alternatives
 
-| Opção | Resolve | Custa | Bloqueia |
+| Option | Solves | Costs | Blocks |
 |---|---|---|---|
-| A. Compose de publicação versionado + imagens no GHCR + script de deploy versionado, por ssh/scp nativos (escolhida) | Entrega reproduzível e testável a partir do repositório; ordem migrate → up → saúde → reversão; sem action de terceiros | Segredo novo `SSH_KNOWN_HOSTS`; duas imagens por commit (app e migrator); operação manual do servidor continua | — |
-| B. Manter o compose do servidor fora do repositório e a action `appleboy/ssh-action` | Nenhuma mudança | Entrega não reproduzível nem testável; código de terceiros na cadeia de entrega | Qualquer garantia sobre a ordem do deploy |
-| C. PaaS (ex.: Vercel + Postgres gerenciado) | Menos operação | Redis e filesystem de fotos a repensar (ADR-0011) | — |
+| A. Versioned publishing compose + images on GHCR + versioned deploy script, via native ssh/scp (chosen) | Delivery that is reproducible and testable from the repository; order migrate → up → health → rollback; no third-party action | A new secret `SSH_KNOWN_HOSTS`; two images per commit (app and migrator); manual server operation remains | — |
+| B. Keep the compose on the server outside the repository and the `appleboy/ssh-action` action | No change | Delivery neither reproducible nor testable; third-party code in the delivery chain | Any guarantee about the deploy order |
+| C. PaaS (e.g. Vercel + managed Postgres) | Less operation | Redis and the photo filesystem to rethink (ADR-0011) | — |
 
-## Decisão
+## Decision
 
-Opção A.
+Option A.
 
-- `docker-compose.prod.yml` (versionado) usa as imagens do GHCR por tag de commit (`sha-<7 caracteres>`); a imagem de migrations é a do alvo `migrator` do Dockerfile (`<tag>-migrator`), porque o alvo `runner` não tem o CLI do Prisma.
-- `scripts/deploy/deploy.sh` roda no servidor: baixa as imagens, aplica as migrations (se falhar, a aplicação antiga não é tocada), sobe a aplicação, verifica `GET /api/health` por até 60 s e, se falhar, volta à tag anterior e sai com erro.
-- O job de deploy do CI usa `scp` e `ssh` nativos com verificação estrita do host (`SSH_KNOWN_HOSTS`). Os segredos de execução ficam só no `.env` do servidor.
-- A reversão troca só a imagem: **não desfaz migrations**. Regra: toda migration é compatível com a versão anterior da aplicação (adiciona antes de remover).
-- O TLS termina num proxy reverso fora do compose, apontando para `127.0.0.1:3000`; a aplicação não é exposta diretamente.
-- Produção começa com catálogo vazio; o ADMIN é criado por um passo único e explícito (perfil `bootstrap`).
+- `docker-compose.prod.yml` (versioned) uses the GHCR images by commit tag (`sha-<7 characters>`); the migrations image is the Dockerfile's `migrator` target (`<tag>-migrator`), because the `runner` target does not have the Prisma CLI.
+- `scripts/deploy/deploy.sh` runs on the server: pulls the images, applies the migrations (if they fail, the old application is not touched), starts the application, checks `GET /api/health` for up to 60 s and, if it fails, goes back to the previous tag and exits with an error.
+- The CI deploy job uses native `scp` and `ssh` with strict host verification (`SSH_KNOWN_HOSTS`). The runtime secrets stay only in the server's `.env`.
+- The rollback swaps only the image: it does **not undo migrations**. Rule: every migration is compatible with the previous version of the application (add before removing).
+- TLS terminates at a reverse proxy outside the compose, pointing to `127.0.0.1:3000`; the application is not exposed directly.
+- Production starts with an empty catalog; the ADMIN is created by a single explicit step (the `bootstrap` profile).
 
-## Justificativa
+## Rationale
 
-Aceita-se um segredo e uma imagem a mais em troca de uma entrega verificável: a ordem do deploy e a ausência de segredo padrão passam a ser checadas por testes e pelo CI, não por disciplina.
+We accept one more secret and one more image in exchange for a verifiable delivery: the deploy order and the absence of a default secret are now checked by tests and by CI, not by discipline.
 
-## Consequências
+## Consequences
 
-- Servidor precisa de `curl`, `docker compose` e do `.env` com as variáveis listadas no cabeçalho de `docker-compose.prod.yml`.
-- Reversão automática cobre falha da aplicação, não de dados; uma migration incompatível exige aviso na PR (caixa no template).
-- Até a spec 011, `/api/health` ainda devolve 503 quando só o Redis cai; nesse caso o deploy reverte (lado conservador).
-- Afeta: `docker-compose.yml`, `docker-compose.override.yml`, `docker-compose.prod.yml`, `Dockerfile`, `.github/workflows/ci.yml`, `.github/dependabot.yml`, `scripts/deploy/deploy.sh`, `.github/pull_request_template.md`.
+- The server needs `curl`, `docker compose` and the `.env` with the variables listed in the header of `docker-compose.prod.yml`.
+- Automatic rollback covers an application failure, not a data one; an incompatible migration requires a notice in the PR (a checkbox in the template).
+- Until spec 011, `/api/health` still returns 503 when only Redis goes down; in that case the deploy rolls back (the conservative side).
+- Affects: `docker-compose.yml`, `docker-compose.override.yml`, `docker-compose.prod.yml`, `Dockerfile`, `.github/workflows/ci.yml`, `.github/dependabot.yml`, `scripts/deploy/deploy.sh`, `.github/pull_request_template.md`.
 
-## Verificação
+## Verification
 
-`tests/integration/operations-config.test.ts` (ordem do script, ausência de `appleboy`, `SSH_KNOWN_HOSTS`, imagem sem `build`, digests); o job do CI valida os compose. A reversão real só pode ser ensaiada num servidor: até lá REQ-OPS-10 fica ◐ no `status.md`.
+`tests/integration/operations-config.test.ts` (script order, absence of `appleboy`, `SSH_KNOWN_HOSTS`, image without `build`, digests); the CI job validates the composes. The real rollback can only be rehearsed on a server: until then REQ-OPS-10 stays ◐ in `status.md`.
