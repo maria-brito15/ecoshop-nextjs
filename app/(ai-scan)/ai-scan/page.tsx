@@ -1,9 +1,9 @@
-// app/(ia-scan)/ia-scan/page.tsx
+// app/(ai-scan)/ai-scan/page.tsx
 
 /**
  * ECOSCAN AI PAGE
  *
- * Route: "/ia-scan"
+ * Route: "/ai-scan"
  *
  * Main page of EcoShop's artificial intelligence feature.
  * It lets users take photos of waste and get information
@@ -23,7 +23,7 @@
  * - Failure: shows a suggestion to improve the photo
  *
  * @see lib/hooks/useAI.ts - useScan hook
- * @see app/api/ia/scan/route.ts - API endpoint
+ * @see app/api/ai/scan/route.ts - API endpoint
  */
 
 "use client";
@@ -72,7 +72,7 @@ function getConfidenceColors(conf: number) {
 }
 
 // ----------------------------------------------------------------------------
-// COMPONENTES DE RESULTADO
+// RESULT COMPONENTS
 // ----------------------------------------------------------------------------
 
 /**
@@ -131,28 +131,28 @@ function SustainabilityText({ value }: { value: unknown }) {
 }
 
 function isSuccess(data: ScanResponse): data is ScanResponse & {
-  sucesso: true;
+  success: true;
   material: string;
-  confianca: number;
-  analise_sustentabilidade: AiAnalysis;
+  confidence: number;
+  sustainability_analysis: AiAnalysis;
 } {
   return (
-    data.sucesso === true &&
+    data.success === true &&
     data.material != null &&
-    data.confianca != null &&
-    data.analise_sustentabilidade != null
+    data.confidence != null &&
+    data.sustainability_analysis != null
   );
 }
 
 function isInsufficient(data: ScanResponse): data is ScanResponse & {
-  sucesso: false;
-  confianca: number;
-  confianca_minima_requerida: number;
+  success: false;
+  confidence: number;
+  required_minimum_confidence: number;
 } {
   return (
-    data.sucesso === false &&
-    data.confianca != null &&
-    data.confianca_minima_requerida != null
+    data.success === false &&
+    data.confidence != null &&
+    data.required_minimum_confidence != null
   );
 }
 
@@ -165,15 +165,15 @@ function SuccessResult({
   onReset,
 }: {
   data: ScanResponse & {
-    sucesso: true;
+    success: true;
     material: string;
-    confianca: number;
-    analise_sustentabilidade: AiAnalysis;
+    confidence: number;
+    sustainability_analysis: AiAnalysis;
   };
   onReset: () => void;
 }) {
-  const a = data.analise_sustentabilidade;
-  const conf = data.confianca;
+  const a = data.sustainability_analysis;
+  const conf = data.confidence;
   const colors = getConfidenceColors(conf);
 
   const formattedMaterial = data.material
@@ -209,31 +209,31 @@ function SuccessResult({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <InfoCard
           icon="🌍"
-          title="Impacto Ambiental"
+          title="Environmental Impact"
           colorClass="bg-[var(--color-primary-light)] text-[var(--color-primary)]"
         >
-          <SustainabilityText value={a.impacto_ambiental} />
+          <SustainabilityText value={a.environmental_impact} />
         </InfoCard>
         <InfoCard
           icon="⏳"
           title="Decomposition"
           colorClass="bg-amber-50 text-amber-500 dark:bg-amber-500/15"
         >
-          <SustainabilityText value={a.tempo_decomposicao} />
+          <SustainabilityText value={a.decomposition_time} />
         </InfoCard>
         <InfoCard
           icon="🗑️"
-          title="Como Descartar"
+          title="How to Dispose"
           colorClass="bg-blue-50 text-blue-500 dark:bg-blue-500/15"
         >
-          <SustainabilityText value={a.onde_descartar} />
+          <SustainabilityText value={a.disposal_instructions} />
         </InfoCard>
         <InfoCard
           icon="♻️"
-          title="Reciclabilidade"
+          title="Recyclability"
           colorClass="bg-emerald-50 text-emerald-500 dark:bg-emerald-500/15"
         >
-          <SustainabilityText value={a.reciclabilidade} />
+          <SustainabilityText value={a.recyclability} />
         </InfoCard>
         <InfoCard
           icon="💡"
@@ -241,7 +241,7 @@ function SuccessResult({
           colorClass="bg-purple-50 text-purple-600 dark:bg-purple-500/15"
           fullWidth
         >
-          <SustainabilityText value={a.dicas_sustentaveis} />
+          <SustainabilityText value={a.sustainable_tips} />
         </InfoCard>
         <InfoCard
           icon="❤️"
@@ -249,7 +249,7 @@ function SuccessResult({
           colorClass="bg-red-50 text-red-500 dark:bg-red-500/15"
           fullWidth
         >
-          <SustainabilityText value={a.beneficios_reciclagem} />
+          <SustainabilityText value={a.recycling_benefits} />
         </InfoCard>
       </div>
 
@@ -258,10 +258,10 @@ function SuccessResult({
           onClick={onReset}
           className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold text-sm bg-[var(--color-bg-surface)] border-2 border-[var(--color-border)] text-[var(--color-text-primary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] hover:-translate-y-0.5 transition-all duration-200"
         >
-          🔄 Analisar Outro Item
+          🔄 Analyze Another Item
         </button>
         <Link
-          href="/produtos"
+          href="/products"
           className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold text-sm bg-[var(--color-primary)] text-white shadow-[var(--shadow-btn)] hover:bg-[var(--color-primary-hover)] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(45,149,105,0.4)] transition-all duration-200"
         >
           🛍️ See Sustainable Alternatives
@@ -280,9 +280,9 @@ function InsufficientResult({
   onReset,
 }: {
   data: ScanResponse & {
-    sucesso: false;
-    confianca: number;
-    confianca_minima_requerida: number;
+    success: false;
+    confidence: number;
+    required_minimum_confidence: number;
   };
   onReset: () => void;
 }) {
@@ -296,16 +296,16 @@ function InsufficientResult({
         Could not identify it reliably
       </h3>
       <p className="text-amber-700 dark:text-amber-400 mb-4 max-w-md mx-auto">
-        {data.mensagem}
+        {data.message}
       </p>
       <div className="inline-block bg-white dark:bg-white/10 rounded-xl px-6 py-3 mb-4 text-sm border border-amber-200 dark:border-amber-500/20">
         <span className="text-amber-600 dark:text-amber-400">
-          Confidence obtained: <strong>{data.confianca.toFixed(1)}%</strong>{" "}
-          (minimum: {data.confianca_minima_requerida}%)
+          Confidence obtained: <strong>{data.confidence.toFixed(1)}%</strong>{" "}
+          (minimum: {data.required_minimum_confidence}%)
         </span>
       </div>
       <p className="text-amber-600 dark:text-amber-400 text-sm mb-6">
-        💡 <strong>Dica:</strong> {data.sugestao}
+        💡 <strong>Tip:</strong> {data.suggestion}
       </p>
       <button
         onClick={onReset}
@@ -326,7 +326,7 @@ export default function IaScanPage() {
   const [dragover, setDragover] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const { data, carregando: loading, erro: hookError, execute: execute } = useScan();
+  const { data, loading, error: hookError, execute } = useScan();
 
   function validateFile(file: File): string | null {
     if (!VALID_TYPES.includes(file.type))
@@ -365,7 +365,7 @@ export default function IaScanPage() {
     if (!file) return;
     const form = new FormData();
     form.append("image", file.file);
-    execute("/api/ia/scan", form);
+    execute("/api/ai/scan", form);
   }
 
   const onDragOver = useCallback((e: React.DragEvent) => {
@@ -414,7 +414,7 @@ export default function IaScanPage() {
             <span className="text-xl flex-shrink-0 mt-0.5">⚠️</span>
             <div>
               <strong className="block font-semibold mb-0.5">
-                Ops! Algo deu errado.
+                Oops! Something went wrong.
               </strong>
               <span className="text-sm">{localError ?? hookError}</span>
             </div>
@@ -500,7 +500,7 @@ export default function IaScanPage() {
                 onClick={analyze}
                 className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-7 py-2.5 rounded-full text-sm font-bold bg-gradient-to-br from-[var(--color-primary)] to-[#2ba882] text-white shadow-[var(--shadow-btn)] hover:shadow-[0_8px_24px_rgba(45,149,105,0.4)] hover:-translate-y-0.5 transition-all duration-200"
               >
-                ✨ Analisar Agora
+                ✨ Analyze Now
               </button>
             </div>
           </div>
@@ -511,11 +511,11 @@ export default function IaScanPage() {
           <div
             className="flex flex-col items-center justify-center py-20 text-center animate-[fadeSlideUp_0.4s_ease]"
             aria-live="polite"
-            aria-label="Analisando imagem"
+            aria-label="Analyzing image"
           >
             <div className="w-16 h-16 rounded-full mb-8 border-4 border-[var(--color-border)] border-t-[var(--color-primary)] animate-spin" />
             <h3 className="font-display text-xl font-bold text-[var(--color-text-primary)] mb-2">
-              Analisando imagem...
+              Analyzing image...
             </h3>
             <p className="text-[var(--color-text-secondary)] max-w-sm text-sm">
               Our AI is identifying the material and calculating the environmental impact.

@@ -28,24 +28,24 @@ import type {
 
 // Re-exports domain types for convenience
 export type {
-  Photo as Foto,
-  PhotosResponse as FotosResponse,
-  Product as Produto,
-  Category as Categoria,
-  Brand as Marca,
-  BrandStatus as StatusMarca,
-  Certificate as Certificado,
-  ProductCertificate as ProdutoCertificado,
-  User as Usuario,
-  UserSummary as UsuarioResumido,
-  UserType as TipoUsuario,
+  Photo,
+  PhotosResponse,
+  Product,
+  Category,
+  Brand,
+  BrandStatus,
+  Certificate,
+  ProductCertificate,
+  User,
+  UserSummary,
+  UserType,
 };
 
-// Re-exporta tipos de IA
-export type { ScanResult as ResultadoScan, ChatResponse } from "./ai";
+// Re-exports the AI types
+export type { ScanResult, ChatResponse } from "./ai";
 
 /**
- * ScanResponse is the type returned by the POST /api/ia/scan endpoint.
+ * ScanResponse is the type returned by the POST /api/ai/scan endpoint.
  * It is identical to ScanResult — kept for compatibility.
  */
 export type ScanResponse = ScanResult;
@@ -57,8 +57,8 @@ export type ScanResponse = ScanResult;
  * Kept separate to avoid a circular dependency with types/ai.ts
  */
 export interface ChatBody {
-  mensagem: string;
-  historico?: {
+  message: string;
+  history?: {
     role: "user" | "model";
     parts: { text: string }[];
   }[];
@@ -66,11 +66,11 @@ export interface ChatBody {
 
 /**
  * Paginated response of the product listing.
- * GET /api/produtos?page=1&size=12&categoriaId=5&nome=t-shirt
+ * GET /api/products?page=1&size=12&categoryId=5&name=t-shirt
  */
 export interface ListProductsResponse {
   /** Array of products of the current page (ordered by ascending id) */
-  produtos: Product[];
+  products: Product[];
   /** Current page number (1-indexed) */
   page: number;
   /** Number of items per page (default: 12) */
@@ -81,23 +81,23 @@ export interface ListProductsResponse {
 
 /**
  * Response of fetching a specific product.
- * GET /api/produtos/{id}
+ * GET /api/products/{id}
  */
 export interface GetProductResponse {
-  produto: Product;
+  product: Product;
 }
 
 /**
  * Request body to create a new product.
- * POST /api/produtos
+ * POST /api/products
  * Requires ADMIN authentication.
  */
 export interface CreateProductBody {
-  nome: string;
-  descricao?: string;
-  preco: number;
-  categoriaId: number;
-  marcaId: number;
+  name: string;
+  description?: string;
+  price: number;
+  categoryId: number;
+  brandId: number;
 }
 
 /**
@@ -106,23 +106,23 @@ export interface CreateProductBody {
  * Status: 201 Created
  */
 export interface CreateProductResponse {
-  produto: Product;
+  product: Product;
 }
 
 /**
  * Request body to update a product.
- * PUT /api/produtos/{id}
+ * PUT /api/products/{id}
  * All fields are optional — partial updates are allowed.
  * Requires ADMIN authentication.
  */
 export interface UpdateProductBody {
-  nome?: string;
-  descricao?: string;
-  preco?: number;
-  categoriaId?: number;
-  marcaId?: number;
+  name?: string;
+  description?: string;
+  price?: number;
+  categoryId?: number;
+  brandId?: number;
   /** Fully replaces the certificate links (REQ-PROD-05); `[]` removes all */
-  certificadoIds?: number[];
+  certificateIds?: number[];
 }
 
 /**
@@ -130,36 +130,36 @@ export interface UpdateProductBody {
  * Returns the product with the updated data.
  */
 export interface UpdateProductResponse {
-  produto: Product;
+  product: Product;
 }
 
-// --- TIPOS DE CATEGORIA ---
+// --- CATEGORY TYPES ---
 
 /**
  * Response of the category listing.
- * GET /api/categorias
+ * GET /api/categories
  * Public endpoint (no authentication required).
  */
 export interface ListCategoriesResponse {
-  categorias: Category[];
+  categories: Category[];
 }
 
 /**
  * Response of fetching a specific category.
- * GET /api/categorias/{id}
+ * GET /api/categories/{id}
  */
 export interface GetCategoryResponse {
-  categoria: Category;
+  category: Category;
 }
 
 /**
  * Request body to create a new category.
- * POST /api/categorias
+ * POST /api/categories
  * Requires ADMIN authentication.
  */
 export interface CreateCategoryBody {
-  nome: string;
-  descricao?: string;
+  name: string;
+  description?: string;
 }
 
 /**
@@ -167,55 +167,55 @@ export interface CreateCategoryBody {
  * Status: 201 Created
  */
 export interface CreateCategoryResponse {
-  categoria: Category;
+  category: Category;
 }
 
 /**
  * Request body to update a category.
- * PUT /api/categorias/{id}
+ * PUT /api/categories/{id}
  * Partial update (only the fields sent are changed).
  * Requires ADMIN authentication.
  */
 export interface UpdateCategoryBody {
-  nome?: string;
-  descricao?: string;
+  name?: string;
+  description?: string;
 }
 
 /**
  * Response of updating a category.
  */
 export interface UpdateCategoryResponse {
-  categoria: Category;
+  category: Category;
 }
 
 // --- BRAND TYPES ---
 
 /**
  * Response of the brand listing.
- * GET /api/marcas
+ * GET /api/brands
  * Public endpoint (users can see brands before buying).
  */
 export interface ListBrandsResponse {
-  marcas: Brand[];
+  brands: Brand[];
 }
 
 /**
  * Response of fetching a specific brand.
- * GET /api/marcas/{id}
+ * GET /api/brands/{id}
  */
 export interface GetBrandResponse {
-  marca: Brand;
+  brand: Brand;
 }
 
 /**
  * Request body to create a new brand.
- * POST /api/marcas
+ * POST /api/brands
  * Requires ADMIN authentication.
  */
 export interface CreateBrandBody {
-  nome: string;
-  descricao?: string;
-  usuarioId: number;
+  name: string;
+  description?: string;
+  userId: number;
 }
 
 /**
@@ -223,63 +223,63 @@ export interface CreateBrandBody {
  * Status: 201 Created
  */
 export interface CreateBrandResponse {
-  marca: Brand;
+  brand: Brand;
 }
 
 /**
  * Request body to update a brand.
- * PUT /api/marcas/{id}
+ * PUT /api/brands/{id}
  * Requires ADMIN authentication.
  */
 export interface UpdateBrandBody {
-  nome?: string;
-  descricao?: string;
+  name?: string;
+  description?: string;
 }
 
 /**
  * Response of updating a brand.
  */
 export interface UpdateBrandResponse {
-  marca: Brand;
+  brand: Brand;
 }
 
 /**
  * Response of approving a pending brand.
- * POST /api/marcas/{id}/aprovar
+ * POST /api/brands/{id}/approve
  * Requires ADMIN authentication. REQ-USR-03, ADR-0018.
  */
 export interface ApproveBrandResponse {
-  marca: Brand;
+  brand: Brand;
 }
 
-// --- TIPOS DE CERTIFICADO ---
+// --- CERTIFICATE TYPES ---
 
 /**
  * Response of the certificate listing.
- * GET /api/certificados
+ * GET /api/certificates
  * Public endpoint (certifications are shown on products).
  */
 export interface ListCertificatesResponse {
-  certificados: Certificate[];
+  certificates: Certificate[];
 }
 
 /**
  * Response of fetching a specific certificate.
- * GET /api/certificados/{id}
+ * GET /api/certificates/{id}
  */
 export interface GetCertificateResponse {
-  certificado: Certificate;
+  certificate: Certificate;
 }
 
 /**
  * Request body to create a new certificate.
- * POST /api/certificados
+ * POST /api/certificates
  * Requires ADMIN authentication.
  */
 export interface CreateCertificateBody {
-  nome: string;
-  descricao?: string;
-  orgaoEmissor: string;
+  name: string;
+  description?: string;
+  issuingBody: string;
 }
 
 /**
@@ -287,85 +287,85 @@ export interface CreateCertificateBody {
  * Status: 201 Created
  */
 export interface CreateCertificateResponse {
-  certificado: Certificate;
+  certificate: Certificate;
 }
 
 /**
  * Request body to update a certificate.
- * PUT /api/certificados/{id}
+ * PUT /api/certificates/{id}
  * Requires ADMIN authentication.
  */
 export interface UpdateCertificateBody {
-  nome?: string;
-  descricao?: string;
-  orgaoEmissor?: string;
+  name?: string;
+  description?: string;
+  issuingBody?: string;
 }
 
 /**
  * Response of updating a certificate.
  */
 export interface UpdateCertificateResponse {
-  certificado: Certificate;
+  certificate: Certificate;
 }
 
 // --- USER TYPES ---
 
 /**
  * Response of the user listing (admin).
- * GET /api/usuarios
+ * GET /api/users
  * Requires ADMIN authentication.
  */
 export interface ListUsersResponse {
-  usuarios: User[];
+  users: User[];
 }
 
 /**
  * Response of fetching a specific user.
- * GET /api/usuarios/{id}
+ * GET /api/users/{id}
  * Regular users can only see their own profile.
  * Admin can see any user.
  */
 export interface GetUserResponse {
-  usuario: User;
+  user: User;
 }
 
 /**
  * Request body to create a user (admin).
- * POST /api/usuarios
+ * POST /api/users
  * Requires ADMIN authentication.
  * Allows creating users of any type (including ADMIN).
  */
 export interface CreateUserBody {
-  nome: string;
+  name: string;
   email: string;
-  telefone?: string;
-  senha: string;
-  tipo?: "CLIENTE" | "MARCA" | "ADMIN";
+  phone?: string;
+  password: string;
+  type?: "CUSTOMER" | "BRAND" | "ADMIN";
 }
 
 /**
  * Response of creating a user (admin).
  */
 export interface CreateUserResponse {
-  usuario: User;
+  user: User;
 }
 
 /**
  * Request body to update a user.
- * PUT /api/usuarios/{id}
+ * PUT /api/users/{id}
  */
 export interface UpdateUserBody {
-  nome?: string;
+  name?: string;
   email?: string;
-  telefone?: string;
-  senha?: string;
+  phone?: string;
+  password?: string;
 }
 
 /**
  * Response of updating a user.
  */
 export interface UpdateUserResponse {
-  usuario: User;
+  user: User;
 }
 
 // --- AUTHENTICATION TYPES ---
@@ -377,7 +377,7 @@ export interface UpdateUserResponse {
  */
 export interface LoginBody {
   email: string;
-  senha: string;
+  password: string;
 }
 
 /**
@@ -386,10 +386,10 @@ export interface LoginBody {
  */
 export interface LoginResponse {
   ok: boolean;
-  usuario: {
+  user: {
     id: number;
     email: string;
-    tipo: string;
+    type: string;
   };
 }
 
@@ -397,36 +397,36 @@ export interface LoginResponse {
  * Public registration request body.
  * POST /api/users
  * Public endpoint — anyone can create an account.
- * By default, the type is "CLIENTE".
+ * By default, the type is "CUSTOMER".
  *
- * `marcaNome` is required when `tipo: "MARCA"` (REQ-AUTH-14): the request
+ * `brandName` is required when `type: "BRAND"` (REQ-AUTH-14): the request
  * stays pending until an ADMIN approves it (REQ-AUTH-11, ADR-0018).
  */
 export interface RegistrationBody {
-  nome: string;
+  name: string;
   email: string;
-  telefone?: string;
-  senha: string;
-  tipo?: "CLIENTE" | "MARCA";
-  marcaNome?: string;
-  marcaDescricao?: string;
+  phone?: string;
+  password: string;
+  type?: "CUSTOMER" | "BRAND";
+  brandName?: string;
+  brandDescription?: string;
 }
 
 /**
  * Response of a successful registration.
  * The user is logged in automatically (JWT cookie is set).
- * `marcaPendente: true` indicates that the registration as MARCA is still awaiting
- * approval from an ADMIN — for now the user has CLIENTE rights.
+ * `pendingBrand: true` indicates that the registration as BRAND is still awaiting
+ * approval from an ADMIN — for now the user has CUSTOMER rights.
  */
 export interface RegistrationResponse {
   ok: boolean;
-  usuario: {
+  user: {
     id: number;
     email: string;
-    nome: string;
-    tipo: string;
+    name: string;
+    type: string;
   };
-  marcaPendente?: boolean;
+  pendingBrand?: boolean;
 }
 
 /**
@@ -442,5 +442,5 @@ export interface OkResponse {
  * Returns the currently authenticated user's data (or null).
  */
 export interface AuthMeResponse {
-  usuario: UserSummary | null;
+  user: UserSummary | null;
 }

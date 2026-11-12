@@ -46,25 +46,25 @@ export const PREFIX = {
  * number of keys was controlled by whoever called the (public) API.
  *
  * @param filters - Validated filters (`listProductsQuerySchema`)
- * @returns Key in the format "products:page=1&size=12&categoriaId=5&marcaId=&precoMax=&sort=relevancia&nome="
+ * @returns Key in the format "products:page=1&size=12&categoryId=5&brandId=&maxPrice=&sort=relevance&name="
  */
 export interface ProductFilters {
   page: number;
   size: number;
-  categoriaId?: number;
-  marcaId?: number;
-  precoMax?: number;
+  categoryId?: number;
+  brandId?: number;
+  maxPrice?: number;
   sort: string;
-  nome?: string;
+  name?: string;
 }
 
 export function productListKey(filters: ProductFilters): string {
   // Name search ignores case; the key does too (same search, same key).
-  const name = encodeURIComponent((filters.nome ?? "").trim().toLowerCase());
+  const name = encodeURIComponent((filters.name ?? "").trim().toLowerCase());
   return (
     `${PREFIX.PRODUCTS}page=${filters.page}&size=${filters.size}` +
-    `&categoriaId=${filters.categoriaId ?? ""}&marcaId=${filters.marcaId ?? ""}` +
-    `&precoMax=${filters.precoMax ?? ""}&sort=${filters.sort}&nome=${name}`
+    `&categoryId=${filters.categoryId ?? ""}&brandId=${filters.brandId ?? ""}` +
+    `&maxPrice=${filters.maxPrice ?? ""}&sort=${filters.sort}&name=${name}`
   );
 }
 

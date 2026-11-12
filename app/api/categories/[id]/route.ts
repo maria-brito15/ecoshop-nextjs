@@ -1,13 +1,13 @@
-// app/api/categorias/[id]/route.ts
+// app/api/categories/[id]/route.ts
 
 /**
  * CATEGORY BY ID API ROUTES
  *
  * Endpoints for operations on a specific category.
  *
- * GET /api/categorias/{id} - Fetch category by ID (public)
- * PUT /api/categorias/{id} - Update category (requires ADMIN)
- * DELETE /api/categorias/{id} - Delete category (requires ADMIN)
+ * GET /api/categories/{id} - Fetch category by ID (public)
+ * PUT /api/categories/{id} - Update category (requires ADMIN)
+ * DELETE /api/categories/{id} - Delete category (requires ADMIN)
  *
  * Permissions:
  * - GET: Public
@@ -30,10 +30,10 @@ import {
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/categorias/{id} - Fetch category by ID
+ * GET /api/categories/{id} - Fetch category by ID
  *
  * @param id - Category ID in the URL
- * @returns { categoria: Category }
+ * @returns { category: Category }
  * @status 200 - Category found
  * @status 404 - Category does not exist
  * @status 500 - Error fetching category
@@ -47,20 +47,20 @@ export async function GET(
     if (id === null) return ERRORS.invalidData("Invalid ID");
     const category = await getCategory(id);
     if (!category) return ERRORS.notFound("Category");
-    return NextResponse.json({ categoria: category });
+    return NextResponse.json({ category });
   } catch (err) {
     return ERRORS.internal("fetch category", err);
   }
 }
 
 /**
- * PUT /api/categorias/{id} - Update category
+ * PUT /api/categories/{id} - Update category
  *
  * Requires ADMIN authentication.
  *
  * @param id - Category ID in the URL
- * @body { nome?: string, descricao?: string }
- * @returns { categoria: Category }
+ * @body { name?: string, description?: string }
+ * @returns { category: Category }
  * @status 200 - Category updated
  * @status 400 - Invalid data
  * @status 401 - Not authenticated
@@ -83,7 +83,7 @@ export async function PUT(
     if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
     const category = await updateCategory(id, parsed.data);
-    return NextResponse.json({ categoria: category });
+    return NextResponse.json({ category });
   } catch (err) {
     return (
       mapError(err, "Category") ??
@@ -93,7 +93,7 @@ export async function PUT(
 }
 
 /**
- * DELETE /api/categorias/{id} - Delete category
+ * DELETE /api/categories/{id} - Delete category
  *
  * Requires ADMIN authentication.
  *

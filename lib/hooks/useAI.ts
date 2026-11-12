@@ -14,8 +14,8 @@
  * - Chat uses JSON, Scan uses FormData (file upload)
  *
  * Endpoints:
- * - Chat: POST /api/ia/chat (requires authentication)
- * - Scan: POST /api/ia/scan (requires authentication)
+ * - Chat: POST /api/ai/chat (requires authentication)
+ * - Scan: POST /api/ai/scan (requires authentication)
  */
 
 import { useMutation } from "./useMutation";
@@ -33,11 +33,11 @@ import type { ChatBody, ChatResponse, ScanResponse } from "@/types/api";
  * const chat = useChat();
  *
  * const sendMessage = async (msg, history) => {
- *   const result = await chat.execute("/api/ia/chat", {
- *     mensagem: msg,
- *     historico: history
+ *   const result = await chat.execute("/api/ai/chat", {
+ *     message: msg,
+ *     history
  *   });
- *   if (result) setReply(result.resposta);
+ *   if (result) setReply(result.answer);
  * };
  */
 export function useChat() {
@@ -57,12 +57,12 @@ export function useChat() {
  * const scan = useScan();
  * const formData = new FormData();
  * formData.append("image", imageFile);
- * const result = await scan.execute("/api/ia/scan", formData);
+ * const result = await scan.execute("/api/ai/scan", formData);
  *
- * if (result?.sucesso) {
+ * if (result?.success) {
  *   console.log(`Identified material: ${result.material}`);
- *   console.log(`Confidence: ${result.confianca}%`);
- *   console.log(`Analysis: ${result.analise_sustentabilidade}`);
+ *   console.log(`Confidence: ${result.confidence}%`);
+ *   console.log(`Analysis: ${result.sustainability_analysis}`);
  * }
  */
 export function useScan() {

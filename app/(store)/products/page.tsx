@@ -1,9 +1,9 @@
-// app/(store)/produtos/page.tsx
+// app/(store)/products/page.tsx
 
 /**
  * PRODUCT LISTING PAGE
  *
- * Route: "/produtos"
+ * Route: "/products"
  *
  * EcoShop's main product catalog page.
  * Lets users browse, filter and search sustainable products.
@@ -28,10 +28,10 @@ import Image from "next/image";
 import { useListProducts, type ProductOrder } from "@/lib/hooks/useProducts";
 import { useListCategories } from "@/lib/hooks/useCategories";
 import { useListBrands } from "@/lib/hooks/useBrands";
-import type { Produto, ProdutoCertificado } from "@/types/api";
+import type { Product, ProductCertificate } from "@/types/api";
 
 // ----------------------------------------------------------------------------
-// COMPONENTE: SKELETON CARD
+// COMPONENT: SKELETON CARD
 // ----------------------------------------------------------------------------
 // Shown while the products load. Keeps the same structure
 // as ProductCard to avoid layout shift (CLS).
@@ -54,12 +54,12 @@ function SkeletonCard() {
 }
 
 // ----------------------------------------------------------------------------
-// COMPONENTE: PRODUCT CARD
+// COMPONENT: PRODUCT CARD
 // ----------------------------------------------------------------------------
 // Individual product card with lazy loading via Intersection Observer.
 // The entrance animation only plays when the card enters the viewport.
 
-function ProductCard({ produto: product, index }: { produto: Produto; index: number }) {
+function ProductCard({ product, index }: { product: Product; index: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -79,15 +79,15 @@ function ProductCard({ produto: product, index }: { produto: Produto; index: num
     return () => obs.disconnect();
   }, []);
 
-  const formattedPrice = Number(product.preco).toLocaleString("pt-BR", {
+  const formattedPrice = Number(product.price).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
 
   // Staggered delay for each card (0ms, 80ms, 160ms...)
   const delay = Math.min(index % 6, 5) * 80;
-  const categoryName = product.categoria?.nome ?? "Category";
-  const brandName = product.marca?.nome ?? "Brand";
+  const categoryName = product.category?.name ?? "Category";
+  const brandName = product.brand?.name ?? "Brand";
 
   return (
     <div
@@ -99,15 +99,15 @@ function ProductCard({ produto: product, index }: { produto: Produto; index: num
       }}
     >
       <Link
-        href={`/produtos/${product.id}`}
+        href={`/products/${product.id}`}
         className="group block rounded-[var(--radius-card)] overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-surface)] transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-[var(--shadow-xl)] hover:border-[var(--color-primary)] h-full flex flex-col"
       >
         {/* Image area */}
         <div className="relative h-56 bg-[var(--color-bg-body)] flex items-center justify-center overflow-hidden">
-          {product.fotoUrl ? (
+          {product.photoUrl ? (
             <Image
-              src={product.fotoUrl}
-              alt={product.nome}
+              src={product.photoUrl}
+              alt={product.name}
               fill
               className="card-img object-cover"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -153,7 +153,7 @@ function ProductCard({ produto: product, index }: { produto: Produto; index: num
                 transition-all duration-300
               `}
             >
-              Ver detalhes →
+              View details →
             </span>
           </div>
         </div>
@@ -172,22 +172,22 @@ function ProductCard({ produto: product, index }: { produto: Produto; index: num
               transition-colors duration-200
             `}
           >
-            {product.nome}
+            {product.name}
           </h3>
 
           {/* Description (limited to 2 lines) */}
-          {product.descricao && (
+          {product.description && (
             <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">
-              {product.descricao}
+              {product.description}
             </p>
           )}
 
           {/* Product certificates (maximum 2) */}
-          {product.certificados && product.certificados.length > 0 && (
+          {product.certificates && product.certificates.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1">
-              {product.certificados
+              {product.certificates
                 .slice(0, 2)
-                .map(({ certificado: certificate }: ProdutoCertificado) => (
+                .map(({ certificate }: ProductCertificate) => (
                   <span
                     key={certificate.id}
                     className={`
@@ -197,7 +197,7 @@ function ProductCard({ produto: product, index }: { produto: Produto; index: num
                       border border-[var(--color-primary)]/20
                     `}
                   >
-                    ✓ {certificate.nome}
+                    ✓ {certificate.name}
                   </span>
                 ))}
             </div>
@@ -248,26 +248,26 @@ export default function ProductsPage() {
   const [brandId, setBrandId] = useState<number | undefined>(undefined);
   const [maxPrice, setMaxPrice] = useState(1000);
   const [priceInput, setPriceInput] = useState(1000);
-  const [sortBy, setSortBy] = useState<ProductOrder>("relevancia");
+  const [sortBy, setSortBy] = useState<ProductOrder>("relevance");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Data hooks — sorting, brand and maximum price are applied by the
   // server to the whole catalog, not just the current page (REQ-CAT-06/07).
-  const { data, loading: loading, error: error } = useListProducts(page, 12, categoryId, search, {
-    marcaId: brandId,
-    precoMax: maxPrice < 1000 ? maxPrice : undefined,
+  const { data, loading, error } = useListProducts(page, 12, categoryId, search, {
+    brandId,
+    maxPrice: maxPrice < 1000 ? maxPrice : undefined,
     sort: sortBy,
   });
   const { data: catData } = useListCategories();
   const { data: brandsData } = useListBrands();
 
-  const products = data?.produtos ?? [];
+  const products = data?.products ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / 12);
-  const categories = catData?.categorias ?? [];
-  const brands = (brandsData?.marcas ?? []).filter(
-    (m) => m.status === "APROVADA",
+  const categories = catData?.categories ?? [];
+  const brands = (brandsData?.brands ?? []).filter(
+    (m) => m.status === "APPROVED",
   );
 
   // --------------------------------------------------------------------------
@@ -297,7 +297,7 @@ export default function ProductsPage() {
     setBrandId(undefined);
     setMaxPrice(1000);
     setPriceInput(1000);
-    setSortBy("relevancia");
+    setSortBy("relevance");
     setPage(1);
   }
 
@@ -328,7 +328,7 @@ export default function ProductsPage() {
             </Link>
             <span className="text-[var(--color-border)]">›</span>
             <span className="font-semibold text-[var(--color-text-primary)]">
-              Produtos
+              Products
             </span>
           </nav>
 
@@ -336,7 +336,7 @@ export default function ProductsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="font-display text-3xl md:text-4xl font-extrabold text-[var(--color-text-primary)]">
-                Produtos <span className="text-gradient-eco">Sustainable</span>
+                Products <span className="text-gradient-eco">Sustainable</span>
               </h1>
               {!loading && (
                 <p className="text-[var(--color-text-secondary)] mt-1 text-sm">
@@ -427,7 +427,7 @@ export default function ProductsPage() {
               `}
             >
               <h2 className="font-display font-bold text-sm uppercase tracking-wider text-[var(--color-text-primary)] flex items-center gap-2">
-                <span>⚙</span> Filtros
+                <span>⚙</span> Filters
               </h2>
               <button
                 onClick={clearFilters}
@@ -438,14 +438,14 @@ export default function ProductsPage() {
                   hover:bg-red-50
                 `}
               >
-                Limpar
+                Clear
               </button>
             </div>
 
             {/* Category filter */}
             <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3 flex items-center gap-2">
-                <span>🏷</span> Categorias
+                <span>🏷</span> Categories
               </p>
               <ul className="flex flex-col gap-0.5">
                 <li>
@@ -464,7 +464,7 @@ export default function ProductsPage() {
                       }
                     `}
                   >
-                    <span>Todas</span>
+                    <span>All</span>
                     {categoryId === undefined && (
                       <span className="text-xs">✓</span>
                     )}
@@ -487,7 +487,7 @@ export default function ProductsPage() {
                         }
                       `}
                     >
-                      <span>{cat.nome}</span>
+                      <span>{cat.name}</span>
                       {categoryId === cat.id && (
                         <span className="text-xs">✓</span>
                       )}
@@ -501,7 +501,7 @@ export default function ProductsPage() {
             {brands.length > 0 && (
               <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3 flex items-center gap-2">
-                  <span>🤝</span> Marcas
+                  <span>🤝</span> Brands
                 </p>
                 <ul className="flex flex-col gap-0.5">
                   <li>
@@ -520,7 +520,7 @@ export default function ProductsPage() {
                         }
                       `}
                     >
-                      <span>Todas</span>
+                      <span>All</span>
                       {brandId === undefined && (
                         <span className="text-xs">✓</span>
                       )}
@@ -543,7 +543,7 @@ export default function ProductsPage() {
                           }
                         `}
                       >
-                        <span>{m.nome}</span>
+                        <span>{m.name}</span>
                         {brandId === m.id && <span className="text-xs">✓</span>}
                       </button>
                     </li>
@@ -604,7 +604,7 @@ export default function ProductsPage() {
                   transition-all uppercase tracking-wide
                 `}
               >
-                ✕ Limpar Filtros
+                ✕ Clear Filters
               </button>
             </div>
           </aside>
@@ -636,7 +636,7 @@ export default function ProductsPage() {
                     transition-all
                   `}
                 >
-                  ⚙ Filtros
+                  ⚙ Filters
                   {(categoryId !== undefined ||
                     brandId !== undefined ||
                     maxPrice < 1000) && (
@@ -688,11 +688,11 @@ export default function ProductsPage() {
                     backgroundPosition: "right 10px center",
                   }}
                 >
-                  <option value="relevancia">Relevance</option>
-                  <option value="preco_asc">Lowest Price</option>
-                  <option value="preco_desc">Highest Price</option>
-                  <option value="nome_asc">Name (A-Z)</option>
-                  <option value="nome_desc">Name (Z-A)</option>
+                  <option value="relevance">Relevance</option>
+                  <option value="price_asc">Lowest Price</option>
+                  <option value="price_desc">Highest Price</option>
+                  <option value="name_asc">Name (A-Z)</option>
+                  <option value="name_desc">Name (Z-A)</option>
                 </select>
               </div>
             </div>
@@ -710,7 +710,7 @@ export default function ProductsPage() {
               >
                 <span className="text-5xl mb-4">⚠️</span>
                 <h3 className="font-display font-bold text-lg text-[var(--color-text-primary)] mb-2">
-                  Ops! Algo deu errado.
+                  Oops! Something went wrong.
                 </h3>
                 <p className="text-sm text-[var(--color-text-secondary)] mb-4">
                   {error}
@@ -752,7 +752,7 @@ export default function ProductsPage() {
                   We found no products matching the applied filters.
                 </p>
                 <button onClick={clearFilters} className="btn-primary">
-                  🔄 Limpar Filtros
+                  🔄 Clear Filters
                 </button>
               </div>
             )}
@@ -761,7 +761,7 @@ export default function ProductsPage() {
             {!loading && !error && products.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                 {products.map((product, i) => (
-                  <ProductCard key={product.id} produto={product} index={i} />
+                  <ProductCard key={product.id} product={product} index={i} />
                 ))}
               </div>
             )}
@@ -861,7 +861,7 @@ export default function ProductsPage() {
               `}
             >
               <h2 className="font-display font-bold text-sm uppercase tracking-wider">
-                ⚙ Filtros
+                ⚙ Filters
               </h2>
               <button
                 onClick={() => setSidebarOpen(false)}
@@ -879,7 +879,7 @@ export default function ProductsPage() {
             {/* Filters (mobile version) */}
             <div className="px-4 pt-5 pb-4 border-b border-[var(--color-border)]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3">
-                🏷 Categorias
+                🏷 Categories
               </p>
               <ul className="flex flex-col gap-0.5">
                 <li>
@@ -891,7 +891,7 @@ export default function ProductsPage() {
                     }}
                     className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${categoryId === undefined ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
                   >
-                    Todas
+                    All
                   </button>
                 </li>
                 {categories.map((cat) => (
@@ -904,7 +904,7 @@ export default function ProductsPage() {
                       }}
                       className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${categoryId === cat.id ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
                     >
-                      {cat.nome}
+                      {cat.name}
                     </button>
                   </li>
                 ))}
@@ -927,7 +927,7 @@ export default function ProductsPage() {
                       }}
                       className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${brandId === undefined ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
                     >
-                      Todas
+                      All
                     </button>
                   </li>
                   {brands.map((m) => (
@@ -940,7 +940,7 @@ export default function ProductsPage() {
                         }}
                         className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${brandId === m.id ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold" : "text-[var(--color-text-secondary)]"}`}
                       >
-                        {m.nome}
+                        {m.name}
                       </button>
                     </li>
                   ))}
@@ -984,7 +984,7 @@ export default function ProductsPage() {
                 }}
                 className="w-full py-3 rounded-xl text-sm font-bold border-2 border-dashed border-[var(--color-border)] text-[var(--color-text-tertiary)] hover:border-[var(--color-error)] hover:text-[var(--color-error)] transition-all uppercase tracking-wide"
               >
-                ✕ Limpar Filtros
+                ✕ Clear Filters
               </button>
             </div>
           </aside>

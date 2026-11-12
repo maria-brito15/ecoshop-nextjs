@@ -36,8 +36,8 @@ const WINDOW_SECONDS = 60;
 /**
  * POST /api/auth - User login
  *
- * @body { email: string, senha: string }
- * @returns { ok: true, usuario: { id, email, tipo } } + httpOnly cookies
+ * @body { email: string, password: string }
+ * @returns { ok: true, user: { id, email, type } } + httpOnly cookies
  * @status 200 - Login successful
  * @status 400 - Invalid data (email or password missing)
  * @status 401 - Invalid credentials
@@ -47,14 +47,14 @@ const WINDOW_SECONDS = 60;
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
-    const { blocked: blocked } = await rateLimit(ip, {
+    const { blocked } = await rateLimit(ip, {
       limit: ATTEMPT_LIMIT,
       windowSeconds: WINDOW_SECONDS,
     });
 
     if (blocked) {
       return NextResponse.json(
-        { erro: "Too many attempts. Wait 1 minute and try again." },
+        { error: "Too many attempts. Wait 1 minute and try again." },
         { status: 429 },
       );
     }
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     const parsed = loginSchema.safeParse(body);
     if (!parsed.success) return ERRORS.invalidData();
 
-    const { email, senha: password } = parsed.data;
+    const { email, password } = parsed.data;
     const identity = await verifyCredentials(email, password);
     if (!identity) return ERRORS.unauthorized();
 
@@ -71,10 +71,10 @@ export async function POST(req: NextRequest) {
 
     const res = NextResponse.json({
       ok: true,
-      usuario: {
+      user: {
         id: identity.id,
         email: identity.email,
-        tipo: identity.tipo,
+        type: identity.type,
       },
     });
 

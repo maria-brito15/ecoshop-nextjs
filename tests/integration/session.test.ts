@@ -5,7 +5,7 @@
  * test needs a Redis at REDIS_URL. The end-to-end ones (login → cookies, current
  * password, admin demotion) need Postgres and run in CI.
  */
-import { email, createUserDirectly, cookieDe, req, ctx, closeConnections } from "./helpers";
+import { email, createUserDirectly, cookieFor, req, ctx, closeConnections } from "./helpers";
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { decodeJwt } from "jose";
@@ -31,7 +31,7 @@ import { mapError } from "@/lib/http/responses";
 import { OperationNotAllowed } from "@/lib/errors/domain";
 import { updateUserSchema } from "@/lib/schemas/user";
 import { POST as login } from "@/app/api/auth/route";
-import { PUT as updateUser } from "@/app/api/usuarios/[id]/route";
+import { PUT as updateUser } from "@/app/api/users/[id]/route";
 import { middleware } from "@/middleware";
 import { NextRequest } from "next/server";
 
@@ -40,9 +40,9 @@ after(closeConnections);
 // ---- in-memory store with the same single-use semantics -----------------
 class InMemoryStore implements RefreshTokenStore {
   readonly tokens = new Map<string, number>();
-  quebrado = false;
+  broken = false;
   private fail() {
-    if (this.quebrado) throw new Error("Redis fora");
+    if (this.broken) throw new Error("Redis down");
   }
   async create(token: string, userId: number) {
     this.fail();
@@ -63,14 +63,14 @@ class InMemoryStore implements RefreshTokenStore {
   }
 }
 
-const ADMIN: SessionIdentity = { id: 1, email: "a@x.com", tipo: "ADMIN" };
-const lookup = (type: SessionIdentity["tipo"]) => async (id: number) =>
-  id === 1 ? { id, email: "a@x.com", tipo: type } : null;
+const ADMIN: SessionIdentity = { id: 1, email: "a@x.com", type: "ADMIN" };
+const lookup = (type: SessionIdentity["type"]) => async (id: number) =>
+  id === 1 ? { id, email: "a@x.com", type } : null;
 
-process.env.JWT_SECRET ??= "teste-de-sessao-com-trinta-e-dois-caracteres";
+process.env.JWT_SECRET ??= "test-session-secret-with-thirty-two-characters";
 
 // ---------------------------------------------------------------------------
-// REQ-AUTH-18: acesso curto
+// REQ-AUTH-18: short-lived access token
 // ---------------------------------------------------------------------------
 
 test("REQ-AUTH-18: the access JWT expires in 15 minutes (no longer 7 days)", async () => {
@@ -103,7 +103,7 @@ test("REQ-AUTH-19: starting a session issues access and refresh; refreshing SPEN
 
 test("REQ-AUTH-19: two simultaneous requests with the same token refresh only one", async () => {
   const store = new InMemoryStore();
-  const { refresh: refresh } = await startSession(ADMIN, store);
+  const { refresh } = await startSession(ADMIN, store);
   const [a, b] = await Promise.all([
     refreshSession(refresh!, lookup("ADMIN"), store),
     refreshSession(refresh!, lookup("ADMIN"), store),
@@ -113,12 +113,12 @@ test("REQ-AUTH-19: two simultaneous requests with the same token refresh only on
 
 test("REQ-AUTH-19: on refresh, the role comes from the database: a demoted admin loses admin access within 15 minutes at most", async () => {
   const store = new InMemoryStore();
-  const { refresh: refresh } = await startSession(ADMIN, store);
-  const r = await refreshSession(refresh!, lookup("CLIENTE"), store);
+  const { refresh } = await startSession(ADMIN, store);
+  const r = await refreshSession(refresh!, lookup("CUSTOMER"), store);
   assert.equal(r.ok, true);
   if (!r.ok) return;
-  assert.equal(r.tipo, "CLIENTE");
-  assert.equal((decodeJwt(r.session.access) as { tipo: string }).tipo, "CLIENTE");
+  assert.equal(r.type, "CUSTOMER");
+  assert.equal((decodeJwt(r.session.access) as { type: string }).type, "CUSTOMER");
 });
 
 test("REQ-AUTH-19: without a token, with an unknown token or a deleted user → refresh refused", async () => {
@@ -126,15 +126,15 @@ test("REQ-AUTH-19: without a token, with an unknown token or a deleted user → 
   assert.deepEqual(await refreshSession(undefined, lookup("ADMIN"), store), { ok: false, reason: "NO_TOKEN" });
   assert.deepEqual(await refreshSession("inventado", lookup("ADMIN"), store), { ok: false, reason: "INVALID" });
 
-  const { refresh: refresh } = await startSession(ADMIN, store);
+  const { refresh } = await startSession(ADMIN, store);
   const withoutUser = async () => null;
   assert.deepEqual(await refreshSession(refresh!, withoutUser, store), { ok: false, reason: "INVALID" });
 });
 
 test("REQ-AUTH-19: without Redis the refresh is DENIED (unavailable) and login continues, only without a refresh token", async () => {
   const store = new InMemoryStore();
-  const { refresh: refresh } = await startSession(ADMIN, store);
-  store.quebrado = true;
+  const { refresh } = await startSession(ADMIN, store);
+  store.broken = true;
   assert.deepEqual(await refreshSession(refresh!, lookup("ADMIN"), store), { ok: false, reason: "UNAVAILABLE" });
 
   const withoutRedis = await startSession(ADMIN, store);
@@ -150,7 +150,7 @@ test("REQ-AUTH-20: logout revokes the refresh token; revoking all of a user's se
   const store = new InMemoryStore();
   const a = await startSession(ADMIN, store);
   const b = await startSession(ADMIN, store);
-  const other = await startSession({ id: 2, email: "o@x.com", tipo: "CLIENTE" }, store);
+  const other = await startSession({ id: 2, email: "o@x.com", type: "CUSTOMER" }, store);
 
   await endSession(a.refresh!, store);
   assert.equal(store.tokens.has(a.refresh!), false);
@@ -162,14 +162,14 @@ test("REQ-AUTH-20: logout revokes the refresh token; revoking all of a user's se
 
 test("REQ-AUTH-20: revoking never throws, even with the store down", async () => {
   const store = new InMemoryStore();
-  store.quebrado = true;
+  store.broken = true;
   await assert.doesNotReject(() => endSession("x", store));
   await assert.doesNotReject(() => revokeUserSessions(1, store));
   await assert.doesNotReject(() => endSession(undefined, store));
 });
 
 // ---------------------------------------------------------------------------
-// REQ-AUTH-19/20 no Redis real
+// REQ-AUTH-19/20 on the real Redis
 // ---------------------------------------------------------------------------
 
 test("REQ-AUTH-19: on real Redis, only the token hash is stored, with a TTL, and GETDEL gives single use", async () => {
@@ -198,11 +198,11 @@ test("REQ-AUTH-19: on real Redis, only the token hash is stored, with a TTL, and
 // REQ-AUTH-21: current password
 // ---------------------------------------------------------------------------
 
-test("REQ-AUTH-21: OperationNotAllowed becomes 403 with its own message; the schema accepts senhaAtual", async () => {
+test("REQ-AUTH-21: OperationNotAllowed becomes 403 with its own message; the schema accepts currentPassword", async () => {
   const res = mapError(new OperationNotAllowed("Current password is incorrect"), "User");
   assert.equal(res?.status, 403);
-  assert.deepEqual(await res?.json(), { erro: "Current password is incorrect" });
-  assert.equal(updateUserSchema.parse({ senha: "NovaSenha123", senhaAtual: "Antiga123" }).senhaAtual, "Antiga123");
+  assert.deepEqual(await res?.json(), { error: "Current password is incorrect" });
+  assert.equal(updateUserSchema.parse({ password: "NewPassword123", currentPassword: "Antiga123" }).currentPassword, "Antiga123");
 });
 
 // ---------------------------------------------------------------------------
@@ -210,19 +210,19 @@ test("REQ-AUTH-21: OperationNotAllowed becomes 403 with its own message; the sch
 // ---------------------------------------------------------------------------
 
 const page = (cookie?: string) =>
-  new NextRequest("http://localhost/perfil?aba=2", { headers: cookie ? { cookie } : {} });
+  new NextRequest("http://localhost/profile?aba=2", { headers: cookie ? { cookie } : {} });
 
 test("REQ-AUTH-22: a protected page with an expired access and a refresh cookie goes through the refresh and returns to the same page", async () => {
   const res = await middleware(page(`${REFRESH_COOKIE}=abc`));
   assert.equal(res.status, 307);
   const destination = new URL(res.headers.get("location")!);
   assert.equal(destination.pathname, "/api/auth/refresh");
-  assert.equal(destination.searchParams.get("next"), "/perfil?aba=2");
+  assert.equal(destination.searchParams.get("next"), "/profile?aba=2");
 });
 
 test("REQ-AUTH-22: without access and without refresh it goes to login; with a valid access it continues", async () => {
   const withNothing = await middleware(page());
-  assert.match(withNothing.headers.get("location")!, /\/sign-in\?next=%2Fperfil/);
+  assert.match(withNothing.headers.get("location")!, /\/sign-in\?next=%2Fprofile/);
 
   const withAccess = await middleware(page(`${ACCESS_COOKIE}=${await signToken(ADMIN)}`));
   assert.equal(withAccess.headers.get("location"), null);
@@ -232,15 +232,15 @@ test("REQ-AUTH-22: without access and without refresh it goes to login; with a v
 // WITH DATABASE — run in CI
 // ===========================================================================
 
-const PASSWORD = "SenhaAtual123";
+const PASSWORD = "CurrentPassword123";
 async function userWithPassword(name: string) {
   const bcrypt = (await import("bcryptjs")).default;
-  return createUserDirectly(email(name), "CLIENTE", await bcrypt.hash(PASSWORD, 4));
+  return createUserDirectly(email(name), "CUSTOMER", await bcrypt.hash(PASSWORD, 4));
 }
 
 test("REQ-AUTH-18/19: login issues the token and refresh cookies; the refresh returns the new pair and invalidates the old one", async () => {
   const u = await userWithPassword("sess-login");
-  const res = await login(req("/api/auth", { method: "POST", body: { email: u.email, senha: PASSWORD } }));
+  const res = await login(req("/api/auth", { method: "POST", body: { email: u.email, password: PASSWORD } }));
   assert.equal(res.status, 200);
   const cookies = res.headers.getSetCookie();
   assert.ok(cookies.some((c) => c.startsWith(`${ACCESS_COOKIE}=`)));
@@ -249,31 +249,31 @@ test("REQ-AUTH-18/19: login issues the token and refresh cookies; the refresh re
 
 test("REQ-AUTH-21: changing your OWN password requires the correct current password (403 without it); ADMIN changing someone else's does not need it", async () => {
   const u = await userWithPassword("sess-password");
-  const cookie = await cookieDe(u);
-  const fresh = "NovaSenha456";
+  const cookie = await cookieFor(u);
+  const fresh = "NewPassword456";
 
-  const without = await updateUser(req(`/api/usuarios/${u.id}`, { method: "PUT", cookie, body: { senha: fresh } }), ctx(u.id));
+  const without = await updateUser(req(`/api/users/${u.id}`, { method: "PUT", cookie, body: { password: fresh } }), ctx(u.id));
   assert.equal(without.status, 403);
-  const wrong = await updateUser(req(`/api/usuarios/${u.id}`, { method: "PUT", cookie, body: { senha: fresh, senhaAtual: "errada-errada" } }), ctx(u.id));
+  const wrong = await updateUser(req(`/api/users/${u.id}`, { method: "PUT", cookie, body: { password: fresh, currentPassword: "wrong-wrong" } }), ctx(u.id));
   assert.equal(wrong.status, 403);
-  const correct = await updateUser(req(`/api/usuarios/${u.id}`, { method: "PUT", cookie, body: { senha: fresh, senhaAtual: PASSWORD } }), ctx(u.id));
+  const correct = await updateUser(req(`/api/users/${u.id}`, { method: "PUT", cookie, body: { password: fresh, currentPassword: PASSWORD } }), ctx(u.id));
   assert.equal(correct.status, 200);
 
-  const admin = await cookieDe(await createUserDirectly(email("sess-adm"), "ADMIN"));
-  const other = await userWithPassword("sess-outro");
-  const byAdmin = await updateUser(req(`/api/usuarios/${other.id}`, { method: "PUT", cookie: admin, body: { senha: fresh } }), ctx(other.id));
+  const admin = await cookieFor(await createUserDirectly(email("sess-adm"), "ADMIN"));
+  const other = await userWithPassword("sess-other");
+  const byAdmin = await updateUser(req(`/api/users/${other.id}`, { method: "PUT", cookie: admin, body: { password: fresh } }), ctx(other.id));
   assert.equal(byAdmin.status, 200);
 });
 
 test("REQ-AUTH-23: login with an unknown email also runs bcrypt (same order of time as with an existing email)", async () => {
-  const u = await userWithPassword("sess-tempo");
+  const u = await userWithPassword("sess-timing");
   const measure = async (mail: string) => {
     const t = process.hrtime.bigint();
-    await login(req("/api/auth", { method: "POST", body: { email: mail, senha: "any-password" } }));
+    await login(req("/api/auth", { method: "POST", body: { email: mail, password: "any-password" } }));
     return Number(process.hrtime.bigint() - t) / 1e6;
   };
   await measure(u.email); // warms up the comparison hash
   const existing = await measure(u.email);
-  const missing = await measure(email("nao-existe"));
+  const missing = await measure(email("does-not-exist"));
   assert.ok(missing > existing / 4, `missing=${missing}ms existing=${existing}ms: without bcrypt it would be almost instant`);
 });

@@ -6,7 +6,7 @@
 
 process.env.JWT_SECRET ??= "test-secret-at-least-32-characters-long";
 process.env.AZURE_VISION_ENDPOINT = "https://azure.test/predict";
-process.env.AZURE_VISION_KEY = "chave-de-teste-azure-123";
+process.env.AZURE_VISION_KEY = "azure-test-key-123";
 process.env.AI_CONFIDENCE_THRESHOLD = "0.7";
 
 import { NextRequest } from "next/server";
@@ -14,7 +14,7 @@ import { signToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 
-export type Type = "CLIENTE" | "MARCA" | "ADMIN";
+export type Type = "CUSTOMER" | "BRAND" | "ADMIN";
 
 /** Unique suffix per run: avoids collisions between files and runs. */
 export const RUN = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
@@ -22,17 +22,17 @@ export const email = (name: string) => `${name}-${RUN}@test.local`;
 
 export async function createUserDirectly(
   mail: string,
-  type: Type = "CLIENTE",
-  passwordHash = "hash-qualquer",
+  type: Type = "CUSTOMER",
+  passwordHash = "any-hash",
 ) {
-  await prisma.usuario.deleteMany({ where: { email: mail } });
-  return prisma.usuario.create({
-    data: { nome: "Teste " + type, email: mail, senha: passwordHash, tipo: type },
+  await prisma.user.deleteMany({ where: { email: mail } });
+  return prisma.user.create({
+    data: { name: "Test " + type, email: mail, password: passwordHash, type },
   });
 }
 
-export async function cookieDe(u: { id: number; email: string; tipo: Type }) {
-  return `token=${await signToken({ id: u.id, email: u.email, tipo: u.tipo })}`;
+export async function cookieFor(u: { id: number; email: string; type: Type }) {
+  return `token=${await signToken({ id: u.id, email: u.email, type: u.type })}`;
 }
 
 let seq = 0;

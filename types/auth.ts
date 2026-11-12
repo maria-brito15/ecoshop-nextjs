@@ -28,11 +28,11 @@ export interface JwtPayload {
   /**
    * User type/permission.
    * Decisive for the authorization middleware:
-   * - ADMIN → access granted to /api/admin and /painel routes
-   * - MARCA → access restricted to their own products
-   * - CLIENTE → access only to public routes and the profile
+   * - ADMIN → access granted to /api/admin and /dashboard routes
+   * - BRAND → access restricted to their own products
+   * - CUSTOMER → access only to public routes and the profile
    */
-  tipo: "CLIENTE" | "MARCA" | "ADMIN";
+  type: "CUSTOMER" | "BRAND" | "ADMIN";
 }
 
 /**
@@ -42,7 +42,7 @@ export interface JwtPayload {
 export interface TokenIssuer {
   /**
    * Generates a new JWT signed with the secret key.
-   * @param payload - Data to encode in the token (id, email, tipo)
+   * @param payload - Data to encode in the token (id, email, type)
    * @returns Promise with the token string in compact JWT format
    * @throws Error if JWT_SECRET is not configured
    */

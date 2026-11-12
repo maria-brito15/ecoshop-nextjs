@@ -5,7 +5,7 @@
  *
  * Service for managing product photos.
  *
- * Photos are stored on the file system (public/data_fotos/)
+ * Photos are stored on the file system (public/data_photos/)
  * and served as static files by Next.js.
  *
  * Business rules:
@@ -36,7 +36,7 @@ import {
  * Directory where photos are stored.
  * Absolute path to avoid ambiguity.
  */
-const PHOTOS_DIR = path.join(process.cwd(), "public/data_fotos");
+const PHOTOS_DIR = path.join(process.cwd(), "public/data_photos");
 
 /**
  * Maximum file size: 5MB.
@@ -95,11 +95,11 @@ export async function listPhotos(productId: number) {
     const files = await fs.readdir(PHOTOS_DIR);
     const photos = files
       .filter((file) => file.startsWith(`${productId}_`))
-      .map((name) => ({ nome: name, url: `/data_fotos/${name}` }));
-    return { fotos: photos, total: photos.length, produtoId: productId };
+      .map((name) => ({ name, url: `/data_photos/${name}` }));
+    return { photos, total: photos.length, productId };
   } catch {
     // Directory does not exist or read error
-    return { fotos: [], total: 0, produtoId: productId };
+    return { photos: [], total: 0, productId };
   }
 }
 
@@ -111,7 +111,7 @@ export type UploadFailureReason =
   | "NAME_ALREADY_EXISTS";
 
 export type UploadResult =
-  | { ok: true; photo: { nome: string; url: string } }
+  | { ok: true; photo: { name: string; url: string } }
   | { ok: false; reason: UploadFailureReason };
 
 /**
@@ -125,12 +125,12 @@ export type UploadResult =
  * directory listing first and overwriting afterwards (REQ-MIDIA-07).
  */
 export async function savePhoto(params: {
-  produtoId: number;
-  arquivo: File;
-  nomeCustomizado?: string | null;
+  productId: number;
+  file: File;
+  customName?: string | null;
   directory: string;
 }): Promise<UploadResult> {
-  const { produtoId: productId, arquivo: file, nomeCustomizado: customName, directory: directory } = params;
+  const { productId, file, customName, directory } = params;
 
   if (!hasAllowedExtension(file.name)) {
     return { ok: false, reason: "EXTENSION_NOT_ALLOWED" };
@@ -160,7 +160,7 @@ export async function savePhoto(params: {
 
   return {
     ok: true,
-    photo: { nome: fileName, url: `/data_fotos/${fileName}` },
+    photo: { name: fileName, url: `/data_photos/${fileName}` },
   };
 }
 
@@ -173,12 +173,12 @@ export async function savePhoto(params: {
  * @returns Operation result (ok with the photo, or an error with a reason)
  */
 export async function uploadPhoto(params: {
-  produtoId: number;
-  arquivo: File;
-  nomeCustomizado?: string | null;
+  productId: number;
+  file: File;
+  customName?: string | null;
 }): Promise<UploadResult> {
-  const product = await prisma.produto.findUnique({
-    where: { id: params.produtoId },
+  const product = await prisma.product.findUnique({
+    where: { id: params.productId },
     select: { id: true },
   });
   if (!product) return { ok: false, reason: "PRODUCT_NOT_FOUND" };
@@ -199,13 +199,13 @@ export async function uploadPhoto(params: {
  * @returns Operation result (ok, or an error with a reason)
  */
 export async function deletePhoto(params: {
-  produtoId: number;
-  nomeArquivo: string;
+  productId: number;
+  fileName: string;
 }): Promise<
   | { ok: true }
   | { ok: false; reason: "INVALID_NAME" | "FILE_NOT_FOUND" }
 > {
-  const { produtoId: productId, nomeArquivo: fileName } = params;
+  const { productId, fileName } = params;
 
   // Check that the file belongs to the product
   if (!fileName.startsWith(`${productId}_`)) {

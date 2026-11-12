@@ -1,13 +1,13 @@
-// app/api/certificados/[id]/route.ts
+// app/api/certificates/[id]/route.ts
 
 /**
  * CERTIFICATE BY ID API ROUTES
  *
  * Endpoints for operations on a specific certificate.
  *
- * GET /api/certificados/{id} - Fetch certificate by ID (public)
- * PUT /api/certificados/{id} - Update certificate (requires ADMIN)
- * DELETE /api/certificados/{id} - Delete certificate (requires ADMIN)
+ * GET /api/certificates/{id} - Fetch certificate by ID (public)
+ * PUT /api/certificates/{id} - Update certificate (requires ADMIN)
+ * DELETE /api/certificates/{id} - Delete certificate (requires ADMIN)
  *
  * @see services/certificate.service.ts - Business logic
  */
@@ -26,10 +26,10 @@ import {
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/certificados/{id} - Fetch certificate by ID
+ * GET /api/certificates/{id} - Fetch certificate by ID
  *
  * @param id - Certificate ID in the URL
- * @returns { certificado: Certificate }
+ * @returns { certificate: Certificate }
  * @status 200 - Certificate found
  * @status 404 - Certificate does not exist
  * @status 500 - Error fetching certificate
@@ -43,20 +43,20 @@ export async function GET(
     if (id === null) return ERRORS.invalidData("Invalid ID");
     const certificate = await getCertificate(id);
     if (!certificate) return ERRORS.notFound("Certificate");
-    return NextResponse.json({ certificado: certificate });
+    return NextResponse.json({ certificate });
   } catch (err) {
     return ERRORS.internal("fetch certificate", err);
   }
 }
 
 /**
- * PUT /api/certificados/{id} - Update certificate
+ * PUT /api/certificates/{id} - Update certificate
  *
  * Requires ADMIN authentication.
  *
  * @param id - Certificate ID in the URL
- * @body { nome?: string, descricao?: string, orgaoEmissor?: string }
- * @returns { certificado: Certificate }
+ * @body { name?: string, description?: string, issuingBody?: string }
+ * @returns { certificate: Certificate }
  * @status 200 - Certificate updated
  * @status 400 - Invalid data
  * @status 401 - Not authenticated
@@ -79,7 +79,7 @@ export async function PUT(
     if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
     const certificate = await updateCertificate(id, parsed.data);
-    return NextResponse.json({ certificado: certificate });
+    return NextResponse.json({ certificate });
   } catch (err) {
     return (
       mapError(err, "Certificate") ??
@@ -89,7 +89,7 @@ export async function PUT(
 }
 
 /**
- * DELETE /api/certificados/{id} - Delete certificate
+ * DELETE /api/certificates/{id} - Delete certificate
  *
  * Requires ADMIN authentication.
  *

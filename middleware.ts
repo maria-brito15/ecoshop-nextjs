@@ -14,7 +14,7 @@
  *
  * Execution flow:
  * 1. Extracts the token from the cookie
- * 2. Validates the token and gets the payload (id, email, tipo)
+ * 2. Validates the token and gets the payload (id, email, type)
  * 3. Checks whether the current route matches any protection rule
  * 4. If there is no rule → allows access (NextResponse.next())
  * 5. If there is a rule but the user is not authenticated → denies access
@@ -42,15 +42,15 @@ import { ROUTE_RULES } from "./config/protected-routes";
  * @returns Next.js response (next handler, redirect, or JSON error)
  *
  * @example
- * // Unauthenticated user accessing /perfil
- * // Result: redirect to /sign-in?next=/perfil
+ * // Unauthenticated user accessing /profile
+ * // Result: redirect to /sign-in?next=/profile
  *
  * @example
- * // CLIENTE user accessing /api/admin
- * // Result: { erro: "Forbidden" } with status 403
+ * // CUSTOMER user accessing /api/admin
+ * // Result: { error: "Forbidden" } with status 403
  *
  * @example
- * // ADMIN user accessing /painel
+ * // ADMIN user accessing /dashboard
  * // Result: NextResponse.next() (access granted)
  */
 export async function middleware(req: NextRequest) {
@@ -70,7 +70,7 @@ export async function middleware(req: NextRequest) {
   if (!payload) {
     // For API routes: return JSON 401 (Unauthorized)
     if (rule.responseType === "api") {
-      return NextResponse.json({ erro: "Not authorized" }, { status: 401 });
+      return NextResponse.json({ error: "Not authorized" }, { status: 401 });
     }
 
     // Expired access (15 min) but with a refresh token: renew and return to
@@ -93,10 +93,10 @@ export async function middleware(req: NextRequest) {
 
   // CASE 2: authenticated user but insufficient access level
   // Rule with level "admin" and the user is not ADMIN
-  if (rule.level === "admin" && payload.tipo !== "ADMIN") {
+  if (rule.level === "admin" && payload.type !== "ADMIN") {
     // For API routes: return JSON 403 (Forbidden)
     if (rule.responseType === "api") {
-      return NextResponse.json({ erro: "Acesso negado" }, { status: 403 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // For page routes: redirect to home (no permission)
@@ -116,9 +116,9 @@ export async function middleware(req: NextRequest) {
  * ALL requests (including CSS, JS, images, etc.), hurting performance.
  *
  * Supported patterns (glob patterns):
- * - /perfil/:path* → all routes starting with /perfil
- * - /painel/:path* → all routes starting with /painel
- * - /api/usuarios/:path* → all routes starting with /api/usuarios
+ * - /profile/:path* → all routes starting with /profile
+ * - /dashboard/:path* → all routes starting with /dashboard
+ * - /api/users/:path+ → /api/users/<id> only (the collection, /api/users, stays reachable for public sign-up)
  * - /api/admin/:path* → all routes starting with /api/admin
  *
  * Why not use ROUTE_RULES to generate the matcher automatically?
@@ -129,10 +129,10 @@ export async function middleware(req: NextRequest) {
  */
 export const config = {
   matcher: [
-    "/perfil/:path*",
-    "/ia-scan/:path*",
-    "/painel/:path*",
-    "/api/usuarios/:path*",
+    "/profile/:path*",
+    "/ai-scan/:path*",
+    "/dashboard/:path*",
+    "/api/users/:path+",
     "/api/admin/:path*",
   ],
 };

@@ -1,12 +1,12 @@
-// app/api/certificados/route.ts
+// app/api/certificates/route.ts
 
 /**
  * CERTIFICATES API ROUTES
  *
  * Endpoints for managing sustainability certificates.
  *
- * GET /api/certificados - List all certificates (public)
- * POST /api/certificados - Create a new certificate (requires ADMIN)
+ * GET /api/certificates - List all certificates (public)
+ * POST /api/certificates - Create a new certificate (requires ADMIN)
  *
  * Certificates are seals such as "FSC", "Organic Brazil", "Cruelty Free".
  *
@@ -25,28 +25,28 @@ import {
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/certificados - List all certificates
+ * GET /api/certificates - List all certificates
  *
- * @returns { certificados: Certificate[] }
+ * @returns { certificates: Certificate[] }
  * @status 200 - List returned successfully
  * @status 500 - Error fetching certificates
  */
 export async function GET() {
   try {
     const certificates = await listCertificates();
-    return NextResponse.json({ certificados: certificates });
+    return NextResponse.json({ certificates });
   } catch (err) {
     return ERRORS.internal("list certificates", err);
   }
 }
 
 /**
- * POST /api/certificados - Create a new certificate
+ * POST /api/certificates - Create a new certificate
  *
  * Requires ADMIN authentication.
  *
- * @body { nome: string, descricao?: string, orgaoEmissor: string }
- * @returns { certificado: Certificate }
+ * @body { name: string, description?: string, issuingBody: string }
+ * @returns { certificate: Certificate }
  * @status 201 - Certificate created
  * @status 400 - Invalid data
  * @status 401 - Not authenticated
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
     const certificate = await createCertificate(parsed.data);
-    return NextResponse.json({ certificado: certificate }, { status: 201 });
+    return NextResponse.json({ certificate }, { status: 201 });
   } catch (err) {
     return (
       mapError(err, "Certificate") ??

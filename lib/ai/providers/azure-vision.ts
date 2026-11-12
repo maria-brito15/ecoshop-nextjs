@@ -72,7 +72,7 @@ export async function classifyImage(
         method: "POST",
         headers: {
           "Prediction-Key": AZURE_KEY,
-          "Content-Type": "application/octet-stream", // imagem bruta
+          "Content-Type": "application/octet-stream", // image bruta
         },
         body: new Uint8Array(imageBuffer),
       },

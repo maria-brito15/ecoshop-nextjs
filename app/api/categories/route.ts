@@ -1,12 +1,12 @@
-// app/api/categorias/route.ts
+// app/api/categories/route.ts
 
 /**
  * CATEGORIES API ROUTES
  *
  * Endpoints for managing product categories.
  *
- * GET /api/categorias - List all categories (public)
- * POST /api/categorias - Create a new category (requires ADMIN)
+ * GET /api/categories - List all categories (public)
+ * POST /api/categories - Create a new category (requires ADMIN)
  *
  * Permissions:
  * - GET: Public (any user can see categories)
@@ -24,28 +24,28 @@ import { listCategories, createCategory } from "@/services/category.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/categorias - List all categories
+ * GET /api/categories - List all categories
  *
- * @returns { categorias: Category[] }
+ * @returns { categories: Category[] }
  * @status 200 - List returned successfully (may be empty)
  * @status 500 - Error fetching categories
  */
 export async function GET() {
   try {
     const categories = await listCategories();
-    return NextResponse.json({ categorias: categories });
+    return NextResponse.json({ categories });
   } catch (err) {
-    return ERRORS.internal("listar categorias", err);
+    return ERRORS.internal("list categories", err);
   }
 }
 
 /**
- * POST /api/categorias - Create a new category
+ * POST /api/categories - Create a new category
  *
  * Requires ADMIN authentication.
  *
- * @body { nome: string, descricao?: string }
- * @returns { categoria: Category }
+ * @body { name: string, description?: string }
+ * @returns { category: Category }
  * @status 201 - Category created successfully
  * @status 400 - Invalid data
  * @status 401 - Not authenticated
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
     const category = await createCategory(parsed.data);
-    return NextResponse.json({ categoria: category }, { status: 201 });
+    return NextResponse.json({ category }, { status: 201 });
   } catch (err) {
     return (
       mapError(err, "Category") ?? ERRORS.internal("create category", err)

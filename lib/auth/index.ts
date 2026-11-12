@@ -18,7 +18,7 @@
  * const session = await getSession(req);
  * if (!session) return ERRORS.unauthorized();
  *
- * const token = await signToken({ id: user.id, email, tipo });
+ * const token = await signToken({ id: user.id, email, type });
  * setAuthCookie(res, token);
  * ```
  *

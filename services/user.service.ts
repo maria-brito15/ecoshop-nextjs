@@ -13,7 +13,7 @@
  *
  * Security:
  * - Passwords are never returned in API responses
- * - Queries always exclude the "senha" field (explicit select)
+ * - Queries always exclude the "password" field (explicit select)
  * - Hash with bcrypt (SALT_ROUNDS = 12)
  *
  * Cache strategy:
@@ -51,36 +51,36 @@ import { randomBytes } from "node:crypto";
 const SALT_ROUNDS = 12;
 
 /**
- * Usuario fields that may leave the server.
- * NEVER include `senha` here (Constitution, Art. IV): every user response
+ * User fields that may leave the server.
+ * NEVER include `password` here (Constitution, Art. IV): every user response
  * must use this projection instead of the full Prisma entity.
  */
 const PUBLIC_USER_FIELDS = {
   id: true,
-  nome: true,
+  name: true,
   email: true,
-  telefone: true,
-  tipo: true,
-  criadoEm: true,
+  phone: true,
+  type: true,
+  createdAt: true,
 } as const;
 
 interface CreateUserData {
-  nome: string;
+  name: string;
   email: string;
-  telefone?: string;
-  senha: string;
-  tipo: "CLIENTE" | "MARCA" | "ADMIN";
-  marcaNome?: string;
-  marcaDescricao?: string;
+  phone?: string;
+  password: string;
+  type: "CUSTOMER" | "BRAND" | "ADMIN";
+  brandName?: string;
+  brandDescription?: string;
 }
 
 interface UpdateUserData {
-  nome?: string;
+  name?: string;
   email?: string;
-  telefone?: string;
-  senha?: string;
+  phone?: string;
+  password?: string;
   /** Required to change your OWN password (REQ-AUTH-21). */
-  senhaAtual?: string;
+  currentPassword?: string;
 }
 
 const isUniquenessViolation = (err: unknown) =>
@@ -95,15 +95,15 @@ async function ensureNoRegistrationConflict(
   userEmail: string,
   brandName?: string,
 ) {
-  const emailInUse = await prisma.usuario.findFirst({
+  const emailInUse = await prisma.user.findFirst({
     where: { email: { equals: userEmail, mode: "insensitive" } },
     select: { id: true },
   });
   if (emailInUse) throw new BusinessConflict("Email already registered");
 
   if (brandName) {
-    const brandInUse = await prisma.marca.findUnique({
-      where: { nome: brandName },
+    const brandInUse = await prisma.brand.findUnique({
+      where: { name: brandName },
       select: { id: true },
     });
     if (brandInUse) {
@@ -119,12 +119,12 @@ async function ensureNoRegistrationConflict(
  * - Checks whether the email is already registered
  * - Hashes the password with bcrypt
  *
- * REQ-AUTH-11 / ADR-0018: when `tipo === "MARCA"` and `marcaNome` is
+ * REQ-AUTH-11 / ADR-0018: when `type === "BRAND"` and `brandName` is
  * provided (public registration, which requires the name — REQ-AUTH-14), the user
- * is saved as CLIENTE (CLIENTE rights while pending) and a
- * `Marca` with `status: "PENDENTE"` is created in the same transaction; only an
- * ADMIN approving (`approveBrand`) actually grants the MARCA type.
- * Without `marcaNome` (admin registration, which does not ask for that field), the
+ * is saved as CUSTOMER (CUSTOMER rights while pending) and a
+ * `Brand` with `status: "PENDING"` is created in the same transaction; only an
+ * ADMIN approving (`approveBrand`) actually grants the BRAND type.
+ * Without `brandName` (admin registration, which does not ask for that field), the
  * previous behavior is kept: the requested type is saved directly.
  *
  * REQ-AUTH-15: the email arrives normalized (lowercase) from the schema; the
@@ -133,38 +133,38 @@ async function ensureNoRegistrationConflict(
  * (P2002) decides, and the result is also 409.
  *
  * @param data - User data
- * @returns Created user (without the password) and, if pending, `marcaPendente: true`
+ * @returns Created user (without the password) and, if pending, `pendingBrand: true`
  * @throws BusinessConflict if the email (or the requested brand name) already exists
  */
 export async function createUser(data: CreateUserData) {
-  const brandRequest = data.tipo === "MARCA" && !!data.marcaNome;
-  const requestedBrand = brandRequest ? data.marcaNome : undefined;
+  const brandRequest = data.type === "BRAND" && !!data.brandName;
+  const requestedBrand = brandRequest ? data.brandName : undefined;
 
   await ensureNoRegistrationConflict(data.email, requestedBrand);
 
-  const hashedPassword = await bcrypt.hash(data.senha, SALT_ROUNDS);
+  const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
 
   let user;
   try {
     user = await prisma.$transaction(async (tx) => {
-      const created = await tx.usuario.create({
+      const created = await tx.user.create({
         data: {
-          nome: data.nome,
+          name: data.name,
           email: data.email,
-          telefone: data.telefone,
-          senha: hashedPassword,
-          tipo: brandRequest ? "CLIENTE" : data.tipo,
+          phone: data.phone,
+          password: hashedPassword,
+          type: brandRequest ? "CUSTOMER" : data.type,
         },
         select: PUBLIC_USER_FIELDS,
       });
 
       if (brandRequest) {
-        await tx.marca.create({
+        await tx.brand.create({
           data: {
-            nome: data.marcaNome!,
-            descricao: data.marcaDescricao,
-            status: "PENDENTE",
-            usuarioId: created.id,
+            name: data.brandName!,
+            description: data.brandDescription,
+            status: "PENDING",
+            userId: created.id,
           },
         });
       }
@@ -182,21 +182,21 @@ export async function createUser(data: CreateUserData) {
   await invalidateCache("USERS");
   if (brandRequest) await invalidateCache("BRANDS");
 
-  return { ...user, marcaPendente: brandRequest };
+  return { ...user, pendingBrand: brandRequest };
 }
 
 /**
  * Lists all users (admin only).
  *
  * Returned fields (password excluded for security):
- * - id, nome, email, telefone, tipo, criadoEm
+ * - id, name, email, phone, type, createdAt
  *
  * NOTE: This listing does NOT use the cache because it contains sensitive data.
  *
  * @returns Array of users with public fields
  */
 export async function listUsers() {
-  return prisma.usuario.findMany({
+  return prisma.user.findMany({
     select: PUBLIC_USER_FIELDS,
   });
 }
@@ -208,7 +208,7 @@ export async function listUsers() {
  * @returns The user (without the password), or null
  */
 export async function getUser(id: number) {
-  return prisma.usuario.findUnique({
+  return prisma.user.findUnique({
     where: { id },
     select: PUBLIC_USER_FIELDS,
   });
@@ -237,29 +237,29 @@ export async function updateUser(
   data: UpdateUserData,
   requesterId?: number,
 ) {
-  const { senhaAtual: currentPassword, ...fields } = data;
+  const { currentPassword, ...fields } = data;
 
   // REQ-AUTH-21: whoever changes their OWN password proves they know it (a hijacked
   // session is not enough to take over the account). An ADMIN changing another user does not need it.
-  if (fields.senha && requesterId === id) {
+  if (fields.password && requesterId === id) {
     await requireCurrentPassword(id, currentPassword);
   }
 
-  const updateData: Prisma.UsuarioUpdateInput = { ...fields };
+  const updateData: Prisma.UserUpdateInput = { ...fields };
 
-  if (fields.senha) {
-    updateData.senha = await bcrypt.hash(fields.senha, SALT_ROUNDS);
+  if (fields.password) {
+    updateData.password = await bcrypt.hash(fields.password, SALT_ROUNDS);
   }
 
   let user;
   try {
-    user = await prisma.usuario.update({
+    user = await prisma.user.update({
       where: { id },
       data: updateData,
       select: PUBLIC_USER_FIELDS,
     });
   } catch (err) {
-    // `email` is the only unique Usuario column that this update changes.
+    // `email` is the only unique User column that this update changes.
     if (isUniquenessViolation(err)) {
       throw new BusinessConflict("Email already registered");
     }
@@ -274,7 +274,7 @@ export async function updateUser(
   ]);
 
   // REQ-AUTH-20: changing the password ends the other sessions (refresh tokens).
-  if (fields.senha) await revokeUserSessions(id);
+  if (fields.password) await revokeUserSessions(id);
 
   return user;
 }
@@ -297,13 +297,13 @@ export async function deleteUser(id: number, requesterId: number) {
     throw new BusinessConflict("You cannot delete your own account");
   }
 
-  const user = await prisma.usuario.findUnique({ where: { id } });
+  const user = await prisma.user.findUnique({ where: { id } });
 
   if (!user) {
     throw new ResourceNotFound("User");
   }
 
-  await prisma.usuario.delete({ where: { id } });
+  await prisma.user.delete({ where: { id } });
   await revokeUserSessions(id);
   await Promise.all([
     invalidateKey(userKey(id)),
@@ -320,12 +320,12 @@ export async function deleteUser(id: number, requesterId: number) {
  * @throws OperationNotAllowed if the current password is missing or does not match
  */
 async function requireCurrentPassword(id: number, currentPassword: string | undefined) {
-  const user = await prisma.usuario.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id },
-    select: { senha: true },
+    select: { password: true },
   });
   if (!user) throw new ResourceNotFound("User");
-  if (!currentPassword || !(await bcrypt.compare(currentPassword, user.senha))) {
+  if (!currentPassword || !(await bcrypt.compare(currentPassword, user.password))) {
     throw new OperationNotAllowed("Current password is incorrect");
   }
 }
@@ -354,31 +354,31 @@ export async function verifyCredentials(
   providedEmail: string,
   password: string,
 ): Promise<SessionIdentity | null> {
-  const user = await prisma.usuario.findFirst({
+  const user = await prisma.user.findFirst({
     where: { email: { equals: providedEmail, mode: "insensitive" } },
   });
-  const hash = user?.senha ?? (await getDummyHash());
+  const hash = user?.password ?? (await getDummyHash());
   const matches = await bcrypt.compare(password, hash);
   if (!user || !matches) return null;
-  return { id: user.id, email: user.email, tipo: user.tipo };
+  return { id: user.id, email: user.email, type: user.type };
 }
 
 /** Rereads the user's current id, email and role (session refresh); `null` if deleted. */
 export async function getIdentity(
   id: number,
 ): Promise<SessionIdentity | null> {
-  return prisma.usuario.findUnique({
+  return prisma.user.findUnique({
     where: { id },
-    select: { id: true, email: true, tipo: true },
+    select: { id: true, email: true, type: true },
   });
 }
 
 /** "Who am I" data (`/api/auth/me`), with a short cache. */
 export async function getSessionProfile(id: number) {
   return withCache(currentUserKey(id), TTL.USER, () =>
-    prisma.usuario.findUnique({
+    prisma.user.findUnique({
       where: { id },
-      select: { id: true, nome: true, email: true, tipo: true },
+      select: { id: true, name: true, email: true, type: true },
     }),
   );
 }

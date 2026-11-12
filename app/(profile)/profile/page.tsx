@@ -1,9 +1,9 @@
-// app/(perfil)/perfil/page.tsx
+// app/(profile)/profile/page.tsx
 
 /**
  * USER PROFILE PAGE
  *
- * Route: "/perfil" (protected - requires authentication)
+ * Route: "/profile" (protected - requires authentication)
  *
  * Page where the user can view and edit their personal data,
  * and also follow their visited-products history and environmental impact.
@@ -19,7 +19,7 @@
  * - The requireAuth middleware protects the route
  *
  * @see lib/auth/jwt.ts - Authentication
- * @see app/api/usuarios/[id]/route.ts - Profile endpoint
+ * @see app/api/users/[id]/route.ts - Profile endpoint
  */
 
 "use client";
@@ -30,32 +30,32 @@ import { fetchSession, endClientSession } from "@/lib/hooks/session";
 
 type User = {
   id: number;
-  nome: string;
+  name: string;
   email: string;
-  telefone: string | null;
-  tipo: string;
-  criadoEm: string;
+  phone: string | null;
+  type: string;
+  createdAt: string;
 };
 
 type EditForm = {
-  nome: string;
-  telefone: string;
+  name: string;
+  phone: string;
 };
 
 /**
  * Item of the local visited-products history (REQ-PERF-05).
- * Same shape written by app/(store)/produtos/[id]/page.tsx under the key "ecoshop_history".
+ * Same shape written by app/(store)/products/[id]/page.tsx under the key "ecoshop_history".
  */
 type HistoryItem = {
-  produtoId: number;
-  nome: string;
-  fotoUrl?: string;
-  preco: number;
-  visitadoEm: string;
+  productId: number;
+  name: string;
+  photoUrl?: string;
+  price: number;
+  visitedAt: string;
 };
 
 // ----------------------------------------------------------------------------
-// COMPONENTES AUXILIARES
+// HELPER COMPONENTS
 // ----------------------------------------------------------------------------
 
 /**
@@ -68,7 +68,7 @@ function ImpactCard({
   value,
   color,
   delay,
-  fonte: source,
+  source,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -76,7 +76,7 @@ function ImpactCard({
   color: string;
   delay: number;
   /** Metric source (REQ-PERF-06); no number without a declared source. */
-  fonte: string;
+  source: string;
 }) {
   return (
     <div
@@ -228,21 +228,21 @@ function Notification({
  * Allows editing name and phone (email is not editable).
  */
 function EditModal({
-  usuario: user,
+  user,
   form,
   onChange,
   onSave,
   onCancel,
-  salvando: saving,
-  erroEdit: editError,
+  saving,
+  editErrorMessage: editError,
 }: {
-  usuario: User;
+  user: User;
   form: EditForm;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSave: (e: React.FormEvent) => void;
   onCancel: () => void;
-  salvando: boolean;
-  erroEdit: string | null;
+  saving: boolean;
+  editErrorMessage: string | null;
 }) {
   const inputCls = `
     w-full px-4 py-3 rounded-xl text-sm font-medium
@@ -316,8 +316,8 @@ function EditModal({
               </label>
               <input
                 type="text"
-                name="nome"
-                value={form.nome}
+                name="name"
+                value={form.name}
                 onChange={onChange}
                 required
                 className={inputCls}
@@ -343,18 +343,18 @@ function EditModal({
                 className="block text-sm font-semibold mb-2"
                 style={{ color: "var(--color-text-primary)" }}
               >
-                Telefone{" "}
+                Phone{" "}
                 <span
                   className="font-normal text-xs"
                   style={{ color: "var(--color-text-tertiary)" }}
                 >
-                  (opcional)
+                  (optional)
                 </span>
               </label>
               <input
                 type="tel"
-                name="telefone"
-                value={form.telefone}
+                name="phone"
+                value={form.phone}
                 onChange={onChange}
                 className={inputCls}
                 placeholder="(00) 00000-0000"
@@ -442,7 +442,7 @@ function EditModal({
                   <polyline points="7 3 7 8 15 8" />
                 </svg>
               )}
-              {saving ? "Salvando..." : "Save Changes"}
+              {saving ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </form>
@@ -468,10 +468,10 @@ export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<"historico" | "impacto">("historico");
+  const [tab, setTab] = useState<"history" | "impact">("history");
 
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState<EditForm>({ nome: "", telefone: "" });
+  const [form, setForm] = useState<EditForm>({ name: "", phone: "" });
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
@@ -481,7 +481,7 @@ export default function ProfilePage() {
   } | null>(null);
 
   // Load the viewed-products history from localStorage (REQ-PERF-05);
-  // written in app/(store)/produtos/[id]/page.tsx when a product is opened.
+  // written in app/(store)/products/[id]/page.tsx when a product is opened.
   const [history] = useState<HistoryItem[]>(() => {
     if (typeof window === "undefined") return [];
     try {
@@ -504,15 +504,15 @@ export default function ProfilePage() {
         }
         const id = session.id;
 
-        const res = await fetch(`/api/usuarios/${id}`, {
+        const res = await fetch(`/api/users/${id}`, {
           credentials: "include",
         });
         if (!res.ok) throw new Error("Error fetching profile");
         const data = await res.json();
-        setUser(data.usuario);
+        setUser(data.user);
         setForm({
-          nome: data.usuario.nome,
-          telefone: data.usuario.telefone ?? "",
+          name: data.user.name,
+          phone: data.user.phone ?? "",
         });
       } catch {
         setError("Could not load the profile.");
@@ -544,22 +544,22 @@ export default function ProfilePage() {
     setSaving(true);
     setEditError(null);
     try {
-      const res = await fetch(`/api/usuarios/${user.id}`, {
+      const res = await fetch(`/api/users/${user.id}`, {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nome: form.nome,
-          ...(form.telefone ? { telefone: form.telefone } : {}),
+          name: form.name,
+          ...(form.phone ? { phone: form.phone } : {}),
         }),
       });
       if (!res.ok) {
         const data = await res.json();
-        setEditError(data.erro ?? "Error saving.");
+        setEditError(data.error ?? "Error saving.");
         return;
       }
       const data = await res.json();
-      setUser((prev) => (prev ? { ...prev, ...data.usuario } : prev));
+      setUser((prev) => (prev ? { ...prev, ...data.user } : prev));
       setEditing(false);
       showNotification("Profile updated successfully!", "success");
     } catch {
@@ -571,7 +571,7 @@ export default function ProfilePage() {
 
   function handleCancel() {
     if (!user) return;
-    setForm({ nome: user.nome, telefone: user.telefone ?? "" });
+    setForm({ name: user.name, phone: user.phone ?? "" });
     setEditError(null);
     setEditing(false);
   }
@@ -633,7 +633,7 @@ export default function ProfilePage() {
     );
   }
 
-  const memberSince = new Date(user.criadoEm).toLocaleDateString("pt-BR", {
+  const memberSince = new Date(user.createdAt).toLocaleDateString("pt-BR", {
     year: "numeric",
     month: "long",
   });
@@ -654,13 +654,13 @@ export default function ProfilePage() {
       {notification && <Notification message={notification.msg} type={notification.type} />}
       {editing && (
         <EditModal
-          usuario={user}
+          user={user}
           form={form}
           onChange={handleChange}
           onSave={handleSave}
           onCancel={handleCancel}
-          salvando={saving}
-          erroEdit={editError}
+          saving={saving}
+          editErrorMessage={editError}
         />
       )}
 
@@ -724,7 +724,7 @@ export default function ProfilePage() {
                   className="text-3xl font-extrabold tracking-tight mb-1.5"
                   style={{ color: "var(--color-text-primary)" }}
                 >
-                  {user.nome}
+                  {user.name}
                 </h1>
                 <p
                   className="text-base mb-1"
@@ -732,12 +732,12 @@ export default function ProfilePage() {
                 >
                   {user.email}
                 </p>
-                {user.telefone && (
+                {user.phone && (
                   <p
                     className="text-sm mb-4"
                     style={{ color: "var(--color-text-tertiary)" }}
                   >
-                    {user.telefone}
+                    {user.phone}
                   </p>
                 )}
                 <div className="flex flex-wrap gap-2.5">
@@ -761,7 +761,7 @@ export default function ProfilePage() {
                   >
                     📅 Membro desde {memberSince}
                   </span>
-                  {user.tipo !== "CLIENTE" && (
+                  {user.type !== "CUSTOMER" && (
                     <span
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold"
                       style={{
@@ -771,9 +771,9 @@ export default function ProfilePage() {
                       }}
                     >
                       🏪{" "}
-                      {user.tipo === "MARCA"
+                      {user.type === "BRAND"
                         ? "Partner Store"
-                        : "Administrador"}
+                        : "Administrator"}
                     </span>
                   )}
                 </div>
@@ -862,8 +862,8 @@ export default function ProfilePage() {
             style={{ borderBottom: "2px solid var(--color-border)" }}
           >
             <TabBtn
-              active={tab === "historico"}
-              onClick={() => setTab("historico")}
+              active={tab === "history"}
+              onClick={() => setTab("history")}
               icon={
                 <svg
                   width="17"
@@ -883,8 +883,8 @@ export default function ProfilePage() {
               Vistos Recentemente
             </TabBtn>
             <TabBtn
-              active={tab === "impacto"}
-              onClick={() => setTab("impacto")}
+              active={tab === "impact"}
+              onClick={() => setTab("impact")}
               icon={
                 <svg
                   width="17"
@@ -902,12 +902,12 @@ export default function ProfilePage() {
                 </svg>
               }
             >
-              Meu Impacto
+              My Impact
             </TabBtn>
           </div>
 
           {/* HISTORY (visited products) */}
-          {tab === "historico" && (
+          {tab === "history" && (
             <div style={{ animation: "fadeInUp 0.4s ease both" }}>
               <div className="mb-8">
                 <h2
@@ -945,7 +945,7 @@ export default function ProfilePage() {
                     You have not viewed any product yet.
                   </p>
                   <a
-                    href="/produtos"
+                    href="/products"
                     className="flex items-center gap-2 px-7 py-3.5 rounded-xl text-sm font-bold text-white transition-all duration-200 hover:-translate-y-1"
                     style={{
                       background:
@@ -973,8 +973,8 @@ export default function ProfilePage() {
                 <div className="flex flex-col gap-3">
                   {history.map((item) => (
                     <a
-                      key={item.produtoId}
-                      href={`/produtos/${item.produtoId}`}
+                      key={item.productId}
+                      href={`/products/${item.productId}`}
                       className="flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-0.5"
                       style={{
                         background: "var(--color-bg-surface)",
@@ -986,11 +986,11 @@ export default function ProfilePage() {
                         className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden"
                         style={{ background: "var(--color-bg-body)" }}
                       >
-                        {item.fotoUrl ? (
+                        {item.photoUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={item.fotoUrl}
-                            alt={item.nome}
+                            src={item.photoUrl}
+                            alt={item.name}
                             className="w-full h-full object-contain"
                           />
                         ) : (
@@ -1002,14 +1002,14 @@ export default function ProfilePage() {
                           className="font-semibold truncate"
                           style={{ color: "var(--color-text-primary)" }}
                         >
-                          {item.nome}
+                          {item.name}
                         </p>
                         <p
                           className="text-sm"
                           style={{ color: "var(--color-text-tertiary)" }}
                         >
                           Visited on{" "}
-                          {new Date(item.visitadoEm).toLocaleDateString(
+                          {new Date(item.visitedAt).toLocaleDateString(
                             "pt-BR",
                           )}
                         </p>
@@ -1018,7 +1018,7 @@ export default function ProfilePage() {
                         className="font-bold flex-shrink-0"
                         style={{ color: "var(--color-primary)" }}
                       >
-                        {item.preco.toLocaleString("pt-BR", {
+                        {item.price.toLocaleString("pt-BR", {
                           style: "currency",
                           currency: "BRL",
                         })}
@@ -1031,14 +1031,14 @@ export default function ProfilePage() {
           )}
 
           {/* ENVIRONMENTAL IMPACT (metrics) */}
-          {tab === "impacto" && (
+          {tab === "impact" && (
             <div style={{ animation: "fadeInUp 0.4s ease both" }}>
               <div className="mb-8">
                 <h2
                   className="text-2xl font-bold mb-2"
                   style={{ color: "var(--color-text-primary)" }}
                 >
-                  Meu Impacto Ambiental
+                  My Environmental Impact
                 </h2>
                 <p
                   className="text-base"
@@ -1055,11 +1055,11 @@ export default function ProfilePage() {
               >
                 <ImpactCard
                   icon="🌳"
-                  label="Explorador Verde"
+                  label="Green Explorer"
                   value={historyCount}
                   color="linear-gradient(135deg, var(--color-primary-light), var(--color-primary))"
                   delay={100}
-                  fonte="Actual count of your visited-products history."
+                  source="Actual count of your visited-products history."
                 />
                 <ImpactCard
                   icon="💧"
@@ -1067,7 +1067,7 @@ export default function ProfilePage() {
                   value={`${historyCount * 50}L`}
                   color="linear-gradient(135deg, #bae6fd, #0ea5e9)"
                   delay={200}
-                  fonte="Illustrative estimate: 50L per visited product — there is no real data source per product yet (REQ-PERF-06)."
+                  source="Illustrative estimate: 50L per visited product — there is no real data source per product yet (REQ-PERF-06)."
                 />
                 <ImpactCard
                   icon="♻️"
@@ -1075,7 +1075,7 @@ export default function ProfilePage() {
                   value={Math.floor(historyCount * 0.3)}
                   color="linear-gradient(135deg, #fde68a, #f59e0b)"
                   delay={300}
-                  fonte="Illustrative estimate: 0.3 per visited product — there is no real data source per product yet (REQ-PERF-06)."
+                  source="Illustrative estimate: 0.3 per visited product — there is no real data source per product yet (REQ-PERF-06)."
                 />
               </div>
               <div

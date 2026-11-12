@@ -13,15 +13,15 @@
  * - POST, PUT, DELETE: requires ADMIN authentication
  *
  * Relationships:
- * - Many-to-many with Products (via ProdutoCertificado)
+ * - Many-to-many with Products (via ProductCertificate)
  * - A certificate can be assigned to multiple products
  *
  * Endpoints:
- * - List: GET /api/certificados
- * - Fetch: GET /api/certificados/:id
- * - Create: POST /api/certificados (admin)
- * - Update: PUT /api/certificados/:id (admin)
- * - Delete: DELETE /api/certificados/:id (admin)
+ * - List: GET /api/certificates
+ * - Fetch: GET /api/certificates/:id
+ * - Create: POST /api/certificates (admin)
+ * - Update: PUT /api/certificates/:id (admin)
+ * - Delete: DELETE /api/certificates/:id (admin)
  */
 
 import { useFetch } from "./useFetch";
@@ -43,7 +43,7 @@ import type {
  * @returns Hook with the certificate array, loading and error
  */
 export function useListCertificates() {
-  return useFetch<ListCertificatesResponse>("/api/certificados");
+  return useFetch<ListCertificatesResponse>("/api/certificates");
 }
 
 /**
@@ -54,7 +54,7 @@ export function useListCertificates() {
  */
 export function useGetCertificate(id: number | null) {
   return useFetch<GetCertificateResponse>(
-    id ? `/api/certificados/${id}` : null,
+    id ? `/api/certificates/${id}` : null,
   );
 }
 
@@ -66,16 +66,16 @@ export function useGetCertificate(id: number | null) {
  *
  * @example
  * const create = useCreateCertificate();
- * await create.execute("/api/certificados", {
- *   nome: "Recicla+",
- *   orgaoEmissor: "Recicla Institute",
- *   descricao: "Certifies that the product is 100% recyclable"
+ * await create.execute("/api/certificates", {
+ *   name: "Recicla+",
+ *   issuingBody: "Recicla Institute",
+ *   description: "Certifies that the product is 100% recyclable"
  * });
  */
 export function useCreateCertificate() {
   return useMutation<CreateCertificateResponse, CreateCertificateBody>({
     method: "POST",
-    invalidate: ["/api/certificados"],
+    invalidate: ["/api/certificates"],
   });
 }
 
@@ -88,7 +88,7 @@ export function useCreateCertificate() {
 export function useUpdateCertificate() {
   return useMutation<UpdateCertificateResponse, UpdateCertificateBody>({
     method: "PUT",
-    invalidate: ["/api/certificados"],
+    invalidate: ["/api/certificates"],
   });
 }
 
@@ -104,6 +104,6 @@ export function useUpdateCertificate() {
 export function useDeleteCertificate() {
   return useMutation<OkResponse>({
     method: "DELETE",
-    invalidate: ["/api/certificados"],
+    invalidate: ["/api/certificates"],
   });
 }

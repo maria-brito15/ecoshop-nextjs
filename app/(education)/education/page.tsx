@@ -1,9 +1,9 @@
-// app/(educacao)/educacao/page.tsx
+// app/(education)/education/page.tsx
 
 /**
  * ENVIRONMENTAL EDUCATION PAGE
  *
- * Route: "/educacao"
+ * Route: "/education"
  *
  * EcoShop's educational page, meant to raise users' awareness
  * about sustainability, recycling and ecological practices.
@@ -27,10 +27,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-type Tab = "artigos" | "dicas" | "quiz";
+type Tab = "articles" | "tips" | "quiz";
 
 type Article = {
-  tag: "verde" | "agua" | "energia" | "consumo";
+  tag: "green" | "water" | "energy" | "consumption";
   tagLabel: string;
   tagColor: string;
   icon: string;
@@ -64,8 +64,8 @@ type Question = {
  */
 const ARTICLES: Article[] = [
   {
-    tag: "verde",
-    tagLabel: "Meio ambiente",
+    tag: "green",
+    tagLabel: "Environment",
     tagColor:
       "bg-[var(--color-primary-light)] text-[var(--color-primary-dark)]",
     icon: "🌿",
@@ -76,7 +76,7 @@ const ARTICLES: Article[] = [
     body: "Selective collection is the first step toward an efficient recycling chain. When we separate waste correctly at home, we make the work of waste-picker cooperatives easier and drastically reduce the volume of waste going to landfills.\n\nStudies indicate that municipalities with active selective collection programs cut the material sent to landfills by up to 30%. This extends the lifespan of those sites and reduces emissions of methane, a highly polluting gas.\n\nThe simplest step: separate dry waste (plastic, paper, metal, glass) from wet waste (food scraps). Many municipalities offer separate collection for each type.",
   },
   {
-    tag: "agua",
+    tag: "water",
     tagLabel: "Water",
     tagColor: "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
     icon: "💧",
@@ -87,8 +87,8 @@ const ARTICLES: Article[] = [
     body: "Conscious water use starts with small habits. Turning off the tap while brushing your teeth saves up to 12 liters per minute. In the shower, cutting just two minutes can save about 24 liters per day.\n\nBeyond habits, you can adapt the house: aerators on taps reduce flow without hurting the feeling of pressure, and dual-flush toilets save up to 60% of water per use.\n\nReusing washing machine water to clean sidewalks or water plants is another simple practice with a large cumulative impact over the month.",
   },
   {
-    tag: "energia",
-    tagLabel: "Energia",
+    tag: "energy",
+    tagLabel: "Energy",
     tagColor:
       "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
     icon: "⚡",
@@ -99,8 +99,8 @@ const ARTICLES: Article[] = [
     body: "Energy efficiency is one of the most accessible ways to reduce environmental impact. LED bulbs use up to 80% less energy than incandescent ones and last much longer, which quickly pays back the initial investment.\n\nDevices in standby mode account for 5% to 12% of a household's total energy consumption. Unplugging them when not in use is a simple and effective habit.\n\nAppliances with the Procel A label are more efficient and, in the long run, cheaper.",
   },
   {
-    tag: "consumo",
-    tagLabel: "Consumo",
+    tag: "consumption",
+    tagLabel: "Consumption",
     tagColor:
       "bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300",
     icon: "🛒",
@@ -179,7 +179,7 @@ const TIPS: Tip[] = [
   },
   {
     icon: "⚠️",
-    title: "Especial",
+    title: "Special",
     color:
       "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/15 dark:text-purple-400 dark:border-purple-500/30",
     tips: [
@@ -198,19 +198,19 @@ const TIPS: Tip[] = [
 const QUESTIONS: Question[] = [
   {
     q: "Which bin color is used for plastic in selective collection?",
-    opts: ["Azul", "Vermelha", "Verde", "Amarela"],
+    opts: ["Blue", "Red", "Green", "Yellow"],
     ans: 1,
     exp: "The red bin is the standard color for plastics in the Brazilian selective collection system.",
   },
   {
     q: "Which gas is produced by the decomposition of organic matter in landfills?",
-    opts: ["CO₂", "Ozone", "Metano", "Nitrogen"],
+    opts: ["CO₂", "Ozone", "Methane", "Nitrogen"],
     ans: 2,
     exp: "Methane (CH₄) is released by anaerobic decomposition. It is a greenhouse gas far more potent than CO₂.",
   },
   {
     q: "Approximately how long does a plastic bag take to decompose?",
-    opts: ["10 anos", "50 anos", "400 anos", "10.000 anos"],
+    opts: ["10 years", "50 years", "400 years", "10,000 years"],
     ans: 2,
     exp: "Common plastic bags take between 400 and 1,000 years to decompose completely in the environment.",
   },
@@ -219,22 +219,22 @@ const QUESTIONS: Question[] = [
     opts: [
       "Aluminum can",
       "Used toilet paper",
-      "Garrafa PET",
-      "Jornal",
+      "PET bottle",
+      "Newspaper",
     ],
     ans: 1,
     exp: "Used toilet paper is contaminated and cannot be recycled. Cans, PET and newspapers are recyclable.",
   },
   {
     q: "How much does turning off the tap while brushing your teeth save per minute?",
-    opts: ["2 litros", "6 litros", "12 litros", "20 litros"],
+    opts: ["2 liters", "6 liters", "12 liters", "20 liters"],
     ans: 2,
     exp: "An open tap uses on average 12 liters per minute. Turning it off while brushing is one of the habits with the greatest impact.",
   },
 ];
 
 // ----------------------------------------------------------------------------
-// HOOKS PERSONALIZADOS
+// CUSTOM HOOKS
 // ----------------------------------------------------------------------------
 
 /**
@@ -278,8 +278,8 @@ function useScrollReveal(deps: unknown[] = []) {
 // ----------------------------------------------------------------------------
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: "artigos", label: "Artigos", icon: "📖" },
-  { id: "dicas", label: "Recycling tips", icon: "♻️" },
+  { id: "articles", label: "Articles", icon: "📖" },
+  { id: "tips", label: "Recycling tips", icon: "♻️" },
   { id: "quiz", label: "Quiz", icon: "🧠" },
 ];
 
@@ -340,7 +340,7 @@ function ArticlesSection({
     );
   }
 
-  // Grid de artigos
+  // Article grid
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {ARTICLES.map((article, i) => (
@@ -369,7 +369,7 @@ function ArticlesSection({
           </p>
 
           <span className="text-sm font-semibold text-[var(--color-primary)] group-hover:gap-2 flex items-center gap-1 transition-all">
-            Ler artigo <span>→</span>
+            Read article <span>→</span>
           </span>
         </article>
       ))}
@@ -422,7 +422,7 @@ function TipsSection() {
               {selected.title}
             </h3>
             <p className="text-sm text-[var(--color-text-secondary)]">
-              Como descartar corretamente
+              How to dispose correctly
             </p>
           </div>
         </div>
@@ -479,7 +479,7 @@ function QuizSection() {
     setFinished(false);
   }
 
-  // Tela de resultados
+  // Results screen
   if (finished) {
     const pct = Math.round((score / QUESTIONS.length) * 100);
     const emoji = pct >= 80 ? "🏆" : pct >= 60 ? "🌟" : "📚";
@@ -543,19 +543,19 @@ function QuizSection() {
     );
   }
 
-  // Tela de pergunta ativa
+  // Active question screen
   return (
     <div className="max-w-2xl mx-auto">
       <div className="rounded-2xl overflow-hidden border border-[var(--color-border)] shadow-[var(--shadow-card)]">
         <div className="bg-gradient-to-br from-[var(--color-primary-dark)] to-[#0f2419] px-8 py-8 text-center text-white">
           <span className="inline-block bg-white/15 backdrop-blur-sm px-4 py-1.5 rounded-full text-xs font-semibold mb-3">
-            🧠 Quiz Ambiental
+            🧠 Environmental Quiz
           </span>
           <h3 className="font-display text-2xl font-bold mb-1">
             Test your knowledge
           </h3>
           <p className="text-white/90 text-sm">
-            Pergunta {index + 1} of {QUESTIONS.length}
+            Question {index + 1} of {QUESTIONS.length}
           </p>
 
           <div className="mt-5 h-2 rounded-full bg-white/20 overflow-hidden">
@@ -655,7 +655,7 @@ function QuizSection() {
             >
               {index + 1 < QUESTIONS.length
                 ? "Next question →"
-                : "Ver resultado →"}
+                : "Ver result →"}
             </button>
           )}
         </div>
@@ -669,7 +669,7 @@ function QuizSection() {
 // ----------------------------------------------------------------------------
 
 export default function EducationPage() {
-  const [tab, setTab] = useState<Tab>("artigos");
+  const [tab, setTab] = useState<Tab>("articles");
   const [openArticle, setOpenArticle] = useState(false);
 
   useScrollReveal([tab, openArticle]);
@@ -720,7 +720,7 @@ export default function EducationPage() {
             {[
               {
                 icon: "🌿",
-                title: "Produtores",
+                title: "Producers",
                 desc: "Plants and algae that make their own food through photosynthesis, converting sunlight into vital energy.",
               },
               {
@@ -779,7 +779,7 @@ export default function EducationPage() {
                 Pilares
               </span>
               <h2 className="font-display text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]">
-                Sustentabilidade
+                Sustainability
               </h2>
             </div>
           </div>
@@ -791,8 +791,8 @@ export default function EducationPage() {
             {[
               {
                 icon: "🌲",
-                label: "Ambiental",
-                desc: "Preservar recursos e ecossistemas",
+                label: "Environmental",
+                desc: "Preserve resources and ecosystems",
                 bg: "bg-[var(--color-primary-light)]",
                 color: "text-[var(--color-primary)]",
               },
@@ -866,10 +866,10 @@ export default function EducationPage() {
           </div>
 
           <div key={tab} className="animate-[fadeSlideUp_0.35s_ease]">
-            {tab === "artigos" && (
+            {tab === "articles" && (
               <ArticlesSection onArtigoChange={setOpenArticle} />
             )}
-            {tab === "dicas" && <TipsSection />}
+            {tab === "tips" && <TipsSection />}
             {tab === "quiz" && <QuizSection />}
           </div>
         </section>
@@ -884,7 +884,7 @@ export default function EducationPage() {
               Visit our store and discover products that help you live a more sustainable life today.
             </p>
             <Link
-              href="/produtos"
+              href="/products"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-base font-bold bg-[var(--color-primary)] text-white shadow-[0_4px_12px_rgba(45,149,105,0.3)] hover:bg-[var(--color-primary-hover)] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(45,149,105,0.4)] transition-all duration-200"
             >
               🛍️ See Eco-Friendly Products

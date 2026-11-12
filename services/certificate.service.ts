@@ -9,7 +9,7 @@
  * Examples: "FSC", "Organic Brazil", "Cruelty Free", "Eureciclo".
  *
  * Relationships:
- * - Many-to-many with Products (via ProdutoCertificado)
+ * - Many-to-many with Products (via ProductCertificate)
  * - A certificate can be assigned to multiple products
  *
  * Cache strategy:
@@ -43,7 +43,7 @@ import {
  */
 export async function listCertificates() {
   return withCache(certificatesKey(), TTL.SHORT_LIST, () =>
-    prisma.certificado.findMany({ orderBy: { nome: "asc" } }),
+    prisma.certificate.findMany({ orderBy: { name: "asc" } }),
   );
 }
 
@@ -55,7 +55,7 @@ export async function listCertificates() {
  */
 export async function getCertificate(id: number) {
   return withCache(certificateKey(id), TTL.ITEM, () =>
-    prisma.certificado.findUnique({ where: { id } }),
+    prisma.certificate.findUnique({ where: { id } }),
   );
 }
 
@@ -64,24 +64,24 @@ export async function getCertificate(id: number) {
  * Requires ADMIN authentication.
  *
  * @param data - Certificate data
- * @param data.nome - Certificate name (e.g. "Cruelty Free")
- * @param data.descricao - Optional description of what the seal guarantees
- * @param data.orgaoEmissor - Responsible entity (e.g. "PETA", "SisOrg")
+ * @param data.name - Certificate name (e.g. "Cruelty Free")
+ * @param data.description - Optional description of what the seal guarantees
+ * @param data.issuingBody - Responsible entity (e.g. "PETA", "SisOrg")
  * @returns Newly created certificate
  *
  * @example
  * const certificate = await createCertificate({
- *   nome: "Cruelty Free",
- *   descricao: "Not tested on animals",
- *   orgaoEmissor: "PETA"
+ *   name: "Cruelty Free",
+ *   description: "Not tested on animals",
+ *   issuingBody: "PETA"
  * });
  */
 export async function createCertificate(data: {
-  nome: string;
-  descricao?: string;
-  orgaoEmissor: string;
+  name: string;
+  description?: string;
+  issuingBody: string;
 }) {
-  const certificate = await prisma.certificado.create({ data });
+  const certificate = await prisma.certificate.create({ data });
   await invalidateCache("CERTIFICATES");
   return certificate;
 }
@@ -97,9 +97,9 @@ export async function createCertificate(data: {
  */
 export async function updateCertificate(
   id: number,
-  data: { nome?: string; descricao?: string; orgaoEmissor?: string },
+  data: { name?: string; description?: string; issuingBody?: string },
 ) {
-  const certificate = await prisma.certificado.update({ where: { id }, data });
+  const certificate = await prisma.certificate.update({ where: { id }, data });
   await Promise.all([
     invalidateKey(certificateKey(id)),
     invalidateCache("CERTIFICATES"),
@@ -120,12 +120,12 @@ export async function updateCertificate(
  * @throws Error P2003 if the certificate has linked products
  */
 export async function deleteCertificate(id: number) {
-  const certificate = await prisma.certificado.findUnique({ where: { id } });
+  const certificate = await prisma.certificate.findUnique({ where: { id } });
   if (!certificate) {
     throw new ResourceNotFound("Certificate");
   }
 
-  await prisma.certificado.delete({ where: { id } });
+  await prisma.certificate.delete({ where: { id } });
   await Promise.all([
     invalidateKey(certificateKey(id)),
     invalidateCache("CERTIFICATES"),

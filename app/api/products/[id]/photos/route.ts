@@ -1,15 +1,15 @@
-// app/api/produtos/[id]/fotos/route.ts
+// app/api/products/[id]/photos/route.ts
 
 /**
  * PRODUCT PHOTOS API ROUTES
  *
  * Endpoints for managing a product's photos.
  *
- * GET /api/produtos/{id}/fotos - List the product's photos (public)
- * POST /api/produtos/{id}/fotos - Upload a new photo (requires ADMIN)
- * DELETE /api/produtos/{id}/fotos?nome={name} - Delete a photo (requires ADMIN)
+ * GET /api/products/{id}/photos - List the product's photos (public)
+ * POST /api/products/{id}/photos - Upload a new photo (requires ADMIN)
+ * DELETE /api/products/{id}/photos?name={name} - Delete a photo (requires ADMIN)
  *
- * Photos are stored on the file system (public/data_fotos/).
+ * Photos are stored on the file system (public/data_photos/).
  *
  * @see services/photo.service.ts - Business logic
  */
@@ -28,10 +28,10 @@ import {
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/produtos/{id}/fotos - List the product's photos
+ * GET /api/products/{id}/photos - List the product's photos
  *
  * @param id - Product ID in the URL
- * @returns { fotos: Photo[], total: number, produtoId: number }
+ * @returns { photos: Photo[], total: number, productId: number }
  * @status 200 - List returned
  * @status 400 - Invalid ID
  * @status 500 - Error fetching photos
@@ -55,15 +55,15 @@ export async function GET(
 }
 
 /**
- * POST /api/produtos/{id}/fotos - Photo upload
+ * POST /api/products/{id}/photos - Photo upload
  *
  * Requires ADMIN authentication.
  *
  * @param id - Product ID in the URL
  * @body FormData with fields:
- *   - arquivo: File (required)
- *   - nome: string (optional, custom name)
- * @returns { ok: true, foto: Photo, mensagem: string }
+ *   - file: File (required)
+ *   - name: string (optional, custom name)
+ * @returns { ok: true, photo: Photo, message: string }
  * @status 201 - Upload done
  * @status 400 - Invalid data (missing file, disallowed extension, file too large)
  * @status 401 - Not authenticated
@@ -85,15 +85,15 @@ export async function POST(
 
   try {
     const formData = await req.formData();
-    const file = formData.get("arquivo") as File | null;
-    const customName = formData.get("nome") as string | null;
+    const file = formData.get("file") as File | null;
+    const customName = formData.get("name") as string | null;
 
     if (!file) return ERRORS.invalidData("No file was sent");
 
     const result = await uploadPhoto({
-      produtoId: id,
-      arquivo: file,
-      nomeCustomizado: customName,
+      productId: id,
+      file,
+      customName,
     });
 
     if (!result.ok) {
@@ -112,7 +112,7 @@ export async function POST(
           );
         case "NAME_ALREADY_EXISTS":
           return NextResponse.json(
-            { erro: "A file with this name already exists" },
+            { error: "A file with this name already exists" },
             { status: 409 },
           );
         default:
@@ -121,7 +121,7 @@ export async function POST(
     }
 
     return NextResponse.json(
-      { ok: true, foto: result.photo, mensagem: "Photo uploaded successfully" },
+      { ok: true, photo: result.photo, message: "Photo uploaded successfully" },
       { status: 201 },
     );
   } catch (err) {
@@ -130,13 +130,13 @@ export async function POST(
 }
 
 /**
- * DELETE /api/produtos/{id}/fotos?nome={name} - Delete a photo
+ * DELETE /api/products/{id}/photos?name={name} - Delete a photo
  *
  * Requires ADMIN authentication.
  *
  * @param id - Product ID in the URL
- * @query nome - Name of the file to delete
- * @returns { ok: true, mensagem: string }
+ * @query name - Name of the file to delete
+ * @returns { ok: true, message: string }
  * @status 200 - Photo deleted
  * @status 400 - Invalid data (invalid ID, missing name)
  * @status 401 - Not authenticated
@@ -153,7 +153,7 @@ export async function DELETE(
 
   const id = await routeId(params);
   const { searchParams } = new URL(req.url);
-  const fileName = searchParams.get("nome");
+  const fileName = searchParams.get("name");
 
   if (id === null)
     return ERRORS.invalidData("Invalid product ID");
@@ -162,8 +162,8 @@ export async function DELETE(
 
   try {
     const result = await deletePhoto({
-      produtoId: id,
-      nomeArquivo: fileName,
+      productId: id,
+      fileName,
     });
 
     if (!result.ok) {
@@ -179,7 +179,7 @@ export async function DELETE(
 
     return NextResponse.json({
       ok: true,
-      mensagem: "Photo deleted successfully",
+      message: "Photo deleted successfully",
     });
   } catch (err) {
     return ERRORS.internal("delete photo", err);

@@ -1,5 +1,5 @@
 // eslint.config.mjs
-// ESLint 9 (flat config). Substitui `next lint`, depreciado no Next 15 (ADR-0015).
+// ESLint 9 (flat config). Replaces `next lint`, deprecated in Next 15 (ADR-0015).
 import { FlatCompat } from "@eslint/eslintrc";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,8 +20,8 @@ const config = [
   },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
-    // Constitution, Art. V: Route Handlers e páginas não acessam o Prisma direto.
-    // Os handlers foram migrados para services (spec 012): a regra agora é "error".
+    // Constitution, Art. V: Route Handlers and pages do not access Prisma directly.
+    // The handlers were migrated to services (spec 012): the rule is now "error".
     files: ["app/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [
@@ -31,7 +31,7 @@ const config = [
             {
               name: "@/lib/db",
               message:
-                "Art. V da Constitution: acesse o banco por um service em services/.",
+                "Constitution Art. V: access the database through a service in services/.",
             },
           ],
         },
@@ -39,9 +39,9 @@ const config = [
     },
   },
   {
-    // Débito existente no baseline (docs/discovery): reportado como aviso para o CI
-    // não bloquear sem refatoração em massa. Cada regra volta a "error" quando a
-    // ocorrência for corrigida por uma spec de mudança. Código NOVO deve estar limpo.
+    // Debt that exists in the baseline (docs/discovery): reported as a warning so the CI
+    // does not block without a mass refactor. Each rule goes back to "error" when the
+    // occurrence is fixed by a change spec. NEW code must be clean.
     rules: {
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-empty-object-type": "warn",

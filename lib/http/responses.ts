@@ -11,7 +11,7 @@
  * - Easier maintenance (change a message in a single place)
  *
  * IMPORTANT: All responses follow the pattern:
- * { erro: string } | { erro: string, detalhes?: unknown }
+ * { error: string } | { error: string, details?: unknown }
  */
 
 import { NextResponse } from "next/server";
@@ -28,10 +28,10 @@ import { log, serializeError } from "@/lib/log";
  *
  * @param {string} message - Descriptive error message
  * @param {number} status - HTTP code (e.g. 400, 401, 404, 500)
- * @returns {NextResponse} JSON response with { erro: message }
+ * @returns {NextResponse} JSON response with { error: message }
  */
 export function errorResponse(message: string, status: number): NextResponse {
-  return NextResponse.json({ erro: message }, { status });
+  return NextResponse.json({ error: message }, { status });
 }
 
 /**
@@ -56,9 +56,9 @@ export const ERRORS = {
 
   /**
    * 403 Forbidden - authenticated user without permission.
-   * Example: a CLIENTE user trying to access an ADMIN route.
+   * Example: a CUSTOMER user trying to access an ADMIN route.
    */
-  forbidden: () => errorResponse("Acesso negado", 403),
+  forbidden: () => errorResponse("Forbidden", 403),
 
   /**
    * 400 Bad Request - invalid data in the request.
@@ -67,7 +67,7 @@ export const ERRORS = {
    * @param {unknown} details - Optional: extra details (e.g. Zod flatten)
    */
   invalidData: (details?: unknown) =>
-    NextResponse.json({ erro: "Invalid data", detalhes: details }, { status: 400 }),
+    NextResponse.json({ error: "Invalid data", details }, { status: 400 }),
 
   /**
    * 404 Not Found - resource not found.

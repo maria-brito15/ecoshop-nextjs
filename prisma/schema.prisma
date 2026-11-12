@@ -6,87 +6,87 @@ datasource db {
   provider = "postgresql"
 }
 
-enum TipoUsuario {
+enum UserType {
   ADMIN
-  CLIENTE
-  MARCA
+  CUSTOMER
+  BRAND
 }
 
-enum StatusMarca {
-  PENDENTE
-  APROVADA
-  REJEITADA
+enum BrandStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
-model Usuario {
-  id         Int         @id @default(autoincrement())
-  nome       String
-  email      String      @unique
-  senha      String
-  telefone   String?
-  tipo       TipoUsuario @default(CLIENTE)
-  criadoEm   DateTime    @default(now()) @map("criado_em")
-  marca      Marca?
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String?
+  type      UserType @default(CUSTOMER)
+  createdAt DateTime @default(now()) @map("created_at")
+  brand     Brand?
 
-  @@map("usuarios")
+  @@map("users")
 }
 
-model Categoria {
-  id        Int       @id @default(autoincrement())
-  nome      String    @unique
-  descricao String?
-  produtos  Produto[]
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  products    Product[]
 
-  @@map("categorias")
+  @@map("categories")
 }
 
-model Marca {
-  id        Int         @id @default(autoincrement())
-  nome      String      @unique
-  descricao String?
-  status    StatusMarca @default(PENDENTE)
-  usuarioId Int         @unique @map("usuario_id")
-  usuario   Usuario     @relation(fields: [usuarioId], references: [id])
-  produtos  Produto[]
+model Brand {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  description String?
+  status      BrandStatus @default(PENDING)
+  userId      Int         @unique @map("user_id")
+  user        User        @relation(fields: [userId], references: [id])
+  products    Product[]
 
-  @@map("marcas")
+  @@map("brands")
 }
 
-model Certificado {
+model Certificate {
+  id            Int                  @id @default(autoincrement())
+  name          String               @unique
+  description   String?
+  issuingBody   String               @map("issuing_body")
+  products      ProductCertificate[]
+
+  @@map("certificates")
+}
+
+model Product {
   id           Int                  @id @default(autoincrement())
-  nome         String               @unique
-  descricao    String?
-  orgaoEmissor String               @map("orgao_emissor")
-  produtos     ProdutoCertificado[]
+  name         String
+  description  String?
+  price        Decimal              @db.Decimal(10, 2)
+  photoUrl     String?              @map("photo_url")
+  categoryId   Int                  @map("category_id")
+  brandId      Int                  @map("brand_id")
+  createdAt    DateTime             @default(now()) @map("created_at")
+  category     Category             @relation(fields: [categoryId], references: [id])
+  brand        Brand                @relation(fields: [brandId], references: [id])
+  certificates ProductCertificate[]
 
-  @@map("certificados")
+  @@index([categoryId])
+  @@index([brandId])
+  @@map("products")
 }
 
-model Produto {
-  id           Int                  @id @default(autoincrement())
-  nome         String
-  descricao    String?
-  preco        Decimal              @db.Decimal(10, 2)
-  fotoUrl      String?              @map("foto_url")
-  categoriaId  Int                  @map("categoria_id")
-  marcaId      Int                  @map("marca_id")
-  criadoEm    DateTime             @default(now()) @map("criado_em")
-  categoria    Categoria            @relation(fields: [categoriaId], references: [id])
-  marca        Marca                @relation(fields: [marcaId], references: [id])
-  certificados ProdutoCertificado[]
+model ProductCertificate {
+  productId     Int         @map("product_id")
+  certificateId Int         @map("certificate_id")
+  product       Product     @relation(fields: [productId], references: [id])
+  certificate   Certificate @relation(fields: [certificateId], references: [id])
 
-  @@index([categoriaId])
-  @@index([marcaId])
-  @@map("produtos")
-}
-
-model ProdutoCertificado {
-  produtoId     Int         @map("produto_id")
-  certificadoId Int         @map("certificado_id")
-  produto       Produto     @relation(fields: [produtoId], references: [id])
-  certificado   Certificado @relation(fields: [certificadoId], references: [id])
-
-  @@id([produtoId, certificadoId])
-  @@index([certificadoId])
-  @@map("produto_certificado")
+  @@id([productId, certificateId])
+  @@index([certificateId])
+  @@map("product_certificates")
 }

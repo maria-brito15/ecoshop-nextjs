@@ -2,7 +2,7 @@
 import {
   email,
   createUserDirectly,
-  cookieDe,
+  cookieFor,
   req,
   stubFetch,
   json,
@@ -11,33 +11,33 @@ import {
 } from "./helpers";
 import { test, after, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { POST as chat } from "@/app/api/ia/chat/route";
+import { POST as chat } from "@/app/api/ai/chat/route";
 
 after(closeConnections);
 
 let restore: (() => void) | undefined;
 beforeEach(() => {
-  process.env.GEMINI_KEY = "chave-gemini-de-teste-123";
+  process.env.GEMINI_KEY = "gemini-test-key-123";
 });
 afterEach(() => restore?.());
 
 const gemini = (text: string) =>
-  json({ candidates: [{ content: { parts: [{ text: text }] } }] });
+  json({ candidates: [{ content: { parts: [{ text }] } }] });
 async function asUser(name: string) {
-  return cookieDe(await createUserDirectly(email(name), "CLIENTE"));
+  return cookieFor(await createUserDirectly(email(name), "CUSTOMER"));
 }
 const submit = (cookie: string, message: unknown) =>
-  chat(req("/api/ia/chat", { method: "POST", cookie, body: { mensagem: message } }));
+  chat(req("/api/ai/chat", { method: "POST", cookie, body: { message } }));
 
 test("REQ-CHAT-01: a valid message from an authenticated user returns the AI response", async () => {
   restore = stubFetch(() => gemini("Take batteries to a collection point."));
   const res = await submit(
     await asUser("chat01"),
-    "Como descartar pilhas?",
+    "How do I dispose of batteries?",
   );
   assert.equal(res.status, 200);
   assert.equal(
-    (await res.json()).resposta,
+    (await res.json()).answer,
     "Take batteries to a collection point.",
   );
 });
@@ -62,7 +62,7 @@ test("REQ-CHAT-03: without a configured key the chat returns 503", async () => {
 });
 
 test("REQ-CHAT-04: if the AI fails, the chat returns 502", async () => {
-  restore = stubFetch(() => json({ erro: "failure" }, 500));
+  restore = stubFetch(() => json({ error: "failure" }, 500));
   const res = await submit(await asUser("chat04"), "oi");
   assert.equal(res.status, 502);
 });
@@ -75,7 +75,7 @@ test("REQ-CHAT-05: empty message or above 2000 characters returns 400", async ()
 
 test("REQ-CHAT-07: a visitor without a session gets 401", async () => {
   const res = await chat(
-    req("/api/ia/chat", { method: "POST", body: { mensagem: "Hello" } }),
+    req("/api/ai/chat", { method: "POST", body: { message: "Hello" } }),
   );
   assert.equal(res.status, 401);
 });

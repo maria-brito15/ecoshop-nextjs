@@ -1,11 +1,11 @@
-// app/api/ia/scan/route.ts
+// app/api/ai/scan/route.ts
 
 /**
  * AI SCAN API ROUTE - ECOSCAN
  *
  * API route for AI image analysis (recognition of recyclable items).
  *
- * POST /api/ia/scan - Analyzes an image and returns recycling information
+ * POST /api/ai/scan - Analyzes an image and returns recycling information
  *
  * Private endpoint - requires authentication (signed-in user).
  *
@@ -27,7 +27,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { analisarImagem } from "@/lib/ai";
+import { analyzeImage } from "@/lib/ai";
 import { ERRORS } from "@/lib/http/responses";
 import { requireAuth } from "@/app/_middleware/auth";
 
@@ -35,7 +35,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
 /**
- * POST /api/ia/scan - Analyzes an image
+ * POST /api/ai/scan - Analyzes an image
  *
  * Requires authentication (signed-in user).
  *
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     const file = formData.get("image") as File | null;
 
     if (!file) {
-      return ERRORS.invalidData("Nenhuma imagem enviada");
+      return ERRORS.invalidData("No image was sent");
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
@@ -72,12 +72,12 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const imageId = `analise_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    const imageId = `analysis_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 
-    const result = await analisarImagem(buffer, imageId);
+    const result = await analyzeImage(buffer, imageId);
 
     return NextResponse.json(result, {
-      status: result.sucesso ? 200 : 422,
+      status: result.success ? 200 : 422,
     });
   } catch (err) {
     return ERRORS.internal("process analysis", err);

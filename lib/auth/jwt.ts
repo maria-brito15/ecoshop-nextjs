@@ -79,7 +79,7 @@ export class JwtService
    * @returns Compact JWT (string)
    *
    * @example
-   * const token = await jwtService.sign({ id: 1, email: "admin@ecoshop.com", tipo: "ADMIN" });
+   * const token = await jwtService.sign({ id: 1, email: "admin@ecoshop.com", type: "ADMIN" });
    */
   async sign(payload: JwtPayload): Promise<string> {
     return new SignJWT(payload as unknown as JWTPayload)
@@ -97,7 +97,7 @@ export class JwtService
    * - Format (valid JWT structure)
    *
    * Additional checks:
-   * - Verifies that the required fields (id, email, tipo) are present
+   * - Verifies that the required fields (id, email, type) are present
    *
    * @param token - JWT to validate
    * @returns Decoded payload, or null if invalid
@@ -108,7 +108,7 @@ export class JwtService
       const typedPayload = payload as unknown as JwtPayload;
 
       // Additional validation: required fields must exist
-      if (typedPayload.id && typedPayload.email && typedPayload.tipo) {
+      if (typedPayload.id && typedPayload.email && typedPayload.type) {
         return typedPayload;
       }
       return null;

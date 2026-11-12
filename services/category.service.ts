@@ -42,11 +42,11 @@ import {
  *
  * @example
  * const categories = await listCategories();
- * // [{ id: 1, nome: "Organic Food", descricao: "..." }, ...]
+ * // [{ id: 1, name: "Organic Food", description: "..." }, ...]
  */
 export async function listCategories() {
   return withCache(categoriesKey(), TTL.SHORT_LIST, () =>
-    prisma.categoria.findMany({ orderBy: { nome: "asc" } }),
+    prisma.category.findMany({ orderBy: { name: "asc" } }),
   );
 }
 
@@ -62,7 +62,7 @@ export async function listCategories() {
  */
 export async function getCategory(id: number) {
   return withCache(categoryKey(id), TTL.ITEM, () =>
-    prisma.categoria.findUnique({ where: { id } }),
+    prisma.category.findUnique({ where: { id } }),
   );
 }
 
@@ -74,20 +74,20 @@ export async function getCategory(id: number) {
  * - Removes all keys with the "categories:*" prefix
  * - Ensures listings and individual categories are reloaded
  *
- * @param data - Category data (nome, optional descricao)
+ * @param data - Category data (name, optional description)
  * @returns Newly created category
  *
  * @example
  * const category = await createCategory({
- *   nome: "Sustainable Electronics",
- *   descricao: "Devices with low energy consumption"
+ *   name: "Sustainable Electronics",
+ *   description: "Devices with low energy consumption"
  * });
  */
 export async function createCategory(data: {
-  nome: string;
-  descricao?: string;
+  name: string;
+  description?: string;
 }) {
-  const category = await prisma.categoria.create({ data });
+  const category = await prisma.category.create({ data });
   await invalidateCache("CATEGORIES");
   return category;
 }
@@ -101,7 +101,7 @@ export async function createCategory(data: {
  * - Removes all listing keys ("categories:*" prefix)
  *
  * @param id - ID of the category to update
- * @param data - Update data (nome, descricao - both optional)
+ * @param data - Update data (name, description - both optional)
  * @returns Updated category
  * @throws Error P2025 if the category does not exist
  *
@@ -111,9 +111,9 @@ export async function createCategory(data: {
  */
 export async function updateCategory(
   id: number,
-  data: { nome?: string; descricao?: string },
+  data: { name?: string; description?: string },
 ) {
-  const category = await prisma.categoria.update({ where: { id }, data });
+  const category = await prisma.category.update({ where: { id }, data });
   await Promise.all([
     invalidateKey(categoryKey(id)),
     invalidateCache("CATEGORIES"),
@@ -141,12 +141,12 @@ export async function updateCategory(
  */
 export async function deleteCategory(id: number) {
   // Check that the category exists before trying to delete it
-  const category = await prisma.categoria.findUnique({ where: { id } });
+  const category = await prisma.category.findUnique({ where: { id } });
   if (!category) {
     throw new ResourceNotFound("Category");
   }
 
-  await prisma.categoria.delete({ where: { id } });
+  await prisma.category.delete({ where: { id } });
   await Promise.all([
     invalidateKey(categoryKey(id)),
     invalidateCache("CATEGORIES"),

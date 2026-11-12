@@ -17,7 +17,7 @@
  * Data created by this script:
  * - Categories (5 categories of sustainable products)
  * - Certificates (5 environmental certifications)
- * - Users (6 users with different profiles: ADMIN, CLIENTE, MARCA)
+ * - Users (6 users with different profiles: ADMIN, CUSTOMER, BRAND)
  * - Brands (3 partner brands)
  * - Products (10 products with certifications)
  *
@@ -42,7 +42,7 @@
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
-import { PrismaClient, TipoUsuario } from "@prisma/client";
+import { PrismaClient, UserType } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 import bcrypt from "bcryptjs";
@@ -95,40 +95,40 @@ async function main() {
   console.log("Creating categories...");
   const categoriesInput = [
     {
-      nome: "Sustainable Clothing",
-      descricao:
+      name: "Sustainable Clothing",
+      description:
         "Clothing made from eco-friendly materials, organic cotton and recycled fabrics.",
     },
     {
-      nome: "Organic Food",
-      descricao:
+      name: "Organic Food",
+      description:
         "Food free of pesticides and preservatives, grown with respect for the soil.",
     },
     {
-      nome: "Natural Cosmetics",
-      descricao:
+      name: "Natural Cosmetics",
+      description:
         "Vegan makeup and creams, paraben-free and not tested on animals.",
     },
     {
-      nome: "Home and Decor",
-      descricao:
+      name: "Home and Decor",
+      description:
         "Home items made of bamboo, handmade ceramics and biodegradable materials.",
     },
     {
-      nome: "Eco-Friendly Footwear",
-      descricao:
+      name: "Eco-Friendly Footwear",
+      description:
         "Sneakers and shoes made of recycled rubber and vegan leather.",
     },
   ];
 
   const categories = {} as Record<string, number>;
   for (const cat of categoriesInput) {
-    const record = await prisma.categoria.upsert({
-      where: { nome: cat.nome },
+    const record = await prisma.category.upsert({
+      where: { name: cat.name },
       update: {},
       create: cat,
     });
-    categories[record.nome] = record.id;
+    categories[record.name] = record.id;
   }
 
   // ---------------------------------------------------------------------------
@@ -138,42 +138,42 @@ async function main() {
   console.log("Creating certificates...");
   const certificatesInput = [
     {
-      nome: "Cruelty Free",
-      orgaoEmissor: "PETA",
-      descricao:
+      name: "Cruelty Free",
+      issuingBody: "PETA",
+      description:
         "Ensures the product was not tested on animals at any stage.",
     },
     {
-      nome: "Organic Brazil",
-      orgaoEmissor: "SisOrg",
-      descricao: "Official national certification for organic products.",
+      name: "Organic Brazil",
+      issuingBody: "SisOrg",
+      description: "Official national certification for organic products.",
     },
     {
-      nome: "FSC",
-      orgaoEmissor: "Forest Stewardship Council",
-      descricao:
+      name: "FSC",
+      issuingBody: "Forest Stewardship Council",
+      description:
         "Ensures the wood/paper comes from well-managed forests.",
     },
     {
-      nome: "Eureciclo",
-      orgaoEmissor: "Instituto Eureciclo",
-      descricao: "Environmental offsetting of packaging.",
+      name: "Eureciclo",
+      issuingBody: "Instituto Eureciclo",
+      description: "Environmental offsetting of packaging.",
     },
     {
-      nome: "IBD Natural Ingredients",
-      orgaoEmissor: "IBD Certifications",
-      descricao: "Audit of natural ingredients in cosmetics.",
+      name: "IBD Natural Ingredients",
+      issuingBody: "IBD Certifications",
+      description: "Audit of natural ingredients in cosmetics.",
     },
   ];
 
   const certificates = {} as Record<string, number>;
   for (const cert of certificatesInput) {
-    const record = await prisma.certificado.upsert({
-      where: { nome: cert.nome },
+    const record = await prisma.certificate.upsert({
+      where: { name: cert.name },
       update: {},
       create: cert,
     });
-    certificates[record.nome] = record.id;
+    certificates[record.name] = record.id;
   }
 
   // ---------------------------------------------------------------------------
@@ -188,47 +188,47 @@ async function main() {
   const usersInput = [
     {
       email: "admin@ecoplace.com",
-      nome: "Admin Principal",
-      senha: passwordHash,
-      tipo: TipoUsuario.ADMIN,
+      name: "Main Admin",
+      password: passwordHash,
+      type: UserType.ADMIN,
     },
     {
-      email: "joao@cliente.com",
-      nome: "John Smith",
-      senha: passwordHash,
-      telefone: "11999998888",
-      tipo: TipoUsuario.CLIENTE,
+      email: "john@customer.com",
+      name: "John Smith",
+      password: passwordHash,
+      phone: "11999998888",
+      type: UserType.CUSTOMER,
     },
     {
-      email: "maria@cliente.com",
-      nome: "Maria Souza",
-      senha: passwordHash,
-      telefone: "21988887777",
-      tipo: TipoUsuario.CLIENTE,
+      email: "maria@customer.com",
+      name: "Maria Souza",
+      password: passwordHash,
+      phone: "21988887777",
+      type: UserType.CUSTOMER,
     },
     {
       email: "contato@ecobrand.com",
-      nome: "Lucas (EcoBrand)",
-      senha: passwordHash,
-      tipo: TipoUsuario.MARCA,
+      name: "Lucas (EcoBrand)",
+      password: passwordHash,
+      type: UserType.BRAND,
     },
     {
-      email: "falecom@pureza.com",
-      nome: "Ana (Pureza Naturais)",
-      senha: passwordHash,
-      tipo: TipoUsuario.MARCA,
+      email: "contact@purenaturals.com",
+      name: "Ana (Pure Naturals)",
+      password: passwordHash,
+      type: UserType.BRAND,
     },
     {
-      email: "vendas@bambuhome.com",
-      nome: "Carlos (Bambu Home)",
-      senha: passwordHash,
-      tipo: TipoUsuario.MARCA,
+      email: "sales@bamboohome.com",
+      name: "Carlos (Bamboo Home)",
+      password: passwordHash,
+      type: UserType.BRAND,
     },
   ];
 
   const users = {} as Record<string, number>;
   for (const user of usersInput) {
-    const record = await prisma.usuario.upsert({
+    const record = await prisma.user.upsert({
       where: { email: user.email },
       update: {},
       create: user,
@@ -237,132 +237,132 @@ async function main() {
   }
 
   // ---------------------------------------------------------------------------
-  // STEP 5: MARCAS
+  // STEP 5: BRANDS
   // ---------------------------------------------------------------------------
   // Each brand is associated with a user (1:1 relationship).
   console.log("Creating brands...");
   const brandsInput = [
     {
-      nome: "EcoBrand",
-      descricao: "The best sustainable clothing brand in the national market.",
-      usuarioId: users["contato@ecobrand.com"],
+      name: "EcoBrand",
+      description: "The best sustainable clothing brand in the national market.",
+      userId: users["contato@ecobrand.com"],
     },
     {
-      nome: "Pureza Naturais",
-      descricao: "100% organic and healthy cosmetics and food.",
-      usuarioId: users["falecom@pureza.com"],
+      name: "Pure Naturals",
+      description: "100% organic and healthy cosmetics and food.",
+      userId: users["contact@purenaturals.com"],
     },
     {
-      nome: "Bambu Home",
-      descricao: "Decorate your home without destroying the planet.",
-      usuarioId: users["vendas@bambuhome.com"],
+      name: "Bamboo Home",
+      description: "Decorate your home without destroying the planet.",
+      userId: users["sales@bamboohome.com"],
     },
   ];
 
   const brands = {} as Record<string, number>;
   for (const brand of brandsInput) {
-    const record = await prisma.marca.upsert({
-      where: { nome: brand.nome },
+    const record = await prisma.brand.upsert({
+      where: { name: brand.name },
       update: {},
-      create: { ...brand, status: "APROVADA" },
+      create: { ...brand, status: "APPROVED" },
     });
-    brands[record.nome] = record.id;
+    brands[record.name] = record.id;
   }
 
   // ---------------------------------------------------------------------------
-  // STEP 6: PRODUTOS
+  // STEP 6: PRODUCTS
   // ---------------------------------------------------------------------------
   // Catalog of sustainable products with associated certifications.
   console.log("Creating product catalog...");
   const productsInput = [
     // EcoBrand - Sustainable Clothing
     {
-      nome: "Organic Basic T-Shirt",
-      descricao: "100% organic cotton, natural dyeing.",
-      preco: 89.9,
-      categoria: "Sustainable Clothing",
-      marca: "EcoBrand",
+      name: "Organic Basic T-Shirt",
+      description: "100% organic cotton, natural dyeing.",
+      price: 89.9,
+      category: "Sustainable Clothing",
+      brand: "EcoBrand",
       certs: ["Organic Brazil", "Eureciclo"],
     },
     {
-      nome: "Recycled Jeans",
-      descricao: "Made from scraps and plastic taken from the ocean.",
-      preco: 199.5,
-      categoria: "Sustainable Clothing",
-      marca: "EcoBrand",
+      name: "Recycled Jeans",
+      description: "Made from scraps and plastic taken from the ocean.",
+      price: 199.5,
+      category: "Sustainable Clothing",
+      brand: "EcoBrand",
       certs: ["Eureciclo"],
     },
     {
-      nome: "Vegan Leather Sneakers",
-      descricao: "Stylish, durable and made from pineapple peel.",
-      preco: 350.0,
-      categoria: "Eco-Friendly Footwear",
-      marca: "EcoBrand",
+      name: "Vegan Leather Sneakers",
+      description: "Stylish, durable and made from pineapple peel.",
+      price: 350.0,
+      category: "Eco-Friendly Footwear",
+      brand: "EcoBrand",
       certs: ["Cruelty Free"],
     },
 
-    // Pureza Naturais - Cosmetics and Food
+    // Pure Naturals - Cosmetics and Food
     {
-      nome: "Rosemary Solid Shampoo",
-      descricao: "Lasts up to 60 washes. Zero plastic.",
-      preco: 35.9,
-      categoria: "Natural Cosmetics",
-      marca: "Pureza Naturais",
+      name: "Rosemary Solid Shampoo",
+      description: "Lasts up to 60 washes. Zero plastic.",
+      price: 35.9,
+      category: "Natural Cosmetics",
+      brand: "Pure Naturals",
       certs: ["Cruelty Free", "IBD Natural Ingredients"],
     },
     {
-      nome: "Vegan Face Cream",
-      descricao: "Deep hydration with plant-based hyaluronic acid.",
-      preco: 120.0,
-      categoria: "Natural Cosmetics",
-      marca: "Pureza Naturais",
+      name: "Vegan Face Cream",
+      description: "Deep hydration with plant-based hyaluronic acid.",
+      price: 120.0,
+      category: "Natural Cosmetics",
+      brand: "Pure Naturals",
       certs: ["Cruelty Free", "Eureciclo"],
     },
     {
-      nome: "Premium Organic Granola",
-      descricao: "Mix of nuts and seeds with no added sugar.",
-      preco: 45.0,
-      categoria: "Organic Food",
-      marca: "Pureza Naturais",
+      name: "Premium Organic Granola",
+      description: "Mix of nuts and seeds with no added sugar.",
+      price: 45.0,
+      category: "Organic Food",
+      brand: "Pure Naturals",
       certs: ["Organic Brazil"],
     },
     {
-      nome: "Special Roasted Coffee",
-      descricao: "Selected beans from family farming.",
-      preco: 28.5,
-      categoria: "Organic Food",
-      marca: "Pureza Naturais",
+      name: "Special Roasted Coffee",
+      description: "Selected beans from family farming.",
+      price: 28.5,
+      category: "Organic Food",
+      brand: "Pure Naturals",
       certs: ["Organic Brazil", "FSC"],
     },
 
-    // Bambu Home - Home and Decor
+    // Bamboo Home - Home and Decor
     {
-      nome: "Bamboo Toothbrush Kit",
-      descricao: "Pack of 4 100% biodegradable brushes.",
-      preco: 40.0,
-      categoria: "Home and Decor",
-      marca: "Bambu Home",
+      name: "Bamboo Toothbrush Kit",
+      description: "Pack of 4 100% biodegradable brushes.",
+      price: 40.0,
+      category: "Home and Decor",
+      brand: "Bamboo Home",
       certs: ["FSC", "Eureciclo"],
     },
     {
-      nome: "Sustainable Fiber Cup",
-      descricao: "Take your coffee anywhere without creating waste.",
-      preco: 55.9,
-      categoria: "Home and Decor",
-      marca: "Bambu Home",
+      name: "Sustainable Fiber Cup",
+      description: "Take your coffee anywhere without creating waste.",
+      price: 55.9,
+      category: "Home and Decor",
+      brand: "Bamboo Home",
       certs: ["Eureciclo"],
     },
     {
-      nome: "Wooden Desk Organizer",
-      descricao: "Minimalist design made with reforestation wood.",
-      preco: 110.0,
-      categoria: "Home and Decor",
-      marca: "Bambu Home",
+      name: "Wooden Desk Organizer",
+      description: "Minimalist design made with reforestation wood.",
+      price: 110.0,
+      category: "Home and Decor",
+      brand: "Bamboo Home",
       certs: ["FSC"],
     },
   ];
 
-  const existingProductsTotal = await prisma.produto.count();
+  const existingProductsTotal = await prisma.product.count();
   if (existingProductsTotal > 0) {
     console.log(
       `Catalog already has ${existingProductsTotal} product(s); skipping creation ` +
@@ -370,18 +370,18 @@ async function main() {
     );
   } else {
     for (const prod of productsInput) {
-      const fixedName = prod.nome || (prod as any).row;
+      const fixedName = prod.name || (prod as any).row;
 
-      await prisma.produto.create({
+      await prisma.product.create({
         data: {
-          nome: fixedName as string,
-          descricao: prod.descricao,
-          preco: prod.preco,
-          categoriaId: categories[prod.categoria],
-          marcaId: brands[prod.marca],
-          certificados: {
+          name: fixedName as string,
+          description: prod.description,
+          price: prod.price,
+          categoryId: categories[prod.category],
+          brandId: brands[prod.brand],
+          certificates: {
             create: prod.certs.map((certificateName) => ({
-              certificadoId: certificates[certificateName],
+              certificateId: certificates[certificateName],
             })),
           },
         },

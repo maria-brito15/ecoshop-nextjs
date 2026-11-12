@@ -15,9 +15,9 @@ import { clearClientCache } from "./useFetch";
 
 export interface SessionUser {
   id: number;
-  nome: string;
+  name: string;
   email: string;
-  tipo: "CLIENTE" | "MARCA" | "ADMIN";
+  type: "CUSTOMER" | "BRAND" | "ADMIN";
 }
 
 let inProgress: Promise<SessionUser | null> | null = null;
@@ -29,8 +29,8 @@ export function fetchSession(): Promise<SessionUser | null> {
   inProgress = fetch("/api/auth/me", { credentials: "include" })
     .then(async (res) => {
       if (!res.ok) return null;
-      const data = (await res.json()) as { usuario?: SessionUser | null };
-      return data.usuario ?? null;
+      const data = (await res.json()) as { user?: SessionUser | null };
+      return data.user ?? null;
     })
     .catch(() => null)
     .finally(() => {

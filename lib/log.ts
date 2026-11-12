@@ -13,7 +13,7 @@
 type Level = "info" | "warn" | "error";
 
 const SENSITIVE_KEY =
-  /senha|password|passwd|token|secret|key|authorization|cookie|prediction/i;
+  /password|password|passwd|token|secret|key|authorization|cookie|prediction/i;
 const CREDENTIAL_IN_URL = /([a-z][a-z0-9+.-]*:\/\/)[^@\s/]*@/gi;
 const MAX_DEPTH = 4;
 

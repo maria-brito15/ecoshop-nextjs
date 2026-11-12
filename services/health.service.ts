@@ -7,8 +7,8 @@
  * limit degrade without it, ADR-0020). Constitution, Art. XIII.2 / REQ-OPS-01:
  *
  * - database up, Redis up    → status "ok"          (HTTP 200)
- * - database up, Redis down  → status "degradado"   (HTTP 200)
- * - database down            → status "indisponivel" (HTTP 503)
+ * - database up, Redis down  → status "degraded"   (HTTP 200)
+ * - database down            → status "unavailable" (HTTP 503)
  *
  * This way the Docker healthcheck and the deploy do not take the application
  * down just because Redis (optional) went down.
@@ -17,7 +17,7 @@
 import { prisma } from "@/lib/db";
 import { redis, withTimeout, COMMAND_TIMEOUT_MS } from "@/lib/redis";
 
-export type HealthStatus = "ok" | "degradado" | "indisponivel";
+export type HealthStatus = "ok" | "degraded" | "unavailable";
 
 export interface HealthReport {
   /** The application can serve requests (the database responds). */
@@ -31,15 +31,15 @@ export interface HealthReport {
 export function buildHealthReport(
   services: HealthReport["services"],
   now: Date = new Date(),
-): { relatorio: HealthReport; httpStatus: 200 | 503 } {
+): { report: HealthReport; httpStatus: 200 | 503 } {
   const status: HealthStatus = !services.database
-    ? "indisponivel"
+    ? "unavailable"
     : services.redis
       ? "ok"
-      : "degradado";
+      : "degraded";
   const ok = services.database;
   return {
-    relatorio: { ok, status, timestamp: now.toISOString(), services },
+    report: { ok, status, timestamp: now.toISOString(), services },
     httpStatus: ok ? 200 : 503,
   };
 }

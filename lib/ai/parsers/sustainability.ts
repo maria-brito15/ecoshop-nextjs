@@ -6,7 +6,7 @@
  * Parser that extracts and validates the JSON from Gemini's response.
  *
  * Gemini may return the response in different formats:
- * - Plain JSON: {"impacto_ambiental": "..."}
+ * - Plain JSON: {"environmental_impact": "..."}
  * - JSON with markdown: ```json {...} ```
  * - JSON with text before/after
  *
@@ -25,12 +25,12 @@ import type { AiAnalysis } from "@/types/ai";
  * If any field is missing or empty, the analysis is rejected.
  */
 const REQUIRED_FIELDS: (keyof AiAnalysis)[] = [
-  "impacto_ambiental",
-  "tempo_decomposicao",
-  "onde_descartar",
-  "reciclabilidade",
-  "dicas_sustentaveis",
-  "beneficios_reciclagem",
+  "environmental_impact",
+  "decomposition_time",
+  "disposal_instructions",
+  "recyclability",
+  "sustainable_tips",
+  "recycling_benefits",
 ];
 
 /**
@@ -49,7 +49,7 @@ const REQUIRED_FIELDS: (keyof AiAnalysis)[] = [
  * const response = await generateText(prompt);
  * const analysis = parseAnalysis(response);
  * if (analysis) {
- *   console.log(analysis.impacto_ambiental);
+ *   console.log(analysis.environmental_impact);
  * }
  */
 export function parseAnalysis(rawText: string): AiAnalysis | null {
@@ -81,4 +81,4 @@ export function parseAnalysis(rawText: string): AiAnalysis | null {
   }
 }
 
-export type { AiAnalysis as AnaliseIA };
+export type { AiAnalysis as AiAnalysis };

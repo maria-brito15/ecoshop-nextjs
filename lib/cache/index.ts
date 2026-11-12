@@ -48,7 +48,7 @@ export async function withCache<T>(
 }
 
 /**
- * Invalida todas as chaves de um recurso (ex.: "PRODUTOS" → `produtos:*`).
+ * Invalidates every key of a resource (e.g. "PRODUCTS" → `products:*`).
  */
 export async function invalidateCache(
   resource: keyof typeof PREFIX,

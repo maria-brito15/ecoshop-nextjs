@@ -1,13 +1,13 @@
-// app/api/produtos/[id]/route.ts
+// app/api/products/[id]/route.ts
 
 /**
  * PRODUCT BY ID API ROUTES
  *
  * Endpoints for operations on a specific product.
  *
- * GET /api/produtos/{id} - Fetch product by ID (public)
- * PUT /api/produtos/{id} - Update product (requires ADMIN)
- * DELETE /api/produtos/{id} - Delete product (requires ADMIN)
+ * GET /api/products/{id} - Fetch product by ID (public)
+ * PUT /api/products/{id} - Update product (requires ADMIN)
+ * DELETE /api/products/{id} - Delete product (requires ADMIN)
  *
  * @see services/product.service.ts - Business logic
  */
@@ -26,10 +26,10 @@ import {
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/produtos/{id} - Fetch product by ID
+ * GET /api/products/{id} - Fetch product by ID
  *
  * @param id - Product ID in the URL
- * @returns { produto: Product }
+ * @returns { product: Product }
  * @status 200 - Product found
  * @status 404 - Product does not exist
  * @status 500 - Error fetching product
@@ -43,20 +43,20 @@ export async function GET(
     if (id === null) return ERRORS.invalidData("Invalid ID");
     const product = await getProduct(id);
     if (!product) return ERRORS.notFound("Product");
-    return NextResponse.json({ produto: product });
+    return NextResponse.json({ product });
   } catch (err) {
     return ERRORS.internal("fetch product", err);
   }
 }
 
 /**
- * PUT /api/produtos/{id} - Update product
+ * PUT /api/products/{id} - Update product
  *
  * Requires ADMIN authentication.
  *
  * @param id - Product ID in the URL
- * @body { nome?: string, descricao?: string, preco?: number, categoriaId?: number, marcaId?: number, certificadoIds?: number[] }
- * @returns { produto: Product }
+ * @body { name?: string, description?: string, price?: number, categoryId?: number, brandId?: number, certificateIds?: number[] }
+ * @returns { product: Product }
  * @status 200 - Product updated
  * @status 400 - Invalid data
  * @status 401 - Not authenticated
@@ -79,7 +79,7 @@ export async function PUT(
     if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
     const product = await updateProduct(id, parsed.data);
-    return NextResponse.json({ produto: product });
+    return NextResponse.json({ product });
   } catch (err) {
     return (
       mapError(err, "Product") ?? ERRORS.internal("update product", err)
@@ -88,7 +88,7 @@ export async function PUT(
 }
 
 /**
- * DELETE /api/produtos/{id} - Delete product
+ * DELETE /api/products/{id} - Delete product
  *
  * Requires ADMIN authentication.
  *

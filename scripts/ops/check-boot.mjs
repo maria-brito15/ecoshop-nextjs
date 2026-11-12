@@ -5,111 +5,111 @@
 // and start with a valid one. The unit test covers the rule; this script
 // covers what only Next does: aborting startup when `register()` throws.
 //
-// Uso: node scripts/ops/check-boot.mjs
+// Usage: node scripts/ops/check-boot.mjs
 
 import { spawn } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-const RAIZ_STANDALONE = ".next/standalone";
+const STANDALONE_ROOT = ".next/standalone";
 
 /**
  * In CI and Docker the server lives at `.next/standalone/server.js`. If another
  * lockfile exists above the project (common on development machines), Next
  * nests the standalone output in subfolders; so, if it is not at the root, look for it.
  */
-function localizarServidor(pasta = RAIZ_STANDALONE) {
-  if (!existsSync(pasta)) return null;
-  if (existsSync(join(pasta, "server.js"))) return join(pasta, "server.js");
-  for (const entrada of readdirSync(pasta, { withFileTypes: true })) {
-    if (!entrada.isDirectory() || entrada.name === "node_modules") continue;
-    const achado = localizarServidor(join(pasta, entrada.name));
-    if (achado) return achado;
+function findServer(folder = STANDALONE_ROOT) {
+  if (!existsSync(folder)) return null;
+  if (existsSync(join(folder, "server.js"))) return join(folder, "server.js");
+  for (const entry of readdirSync(folder, { withFileTypes: true })) {
+    if (!entry.isDirectory() || entry.name === "node_modules") continue;
+    const found = findServer(join(folder, entry.name));
+    if (found) return found;
   }
   return null;
 }
 
-const SERVIDOR = localizarServidor();
-const LIMITE_RECUSA_MS = 30_000;
-const ESPERA_INICIO_MS = 8_000;
+const SERVER = findServer();
+const REFUSAL_LIMIT_MS = 30_000;
+const STARTUP_WAIT_MS = 8_000;
 
-const SEGREDO_VALIDO = "x7Qm2LbR9vTn4KcE8wYpZa3JdHfUg6Nz";
-const SEGREDOS_INVALIDOS = [
-  ["ausente", undefined],
-  ["curto", "curto"],
-  ["valor-exemplo", "supersecretkeychangeinproduction"],
+const VALID_SECRET = "x7Qm2LbR9vTn4KcE8wYpZa3JdHfUg6Nz";
+const INVALID_SECRETS = [
+  ["missing", undefined],
+  ["short", "short"],
+  ["example-value", "supersecretkeychangeinproduction"],
 ];
 
-function iniciar(jwtSecret) {
+function start(jwtSecret) {
   const env = {
     ...process.env,
     NODE_ENV: "production",
     PORT: "3987",
     // the "valid" case needs a well-formed DATABASE_URL (the server does not connect on startup)
-    DATABASE_URL: process.env.DATABASE_URL ?? "postgresql://usuario:senha@127.0.0.1:1/banco",
+    DATABASE_URL: process.env.DATABASE_URL ?? "postgresql://user:password@127.0.0.1:1/database",
     HOSTNAME: "127.0.0.1",
   };
   if (jwtSecret === undefined) delete env.JWT_SECRET;
   else env.JWT_SECRET = jwtSecret;
 
-  const filho = spawn(process.execPath, [SERVIDOR], { env });
-  let saida = "";
-  filho.stdout.on("data", (d) => (saida += d));
-  filho.stderr.on("data", (d) => (saida += d));
-  const encerrou = new Promise((resolve) =>
-    filho.on("exit", (codigo) => resolve(codigo)),
+  const child = spawn(process.execPath, [SERVER], { env });
+  let output = "";
+  child.stdout.on("data", (d) => (output += d));
+  child.stderr.on("data", (d) => (output += d));
+  const exited = new Promise((resolve) =>
+    child.on("exit", (code) => resolve(code)),
   );
-  return { filho, encerrou, saida: () => saida };
+  return { child, exited, output: () => output };
 }
 
-const esperar = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function main() {
-  if (!SERVIDOR) {
+  if (!SERVER) {
     console.error(
-      `❌ servidor standalone não encontrado em ${RAIZ_STANDALONE}. Rode "npm run build" antes.`,
+      `❌ standalone server not found in ${STANDALONE_ROOT}. Run "npm run build" first.`,
     );
     process.exit(2);
   }
 
-  let falhas = 0;
+  let failures = 0;
 
-  for (const [rotulo, valor] of SEGREDOS_INVALIDOS) {
-    const { filho, encerrou, saida } = iniciar(valor);
-    const resultado = await Promise.race([
-      encerrou,
-      esperar(LIMITE_RECUSA_MS).then(() => "TEMPO"),
+  for (const [label, value] of INVALID_SECRETS) {
+    const { child, exited, output } = start(value);
+    const result = await Promise.race([
+      exited,
+      wait(REFUSAL_LIMIT_MS).then(() => "TIMEOUT"),
     ]);
-    if (resultado === "TEMPO") {
-      filho.kill();
-      console.error(`❌ segredo ${rotulo}: o servidor NÃO recusou iniciar`);
-      falhas++;
-    } else if (resultado === 0 || !/JWT_SECRET/.test(saida())) {
+    if (result === "TIMEOUT") {
+      child.kill();
+      console.error(`❌ ${label} secret: the server did NOT refuse to start`);
+      failures++;
+    } else if (result === 0 || !/JWT_SECRET/.test(output())) {
       console.error(
-        `❌ segredo ${rotulo}: saiu com código ${resultado} sem a mensagem esperada`,
+        `❌ ${label} secret: exited with code ${result} without the expected message`,
       );
-      falhas++;
+      failures++;
     } else {
-      console.log(`✔ segredo ${rotulo}: servidor recusou iniciar (código ${resultado})`);
+      console.log(`✔ ${label} secret: server refused to start (code ${result})`);
     }
   }
 
-  const valido = iniciar(SEGREDO_VALIDO);
-  const resultado = await Promise.race([
-    valido.encerrou,
-    esperar(ESPERA_INICIO_MS).then(() => "VIVO"),
+  const valid = start(VALID_SECRET);
+  const result = await Promise.race([
+    valid.exited,
+    wait(STARTUP_WAIT_MS).then(() => "ALIVE"),
   ]);
-  if (resultado === "VIVO") {
-    valido.filho.kill();
-    console.log("✔ segredo válido: servidor iniciou");
+  if (result === "ALIVE") {
+    valid.child.kill();
+    console.log("✔ valid secret: server started");
   } else {
     console.error(
-      `❌ segredo válido: o servidor encerrou (código ${resultado})\n${valido.saida()}`,
+      `❌ valid secret: the server exited (code ${result})\n${valid.output()}`,
     );
-    falhas++;
+    failures++;
   }
 
-  process.exit(falhas === 0 ? 0 : 1);
+  process.exit(failures === 0 ? 0 : 1);
 }
 
 main();

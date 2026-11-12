@@ -40,11 +40,11 @@ test("REQ-OPS-02: the seed creates users with a usable password for login (real 
     shell: true,
   });
 
-  const admin = await prisma.usuario.findUniqueOrThrow({
+  const admin = await prisma.user.findUniqueOrThrow({
     where: { email: "admin@ecoplace.com" },
   });
-  assert.equal(await bcrypt.compare(SEED_PASSWORD, admin.senha), true);
-  assert.notEqual(admin.senha, "hash-seguro-aqui");
+  assert.equal(await bcrypt.compare(SEED_PASSWORD, admin.password), true);
+  assert.notEqual(admin.password, "hash-seguro-aqui");
 });
 
 test("REQ-OPS-03: running the seed again neither duplicates nor deletes existing products", async () => {
@@ -55,7 +55,7 @@ test("REQ-OPS-03: running the seed again neither duplicates nor deletes existing
     stdio: "pipe",
     shell: true,
   });
-  const countBefore = await prisma.produto.count();
+  const countBefore = await prisma.product.count();
   assert.ok(countBefore > 0, "expected products after the first seed");
 
   execFileSync("npx", ["tsx", "prisma/seed.ts"], {
@@ -64,6 +64,6 @@ test("REQ-OPS-03: running the seed again neither duplicates nor deletes existing
     stdio: "pipe",
     shell: true,
   });
-  const countAfter = await prisma.produto.count();
+  const countAfter = await prisma.product.count();
   assert.equal(countAfter, countBefore);
 });

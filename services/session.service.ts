@@ -28,14 +28,14 @@ import type { JwtPayload } from "@/types/auth";
 export type SessionIdentity = JwtPayload;
 
 export interface IssuedSession {
-  /** JWT de acesso. */
+  /** Access JWT. */
   access: string;
   /** Refresh token, or `null` if Redis was unavailable (access-only session). */
   refresh: string | null;
 }
 
 export type RefreshResult =
-  | { ok: true; session: IssuedSession; tipo: SessionIdentity["tipo"] }
+  | { ok: true; session: IssuedSession; type: SessionIdentity["type"] }
   | { ok: false; reason: "NO_TOKEN" | "INVALID" | "UNAVAILABLE" };
 
 /** Opens a session: always issues the access token; the refresh token depends on Redis. */
@@ -46,7 +46,7 @@ export async function startSession(
   const access = await signToken({
     id: identity.id,
     email: identity.email,
-    tipo: identity.tipo,
+    type: identity.type,
   });
 
   let refresh: string | null = null;
@@ -57,7 +57,7 @@ export async function startSession(
   } catch (err) {
     log.warn("session.refresh_unavailable", { error: serializeError(err) });
   }
-  return { access: access, refresh: refresh };
+  return { access, refresh };
 }
 
 /**
@@ -85,7 +85,7 @@ export async function refreshSession(
   if (!identity) return { ok: false, reason: "INVALID" };
 
   const session = await startSession(identity, store);
-  return { ok: true, session: session, tipo: identity.tipo };
+  return { ok: true, session, type: identity.type };
 }
 
 /** Logout: revokes the refresh token (if any). Never throws. */

@@ -6,11 +6,11 @@
  * Service layer for brand CRUD operations.
  *
  * Brands represent EcoShop's partner manufacturers/companies.
- * Each brand is associated with a user of type "MARCA" or "ADMIN".
+ * Each brand is associated with a user of type "BRAND" or "ADMIN".
  *
  * Relationships:
- * - 1:1 with Usuario (the user responsible for the brand)
- * - 1:N with Produto (a brand can have multiple products)
+ * - 1:1 with User (the user responsible for the brand)
+ * - 1:N with Product (a brand can have multiple products)
  *
  * Cache strategy:
  * - SHORT_LIST (5 min) for complete listings
@@ -41,15 +41,15 @@ import {
  * Cache: SHORT_LIST (5 minutes)
  * Key: "brands:list"
  *
- * Includes summary data of the responsible user (id, nome, email).
+ * Includes summary data of the responsible user (id, name, email).
  *
  * @returns Array of brands with the associated user's data
  */
 export async function listBrands() {
   return withCache(brandsKey(), TTL.SHORT_LIST, () =>
-    prisma.marca.findMany({
-      orderBy: { nome: "asc" },
-      include: { usuario: { select: { id: true, nome: true, email: true } } },
+    prisma.brand.findMany({
+      orderBy: { name: "asc" },
+      include: { user: { select: { id: true, name: true, email: true } } },
     }),
   );
 }
@@ -66,11 +66,11 @@ export async function listBrands() {
  */
 export async function getBrand(id: number) {
   return withCache(brandKey(id), TTL.ITEM, () =>
-    prisma.marca.findUnique({
+    prisma.brand.findUnique({
       where: { id },
       include: {
-        usuario: { select: { id: true, nome: true, email: true } },
-        produtos: true,
+        user: { select: { id: true, name: true, email: true } },
+        products: true,
       },
     }),
   );
@@ -81,55 +81,55 @@ export async function getBrand(id: number) {
  * Requires ADMIN authentication.
  *
  * @param data - Brand data
- * @param data.nome - Brand name (e.g. "EcoBrand")
- * @param data.descricao - Optional brand description
- * @param data.usuarioId - ID of the responsible user (type MARCA or ADMIN)
+ * @param data.name - Brand name (e.g. "EcoBrand")
+ * @param data.description - Optional brand description
+ * @param data.userId - ID of the responsible user (type BRAND or ADMIN)
  * @returns Newly created brand with the user's data
  *
  * @example
  * const brand = await createBrand({
- *   nome: "EcoBrand",
- *   descricao: "Sustainable clothing",
- *   usuarioId: 5
+ *   name: "EcoBrand",
+ *   description: "Sustainable clothing",
+ *   userId: 5
  * });
  *
- * @throws ResourceNotFound if usuarioId does not exist
- * @throws BusinessConflict if the user is neither MARCA nor ADMIN
+ * @throws ResourceNotFound if userId does not exist
+ * @throws BusinessConflict if the user is neither BRAND nor ADMIN
  *   (REQ-REF-04; decision recorded in docs/capabilities/reference-data/spec.md)
  *
  * NOTE (ADR-0018): this path is used by the ADMIN in the panel, with the user
- * already of type MARCA/ADMIN — so the brand goes straight in as APPROVED, unlike
+ * already of type BRAND/ADMIN — so the brand goes straight in as APPROVED, unlike
  * the request created by public registration (`createUser`), which
  * starts as PENDING.
  */
 export async function createBrand(data: {
-  nome: string;
-  descricao?: string;
-  usuarioId: number;
+  name: string;
+  description?: string;
+  userId: number;
 }) {
-  const user = await prisma.usuario.findUnique({
-    where: { id: data.usuarioId },
+  const user = await prisma.user.findUnique({
+    where: { id: data.userId },
   });
   if (!user) {
     throw new ResourceNotFound("User");
   }
-  if (user.tipo !== "MARCA" && user.tipo !== "ADMIN") {
+  if (user.type !== "BRAND" && user.type !== "ADMIN") {
     throw new BusinessConflict(
-      "The user responsible for a brand must be of type MARCA or ADMIN",
+      "The user responsible for a brand must be of type BRAND or ADMIN",
     );
   }
 
-  const brand = await prisma.marca.create({
-    data: { ...data, status: "APROVADA" },
-    include: { usuario: { select: { id: true, nome: true } } },
+  const brand = await prisma.brand.create({
+    data: { ...data, status: "APPROVED" },
+    include: { user: { select: { id: true, name: true } } },
   });
   await invalidateCache("BRANDS");
   return brand;
 }
 
 /**
- * Approves a pending brand: sets `Marca.status` to APROVADA and grants
- * the MARCA type to the associated user, atomically.
+ * Approves a pending brand: sets `Brand.status` to APPROVED and grants
+ * the BRAND type to the associated user, atomically.
  *
  * REQ-USR-03, ADR-0018.
  *
@@ -139,31 +139,31 @@ export async function createBrand(data: {
  * @throws BusinessConflict if the brand is no longer PENDING
  */
 export async function approveBrand(id: number) {
-  const brand = await prisma.marca.findUnique({ where: { id } });
+  const brand = await prisma.brand.findUnique({ where: { id } });
   if (!brand) {
     throw new ResourceNotFound("Brand");
   }
-  if (brand.status !== "PENDENTE") {
+  if (brand.status !== "PENDING") {
     throw new BusinessConflict("This brand is no longer pending approval");
   }
 
   const approved = await prisma.$transaction(async (tx) => {
-    await tx.usuario.update({
-      where: { id: brand.usuarioId },
-      data: { tipo: "MARCA" },
+    await tx.user.update({
+      where: { id: brand.userId },
+      data: { type: "BRAND" },
     });
-    return tx.marca.update({
+    return tx.brand.update({
       where: { id },
-      data: { status: "APROVADA" },
-      include: { usuario: { select: { id: true, nome: true, email: true } } },
+      data: { status: "APPROVED" },
+      include: { user: { select: { id: true, name: true, email: true } } },
     });
   });
 
   await Promise.all([
     invalidateKey(brandKey(id)),
     invalidateCache("BRANDS"),
-    invalidateKey(userKey(brand.usuarioId)),
-    invalidateKey(currentUserKey(brand.usuarioId)),
+    invalidateKey(userKey(brand.userId)),
+    invalidateKey(currentUserKey(brand.userId)),
     invalidateCache("USERS"),
   ]);
 
@@ -174,11 +174,11 @@ export async function approveBrand(id: number) {
  * Updates an existing brand.
  * Requires ADMIN authentication.
  *
- * NOTE: usuarioId CANNOT be changed after creation.
+ * NOTE: userId CANNOT be changed after creation.
  * To transfer responsibility, an admin must create a new brand.
  *
  * @param id - ID of the brand to update
- * @param data - Update data (nome, descricao - both optional)
+ * @param data - Update data (name, description - both optional)
  * @returns Updated brand
  * @throws Error P2025 if the brand does not exist
  *
@@ -188,9 +188,9 @@ export async function approveBrand(id: number) {
  */
 export async function updateBrand(
   id: number,
-  data: { nome?: string; descricao?: string },
+  data: { name?: string; description?: string },
 ) {
-  const brand = await prisma.marca.update({ where: { id }, data });
+  const brand = await prisma.brand.update({ where: { id }, data });
   await Promise.all([
     invalidateKey(brandKey(id)),
     invalidateCache("BRANDS"),
@@ -212,12 +212,12 @@ export async function updateBrand(
  * @throws Error P2003 if the brand has linked products
  */
 export async function deleteBrand(id: number) {
-  const brand = await prisma.marca.findUnique({ where: { id } });
+  const brand = await prisma.brand.findUnique({ where: { id } });
   if (!brand) {
     throw new ResourceNotFound("Brand");
   }
 
-  await prisma.marca.delete({ where: { id } });
+  await prisma.brand.delete({ where: { id } });
   await Promise.all([invalidateKey(brandKey(id)), invalidateCache("BRANDS")]);
   return true;
 }

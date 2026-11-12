@@ -16,11 +16,11 @@
  * - Easier refactoring (change an endpoint in a single place)
  *
  * Endpoints:
- * - List: GET /api/produtos (with pagination and filters)
- * - Fetch: GET /api/produtos/:id
- * - Create: POST /api/produtos (admin)
- * - Update: PUT /api/produtos/:id (admin)
- * - Delete: DELETE /api/produtos/:id (admin)
+ * - List: GET /api/products (with pagination and filters)
+ * - Fetch: GET /api/products/:id
+ * - Create: POST /api/products (admin)
+ * - Update: PUT /api/products/:id (admin)
+ * - Delete: DELETE /api/products/:id (admin)
  */
 
 import { useFetch } from "./useFetch";
@@ -36,23 +36,23 @@ import type {
 
 /** Orderings accepted by `useListProducts` (REQ-CAT-06). */
 export type ProductOrder =
-  | "relevancia"
-  | "preco_asc"
-  | "preco_desc"
-  | "nome_asc"
-  | "nome_desc";
+  | "relevance"
+  | "price_asc"
+  | "price_desc"
+  | "name_asc"
+  | "name_desc";
 
-/** Filtros adicionais de `useListProducts` (REQ-CAT-06/07), todos opcionais. */
+/** Additional filters of `useListProducts` (REQ-CAT-06/07), all optional. */
 export interface ListProductsFilters {
-  marcaId?: number;
-  precoMax?: number;
+  brandId?: number;
+  maxPrice?: number;
   sort?: ProductOrder;
 }
 
 /**
  * Lists products with pagination and filters.
  *
- * `marcaId`, `precoMax` and `sort` are applied by the server to the whole
+ * `brandId`, `maxPrice` and `sort` are applied by the server to the whole
  * catalog (not just the returned page) — REQ-CAT-06/07.
  *
  * @param page - Page number (1-indexed, default: 1)
@@ -64,11 +64,11 @@ export interface ListProductsFilters {
  *
  * @example
  * const { data, loading } = useListProducts(1, 12, 5, "t-shirt", {
- *   marcaId: 2,
- *   precoMax: 150,
- *   sort: "preco_asc",
+ *   brandId: 2,
+ *   maxPrice: 150,
+ *   sort: "price_asc",
  * });
- * // data?.produtos = array of products
+ * // data?.products = array of products
  * // data?.total = total products matching the filters
  */
 export function useListProducts(
@@ -82,13 +82,13 @@ export function useListProducts(
     page: String(page),
     size: String(size),
   });
-  if (categoryId) params.set("categoriaId", String(categoryId));
-  if (name) params.set("nome", name);
-  if (filters?.marcaId) params.set("marcaId", String(filters.marcaId));
-  if (filters?.precoMax) params.set("precoMax", String(filters.precoMax));
+  if (categoryId) params.set("categoryId", String(categoryId));
+  if (name) params.set("name", name);
+  if (filters?.brandId) params.set("brandId", String(filters.brandId));
+  if (filters?.maxPrice) params.set("maxPrice", String(filters.maxPrice));
   if (filters?.sort) params.set("sort", filters.sort);
 
-  return useFetch<ListProductsResponse>(`/api/produtos?${params}`);
+  return useFetch<ListProductsResponse>(`/api/products?${params}`);
 }
 
 /**
@@ -99,10 +99,10 @@ export function useListProducts(
  *
  * @example
  * const { data } = useGetProduct(productId);
- * const product = data?.produto;
+ * const product = data?.product;
  */
 export function useGetProduct(id: number | null) {
-  return useFetch<GetProductResponse>(id ? `/api/produtos/${id}` : null);
+  return useFetch<GetProductResponse>(id ? `/api/products/${id}` : null);
 }
 
 /**
@@ -113,17 +113,17 @@ export function useGetProduct(id: number | null) {
  *
  * @example
  * const create = useCreateProduct();
- * await create.execute("/api/produtos", {
- *   nome: "Organic T-Shirt",
- *   preco: 89.90,
- *   categoriaId: 1,
- *   marcaId: 2
+ * await create.execute("/api/products", {
+ *   name: "Organic T-Shirt",
+ *   price: 89.90,
+ *   categoryId: 1,
+ *   brandId: 2
  * });
  */
 export function useCreateProduct() {
   return useMutation<CreateProductResponse, CreateProductBody>({
     method: "POST",
-    invalidate: ["/api/produtos"], // Invalida cache de listagens após criar
+    invalidate: ["/api/products"], // Invalidates the listing cache after creating
   });
 }
 
@@ -135,14 +135,14 @@ export function useCreateProduct() {
  *
  * @example
  * const update = useUpdateProduct();
- * await update.execute(`/api/produtos/${id}`, {
- *   preco: 79.90 // partial update
+ * await update.execute(`/api/products/${id}`, {
+ *   price: 79.90 // partial update
  * });
  */
 export function useUpdateProduct() {
   return useMutation<UpdateProductResponse, UpdateProductBody>({
     method: "PUT",
-    invalidate: ["/api/produtos"], // Invalida cache de listagens
+    invalidate: ["/api/products"], // Invalidates the listing cache
   });
 }
 
@@ -154,11 +154,11 @@ export function useUpdateProduct() {
  *
  * @example
  * const remove = useDeleteProduct();
- * await remove.execute(`/api/produtos/${id}`);
+ * await remove.execute(`/api/products/${id}`);
  */
 export function useDeleteProduct() {
   return useMutation<{ ok: boolean }>({
     method: "DELETE",
-    invalidate: ["/api/produtos"],
+    invalidate: ["/api/products"],
   });
 }

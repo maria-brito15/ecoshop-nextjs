@@ -16,7 +16,7 @@
 export class ResourceNotFound extends Error {
   constructor(readonly resource: string) {
     super(`${resource} not found`);
-    this.name = "RecursoNaoEncontrado";
+    this.name = "ResourceNotFound";
   }
 }
 
@@ -24,7 +24,7 @@ export class ResourceNotFound extends Error {
 export class BusinessConflict extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "ConflitoDeNegocio";
+    this.name = "BusinessConflict";
   }
 }
 
@@ -32,6 +32,6 @@ export class BusinessConflict extends Error {
 export class OperationNotAllowed extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "OperacaoNaoAutorizada";
+    this.name = "OperationNotAllowed";
   }
 }

@@ -36,18 +36,18 @@ You are a renowned expert in environmental sustainability and ecology, with deep
 
 Provide a COMPLETE analysis in JSON format with the following fields:
 
-1. impacto_ambiental: Impacts of production and incorrect disposal, consequences for fauna and flora, statistical data. (4-5 sentences)
-2. tempo_decomposicao: Exact decomposition time in nature, factors that affect it, comparison with other materials.
-3. onde_descartar: Specific bin color, preparation before disposal, alternative locations, what NOT to do.
-4. reciclabilidade: High/Medium/Low level, percentage in Brazil and worldwide, summarized process, limitations.
-5. dicas_sustentaveis: 4-5 practical tips on reduction, reuse and sustainable alternatives.
-6. beneficios_reciclagem: Resource savings (with numbers), CO2 reduction, job creation.
+1. environmental_impact: Impacts of production and incorrect disposal, consequences for fauna and flora, statistical data. (4-5 sentences)
+2. decomposition_time: Exact decomposition time in nature, factors that affect it, comparison with other materials.
+3. disposal_instructions: Specific bin color, preparation before disposal, alternative locations, what NOT to do.
+4. recyclability: High/Medium/Low level, percentage in Brazil and worldwide, summarized process, limitations.
+5. sustainable_tips: 4-5 practical tips on reduction, reuse and sustainable alternatives.
+6. recycling_benefits: Resource savings (with numbers), CO2 reduction, job creation.
 
 RULES:
 - Answer ONLY with a valid JSON object, without markdown and without extra text.
 - Use \\n for line breaks inside the strings.
 - Focus on the Brazilian context.
 
-FORMAT: {"impacto_ambiental":"...","tempo_decomposicao":"...","onde_descartar":"...","reciclabilidade":"...","dicas_sustentaveis":"...","beneficios_reciclagem":"..."}
+FORMAT: {"environmental_impact":"...","decomposition_time":"...","disposal_instructions":"...","recyclability":"...","sustainable_tips":"...","recycling_benefits":"..."}
 `.trim();
 }

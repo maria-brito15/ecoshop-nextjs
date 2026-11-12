@@ -5,7 +5,7 @@
  *
  * Collection of hooks for managing product photos.
  *
- * Photos are stored on the file system (public/data_fotos/)
+ * Photos are stored on the file system (public/data_photos/)
  * and served as static files.
  *
  * Features:
@@ -14,9 +14,9 @@
  * - Sanitized names to avoid collisions (format: {productId}_{timestamp}_{random}.ext)
  *
  * Endpoints:
- * - List: GET /api/produtos/:id/fotos
- * - Upload: POST /api/produtos/:id/fotos (admin)
- * - Delete: DELETE /api/produtos/:id/fotos?nome={name} (admin)
+ * - List: GET /api/products/:id/photos
+ * - Upload: POST /api/products/:id/photos (admin)
+ * - Delete: DELETE /api/products/:id/photos?name={name} (admin)
  */
 
 "use client";
@@ -33,10 +33,10 @@ import type { Photo, PhotosResponse } from "@/types/domain";
  *
  * @example
  * const { data, loading } = useListPhotos(productId);
- * const photos = data?.fotos ?? [];
+ * const photos = data?.photos ?? [];
  */
 export function useListPhotos(productId: number) {
-  return useFetch<PhotosResponse>(`/api/produtos/${productId}/fotos`);
+  return useFetch<PhotosResponse>(`/api/products/${productId}/photos`);
 }
 
 /**
@@ -44,8 +44,8 @@ export function useListPhotos(productId: number) {
  * Requires ADMIN authentication.
  *
  * The request body must be a FormData containing:
- * - arquivo: File (the image)
- * - nome: string (optional, custom name)
+ * - file: File (the image)
+ * - name: string (optional, custom name)
  *
  * @param productId - ID of the product the photo will be associated with
  * @returns Mutation hook for photo upload
@@ -53,13 +53,13 @@ export function useListPhotos(productId: number) {
  * @example
  * const upload = useUploadPhoto(productId);
  * const formData = new FormData();
- * formData.append("arquivo", file);
- * const result = await upload.execute(`/api/produtos/${productId}/fotos`, formData);
+ * formData.append("file", file);
+ * const result = await upload.execute(`/api/products/${productId}/photos`, formData);
  */
 export function useUploadPhoto(productId: number) {
-  return useMutation<{ ok: boolean; foto: Photo; mensagem: string }, FormData>({
+  return useMutation<{ ok: boolean; photo: Photo; message: string }, FormData>({
     method: "POST",
-    invalidate: [`/api/produtos/${productId}/fotos`],
+    invalidate: [`/api/products/${productId}/photos`],
   });
 }
 
@@ -72,11 +72,11 @@ export function useUploadPhoto(productId: number) {
  *
  * @example
  * const remove = useDeletePhoto(productId);
- * await remove.execute(`/api/produtos/${productId}/fotos?nome=${fileName}`);
+ * await remove.execute(`/api/products/${productId}/photos?name=${fileName}`);
  */
 export function useDeletePhoto(productId: number) {
-  return useMutation<{ ok: boolean; mensagem: string }>({
+  return useMutation<{ ok: boolean; message: string }>({
     method: "DELETE",
-    invalidate: [`/api/produtos/${productId}/fotos`],
+    invalidate: [`/api/products/${productId}/photos`],
   });
 }

@@ -7,7 +7,7 @@
  *
  * Page responsible for user authentication, supporting:
  * - Login of existing users
- * - Registration of new users (CLIENTE or MARCA)
+ * - Registration of new users (CUSTOMER or BRAND)
  *
  * Features:
  * - Switching between login and registration modes
@@ -45,13 +45,13 @@ import type { LoginBody, RegistrationBody } from "@/types/api";
 type Mode = "login" | "register";
 
 type Form = {
-  nome: string;
+  name: string;
   email: string;
-  senha: string;
-  senhaConfirm: string;
-  telefone: string;
+  password: string;
+  confirmPassword: string;
+  phone: string;
   isLoja: boolean;
-  marcaNome: string;
+  brandName: string;
 };
 
 /**
@@ -112,13 +112,13 @@ export default function AuthPage() {
 
   const [mode, setMode] = useState<Mode>("login");
   const [form, setForm] = useState<Form>({
-    nome: "",
+    name: "",
     email: "",
-    senha: "",
-    senhaConfirm: "",
-    telefone: "",
+    password: "",
+    confirmPassword: "",
+    phone: "",
     isLoja: false,
-    marcaNome: "",
+    brandName: "",
   });
 
   const [darkMode, setDarkMode] = useState(false);
@@ -129,8 +129,8 @@ export default function AuthPage() {
   const record = useRegistration();
 
   const hook = mode === "login" ? login : record;
-  const error = passwordError || hook.erro;
-  const loading = hook.carregando;
+  const error = passwordError || hook.error;
+  const loading = hook.loading;
 
   // Redirect if the user is already signed in
   useEffect(() => {
@@ -157,7 +157,7 @@ export default function AuthPage() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
-    if (name === "senhaConfirm" || name === "senha") setPasswordError(null);
+    if (name === "confirmPassword" || name === "password") setPasswordError(null);
   }
 
   /**
@@ -173,19 +173,19 @@ export default function AuthPage() {
   }
 
   function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm((prev) => ({ ...prev, telefone: maskPhone(e.target.value) }));
+    setForm((prev) => ({ ...prev, phone: maskPhone(e.target.value) }));
   }
 
   function toggleMode(fresh: Mode) {
     setMode(fresh);
     setForm({
-      nome: "",
+      name: "",
       email: "",
-      senha: "",
-      senhaConfirm: "",
-      telefone: "",
+      password: "",
+      confirmPassword: "",
+      phone: "",
       isLoja: false,
-      marcaNome: "",
+      brandName: "",
     });
     setPasswordError(null);
     setPendingBrandMessage(false);
@@ -203,37 +203,37 @@ export default function AuthPage() {
         : "/";
 
     if (mode === "login") {
-      const body: LoginBody = { email: form.email, senha: form.senha };
+      const body: LoginBody = { email: form.email, password: form.password };
       const data = await login.execute("/api/auth", body);
       if (data) router.push(nextUrl);
     } else {
       // Registration validations
-      if (form.senha !== form.senhaConfirm) {
+      if (form.password !== form.confirmPassword) {
         setPasswordError("Passwords do not match.");
         return;
       }
-      if (form.senha.length < 8) {
+      if (form.password.length < 8) {
         setPasswordError("Password must have at least 8 characters.");
         return;
       }
-      if (form.isLoja && !form.marcaNome.trim()) {
+      if (form.isLoja && !form.brandName.trim()) {
         setPasswordError("Enter the brand name.");
         return;
       }
 
       const body: RegistrationBody = {
-        nome: form.nome,
+        name: form.name,
         email: form.email,
-        senha: form.senha,
-        ...(form.telefone ? { telefone: form.telefone } : {}),
+        password: form.password,
+        ...(form.phone ? { phone: form.phone } : {}),
         ...(form.isLoja
-          ? { tipo: "MARCA" as const, marcaNome: form.marcaNome.trim() }
+          ? { type: "BRAND" as const, brandName: form.brandName.trim() }
           : {}),
       };
 
       const data = await record.execute("/api/users", body);
       if (!data) return;
-      if (data.marcaPendente) {
+      if (data.pendingBrand) {
         setPendingBrandMessage(true);
         return;
       }
@@ -299,7 +299,7 @@ export default function AuthPage() {
               className="text-3xl font-extrabold tracking-tight"
               style={{ color: "var(--color-text-primary)" }}
             >
-              {mode === "login" ? "Bem-vindo" : "Create Account"}
+              {mode === "login" ? "Welcome" : "Create Account"}
             </h1>
             <p
               className="mt-1.5 text-sm"
@@ -420,9 +420,9 @@ export default function AuthPage() {
                     </span>
                     <input
                       type="text"
-                      name="nome"
-                      id="nome"
-                      value={form.nome}
+                      name="name"
+                      id="name"
+                      value={form.name}
                       onChange={handleChange}
                       placeholder="Your full name"
                       required
@@ -476,12 +476,12 @@ export default function AuthPage() {
                     className="block text-sm font-semibold mb-2"
                     style={{ color: "var(--color-text-primary)" }}
                   >
-                    Telefone{" "}
+                    Phone{" "}
                     <span
                       className="font-normal text-xs"
                       style={{ color: "var(--color-text-tertiary)" }}
                     >
-                      (opcional)
+                      (optional)
                     </span>
                   </label>
                   <div className="relative">
@@ -501,9 +501,9 @@ export default function AuthPage() {
                     </span>
                     <input
                       type="tel"
-                      name="telefone"
-                      id="telefone"
-                      value={form.telefone}
+                      name="phone"
+                      id="phone"
+                      value={form.phone}
                       onChange={handlePhoneChange}
                       placeholder="(00) 00000-0000"
                       className={inputCls}
@@ -546,9 +546,9 @@ export default function AuthPage() {
                   </span>
                   <input
                     type="password"
-                    name="senha"
-                    id="senha"
-                    value={form.senha}
+                    name="password"
+                    id="password"
+                    value={form.password}
                     onChange={handleChange}
                     placeholder="••••••••"
                     required
@@ -585,9 +585,9 @@ export default function AuthPage() {
                     </span>
                     <input
                       type="password"
-                      name="senhaConfirm"
-                      id="senhaConfirm"
-                      value={form.senhaConfirm}
+                      name="confirmPassword"
+                      id="confirmPassword"
+                      value={form.confirmPassword}
                       onChange={handleChange}
                       placeholder="Repeat the password"
                       required
@@ -633,8 +633,8 @@ export default function AuthPage() {
                   {form.isLoja && (
                     <input
                       type="text"
-                      name="marcaNome"
-                      value={form.marcaNome}
+                      name="brandName"
+                      value={form.brandName}
                       onChange={handleChange}
                       placeholder="Brand name"
                       required

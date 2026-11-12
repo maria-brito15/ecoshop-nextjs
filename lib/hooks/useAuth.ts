@@ -43,7 +43,7 @@ import type {
  *
  * const handleSubmit = async (e) => {
  *   e.preventDefault();
- *   const result = await login.execute("/api/auth", { email, senha });
+ *   const result = await login.execute("/api/auth", { email, password });
  *   if (result) router.push("/");
  * };
  */

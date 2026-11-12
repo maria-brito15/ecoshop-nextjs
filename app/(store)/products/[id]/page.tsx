@@ -1,9 +1,9 @@
-// app/(store)/produtos/[id]/page.tsx
+// app/(store)/products/[id]/page.tsx
 
 /**
  * PRODUCT DETAIL PAGE
  *
- * Route: "/produtos/[id]"
+ * Route: "/products/[id]"
  *
  * Full detail page for a specific product.
  * Shows all available information about the product.
@@ -30,28 +30,28 @@ import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { useGetProduct } from "@/lib/hooks/useProducts";
 import { useListPhotos } from "@/lib/hooks/usePhotos";
-import type { Certificado } from "@/types/api";
+import type { Certificate } from "@/types/api";
 
 type Props = {
   params: Promise<{ id: string }>;
 };
 
-type Tab = "sobre" | "specs" | "certificados";
+type Tab = "about" | "specs" | "certificates";
 
 /**
  * Item of the local visited-products history (REQ-PERF-05).
- * Same shape read by app/(perfil)/perfil/page.tsx under the key "ecoshop_history".
+ * Same shape read by app/(profile)/profile/page.tsx under the key "ecoshop_history".
  */
 type HistoryItem = {
-  produtoId: number;
-  nome: string;
-  fotoUrl?: string;
-  preco: number;
-  visitadoEm: string;
+  productId: number;
+  name: string;
+  photoUrl?: string;
+  price: number;
+  visitedAt: string;
 };
 
 // ----------------------------------------------------------------------------
-// COMPONENTES
+// COMPONENTS
 // ----------------------------------------------------------------------------
 
 /**
@@ -79,23 +79,23 @@ function SkeletonDetail() {
 }
 
 /**
- * Badge de certificado individual.
+ * Badge for an individual certificate.
  */
-function CertBadge({ cert }: { cert: Certificado }) {
+function CertBadge({ cert }: { cert: Certificate }) {
   return (
     <div className="flex flex-col gap-1 p-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-body)] transition-all hover:border-[var(--color-primary)] hover:shadow-[var(--shadow-card)]">
       <div className="flex items-center gap-2">
         <span className="text-[var(--color-primary)] text-base">✦</span>
         <span className="font-bold text-sm text-[var(--color-text-primary)] font-display">
-          {cert.nome}
+          {cert.name}
         </span>
       </div>
       <span className="text-xs text-[var(--color-text-tertiary)] pl-6">
-        {cert.orgaoEmissor}
+        {cert.issuingBody}
       </span>
-      {cert.descricao && (
+      {cert.description && (
         <p className="text-xs text-[var(--color-text-secondary)] pl-6 leading-relaxed mt-0.5">
-          {cert.descricao}
+          {cert.description}
         </p>
       )}
     </div>
@@ -105,7 +105,7 @@ function CertBadge({ cert }: { cert: Certificado }) {
 /**
  * Environmental impact card (estimates based on the product price).
  */
-function ImpactCard({ preco: price }: { preco: number }) {
+function ImpactCard({ price }: { price: number }) {
   const val = Number(price);
   const co2 = (val * 0.012).toFixed(1) + "kg";
   const water = Math.round(val * 0.8) + "L";
@@ -115,7 +115,7 @@ function ImpactCard({ preco: price }: { preco: number }) {
     <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-2xl p-5 shadow-[var(--shadow-card)]">
       <div className="flex items-center gap-2 mb-4 text-[var(--color-primary)] font-bold text-sm font-display uppercase tracking-wide">
         <span>🌍</span>
-        <span>Impacto Positivo</span>
+        <span>Positive Impact</span>
       </div>
       <div className="grid grid-cols-3 gap-3">
         {[
@@ -156,9 +156,9 @@ function Tabs({
   hasCerts: boolean;
 }) {
   const tabs: { id: Tab; label: string }[] = [
-    { id: "sobre", label: "About the Product" },
+    { id: "about", label: "About the Product" },
     { id: "specs", label: "Technical Sheet" },
-    ...(hasCerts ? [{ id: "certificados" as Tab, label: "Certificados" }] : []),
+    ...(hasCerts ? [{ id: "certificates" as Tab, label: "Certificates" }] : []),
   ];
 
   return (
@@ -182,9 +182,9 @@ function Tabs({
 
 export default function ProductPage({ params }: Props) {
   const { id } = use(params);
-  const { data, loading: loading, error: error } = useGetProduct(Number(id));
+  const { data, loading, error } = useGetProduct(Number(id));
   const { data: photosData } = useListPhotos(Number(id));
-  const [activeTab, setActiveTab] = useState<Tab>("sobre");
+  const [activeTab, setActiveTab] = useState<Tab>("about");
   const [imgLoaded, setImgLoaded] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
@@ -195,22 +195,22 @@ export default function ProductPage({ params }: Props) {
   }, []);
 
   // Record the visit in the local history (REQ-PERF-05): the History tab of the
-  // profile (app/(perfil)/perfil/page.tsx) reads the same key. No backend
+  // profile (app/(profile)/profile/page.tsx) reads the same key. No backend
   // because the history is per browser, not per account (ADR-0004).
   useEffect(() => {
-    const product = data?.produto;
+    const product = data?.product;
     if (!product) return;
     try {
       const raw = localStorage.getItem("ecoshop_history");
       const history: HistoryItem[] = raw ? JSON.parse(raw) : [];
-      const withoutDuplicate = history.filter((h) => h.produtoId !== product.id);
+      const withoutDuplicate = history.filter((h) => h.productId !== product.id);
       const updated = [
         {
-          produtoId: product.id,
-          nome: product.nome,
-          fotoUrl: product.fotoUrl,
-          preco: Number(product.preco),
-          visitadoEm: new Date().toISOString(),
+          productId: product.id,
+          name: product.name,
+          photoUrl: product.photoUrl,
+          price: Number(product.price),
+          visitedAt: new Date().toISOString(),
         },
         ...withoutDuplicate,
       ].slice(0, 50);
@@ -218,9 +218,9 @@ export default function ProductPage({ params }: Props) {
     } catch {
       // localStorage unavailable (e.g. private mode); history is not critical
     }
-  }, [data?.produto]);
+  }, [data?.product]);
 
-  // Estado de carregamento
+  // Loading state
   if (loading) return <SkeletonDetail />;
 
   // Product not found
@@ -233,7 +233,7 @@ export default function ProductPage({ params }: Props) {
             Product not found
           </h2>
           <p className="text-[var(--color-text-secondary)] mb-6">{error}</p>
-          <Link href="/produtos" className="btn-primary">
+          <Link href="/products" className="btn-primary">
             ← Back to products
           </Link>
         </div>
@@ -241,14 +241,14 @@ export default function ProductPage({ params }: Props) {
     );
   }
 
-  if (!data?.produto) return null;
+  if (!data?.product) return null;
 
-  const product = data.produto;
-  const categoryName = product.categoria?.nome ?? "Category";
-  const categoryDescription = product.categoria?.descricao;
-  const brandName = product.marca?.nome ?? "Brand";
-  const brandDescription = product.marca?.descricao;
-  const numericPrice = Number(product.preco);
+  const product = data.product;
+  const categoryName = product.category?.name ?? "Category";
+  const categoryDescription = product.category?.description;
+  const brandName = product.brand?.name ?? "Brand";
+  const brandDescription = product.brand?.description;
+  const numericPrice = Number(product.price);
   const formattedPrice = numericPrice.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
@@ -258,17 +258,17 @@ export default function ProductPage({ params }: Props) {
     style: "currency",
     currency: "BRL",
   });
-  const hasCerts = !!(product.certificados && product.certificados.length > 0);
-  const photos = photosData?.fotos ?? [];
+  const hasCerts = !!(product.certificates && product.certificates.length > 0);
+  const photos = photosData?.photos ?? [];
   const mainImage =
-    selectedPhoto ?? product.fotoUrl ?? photos[0]?.url ?? null;
+    selectedPhoto ?? product.photoUrl ?? photos[0]?.url ?? null;
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-body)] pb-20">
       {/* BREADCRUMB */}
       <div className="container-eco pt-6 pb-2">
         <Link
-          href="/produtos"
+          href="/products"
           className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors group"
         >
           <span
@@ -298,7 +298,7 @@ export default function ProductPage({ params }: Props) {
               {mainImage ? (
                 <img
                   src={mainImage}
-                  alt={product.nome}
+                  alt={product.name}
                   onLoad={() => setImgLoaded(true)}
                   className={`max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
                 />
@@ -327,13 +327,13 @@ export default function ProductPage({ params }: Props) {
               <div className="flex gap-3 mt-4 overflow-x-auto pb-1">
                 {photos.map((photo) => (
                   <button
-                    key={photo.nome}
+                    key={photo.name}
                     type="button"
                     onClick={() => {
                       setImgLoaded(false);
                       setSelectedPhoto(photo.url);
                     }}
-                    aria-label={`View photo ${photo.nome}`}
+                    aria-label={`View photo ${photo.name}`}
                     className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors ${
                       mainImage === photo.url
                         ? "border-[var(--color-primary)]"
@@ -358,10 +358,10 @@ export default function ProductPage({ params }: Props) {
                 {categoryName}
               </p>
               <h1 className="font-display text-3xl md:text-4xl font-extrabold text-[var(--color-text-primary)] leading-tight">
-                {product.nome}
+                {product.name}
               </h1>
               <p className="text-sm text-[var(--color-text-tertiary)] mt-1 font-medium">
-                por{" "}
+                by{" "}
                 <span className="text-[var(--color-text-secondary)]">
                   {brandName}
                 </span>
@@ -410,7 +410,7 @@ export default function ProductPage({ params }: Props) {
             </div>
 
             {/* Environmental impact */}
-            <ImpactCard preco={product.preco} />
+            <ImpactCard price={product.price} />
           </div>
         </section>
 
@@ -432,11 +432,11 @@ export default function ProductPage({ params }: Props) {
 
           <div className="p-6 md:p-10">
             {/* TAB: ABOUT THE PRODUCT */}
-            {activeTab === "sobre" && (
+            {activeTab === "about" && (
               <div className="animate-[fadeSlideUp_0.4s_ease_forwards]">
-                {product.descricao ? (
+                {product.description ? (
                   <p className="text-base md:text-lg leading-relaxed text-[var(--color-text-secondary)] mb-8">
-                    {product.descricao}
+                    {product.description}
                   </p>
                 ) : (
                   <p className="text-[var(--color-text-tertiary)] italic mb-8">
@@ -446,7 +446,7 @@ export default function ProductPage({ params }: Props) {
                 <div>
                   <h4 className="font-display font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
                     <span className="text-[var(--color-primary)]">★</span>{" "}
-                    Destaques
+                    Highlights
                   </h4>
                   <ul className="flex flex-col gap-3">
                     {[
@@ -477,7 +477,7 @@ export default function ProductPage({ params }: Props) {
                 <table className="w-full border-collapse">
                   <tbody>
                     {[
-                      ["Nome", product.nome],
+                      ["Name", product.name],
                       ["Category", categoryName],
                       ["Brand", brandName],
                       ...(categoryDescription
@@ -489,7 +489,7 @@ export default function ProductPage({ params }: Props) {
                       ["Price", formattedPrice],
                       [
                         "Added on",
-                        new Date(product.criadoEm).toLocaleDateString("pt-BR", {
+                        new Date(product.createdAt).toLocaleDateString("pt-BR", {
                           year: "numeric",
                           month: "long",
                           day: "numeric",
@@ -514,22 +514,22 @@ export default function ProductPage({ params }: Props) {
             )}
 
             {/* TAB: CERTIFICATES */}
-            {activeTab === "certificados" &&
+            {activeTab === "certificates" &&
               hasCerts &&
-              product.certificados && (
+              product.certificates && (
                 <div className="animate-[fadeSlideUp_0.4s_ease_forwards]">
                   <div className="mb-6">
                     <h4 className="font-display font-bold text-[var(--color-text-primary)] text-lg mb-1">
                       Certifications & Seals
                     </h4>
                     <p className="text-sm text-[var(--color-text-secondary)]">
-                      This product has {product.certificados.length}{" "}
+                      This product has {product.certificates.length}{" "}
                       recognized sustainability certificate
-                      {product.certificados.length > 1 ? "s" : ""}.
+                      {product.certificates.length > 1 ? "s" : ""}.
                     </p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {product.certificados.map(({ certificado: certificate }) => (
+                    {product.certificates.map(({ certificate }) => (
                       <CertBadge key={certificate.id} cert={certificate} />
                     ))}
                   </div>

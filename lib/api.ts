@@ -35,7 +35,7 @@ export function getApiBase(): string {
     return "/api";
   }
 
-  // Modo servidor: precisa de URL absoluta.
+  // Server mode: needs an absolute URL.
   // NEXT_PUBLIC_SITE_URL must be configured in the production environment.
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   return `${siteUrl}/api`;

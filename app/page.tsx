@@ -29,10 +29,10 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { useListProducts } from "@/lib/hooks/useProducts";
 import { useListCategories } from "@/lib/hooks/useCategories";
-import type { Produto, Categoria } from "@/types/api";
+import type { Product, Category } from "@/types/api";
 
 // ----------------------------------------------------------------------------
-// COMPONENTES AUXILIARES
+// HELPER COMPONENTS
 // ----------------------------------------------------------------------------
 
 /**
@@ -44,9 +44,9 @@ import type { Produto, Categoria } from "@/types/api";
  */
 function categoryIcon(name: string) {
   const n = name.toLowerCase();
-  if (n.includes("casa") || n.includes("home")) return "🏠";
-  if (n.includes("beleza") || n.includes("corpo")) return "🌿";
-  if (n.includes("moda") || n.includes("roupa")) return "👕";
+  if (n.includes("home")) return "🏠";
+  if (n.includes("cosmetic") || n.includes("beauty") || n.includes("body")) return "🌿";
+  if (n.includes("cloth") || n.includes("fashion") || n.includes("footwear")) return "👕";
   if (n.includes("pet")) return "🐾";
   return "🍃";
 }
@@ -88,12 +88,12 @@ function useScrollReveal() {
 
 /**
  * Product card shown in the home grid.
- * Simplified version of the ProductCard used in /produtos.
+ * Simplified version of the ProductCard used in /products.
  *
  * @param product - Data of the product to display
  */
-function ProductCard({ produto: product }: { produto: Produto }) {
-  const formattedPrice = Number(product.preco).toLocaleString("pt-BR", {
+function ProductCard({ product }: { product: Product }) {
+  const formattedPrice = Number(product.price).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
@@ -101,28 +101,28 @@ function ProductCard({ produto: product }: { produto: Produto }) {
   return (
     <article className="product-card animate-on-scroll cursor-pointer visible">
       <div className="h-48 flex items-center justify-center bg-[var(--color-bg-body)] relative overflow-hidden">
-        {product.fotoUrl ? (
+        {product.photoUrl ? (
           <img
-            src={product.fotoUrl}
-            alt={product.nome}
+            src={product.photoUrl}
+            alt={product.name}
             className="card-img w-full h-full object-cover"
           />
         ) : (
           <span className="card-img text-6xl select-none">🌱</span>
         )}
         <span className="absolute top-3 left-3 text-xs font-bold px-3 py-1 rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary-dark)]">
-          {product.categoria?.nome}
+          {product.category?.name}
         </span>
       </div>
       <div className="p-5 flex flex-col gap-2 flex-1">
         <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-tertiary)]">
-          {product.marca?.nome}
+          {product.brand?.name}
         </span>
         <h3 className="font-bold text-[var(--color-text-primary)] leading-snug line-clamp-2">
-          {product.nome}
+          {product.name}
         </h3>
         <Link
-          href={`/produtos/${product.id}`}
+          href={`/products/${product.id}`}
           className="mt-auto pt-3 text-lg font-extrabold text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"
         >
           {formattedPrice}
@@ -138,10 +138,10 @@ function ProductCard({ produto: product }: { produto: Produto }) {
  *
  * @param category - Category data
  */
-function CategoryCard({ categoria: category }: { categoria: Categoria }) {
+function CategoryCard({ category }: { category: Category }) {
   return (
     <Link
-      href={`/produtos?categoriaId=${category.id}`}
+      href={`/products?categoryId=${category.id}`}
       className="
         animate-on-scroll group w-full visible
         flex flex-col items-center gap-3
@@ -163,10 +163,10 @@ function CategoryCard({ categoria: category }: { categoria: Categoria }) {
           transition-colors
         "
       >
-        {categoryIcon(category.nome)}
+        {categoryIcon(category.name)}
       </span>
       <span className="font-bold text-[var(--color-text-primary)]">
-        {category.nome}
+        {category.name}
       </span>
     </Link>
   );
@@ -188,8 +188,8 @@ export default function HomePage() {
   const { data: categoriesData, loading: loadingCategories } =
     useListCategories();
 
-  const products = productsData?.produtos ?? [];
-  const categories = categoriesData?.categorias ?? [];
+  const products = productsData?.products ?? [];
+  const categories = categoriesData?.categories ?? [];
   const loading = loadingProducts || loadingCategories;
 
   useScrollReveal();
@@ -218,10 +218,10 @@ export default function HomePage() {
                 Discover sustainable products that care for you and the planet, with fast delivery and real purpose.
               </p>
               <div className="flex flex-wrap gap-4 pt-2">
-                <Link href="/produtos" className="btn-primary">
+                <Link href="/products" className="btn-primary">
                   Explore Products
                 </Link>
-                <Link href="/educacao" className="btn-secondary">
+                <Link href="/education" className="btn-secondary">
                   Learn more
                 </Link>
               </div>
@@ -229,13 +229,13 @@ export default function HomePage() {
               {/* Impact metrics */}
               <div className="flex gap-8 pt-6 border-t border-[var(--color-border)]">
                 {[
-                  { valor: "2k+", label: "Eco products" },
-                  { valor: "98%", label: "Satisfaction" },
-                  { valor: "0 CO₂", label: "Entregas neutras" },
+                  { value: "2k+", label: "Eco products" },
+                  { value: "98%", label: "Satisfaction" },
+                  { value: "0 CO₂", label: "Carbon-neutral deliveries" },
                 ].map((s) => (
                   <div key={s.label} className="flex flex-col">
                     <strong className="text-2xl font-extrabold font-display text-[var(--color-text-primary)]">
-                      {s.valor}
+                      {s.value}
                     </strong>
                     <span className="text-sm text-[var(--color-text-tertiary)]">
                       {s.label}
@@ -267,11 +267,11 @@ export default function HomePage() {
         SECTION 2: FEATURED PRODUCTS
         Grid with the first 4 products of the catalog
       -------------------------------------------------------------------- */}
-      <section id="produtos" className="py-20 bg-[var(--color-bg-surface)]">
+      <section id="products" className="py-20 bg-[var(--color-bg-surface)]">
         <div className="container-eco">
           <div className="text-center max-w-xl mx-auto mb-12">
             <span className="block text-sm font-bold uppercase tracking-widest text-[var(--color-primary)] mb-2">
-              Destaques
+              Highlights
             </span>
             <h2 className="font-display text-4xl font-extrabold mb-3">
               Best Products
@@ -295,7 +295,7 @@ export default function HomePage() {
             /* Error state */
             <div className="text-center py-12">
               <p className="text-[var(--color-error)] font-semibold mb-2">
-                Ops! Algo deu errado.
+                Oops! Something went wrong.
               </p>
               <p className="text-[var(--color-text-tertiary)] text-sm">
                 {productsError}
@@ -308,10 +308,10 @@ export default function HomePage() {
               </button>
             </div>
           ) : products.length > 0 ? (
-            /* Grid de produtos */
+            /* Product grid */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {products.map((p) => (
-                <ProductCard key={p.id} produto={p} />
+                <ProductCard key={p.id} product={p} />
               ))}
             </div>
           ) : (
@@ -321,7 +321,7 @@ export default function HomePage() {
           )}
 
           <div className="text-center mt-10">
-            <Link href="/produtos" className="btn-secondary">
+            <Link href="/products" className="btn-secondary">
               See all products →
             </Link>
           </div>
@@ -340,12 +340,12 @@ export default function HomePage() {
                 Browse by
               </span>
               <h2 className="font-display text-4xl font-extrabold">
-                Categorias
+                Categories
               </h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5 justify-items-center mx-auto max-w-5xl">
               {categories.slice(0, 6).map((cat) => (
-                <CategoryCard key={cat.id} categoria={cat} />
+                <CategoryCard key={cat.id} category={cat} />
               ))}
             </div>
           </div>
@@ -377,7 +377,7 @@ export default function HomePage() {
                 },
                 {
                   icon: "🌱",
-                  title: "Sustentabilidade",
+                  title: "Sustainability",
                   desc: "Understand the real impact of each material.",
                 },
               ].map((f) => (
@@ -389,7 +389,7 @@ export default function HomePage() {
                   </div>
                 </div>
               ))}
-              <Link href="/educacao" className="btn-primary w-fit mt-2">
+              <Link href="/education" className="btn-primary w-fit mt-2">
                 Go to Educational Content
               </Link>
             </div>
@@ -420,10 +420,10 @@ export default function HomePage() {
               </p>
             </div>
             <Link
-              href="/ia-scan"
+              href="/ai-scan"
               className="relative z-10 flex-shrink-0 flex items-center gap-2 px-8 py-4 bg-white text-[var(--color-primary-dark)] font-bold rounded-full hover:-translate-y-1 hover:shadow-xl transition-all"
             >
-              🔍 Testar Agora
+              🔍 Try It Now
             </Link>
           </div>
         </div>
@@ -459,19 +459,19 @@ export default function HomePage() {
 
             {[
               {
-                title: "Loja",
+                title: "Shop",
                 links: [
-                  { label: "Produtos", href: "/produtos" },
-                  { label: "Categorias", href: "/produtos" },
-                  { label: "Novidades", href: "/produtos" },
+                  { label: "Products", href: "/products" },
+                  { label: "Categories", href: "/products" },
+                  { label: "Novidades", href: "/products" },
                 ],
               },
               {
                 title: "Empresa",
                 links: [
                   { label: "About us", href: "/about" },
-                  { label: "Education", href: "/educacao" },
-                  { label: "EcoScan IA", href: "/ia-scan" },
+                  { label: "Education", href: "/education" },
+                  { label: "EcoScan IA", href: "/ai-scan" },
                 ],
               },
             ].map((col) => (

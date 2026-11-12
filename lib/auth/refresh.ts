@@ -35,7 +35,7 @@ export function generateRefreshToken(): string {
   return randomBytes(32).toString("base64url");
 }
 
-const hashDoToken = (token: string) =>
+const tokenHash = (token: string) =>
   createHash("sha256").update(token).digest("hex");
 const tokenKey = (hash: string) => `refresh:${hash}`;
 const refreshUserKey = (userId: number) => `refresh_user:${userId}`;
@@ -45,7 +45,7 @@ const withShortTimeout = <T>(promise: Promise<T>) =>
 
 class RedisRefreshTokenStore implements RefreshTokenStore {
   async create(token: string, userId: number): Promise<void> {
-    const hash = hashDoToken(token);
+    const hash = tokenHash(token);
     const set = refreshUserKey(userId);
     await withShortTimeout(
       redis
@@ -60,7 +60,7 @@ class RedisRefreshTokenStore implements RefreshTokenStore {
   }
 
   async consume(token: string): Promise<number | null> {
-    const hash = hashDoToken(token);
+    const hash = tokenHash(token);
     const owner = await withShortTimeout(redis.getDel(tokenKey(hash)));
     if (owner === null) return null;
 

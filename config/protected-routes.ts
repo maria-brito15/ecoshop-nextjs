@@ -17,10 +17,10 @@
  *
  * Protection types:
  * - "admin": only users of type "ADMIN" can access
- * - "authenticated": any signed-in user (CLIENTE, MARCA, ADMIN) can access
+ * - "authenticated": any signed-in user (CUSTOMER, BRAND, ADMIN) can access
  *
  * Response types:
- * - "api": returns JSON with an error (e.g. { erro: "Not authorized" })
+ * - "api": returns JSON with an error (e.g. { error: "Not authorized" })
  * - "page": redirects to /sign-in with the next parameter
  */
 
@@ -30,10 +30,10 @@
  * - admin: Only users of type "ADMIN" have permission.
  *          Used for administrative routes (panel, user management).
  *
- * - authenticated: Any signed-in user (CLIENTE, MARCA or ADMIN) has permission.
+ * - authenticated: Any signed-in user (CUSTOMER, BRAND or ADMIN) has permission.
  *                  Used for profile routes and personal features.
  */
-export type AccessLevel = "admin" | "autenticado";
+export type AccessLevel = "admin" | "authenticated";
 
 /**
  * Protection rule for a route or group of routes.
@@ -44,8 +44,8 @@ export interface RouteRule {
    * The middleware checks whether the current URL starts with this prefix.
    *
    * @example
-   * prefix: "/perfil" → protects /perfil, /perfil/editar, /perfil/configuracoes
-   * prefix: "/api/admin" → protects /api/admin, /api/admin/usuarios, etc.
+   * prefix: "/profile" → protects /profile, /profile/edit, /profile/settings
+   * prefix: "/api/admin" → protects /api/admin, /api/admin/users, etc.
    */
   prefix: string;
 
@@ -61,7 +61,7 @@ export interface RouteRule {
    * - "api": returns JSON with status 401/403 (for API endpoints)
    * - "page": redirects to the login page (for page routes)
    */
-  responseType: "api" | "pagina";
+  responseType: "api" | "page";
 }
 
 /**
@@ -71,37 +71,37 @@ export interface RouteRule {
  *
  * IMPORTANT: More specific rules must come before generic rules
  * if they overlap. Example:
- * - "/api/admin/usuarios" before "/api/admin"
+ * - "/api/admin/users" before "/api/admin"
  *
  * Current rules:
- * 1. /perfil → authenticated (any signed-in user can see their profile)
- * 2. /ia-scan → authenticated (REQ-AUTZ-08; the /api/ia/scan API already required login,
+ * 1. /profile → authenticated (any signed-in user can see their profile)
+ * 2. /ai-scan → authenticated (REQ-AUTZ-08; the /api/ai/scan API already required login,
  *    but the page opened for any visitor before they tried to upload the photo)
- * 3. /painel → admin (only administrators access the panel)
- * 4. /api/usuarios → authenticated (the middleware only requires a session; who may read/edit each
+ * 3. /dashboard → admin (only administrators access the panel)
+ * 4. /api/users/<id> → authenticated (the middleware only requires a session; who may read/edit each
  *    record is decided in the handler: the user themselves or ADMIN, and only ADMIN lists, creates and deletes.
  *    See ADR-0017 and specs/001-own-user-profile)
  * 5. /api/admin → admin (administrative endpoints)
  */
 export const ROUTE_RULES: RouteRule[] = [
   {
-    prefix: "/perfil",
-    level: "autenticado",
-    responseType: "pagina",
+    prefix: "/profile",
+    level: "authenticated",
+    responseType: "page",
   },
   {
-    prefix: "/ia-scan",
-    level: "autenticado",
-    responseType: "pagina",
+    prefix: "/ai-scan",
+    level: "authenticated",
+    responseType: "page",
   },
   {
-    prefix: "/painel",
+    prefix: "/dashboard",
     level: "admin",
-    responseType: "pagina",
+    responseType: "page",
   },
   {
-    prefix: "/api/usuarios",
-    level: "autenticado", // o handler aplica "ADMIN ou o próprio" (ADR-0017)
+    prefix: "/api/users/", // the collection (/api/users: sign-up and ADMIN list) is decided in its handler
+    level: "authenticated", // the handler applies "ADMIN or the user themselves" (ADR-0017)
     responseType: "api",
   },
   {

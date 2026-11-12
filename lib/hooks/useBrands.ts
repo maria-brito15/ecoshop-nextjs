@@ -6,18 +6,18 @@
  * Collection of hooks for brand CRUD operations.
  *
  * Brands represent EcoShop's partner manufacturers/companies.
- * Each brand is associated with a user of type "MARCA" or "ADMIN".
+ * Each brand is associated with a user of type "BRAND" or "ADMIN".
  *
  * Permissions:
  * - GET (list/fetch): public
  * - POST, PUT, DELETE: requires ADMIN authentication
  *
  * Endpoints:
- * - List: GET /api/marcas
- * - Fetch: GET /api/marcas/:id
- * - Create: POST /api/marcas (admin)
- * - Update: PUT /api/marcas/:id (admin)
- * - Delete: DELETE /api/marcas/:id (admin)
+ * - List: GET /api/brands
+ * - Fetch: GET /api/brands/:id
+ * - Create: POST /api/brands (admin)
+ * - Update: PUT /api/brands/:id (admin)
+ * - Delete: DELETE /api/brands/:id (admin)
  */
 
 import { useFetch } from "./useFetch";
@@ -40,7 +40,7 @@ import type {
  * @returns Hook with the brand array, loading and error
  */
 export function useListBrands() {
-  return useFetch<ListBrandsResponse>("/api/marcas");
+  return useFetch<ListBrandsResponse>("/api/brands");
 }
 
 /**
@@ -50,7 +50,7 @@ export function useListBrands() {
  * @returns Hook with the brand data
  */
 export function useGetBrand(id: number | null) {
-  return useFetch<GetBrandResponse>(id ? `/api/marcas/${id}` : null);
+  return useFetch<GetBrandResponse>(id ? `/api/brands/${id}` : null);
 }
 
 /**
@@ -61,16 +61,16 @@ export function useGetBrand(id: number | null) {
  *
  * @example
  * const create = useCreateBrand();
- * await create.execute("/api/marcas", {
- *   nome: "EcoBrand",
- *   descricao: "Sustainable clothing",
- *   usuarioId: 5 // ID of the responsible user (type MARCA)
+ * await create.execute("/api/brands", {
+ *   name: "EcoBrand",
+ *   description: "Sustainable clothing",
+ *   userId: 5 // ID of the responsible user (type BRAND)
  * });
  */
 export function useCreateBrand() {
   return useMutation<CreateBrandResponse, CreateBrandBody>({
     method: "POST",
-    invalidate: ["/api/marcas"],
+    invalidate: ["/api/brands"],
   });
 }
 
@@ -83,7 +83,7 @@ export function useCreateBrand() {
 export function useUpdateBrand() {
   return useMutation<UpdateBrandResponse, UpdateBrandBody>({
     method: "PUT",
-    invalidate: ["/api/marcas"],
+    invalidate: ["/api/brands"],
   });
 }
 
@@ -99,7 +99,7 @@ export function useUpdateBrand() {
 export function useDeleteBrand() {
   return useMutation<OkResponse>({
     method: "DELETE",
-    invalidate: ["/api/marcas"],
+    invalidate: ["/api/brands"],
   });
 }
 
@@ -111,11 +111,11 @@ export function useDeleteBrand() {
  *
  * @example
  * const approve = useApproveBrand();
- * await approve.execute(`/api/marcas/${brand.id}/aprovar`);
+ * await approve.execute(`/api/brands/${brand.id}/approve`);
  */
 export function useApproveBrand() {
   return useMutation<ApproveBrandResponse>({
     method: "POST",
-    invalidate: ["/api/marcas"],
+    invalidate: ["/api/brands"],
   });
 }

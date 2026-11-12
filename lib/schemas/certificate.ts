@@ -18,8 +18,8 @@
  * - The description is optional
  *
  * Endpoints that use these schemas:
- * - POST /api/certificados
- * - PUT /api/certificados/:id
+ * - POST /api/certificates
+ * - PUT /api/certificates/:id
  */
 
 import { z } from "zod";
@@ -28,21 +28,21 @@ import { z } from "zod";
  * Schema for creating a new certificate.
  *
  * Rules:
- * - nome: required, not empty (e.g. "Cruelty Free", "Organic Brazil")
- * - descricao: optional — details of what the seal guarantees
- * - orgaoEmissor: required, not empty (the certifying entity)
+ * - name: required, not empty (e.g. "Cruelty Free", "Organic Brazil")
+ * - description: optional — details of what the seal guarantees
+ * - issuingBody: required, not empty (the certifying entity)
  *
  * @example
  * const data = {
- *   nome: "Cruelty Free",
- *   descricao: "Ensures the product was not tested on animals",
- *   orgaoEmissor: "PETA"
+ *   name: "Cruelty Free",
+ *   description: "Ensures the product was not tested on animals",
+ *   issuingBody: "PETA"
  * };
  */
 export const certificateSchema = z.object({
-  nome: z.string().min(1, "Certificate name is required"),
-  descricao: z.string().optional(),
-  orgaoEmissor: z.string().min(1, "Issuing body is required"),
+  name: z.string().min(1, "Certificate name is required"),
+  description: z.string().optional(),
+  issuingBody: z.string().min(1, "Issuing body is required"),
 });
 
 /**
@@ -52,21 +52,21 @@ export const certificateSchema = z.object({
  * Useful to fix a single field without sending all of them.
  *
  * Rules (when present):
- * - nome: minimum 1 character
- * - descricao: free string
- * - orgaoEmissor: minimum 1 character
+ * - name: minimum 1 character
+ * - description: free string
+ * - issuingBody: minimum 1 character
  *
  * @example
  * // Fix the issuing body
- * const data = { orgaoEmissor: "IBD Institute" };
+ * const data = { issuingBody: "IBD Institute" };
  *
  * // Update only the description
- * const data = { descricao: "International certification of organic products" };
+ * const data = { description: "International certification of organic products" };
  */
 export const updateCertificateSchema = z.object({
-  nome: z.string().min(1, "Name cannot be empty").optional(),
-  descricao: z.string().optional(),
-  orgaoEmissor: z
+  name: z.string().min(1, "Name cannot be empty").optional(),
+  description: z.string().optional(),
+  issuingBody: z
     .string()
     .min(1, "Issuing body cannot be empty")
     .optional(),

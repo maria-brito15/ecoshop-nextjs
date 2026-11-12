@@ -48,16 +48,16 @@ class RedisCounter implements WindowCounter {
 
 /** Process-local counter (fallback when Redis fails). */
 export class InMemoryCounter implements WindowCounter {
-  private readonly entradas = new Map<string, { total: number; expiraEm: number }>();
+  private readonly entries = new Map<string, { total: number; expiraEm: number }>();
 
   constructor(private readonly now: () => number = Date.now) {}
 
   async increment(key: string, windowSeconds: number): Promise<number> {
     const t = this.now();
     this.purgeExpired(t);
-    const current = this.entradas.get(key);
+    const current = this.entries.get(key);
     if (!current || current.expiraEm <= t) {
-      this.entradas.set(key, { total: 1, expiraEm: t + windowSeconds * 1000 });
+      this.entries.set(key, { total: 1, expiraEm: t + windowSeconds * 1000 });
       return 1;
     }
     current.total += 1;
@@ -66,8 +66,8 @@ export class InMemoryCounter implements WindowCounter {
 
   /** Only sweeps when the map grows, so the common case costs nothing. */
   private purgeExpired(t: number) {
-    if (this.entradas.size < 1000) return;
-    for (const [key, e] of this.entradas) if (e.expiraEm <= t) this.entradas.delete(key);
+    if (this.entries.size < 1000) return;
+    for (const [key, e] of this.entries) if (e.expiraEm <= t) this.entries.delete(key);
   }
 }
 

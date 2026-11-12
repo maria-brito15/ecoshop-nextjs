@@ -15,7 +15,7 @@
  * - Use `import { analyzeImage } from "@/lib/ai"` instead of deep paths
  */
 
-export { analyzeImage as analisarImagem } from "./analyze-image";
-export { classifyImage as classificarImagemAzure } from "./providers/azure-vision";
-export { fallbackAnalysis as analiseBasica } from "./fallbacks/sustainability";
-export type { AiAnalysis as AnaliseIA, ScanResult as ResultadoScan } from "@/types/ai";
+export { analyzeImage as analyzeImage } from "./analyze-image";
+export { classifyImage as classifyImageAzure } from "./providers/azure-vision";
+export { fallbackAnalysis as basicAnalysis } from "./fallbacks/sustainability";
+export type { AiAnalysis as AiAnalysis, ScanResult as ScanResult } from "@/types/ai";

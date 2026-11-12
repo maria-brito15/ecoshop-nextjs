@@ -17,7 +17,7 @@
  *
  * Usage pattern:
  * ```tsx
- * const { data, loading, error, execute } = useFetch<Product[]>("/api/produtos");
+ * const { data, loading, error, execute } = useFetch<Product[]>("/api/products");
  *
  * if (loading) return <Spinner />;
  * if (error) return <ErrorMessage>{error}</ErrorMessage>;
@@ -83,11 +83,11 @@ function setCached<T>(url: string, data: T): void {
  * Invalidates all cache entries whose URL contains a given prefix.
  * Used after mutations (POST/PUT/DELETE) to guarantee fresh data.
  *
- * @param prefix - URL prefix to invalidate (e.g. "/api/produtos")
+ * @param prefix - URL prefix to invalidate (e.g. "/api/products")
  *
  * @example
  * // After creating a new product, invalidate all listing caches
- * invalidateClientCache("/api/produtos");
+ * invalidateClientCache("/api/products");
  */
 /**
  * Empties the WHOLE client cache. Called on logout and when opening a new session:
@@ -123,8 +123,8 @@ export function invalidateClientCache(prefix: string): void {
  *
  * @example
  * // With manual refetch
- * const { data, execute } = useFetch<Product>("/api/produtos");
- * const refresh = () => execute("/api/produtos?page=2");
+ * const { data, execute } = useFetch<Product>("/api/products");
+ * const refresh = () => execute("/api/products?page=2");
  */
 export function useFetch<T>(url: string | null, options?: RequestInit) {
   // Try to get data from the cache when the hook mounts
@@ -216,7 +216,7 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
     // new object literal on every render (including it would refetch endlessly);
     // its latest version is read through `optionsRef`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url]); // Re-executa se a URL mudar
+  }, [url]); // Re-runs if the URL changes
 
-  return { ...state, execute: execute };
+  return { ...state, execute };
 }

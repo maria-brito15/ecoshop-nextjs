@@ -29,7 +29,7 @@
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
-import { PrismaClient, TipoUsuario } from "@prisma/client";
+import { PrismaClient, UserType } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 import bcrypt from "bcryptjs";
@@ -41,9 +41,9 @@ import { requireSeedPassword } from "./seed-password";
  */
 const ADMIN_CONFIG = {
   email: process.env.ADMIN_EMAIL || "admin@ecoshop.com",
-  senha: requireSeedPassword("ADMIN_PASSWORD", process.env.ADMIN_PASSWORD),
-  nome: process.env.ADMIN_NAME || "EcoShop Administrator",
-  telefone: process.env.ADMIN_PHONE || "(11) 99999-8888",
+  password: requireSeedPassword("ADMIN_PASSWORD", process.env.ADMIN_PASSWORD),
+  name: process.env.ADMIN_NAME || "EcoShop Administrator",
+  phone: process.env.ADMIN_PHONE || "(11) 99999-8888",
 };
 
 /**
@@ -78,18 +78,18 @@ async function hashPassword(password: string): Promise<string> {
  * was run with placeholders.
  */
 async function createOrUpdateAdmin() {
-  console.log("\n🔧 Configurando administrador...");
+  console.log("\n🔧 Configuring administrator...");
   console.log(`   Email: ${ADMIN_CONFIG.email}`);
-  console.log(`   Nome: ${ADMIN_CONFIG.nome}`);
-  console.log(`   Password: ${"•".repeat(ADMIN_CONFIG.senha.length)} (hidden)`);
+  console.log(`   Name: ${ADMIN_CONFIG.name}`);
+  console.log(`   Password: ${"•".repeat(ADMIN_CONFIG.password.length)} (hidden)`);
 
   // The password was already validated when ADMIN_CONFIG was built (REQ-OPS-09).
 
   // Hash the password
-  const passwordHash = await hashPassword(ADMIN_CONFIG.senha);
+  const passwordHash = await hashPassword(ADMIN_CONFIG.password);
 
   // Check whether a user with this email already exists
-  const existingUser = await prisma.usuario.findUnique({
+  const existingUser = await prisma.user.findUnique({
     where: { email: ADMIN_CONFIG.email },
   });
 
@@ -97,38 +97,38 @@ async function createOrUpdateAdmin() {
     // Update the existing user
     console.log("\n📝 User already exists. Updating data...");
 
-    const updatedUser = await prisma.usuario.update({
+    const updatedUser = await prisma.user.update({
       where: { email: ADMIN_CONFIG.email },
       data: {
-        nome: ADMIN_CONFIG.nome,
-        senha: passwordHash,
-        telefone: ADMIN_CONFIG.telefone,
-        tipo: TipoUsuario.ADMIN,
+        name: ADMIN_CONFIG.name,
+        password: passwordHash,
+        phone: ADMIN_CONFIG.phone,
+        type: UserType.ADMIN,
       },
     });
 
     console.log("\n✅ Administrator updated successfully!");
     console.log(`   ID: ${updatedUser.id}`);
     console.log(`   Email: ${updatedUser.email}`);
-    console.log(`   Tipo: ${updatedUser.tipo}`);
+    console.log(`   Type: ${updatedUser.type}`);
   } else {
     // Create a new administrator user
-    console.log("\n📝 Criando novo administrador...");
+    console.log("\n📝 Creating new administrator...");
 
-    const newAdmin = await prisma.usuario.create({
+    const newAdmin = await prisma.user.create({
       data: {
-        nome: ADMIN_CONFIG.nome,
+        name: ADMIN_CONFIG.name,
         email: ADMIN_CONFIG.email,
-        senha: passwordHash,
-        telefone: ADMIN_CONFIG.telefone,
-        tipo: TipoUsuario.ADMIN,
+        password: passwordHash,
+        phone: ADMIN_CONFIG.phone,
+        type: UserType.ADMIN,
       },
     });
 
     console.log("\n✅ Administrator created successfully!");
     console.log(`   ID: ${newAdmin.id}`);
     console.log(`   Email: ${newAdmin.email}`);
-    console.log(`   Tipo: ${newAdmin.tipo}`);
+    console.log(`   Type: ${newAdmin.type}`);
   }
 }
 
@@ -137,20 +137,20 @@ async function createOrUpdateAdmin() {
  * Useful to check which admin accounts are available.
  */
 async function listAdmins() {
-  const admins = await prisma.usuario.findMany({
-    where: { tipo: TipoUsuario.ADMIN },
+  const admins = await prisma.user.findMany({
+    where: { type: UserType.ADMIN },
     select: {
       id: true,
-      nome: true,
+      name: true,
       email: true,
-      criadoEm: true,
+      createdAt: true,
     },
   });
 
   if (admins.length > 0) {
     console.log("\n📋 Existing administrators in the system:");
     for (const admin of admins) {
-      console.log(`   • ${admin.nome} (${admin.email}) - ID: ${admin.id}`);
+      console.log(`   • ${admin.name} (${admin.email}) - ID: ${admin.id}`);
     }
   } else {
     console.log("\n⚠️ No administrator found in the system.");
@@ -178,14 +178,14 @@ async function main() {
     // Create or update the main admin
     await createOrUpdateAdmin();
 
-    // Lista admins atualizados
+    // List the updated admins
     await listAdmins();
 
     // The password is NEVER printed: Docker and CI logs are retained (REQ-OPS-09).
     console.log("\n🔐 Administrator ready.");
     console.log(`   📧 Email: ${ADMIN_CONFIG.email}`);
     console.log("   🔑 Password: the one set in ADMIN_PASSWORD (not shown).");
-    console.log("   Open the panel at /painel.\n");
+    console.log("   Open the panel at /dashboard.\n");
   } catch (error) {
     console.error("\n❌ Error running the admin seed:");
     console.error(error);

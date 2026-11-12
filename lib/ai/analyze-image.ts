@@ -42,19 +42,19 @@ const MIN_CONFIDENCE = Number(process.env.AI_CONFIDENCE_THRESHOLD ?? 0.7);
  * Analyzes an image and returns information about the identified material.
  *
  * @param imageBuffer - Image buffer (binary format)
- * @param imageId - Unique ID generated for this analysis (e.g. "analise_123456_abc")
+ * @param imageId - Unique ID generated for this analysis (e.g. "analysis_123456_abc")
  * @returns Analysis result (success or failure)
  *
  * @example
  * const buffer = await file.arrayBuffer();
- * const result = await analyzeImage(Buffer.from(buffer), "analise_123");
+ * const result = await analyzeImage(Buffer.from(buffer), "analysis_123");
  *
- * if (result.sucesso) {
+ * if (result.success) {
  *   console.log(`Material: ${result.material}`);
- *   console.log(`Confidence: ${result.confianca}%`);
- *   console.log(result.analise_sustentabilidade.reciclabilidade);
+ *   console.log(`Confidence: ${result.confidence}%`);
+ *   console.log(result.sustainability_analysis.recyclability);
  * } else {
- *   console.log(result.sugestao);
+ *   console.log(result.suggestion);
  * }
  */
 export async function analyzeImage(
@@ -67,15 +67,15 @@ export async function analyzeImage(
   // Case 1: no prediction returned (Azure failed)
   if (!predictions?.length) {
     return {
-      sucesso: false,
-      mensagem:
+      success: false,
+      message:
         "No prediction returned by the computer vision service.",
-      confianca: 0,
-      confianca_minima_requerida: MIN_CONFIDENCE * 100,
-      material_provavel: "N/A",
+      confidence: 0,
+      required_minimum_confidence: MIN_CONFIDENCE * 100,
+      probable_material: "N/A",
       imageId,
       timestamp,
-      sugestao:
+      suggestion:
         "Check that the Azure credentials are configured correctly.",
     };
   }
@@ -88,15 +88,15 @@ export async function analyzeImage(
   // Case 2: low confidence OR material identified as "outros"
   if (best.probability < MIN_CONFIDENCE || best.tagName === "outros") {
     return {
-      sucesso: false,
-      mensagem:
+      success: false,
+      message:
         "Could not identify the object with enough confidence.",
-      confianca: Math.round(best.probability * 10000) / 100,
-      confianca_minima_requerida: MIN_CONFIDENCE * 100,
-      material_provavel: best.tagName,
+      confidence: Math.round(best.probability * 10000) / 100,
+      required_minimum_confidence: MIN_CONFIDENCE * 100,
+      probable_material: best.tagName,
       imageId,
       timestamp,
-      sugestao: "Try taking a closer photo with better lighting.",
+      suggestion: "Try taking a closer photo with better lighting.",
     };
   }
 
@@ -110,11 +110,11 @@ export async function analyzeImage(
     : fallbackAnalysis(best.tagName);
 
   return {
-    sucesso: true,
+    success: true,
     material: best.tagName,
-    confianca: Math.round(best.probability * 10000) / 100,
+    confidence: Math.round(best.probability * 10000) / 100,
     imageId,
     timestamp,
-    analise_sustentabilidade: analysis,
+    sustainability_analysis: analysis,
   };
 }

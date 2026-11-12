@@ -1,9 +1,9 @@
-# Dependências
+# Dependencies
 /node_modules
 /.pnp
 .pnp.js
 
-# Build do Next.js
+# Next.js build
 /.next/
 /out/
 
@@ -11,11 +11,11 @@
 next-env.d.ts
 *.tsbuildinfo
 
-# Arquivos de ambiente
+# Environment files
 .env*
 !.env.example
 
-# Banco de dados
+# Database
 *.db
 *.db-journal
 
@@ -26,7 +26,7 @@ yarn-error.log*
 .pnpm-debug.log*
 lerna-debug.log*
 
-# Testes e cobertura
+# Tests and coverage
 /coverage
 /.nyc_output
 
@@ -40,11 +40,11 @@ lerna-debug.log*
 *.sln
 *.sw?
 
-# Arquivos do sistema
+# System files
 .DS_Store
 Thumbs.db
 
-# Plataformas de deploy
+# Deploy platforms
 .vercel
 
 # Cache
@@ -54,25 +54,25 @@ Thumbs.db
 # Prisma
 /node_modules/.prisma
 
-# Docker: docker-compose.override.yml agora é versionado (desenvolvimento do projeto:
-# portas do banco em 127.0.0.1 e seed de demonstração; REQ-OPS-08/09).
-# Ajustes pessoais vão em docker-compose.local.yml, que continua ignorado.
+# Docker: docker-compose.override.yml is now versioned (project development:
+# database ports on 127.0.0.1 and the demo seed; REQ-OPS-08/09).
+# Personal tweaks go in docker-compose.local.yml, which stays ignored.
 docker-compose.local.yml
 
-# Arquivos de build
+# Build files
 dist/
 build/
 
-# Arquivos temporários
+# Temporary files
 *.tmp
 *.temp
 *.log
 
-# Arquivos de dump
+# Dump files
 *.sql
 !prisma/migrations/**/*.sql
 *.sqlite
 
-# Relatórios
+# Reports
 *.report
 *.xml

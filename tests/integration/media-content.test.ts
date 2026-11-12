@@ -22,8 +22,8 @@ const HTML = Buffer.from("<html><script>alert(1)</script></html>");
 const file = (name: string, content: Buffer) => new File([new Uint8Array(content)], name);
 
 function withFolder<T>(fn: (dir: string) => Promise<T>) {
-  const dir = mkdtempSync(join(tmpdir(), "ecoshop-fotos-"));
-  return fn(join(dir, "data_fotos")).finally(() => rmSync(dir, { recursive: true, force: true }));
+  const dir = mkdtempSync(join(tmpdir(), "ecoshop-photos-"));
+  return fn(join(dir, "data_photos")).finally(() => rmSync(dir, { recursive: true, force: true }));
 }
 
 test("REQ-MIDIA-06: detectImageType recognizes JPEG, PNG, GIF and WebP by byte signature", () => {
@@ -33,7 +33,7 @@ test("REQ-MIDIA-06: detectImageType recognizes JPEG, PNG, GIF and WebP by byte s
   assert.equal(detectImageType(WEBP), "webp");
   assert.equal(detectImageType(HTML), null);
   assert.equal(detectImageType(Buffer.alloc(0)), null);
-  assert.equal(detectImageType(Buffer.from([0xff, 0xd8])), null, "curto demais");
+  assert.equal(detectImageType(Buffer.from([0xff, 0xd8])), null, "too short");
   // RIFF that is not WebP (e.g. WAV)
   assert.equal(detectImageType(Buffer.concat([Buffer.from("RIFF"), Buffer.from([4, 0, 0, 0]), Buffer.from("WAVEfmt ")])), null);
 });
@@ -49,10 +49,10 @@ test("REQ-MIDIA-06: a file with an image extension but non-image content is refu
   await withFolder(async (dir) => {
     for (const [name, content] of [
       ["fake.png", HTML],
-      ["fake.jpg", PNG], // é uma imagem, mas de outro tipo que o da extensão
+      ["fake.jpg", PNG], // is an image, but of a different type than the extension says
       ["vazio.webp", Buffer.alloc(0)],
     ] as const) {
-      const r = await savePhoto({ produtoId: 7, arquivo: file(name, content), directory: dir });
+      const r = await savePhoto({ productId: 7, file: file(name, content), directory: dir });
       assert.deepEqual(r, { ok: false, reason: "CONTENT_NOT_IMAGE" }, name);
     }
     assert.ok(!existsSync(dir) || readdirSync(dir).length === 0, "no file may have been written");
@@ -62,19 +62,19 @@ test("REQ-MIDIA-06: a file with an image extension but non-image content is refu
 test("REQ-MIDIA-06: valid images of the four types are written with intact content", async () => {
   await withFolder(async (dir) => {
     for (const [name, content] of [["a.jpg", JPEG], ["b.png", PNG], ["c.gif", GIF], ["d.webp", WEBP]] as const) {
-      const r = await savePhoto({ produtoId: 7, arquivo: file(name, content), nomeCustomizado: name.replace(".", "_"), directory: dir });
+      const r = await savePhoto({ productId: 7, file: file(name, content), customName: name.replace(".", "_"), directory: dir });
       assert.equal(r.ok, true, name);
-      if (r.ok) assert.deepEqual(readFileSync(join(dir, r.photo.nome)), content);
+      if (r.ok) assert.deepEqual(readFileSync(join(dir, r.photo.name)), content);
     }
   });
 });
 
 test("REQ-MIDIA-06: an extension outside the list and a file above 5 MB are still refused", async () => {
   await withFolder(async (dir) => {
-    const svg = await savePhoto({ produtoId: 7, arquivo: file("x.svg", HTML), directory: dir });
+    const svg = await savePhoto({ productId: 7, file: file("x.svg", HTML), directory: dir });
     assert.deepEqual(svg, { ok: false, reason: "EXTENSION_NOT_ALLOWED" });
     const large = Buffer.concat([PNG, Buffer.alloc(5 * 1024 * 1024)]);
-    const r = await savePhoto({ produtoId: 7, arquivo: file("grande.png", large), directory: dir });
+    const r = await savePhoto({ productId: 7, file: file("large.png", large), directory: dir });
     assert.deepEqual(r, { ok: false, reason: "FILE_TOO_LARGE" });
   });
 });
@@ -82,7 +82,7 @@ test("REQ-MIDIA-06: an extension outside the list and a file above 5 MB are stil
 test("REQ-MIDIA-07: two simultaneous uploads with the same name write only one and the other gets NAME_ALREADY_EXISTS, without overwriting", async () => {
   await withFolder(async (dir) => {
     const sameName = (content: Buffer) =>
-      savePhoto({ produtoId: 9, arquivo: file("f.png", content), nomeCustomizado: "capa", directory: dir });
+      savePhoto({ productId: 9, file: file("f.png", content), customName: "capa", directory: dir });
     const onePng = Buffer.concat([PNG, Buffer.from("A")]);
     const otherPng = Buffer.concat([PNG, Buffer.from("B")]);
     const results = await Promise.all([sameName(onePng), sameName(otherPng)]);

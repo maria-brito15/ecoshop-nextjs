@@ -15,11 +15,11 @@
  * - POST, PUT, DELETE: requires ADMIN authentication
  *
  * Endpoints:
- * - List: GET /api/categorias
- * - Fetch: GET /api/categorias/:id
- * - Create: POST /api/categorias (admin)
- * - Update: PUT /api/categorias/:id (admin)
- * - Delete: DELETE /api/categorias/:id (admin)
+ * - List: GET /api/categories
+ * - Fetch: GET /api/categories/:id
+ * - Create: POST /api/categories (admin)
+ * - Update: PUT /api/categories/:id (admin)
+ * - Delete: DELETE /api/categories/:id (admin)
  */
 
 import { useFetch } from "./useFetch";
@@ -42,10 +42,10 @@ import type {
  *
  * @example
  * const { data } = useListCategories();
- * const categories = data?.categorias ?? [];
+ * const categories = data?.categories ?? [];
  */
 export function useListCategories() {
-  return useFetch<ListCategoriesResponse>("/api/categorias");
+  return useFetch<ListCategoriesResponse>("/api/categories");
 }
 
 /**
@@ -55,7 +55,7 @@ export function useListCategories() {
  * @returns Hook with the category data
  */
 export function useGetCategory(id: number | null) {
-  return useFetch<GetCategoryResponse>(id ? `/api/categorias/${id}` : null);
+  return useFetch<GetCategoryResponse>(id ? `/api/categories/${id}` : null);
 }
 
 /**
@@ -66,15 +66,15 @@ export function useGetCategory(id: number | null) {
  *
  * @example
  * const create = useCreateCategory();
- * await create.execute("/api/categorias", {
- *   nome: "Sustainable Electronics",
- *   descricao: "Electronic products with low energy consumption"
+ * await create.execute("/api/categories", {
+ *   name: "Sustainable Electronics",
+ *   description: "Electronic products with low energy consumption"
  * });
  */
 export function useCreateCategory() {
   return useMutation<CreateCategoryResponse, CreateCategoryBody>({
     method: "POST",
-    invalidate: ["/api/categorias"],
+    invalidate: ["/api/categories"],
   });
 }
 
@@ -87,7 +87,7 @@ export function useCreateCategory() {
 export function useUpdateCategory() {
   return useMutation<UpdateCategoryResponse, UpdateCategoryBody>({
     method: "PUT",
-    invalidate: ["/api/categorias"],
+    invalidate: ["/api/categories"],
   });
 }
 
@@ -103,6 +103,6 @@ export function useUpdateCategory() {
 export function useDeleteCategory() {
   return useMutation<OkResponse>({
     method: "DELETE",
-    invalidate: ["/api/categorias"],
+    invalidate: ["/api/categories"],
   });
 }

@@ -31,16 +31,16 @@ import type { AiAnalysis } from "@/types/ai";
  */
 export function fallbackAnalysis(material: string): AiAnalysis {
   return {
-    impacto_ambiental: `Material identified as ${material}. Production and improper disposal can cause significant environmental impacts. It is important to dispose of it correctly to minimize harm to the environment and allow proper recycling.`,
+    environmental_impact: `Material identified as ${material}. Production and improper disposal can cause significant environmental impacts. It is important to dispose of it correctly to minimize harm to the environment and allow proper recycling.`,
 
-    tempo_decomposicao: `Decomposition time varies with environmental conditions. Factors such as temperature, humidity and sun exposure directly influence the natural degradation process.`,
+    decomposition_time: `Decomposition time varies with environmental conditions. Factors such as temperature, humidity and sun exposure directly influence the natural degradation process.`,
 
-    onde_descartar: `Dispose of it at appropriate selective collection points. Check with your city hall about voluntary drop-off points or nearby recycling cooperatives. Clean the material before disposing of it.`,
+    disposal_instructions: `Dispose of it at appropriate selective collection points. Check with your city hall about voluntary drop-off points or nearby recycling cooperatives. Clean the material before disposing of it.`,
 
-    reciclabilidade: `The recyclability of this material may vary. Consult local waste management experts for detailed information about the recycling process and its limitations in your region.`,
+    recyclability: `The recyclability of this material may vary. Consult local waste management experts for detailed information about the recycling process and its limitations in your region.`,
 
-    dicas_sustentaveis: `Separate recyclable materials from regular trash. Reduce consumption whenever possible. Look for reusable alternatives. Support companies committed to sustainability and the circular economy.`,
+    sustainable_tips: `Separate recyclable materials from regular trash. Reduce consumption whenever possible. Look for reusable alternatives. Support companies committed to sustainability and the circular economy.`,
 
-    beneficios_reciclagem: `Recycling reduces the need to extract natural resources, saves energy, lowers greenhouse gas emissions and creates jobs in the recycling chain.`,
+    recycling_benefits: `Recycling reduces the need to extract natural resources, saves energy, lowers greenhouse gas emissions and creates jobs in the recycling chain.`,
   };
 }

@@ -4,7 +4,7 @@
  * SUSTAINABILITY CHAT (floating button)
  *
  * REQ-CHAT-06: chat interface for the authenticated user to talk to the
- * sustainability assistant (Gemini, via POST /api/ia/chat).
+ * sustainability assistant (Gemini, via POST /api/ai/chat).
  *
  * Owner's decision (2026-11-10): a floating button, visible on any page,
  * instead of a dedicated route. The conversation history is not persisted on the
@@ -20,7 +20,7 @@ import { useEffect, useRef, useState } from "react";
 import { useChat } from "@/lib/hooks/useAI";
 import { fetchSession } from "@/lib/hooks/session";
 
-type Message = { role: "user" | "model"; texto: string };
+type Message = { role: "user" | "model"; text: string };
 
 export default function FloatingChat() {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -36,31 +36,31 @@ export default function FloatingChat() {
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-  }, [messages, chat.carregando]);
+  }, [messages, chat.loading]);
 
   if (!loggedIn) return null;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const message = text.trim();
-    if (!message || chat.carregando) return;
+    if (!message || chat.loading) return;
 
     const history = messages.map((m) => ({
       role: m.role,
-      parts: [{ text: m.texto }],
+      parts: [{ text: m.text }],
     }));
 
-    setMessages((prev) => [...prev, { role: "user", texto: message }]);
+    setMessages((prev) => [...prev, { role: "user", text: message }]);
     setText("");
 
-    const result = await chat.execute("/api/ia/chat", {
-      mensagem: message,
-      historico: history,
+    const result = await chat.execute("/api/ai/chat", {
+      message,
+      history,
     });
     if (result) {
       setMessages((prev) => [
         ...prev,
-        { role: "model", texto: result.resposta },
+        { role: "model", text: result.answer },
       ]);
     }
   }
@@ -89,7 +89,7 @@ export default function FloatingChat() {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              aria-label="Fechar chat"
+              aria-label="Close chat"
               className="text-white/80 hover:text-white text-lg leading-none"
             >
               ✕
@@ -123,10 +123,10 @@ export default function FloatingChat() {
                       }
                 }
               >
-                {m.texto}
+                {m.text}
               </div>
             ))}
-            {chat.carregando && (
+            {chat.loading && (
               <div
                 className="self-start text-sm px-3 py-2"
                 style={{ color: "var(--color-text-tertiary)" }}
@@ -134,9 +134,9 @@ export default function FloatingChat() {
                 Digitando…
               </div>
             )}
-            {chat.erro && (
+            {chat.error && (
               <div className="self-stretch text-xs text-center text-red-600">
-                {chat.erro}
+                {chat.error}
               </div>
             )}
           </div>
@@ -152,7 +152,7 @@ export default function FloatingChat() {
               onChange={(e) => setText(e.target.value)}
               placeholder="Type your question..."
               maxLength={2000}
-              disabled={chat.carregando}
+              disabled={chat.loading}
               className="flex-1 px-3 py-2 rounded-full text-sm border focus:outline-none"
               style={{
                 borderColor: "var(--color-border)",
@@ -162,7 +162,7 @@ export default function FloatingChat() {
             />
             <button
               type="submit"
-              disabled={chat.carregando || !text.trim()}
+              disabled={chat.loading || !text.trim()}
               aria-label="Send message"
               className="w-9 h-9 rounded-full flex items-center justify-center text-white disabled:opacity-50"
               style={{ background: "var(--color-primary)" }}
@@ -176,7 +176,7 @@ export default function FloatingChat() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Fechar chat" : "Open sustainability chat"}
+        aria-label={open ? "Close chat" : "Open sustainability chat"}
         className="w-14 h-14 rounded-full flex items-center justify-center text-2xl text-white transition-transform hover:scale-105"
         style={{
           background: "var(--color-primary)",

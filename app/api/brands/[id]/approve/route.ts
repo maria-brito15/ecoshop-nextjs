@@ -1,9 +1,9 @@
-// app/api/marcas/[id]/aprovar/route.ts
+// app/api/brands/[id]/approve/route.ts
 
 /**
  * PENDING BRAND APPROVAL
  *
- * POST /api/marcas/{id}/aprovar - Approves a pending brand request (ADMIN)
+ * POST /api/brands/{id}/approve - Approves a pending brand request (ADMIN)
  *
  * REQ-USR-03, ADR-0018.
  * @see services/brand.service.ts - approveBrand()
@@ -18,13 +18,13 @@ import { approveBrand } from "@/services/brand.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * POST /api/marcas/{id}/aprovar - Approves a pending brand
+ * POST /api/brands/{id}/approve - Approves a pending brand
  *
- * Requires ADMIN authentication. Sets `Marca.status` to APROVADA and grants
- * the MARCA type to the associated user.
+ * Requires ADMIN authentication. Sets `Brand.status` to APPROVED and grants
+ * the BRAND type to the associated user.
  *
  * @param id - Brand ID in the URL
- * @returns { marca: Brand }
+ * @returns { brand: Brand }
  * @status 200 - Brand approved
  * @status 401 - Not authenticated
  * @status 403 - Not ADMIN
@@ -43,7 +43,7 @@ export async function POST(
     const id = await routeId(params);
     if (id === null) return ERRORS.invalidData("Invalid ID");
     const brand = await approveBrand(id);
-    return NextResponse.json({ marca: brand });
+    return NextResponse.json({ brand });
   } catch (err) {
     return mapError(err, "Brand") ?? ERRORS.internal("approve brand", err);
   }

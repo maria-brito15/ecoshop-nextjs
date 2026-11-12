@@ -33,20 +33,20 @@ test("REQ-OPS-19: the log is a JSON line with date, level and event", () => {
 test("REQ-OPS-19: sensitive context keys, at any depth, become [REDACTED]", () => {
   const [line] = capture("log", () =>
     log.info("test.sensitive", {
-      senha: "abc",
+      password: "abc",
       token: "t",
       JWT_SECRET: "s",
       GEMINI_KEY: "k",
-      aninhado: { authorization: "Bearer x", cookie: "token=1", ok: "visible" },
-      lista: [{ password: "p" }],
+      nested: { authorization: "Bearer x", cookie: "token=1", ok: "visible" },
+      list: [{ password: "p" }],
     }),
   );
-  assert.equal(line.senha, "[REDACTED]");
+  assert.equal(line.password, "[REDACTED]");
   assert.equal(line.token, "[REDACTED]");
   assert.equal(line.JWT_SECRET, "[REDACTED]");
   assert.equal(line.GEMINI_KEY, "[REDACTED]");
-  assert.deepEqual(line.aninhado, { authorization: "[REDACTED]", cookie: "[REDACTED]", ok: "visible" });
-  assert.deepEqual(line.lista, [{ password: "[REDACTED]" }]);
+  assert.deepEqual(line.nested, { authorization: "[REDACTED]", cookie: "[REDACTED]", ok: "visible" });
+  assert.deepEqual(line.list, [{ password: "[REDACTED]" }]);
 });
 
 test("REQ-OPS-19: credentials inside URLs in texts are masked", () => {
@@ -54,7 +54,7 @@ test("REQ-OPS-19: credentials inside URLs in texts are masked", () => {
     log.info("test.url", { destination: "failed at redis://:mypassword@cache:6379/0 and postgresql://usr:pw@db:5432/x" }),
   );
   const text = JSON.stringify(line);
-  assert.ok(!text.includes("minhasenha"));
+  assert.ok(!text.includes("mypassword"));
   assert.ok(!text.includes("usr:pw"));
   assert.match(String(line.destination), /redis:\/\/\[REDACTED\]@cache/);
 });
@@ -82,7 +82,7 @@ test("REQ-OPS-19: ERRORS.internal returns 500 with no detail in the body and log
   assert.match(JSON.stringify(records[0]), /failure talking to/);
 
   const body = await ERRORS.internal("list products", cause).json();
-  assert.deepEqual(body, { erro: "Failed to list products" });
+  assert.deepEqual(body, { error: "Failed to list products" });
 });
 
 test("REQ-OPS-19: throttle lets one occurrence through per interval and per key", () => {

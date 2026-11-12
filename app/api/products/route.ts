@@ -1,21 +1,21 @@
-// app/api/produtos/route.ts
+// app/api/products/route.ts
 
 /**
  * PRODUCTS API ROUTES
  *
  * Endpoints for managing products.
  *
- * GET /api/produtos - List products with pagination and filters (public)
- * POST /api/produtos - Create a new product (requires ADMIN)
+ * GET /api/products - List products with pagination and filters (public)
+ * POST /api/products - Create a new product (requires ADMIN)
  *
  * Filters supported on GET:
- * - page: page number (default: 1)
+ * - page number (default: 1)
  * - size: items per page (default: 12)
- * - categoriaId: filter by category
- * - marcaId: filter by brand (REQ-CAT-07)
- * - precoMax: maximum price (REQ-CAT-06)
- * - sort: relevancia (default) | preco_asc | preco_desc | nome_asc | nome_desc (REQ-CAT-06)
- * - nome: text search by name
+ * - categoryId: filter by category
+ * - brandId: filter by brand (REQ-CAT-07)
+ * - maxPrice: maximum price (REQ-CAT-06)
+ * - sort: relevance (default) | price_asc | price_desc | name_asc | name_desc (REQ-CAT-06)
+ * - name: text search by name
  *
  * @see services/product.service.ts - Business logic
  */
@@ -29,16 +29,16 @@ import { listProducts, createProduct } from "@/services/product.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/produtos - List products with pagination and filters
+ * GET /api/products - List products with pagination and filters
  *
  * @query page - Page number (default: 1)
  * @query size - Items per page (default: 12)
- * @query categoriaId - Filter by category (optional)
- * @query marcaId - Filter by brand (optional, REQ-CAT-07)
- * @query precoMax - Maximum price (optional, REQ-CAT-06)
- * @query sort - relevancia (default) | preco_asc | preco_desc | nome_asc | nome_desc (REQ-CAT-06)
- * @query nome - Text search (optional, case-insensitive)
- * @returns { produtos: Product[], page: number, size: number, total: number }
+ * @query categoryId - Filter by category (optional)
+ * @query brandId - Filter by brand (optional, REQ-CAT-07)
+ * @query maxPrice - Maximum price (optional, REQ-CAT-06)
+ * @query sort - relevance (default) | price_asc | price_desc | name_asc | name_desc (REQ-CAT-06)
+ * @query name - Text search (optional, case-insensitive)
+ * @returns { products: Product[], page: number, size: number, total: number }
  * @status 200 - List returned successfully
  * @status 500 - Error listing products
  */
@@ -58,12 +58,12 @@ export async function GET(req: NextRequest) {
 }
 
 /**
- * POST /api/produtos - Create a new product
+ * POST /api/products - Create a new product
  *
  * Requires ADMIN authentication.
  *
- * @body { nome: string, descricao?: string, preco: number, categoriaId: number, marcaId: number }
- * @returns { produto: Product }
+ * @body { name: string, description?: string, price: number, categoryId: number, brandId: number }
+ * @returns { product: Product }
  * @status 201 - Product created
  * @status 400 - Invalid data
  * @status 401 - Not authenticated
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
     const product = await createProduct(parsed.data);
-    return NextResponse.json({ produto: product }, { status: 201 });
+    return NextResponse.json({ product }, { status: 201 });
   } catch (err) {
     return mapError(err, "Product") ?? ERRORS.internal("create product", err);
   }

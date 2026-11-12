@@ -34,7 +34,7 @@ import { ERRORS } from "@/lib/http/responses";
 /**
  * Middleware that checks whether the user is authenticated.
  *
- * Useful for routes that require any signed-in user (CLIENTE, MARCA or ADMIN).
+ * Useful for routes that require any signed-in user (CUSTOMER, BRAND or ADMIN).
  *
  * @param req - Next.js request
  * @returns null if authenticated, or a NextResponse with a 401 error if not
@@ -94,7 +94,7 @@ export async function requireAdmin(
     return ERRORS.unauthorized();
   }
 
-  if (session.tipo !== "ADMIN") {
+  if (session.type !== "ADMIN") {
     return ERRORS.forbidden();
   }
 

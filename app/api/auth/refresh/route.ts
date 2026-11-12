@@ -49,7 +49,7 @@ function applySession(
 /**
  * POST /api/auth/refresh
  *
- * @returns { ok: true, tipo }
+ * @returns { ok: true, type }
  * @status 200 - Session renewed (or still valid, in old mode)
  * @status 401 - No session, or invalid refresh
  * @status 404 - Session user no longer exists (old mode)
@@ -65,14 +65,14 @@ export async function POST(req: NextRequest) {
         const res =
           r.reason === "UNAVAILABLE"
             ? NextResponse.json(
-                { erro: "Could not renew the session right now. Please sign in again." },
+                { error: "Could not renew the session right now. Please sign in again." },
                 { status: 503 },
               )
             : ERRORS.unauthorized();
         clearSessionCookies(res);
         return res;
       }
-      const res = NextResponse.json({ ok: true, tipo: r.tipo });
+      const res = NextResponse.json({ ok: true, type: r.type });
       applySession(res, r.session);
       return res;
     }
@@ -84,14 +84,14 @@ export async function POST(req: NextRequest) {
     const user = await getIdentity(session.id);
     if (!user) return ERRORS.notFound("User");
 
-    if (user.tipo !== session.tipo) {
+    if (user.type !== session.type) {
       const newToken = await signToken(user);
-      const res = NextResponse.json({ ok: true, tipo: user.tipo });
+      const res = NextResponse.json({ ok: true, type: user.type });
       setAuthCookie(res, newToken);
       await invalidateKey(currentUserKey(user.id));
       return res;
     }
-    return NextResponse.json({ ok: true, tipo: user.tipo });
+    return NextResponse.json({ ok: true, type: user.type });
   } catch (err) {
     return ERRORS.internal("renew session", err);
   }

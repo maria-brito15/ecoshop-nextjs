@@ -19,12 +19,12 @@
  * ```tsx
  * const createProduct = useMutation<Product, CreateProductBody>({
  *   method: "POST",
- *   invalidate: ["/api/produtos"] // invalidates the listing cache
+ *   invalidate: ["/api/products"] // invalidates the listing cache
  * });
  *
  * const handleSubmit = async (data) => {
- *   const result = await createProduct.execute("/api/produtos", data);
- *   if (result) router.push("/produtos");
+ *   const result = await createProduct.execute("/api/products", data);
+ *   if (result) router.push("/products");
  * };
  * ```
  */
@@ -48,9 +48,9 @@ type Options = {
 
 /**
  * Expected error response format from the API.
- * The API can return "erro" (Portuguese) or "error" (English) depending on the route.
+ * Every route answers errors as { error }.
  */
-type ApiErrorResponse = { erro?: string; error?: string };
+type ApiErrorResponse = { error?: string };
 
 /**
  * Hook for API mutation operations.
@@ -63,14 +63,14 @@ type ApiErrorResponse = { erro?: string; error?: string };
  * @example
  * // DELETE without a body
  * const remove = useMutation<{ ok: boolean }>({ method: "DELETE" });
- * await remove.execute(`/api/produtos/${id}`);
+ * await remove.execute(`/api/products/${id}`);
  *
  * @example
  * // POST with FormData (file upload)
  * const upload = useMutation<Photo, FormData>({ method: "POST" });
  * const formData = new FormData();
- * formData.append("imagem", file);
- * await upload.execute("/api/fotos", formData);
+ * formData.append("image", file);
+ * await upload.execute("/api/photos", formData);
  */
 export function useMutation<TResponse, TBody = unknown>(options?: Options) {
   const [data, setData] = useState<TResponse | null>(null);
@@ -110,7 +110,7 @@ export function useMutation<TResponse, TBody = unknown>(options?: Options) {
 
       if (!res.ok) {
         const errData = responseData as ApiErrorResponse;
-        const message = errData.erro ?? errData.error ?? "Unknown error";
+        const message = errData.error ?? "Unknown error";
         setError(message);
         setLoading(false);
         return null;
@@ -133,5 +133,5 @@ export function useMutation<TResponse, TBody = unknown>(options?: Options) {
     }
   }
 
-  return { data, carregando: loading, erro: error, execute: execute };
+  return { data, loading, error, execute };
 }

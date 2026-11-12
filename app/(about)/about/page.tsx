@@ -1,4 +1,4 @@
-// app/(sobre)/about/page.tsx
+// app/(about)/about/page.tsx
 
 /**
  * ABOUT ECOSHOP PAGE
@@ -17,7 +17,7 @@
  * - Improvements made in the refactoring
  * - The project's original team
  *
- * @see app/(store)/produtos/page.tsx - Call-to-action to products
+ * @see app/(store)/products/page.tsx - Call-to-action to products
  */
 
 "use client";
@@ -31,26 +31,26 @@ import { useEffect } from "react";
 
 const TEAM = [
   {
-    nome: "Maria Eduarda Brito",
-    papel: "Desenvolvedora",
+    name: "Maria Eduarda Brito",
+    role: "Developer",
     linkedin: "https://www.linkedin.com/in/maria-eduarda-brito-a18064358/",
     github: "https://github.com/maria-brito15",
   },
   {
-    nome: "Fernando Mucci",
-    papel: "Desenvolvedor",
+    name: "Fernando Mucci",
+    role: "Developer",
     linkedin: "https://www.linkedin.com/in/fernando-mucci-067a40384/",
     github: "https://github.com/fernandomucci",
   },
   {
-    nome: "Luisa Campanha",
-    papel: "Desenvolvedora",
+    name: "Luisa Campanha",
+    role: "Developer",
     linkedin: "https://www.linkedin.com/in/luisa-campanha-b54700364/",
     github: "https://github.com/LuisaCampanhaH",
   },
   {
-    nome: "Julia Ceribeli",
-    papel: "Desenvolvedora",
+    name: "Julia Ceribeli",
+    role: "Developer",
     linkedin: "https://www.linkedin.com/in/juliaceribeli/",
     github: "https://github.com/juliaceribeli",
   },
@@ -59,19 +59,19 @@ const TEAM = [
 const SPRINTS = [
   {
     num: "01",
-    titulo: "Vision & Database",
-    itens: [
+    title: "Vision & Database",
+    items: [
       "Problem definition and target audience",
       "Relational modeling (Peter Chen + Crow's Foot)",
-      "Schema PostgreSQL completo",
-      "Recursos inteligentes planejados",
+      "Complete PostgreSQL schema",
+      "Planned smart features",
     ],
   },
   {
     num: "02",
-    titulo: "Requisitos & Front-end",
-    itens: [
-      "13 requisitos funcionais documentados",
+    title: "Requirements & Front-end",
+    items: [
+      "13 documented functional requirements",
       "Conceptual ERD and logical model",
       "Creation SQL scripts",
       "Prototypes of all screens",
@@ -79,18 +79,18 @@ const SPRINTS = [
   },
   {
     num: "03",
-    titulo: "Back-end & IA",
-    itens: [
+    title: "Back-end & AI",
+    items: [
       "REST API with Java + Spark Framework",
-      "Arquitetura Controller → Service → DAO",
-      "Azure Custom Vision integrado",
+      "Controller → Service → DAO architecture",
+      "Azure Custom Vision integrated",
       "Gemini 2.0 Flash for text analysis",
     ],
   },
   {
     num: "04",
-    titulo: "Projeto Completo",
-    itens: [
+    title: "Complete Project",
+    items: [
       "Consolidated final documentation",
       "Deploy on the Render platform",
       "Security: BCrypt + Prepared Statements",
@@ -102,46 +102,46 @@ const SPRINTS = [
 const IMPROVEMENTS = [
   {
     icon: "⚡",
-    titulo: "Performance",
+    title: "Performance",
     desc: "Next.js Server Components eliminate unnecessary round-trips. SSR and SSG where each makes the most sense.",
   },
   {
     icon: "🏗️",
-    titulo: "Arquitetura Unificada",
+    title: "Unified Architecture",
     desc: "Frontend and backend in the same repo with API Routes. Prisma replaces the manual Java DAOs with full type safety.",
   },
   {
     icon: "🎨",
-    titulo: "Design System",
+    title: "Design System",
     desc: "Interface redesigned with Syne + Plus Jakarta Sans, CSS custom properties and native dark mode.",
   },
   {
     icon: "🔐",
-    titulo: "Authentication",
-    desc: "JWT with automatic refresh, httpOnly cookies and CLIENTE / ADMIN / MARCA role differentiation.",
+    title: "Authentication",
+    desc: "JWT with automatic refresh, httpOnly cookies and CUSTOMER / ADMIN / BRAND role differentiation.",
   },
   {
     icon: "🤖",
-    titulo: "IA Aprimorada",
+    title: "Improved AI",
     desc: "Direct integration via the official Gemini SDK. Prompts optimized for sustainability analysis.",
   },
   {
     icon: "🐳",
-    titulo: "Containerization",
+    title: "Containerization",
     desc: "Multi-stage Dockerfile with a minimal production image. Docker Compose orchestrates the app, PostgreSQL and Redis with healthchecks.",
   },
   {
     icon: "🚀",
-    titulo: "CI/CD Completo",
+    title: "Complete CI/CD",
     desc: "GitHub Actions: lint, typecheck and build on every PR. A push to main publishes the image to ghcr.io and deploys via SSH to the production server.",
   },
 ] as const;
 
 const STATS = [
-  { valor: "4", label: "Sprints" },
-  { valor: "4", label: "Integrantes" },
-  { valor: "17", label: "API Routes" },
-  { valor: "2", label: "AI Models" },
+  { value: "4", label: "Sprints" },
+  { value: "4", label: "Members" },
+  { value: "17", label: "API Routes" },
+  { value: "2", label: "AI Models" },
 ] as const;
 
 // ----------------------------------------------------------------------------
@@ -202,7 +202,7 @@ export default function AboutPage() {
               {STATS.map((s) => (
                 <div key={s.label} className="flex flex-col">
                   <strong className="font-display text-3xl font-extrabold text-[var(--color-text-primary)]">
-                    {s.valor}
+                    {s.value}
                   </strong>
                   <span className="text-sm text-[var(--color-text-tertiary)]">
                     {s.label}
@@ -233,7 +233,7 @@ export default function AboutPage() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-3 justify-start">
-                {["PUC Minas", "2025/2", "Grupo 10", "Sustentabilidade"].map(
+                {["PUC Minas", "2025/2", "Group 10", "Sustainability"].map(
                   (chip) => (
                     <span
                       key={chip}
@@ -277,7 +277,7 @@ export default function AboutPage() {
               <p className="text-[var(--color-text-secondary)] leading-relaxed">
                 EcoShop was developed during the{" "}
                 <strong className="text-[var(--color-text-primary)]">
-                  Trabalho Interdisciplinar 2 (TI2)
+                  Interdisciplinary Work 2 (TI2)
                 </strong>{" "}
                 course at PUC Minas — a subject that integrates databases, software engineering and web development — by Group 10.
               </p>
@@ -297,27 +297,27 @@ export default function AboutPage() {
               {[
                 {
                   icon: "📦",
-                  titulo: "Exclusive Catalog",
+                  title: "Exclusive Catalog",
                   desc: "Only products with verified ecological criteria.",
                 },
                 {
                   icon: "📜",
-                  titulo: "Certifications",
-                  desc: "ECOCERT, FSC, Cradle to Cradle e outras.",
+                  title: "Certifications",
+                  desc: "ECOCERT, FSC, Cradle to Cradle and others.",
                 },
                 {
                   icon: "📚",
-                  titulo: "Environmental Education",
+                  title: "Environmental Education",
                   desc: "Articles, guides and content about sustainability.",
                 },
                 {
                   icon: "🤖",
-                  titulo: "IA Integrada",
+                  title: "Integrated AI",
                   desc: "Azure + Gemini for material analysis.",
                 },
               ].map((card) => (
                 <div
-                  key={card.titulo}
+                  key={card.title}
                   className="flex flex-col gap-4 p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-body)] hover:border-[var(--color-primary)] hover:shadow-[var(--shadow-card)] transition-all duration-300"
                 >
                   <span className="w-12 h-12 flex items-center justify-center rounded-xl text-2xl bg-[var(--color-primary-light)]">
@@ -325,7 +325,7 @@ export default function AboutPage() {
                   </span>
                   <div className="space-y-1">
                     <h3 className="font-bold text-base md:text-lg text-[var(--color-text-primary)]">
-                      {card.titulo}
+                      {card.title}
                     </h3>
                     <p className="text-sm md:text-base text-[var(--color-text-secondary)] leading-relaxed">
                       {card.desc}
@@ -343,7 +343,7 @@ export default function AboutPage() {
         <div className="container-eco">
           <div className="text-center max-w-xl mx-auto mb-14">
             <span className="block text-sm font-bold uppercase tracking-widest text-[var(--color-primary)] mb-2">
-              Processo
+              Process
             </span>
             <h2 className="font-display text-4xl font-extrabold">
               4 sprints, 1 product
@@ -366,10 +366,10 @@ export default function AboutPage() {
                   <div className="flex-1 h-px bg-[var(--color-border)]" />
                 </div>
                 <h3 className="font-display font-bold text-xl text-[var(--color-text-primary)]">
-                  {sprint.titulo}
+                  {sprint.title}
                 </h3>
                 <ul className="flex flex-col gap-2">
-                  {sprint.itens.map((item) => (
+                  {sprint.items.map((item) => (
                     <li
                       key={item}
                       className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]"
@@ -504,7 +504,7 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {IMPROVEMENTS.map((m, i) => (
               <div
-                key={m.titulo}
+                key={m.title}
                 className="card-eco animate-on-scroll p-6 flex flex-col gap-3"
                 style={{ transitionDelay: `${i * 60}ms` }}
               >
@@ -512,7 +512,7 @@ export default function AboutPage() {
                   {m.icon}
                 </span>
                 <h3 className="font-display font-bold text-[var(--color-text-primary)]">
-                  {m.titulo}
+                  {m.title}
                 </h3>
                 <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
                   {m.desc}
@@ -528,28 +528,28 @@ export default function AboutPage() {
         <div className="container-eco">
           <div className="text-center max-w-xl mx-auto mb-14">
             <span className="block text-sm font-bold uppercase tracking-widest text-[var(--color-primary)] mb-2">
-              Grupo 10
+              Group 10
             </span>
             <h2 className="font-display text-4xl font-extrabold">
-              Equipe original
+              Original team
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
             {TEAM.map((member, i) => (
               <div
-                key={member.nome}
+                key={member.name}
                 className="animate-on-scroll flex flex-col items-center text-center gap-4 p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-body)] hover:border-[var(--color-primary)] hover:shadow-[var(--shadow-card)] hover:-translate-y-1 transition-all duration-300"
                 style={{ transitionDelay: `${i * 80}ms` }}
               >
                 <span className="w-12 h-12 flex items-center justify-center rounded-full text-lg font-extrabold font-display bg-[var(--color-primary-light)] text-[var(--color-primary)]">
-                  {member.nome.charAt(0)}
+                  {member.name.charAt(0)}
                 </span>
                 <div>
                   <p className="font-bold text-sm text-[var(--color-text-primary)] leading-snug">
-                    {member.nome}
+                    {member.name}
                   </p>
                   <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                    {member.papel}
+                    {member.role}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -559,7 +559,7 @@ export default function AboutPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[var(--color-text-tertiary)] hover:text-[var(--color-primary)] transition-colors"
-                      aria-label={`${member.nome}'s LinkedIn`}
+                      aria-label={`${member.name}'s LinkedIn`}
                     >
                       <svg
                         className="w-5 h-5"
@@ -577,7 +577,7 @@ export default function AboutPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[var(--color-text-tertiary)] hover:text-[var(--color-primary)] transition-colors"
-                      aria-label={`${member.nome}'s GitHub`}
+                      aria-label={`${member.name}'s GitHub`}
                     >
                       <svg
                         className="w-5 h-5"
@@ -598,7 +598,7 @@ export default function AboutPage() {
             ))}
           </div>
           <p className="text-center text-sm text-[var(--color-text-tertiary)]">
-            Orientadores:{" "}
+            Advisors:{" "}
             <strong className="text-[var(--color-text-secondary)]">
               Prof.ª Amália Soares Vieira de Vasconcelos
             </strong>{" "}
@@ -625,13 +625,13 @@ export default function AboutPage() {
             </div>
             <div className="relative z-10 flex flex-wrap gap-3">
               <Link
-                href="/produtos"
+                href="/products"
                 className="flex-shrink-0 flex items-center gap-2 px-7 py-3.5 bg-white text-[var(--color-primary-dark)] font-bold rounded-full hover:-translate-y-px hover:shadow-xl transition-all"
               >
                 See Products
               </Link>
               <Link
-                href="/ia-scan"
+                href="/ai-scan"
                 className="flex-shrink-0 flex items-center gap-2 px-7 py-3.5 bg-white/20 text-white font-semibold rounded-full border border-white/30 hover:bg-white/30 hover:-translate-y-px transition-all"
               >
                 🔍 EcoScan IA

@@ -1,13 +1,13 @@
-// app/api/marcas/[id]/route.ts
+// app/api/brands/[id]/route.ts
 
 /**
  * BRAND BY ID API ROUTES
  *
  * Endpoints for operations on a specific brand.
  *
- * GET /api/marcas/{id} - Fetch brand by ID (public)
- * PUT /api/marcas/{id} - Update brand (requires ADMIN)
- * DELETE /api/marcas/{id} - Delete brand (requires ADMIN)
+ * GET /api/brands/{id} - Fetch brand by ID (public)
+ * PUT /api/brands/{id} - Update brand (requires ADMIN)
+ * DELETE /api/brands/{id} - Delete brand (requires ADMIN)
  *
  * @see services/brand.service.ts - Business logic
  */
@@ -26,10 +26,10 @@ import {
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/marcas/{id} - Fetch brand by ID
+ * GET /api/brands/{id} - Fetch brand by ID
  *
  * @param id - Brand ID in the URL
- * @returns { marca: Brand }
+ * @returns { brand: Brand }
  * @status 200 - Brand found
  * @status 404 - Brand does not exist
  * @status 500 - Error fetching brand
@@ -43,21 +43,21 @@ export async function GET(
     if (id === null) return ERRORS.invalidData("Invalid ID");
     const brand = await getBrand(id);
     if (!brand) return ERRORS.notFound("Brand");
-    return NextResponse.json({ marca: brand });
+    return NextResponse.json({ brand });
   } catch (err) {
     return ERRORS.internal("fetch brand", err);
   }
 }
 
 /**
- * PUT /api/marcas/{id} - Update brand
+ * PUT /api/brands/{id} - Update brand
  *
  * Requires ADMIN authentication.
- * NOTE: usuarioId CANNOT be changed after creation.
+ * NOTE: userId CANNOT be changed after creation.
  *
  * @param id - Brand ID in the URL
- * @body { nome?: string, descricao?: string }
- * @returns { marca: Brand }
+ * @body { name?: string, description?: string }
+ * @returns { brand: Brand }
  * @status 200 - Brand updated
  * @status 400 - Invalid data
  * @status 401 - Not authenticated
@@ -80,14 +80,14 @@ export async function PUT(
     if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
     const brand = await updateBrand(id, parsed.data);
-    return NextResponse.json({ marca: brand });
+    return NextResponse.json({ brand });
   } catch (err) {
     return mapError(err, "Brand") ?? ERRORS.internal("update brand", err);
   }
 }
 
 /**
- * DELETE /api/marcas/{id} - Delete brand
+ * DELETE /api/brands/{id} - Delete brand
  *
  * Requires ADMIN authentication.
  *

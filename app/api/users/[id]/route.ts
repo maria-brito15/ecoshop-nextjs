@@ -1,13 +1,13 @@
-// app/api/usuarios/[id]/route.ts
+// app/api/users/[id]/route.ts
 
 /**
  * USER BY ID API ROUTES
  *
  * Endpoints for operations on a specific user.
  *
- * GET /api/usuarios/{id} - Fetch user by ID
- * PUT /api/usuarios/{id} - Update user
- * DELETE /api/usuarios/{id} - Delete user (requires ADMIN)
+ * GET /api/users/{id} - Fetch user by ID
+ * PUT /api/users/{id} - Update user
+ * DELETE /api/users/{id} - Delete user (requires ADMIN)
  *
  * Permission rules:
  * - GET: A user can only see their own profile (or ADMIN sees anyone)
@@ -31,13 +31,13 @@ import {
 } from "@/services/user.service";
 
 /**
- * GET /api/usuarios/{id} - Fetch user by ID
+ * GET /api/users/{id} - Fetch user by ID
  *
  * Permission: A user can only see their own profile.
  * ADMIN can see any user.
  *
  * @param id - User ID in the URL
- * @returns { usuario: User }
+ * @returns { user: User }
  * @status 200 - User found
  * @status 401 - Not authenticated
  * @status 403 - Access denied (trying to see another user without being ADMIN)
@@ -51,7 +51,7 @@ export async function GET(
   const session = await getSession(req);
   const id = await routeId(params);
 
-  if (!session || (session.id !== id && session.tipo !== "ADMIN")) {
+  if (!session || (session.id !== id && session.type !== "ADMIN")) {
     return ERRORS.forbidden();
   }
   if (id === null) return ERRORS.invalidData("Invalid ID");
@@ -59,21 +59,21 @@ export async function GET(
   try {
     const user = await getUser(id);
     if (!user) return ERRORS.notFound("User");
-    return NextResponse.json({ usuario: user });
+    return NextResponse.json({ user });
   } catch (err) {
     return ERRORS.internal("fetch user", err);
   }
 }
 
 /**
- * PUT /api/usuarios/{id} - Update user
+ * PUT /api/users/{id} - Update user
  *
  * Permission: A user can only edit their own profile.
  * ADMIN can edit any user.
  *
  * @param id - User ID in the URL
- * @body { nome?: string, email?: string, telefone?: string, senha?: string, senhaAtual?: string }
- * @returns { usuario: User }
+ * @body { name?: string, email?: string, phone?: string, password?: string, currentPassword?: string }
+ * @returns { user: User }
  * @status 200 - User updated
  * @status 400 - Invalid data
  * @status 401 - Not authenticated
@@ -89,7 +89,7 @@ export async function PUT(
   const session = await getSession(req);
   const id = await routeId(params);
 
-  if (!session || (session.id !== id && session.tipo !== "ADMIN")) {
+  if (!session || (session.id !== id && session.type !== "ADMIN")) {
     return ERRORS.forbidden();
   }
   if (id === null) return ERRORS.invalidData("Invalid ID");
@@ -100,14 +100,14 @@ export async function PUT(
     if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
     const user = await updateUser(id, parsed.data, session.id);
-    return NextResponse.json({ usuario: user });
+    return NextResponse.json({ user });
   } catch (err) {
     return mapError(err, "User") ?? ERRORS.internal("update user", err);
   }
 }
 
 /**
- * DELETE /api/usuarios/{id} - Delete user
+ * DELETE /api/users/{id} - Delete user
  *
  * Permission: Only ADMIN can delete users.
  *
@@ -125,7 +125,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await getSession(req);
-  if (!session || session.tipo !== "ADMIN") return ERRORS.forbidden();
+  if (!session || session.type !== "ADMIN") return ERRORS.forbidden();
 
   try {
     const id = await routeId(params);

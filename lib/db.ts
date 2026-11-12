@@ -72,7 +72,7 @@ function getPrisma(): PrismaClient {
  * How to use:
  * ```ts
  * import { prisma } from "@/lib/db";
- * const users = await prisma.usuario.findMany();
+ * const users = await prisma.user.findMany();
  * ```
  *
  * The first time any method (findMany, create, etc.) is called,

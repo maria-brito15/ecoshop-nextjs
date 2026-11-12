@@ -1,15 +1,15 @@
-// app/api/marcas/route.ts
+// app/api/brands/route.ts
 
 /**
  * BRANDS API ROUTES
  *
  * Endpoints for managing brands.
  *
- * GET /api/marcas - List all brands (public)
- * POST /api/marcas - Create a new brand (requires ADMIN)
+ * GET /api/brands - List all brands (public)
+ * POST /api/brands - Create a new brand (requires ADMIN)
  *
  * Brands represent partner manufacturers/companies.
- * Each brand is associated with a user of type MARCA or ADMIN.
+ * Each brand is associated with a user of type BRAND or ADMIN.
  *
  * @see services/brand.service.ts - Business logic
  */
@@ -23,28 +23,28 @@ import { listBrands, createBrand } from "@/services/brand.service";
 import { requireAdmin } from "@/app/_middleware/auth";
 
 /**
- * GET /api/marcas - List all brands
+ * GET /api/brands - List all brands
  *
- * @returns { marcas: Brand[] }
+ * @returns { brands: Brand[] }
  * @status 200 - List returned successfully
  * @status 500 - Error fetching brands
  */
 export async function GET() {
   try {
     const brands = await listBrands();
-    return NextResponse.json({ marcas: brands });
+    return NextResponse.json({ brands });
   } catch (err) {
     return ERRORS.internal("list brands", err);
   }
 }
 
 /**
- * POST /api/marcas - Create a new brand
+ * POST /api/brands - Create a new brand
  *
  * Requires ADMIN authentication.
  *
- * @body { nome: string, descricao?: string, usuarioId: number }
- * @returns { marca: Brand }
+ * @body { name: string, description?: string, userId: number }
+ * @returns { brand: Brand }
  * @status 201 - Brand created
  * @status 400 - Invalid data
  * @status 401 - Not authenticated
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
     const brand = await createBrand(parsed.data);
-    return NextResponse.json({ marca: brand }, { status: 201 });
+    return NextResponse.json({ brand }, { status: 201 });
   } catch (err) {
     return mapError(err, "Brand") ?? ERRORS.internal("create brand", err);
   }

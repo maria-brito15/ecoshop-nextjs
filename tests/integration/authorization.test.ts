@@ -2,7 +2,7 @@
 import {
   email,
   createUserDirectly,
-  cookieDe,
+  cookieFor,
   req,
   ctx,
   closeConnections,
@@ -12,50 +12,50 @@ import assert from "node:assert/strict";
 import {
   POST as createCategory,
   GET as listCategories,
-} from "@/app/api/categorias/route";
-import { DELETE as deleteProduct } from "@/app/api/produtos/[id]/route";
+} from "@/app/api/categories/route";
+import { DELETE as deleteProduct } from "@/app/api/products/[id]/route";
 import {
   POST as createProduct,
   GET as listProducts,
-} from "@/app/api/produtos/route";
-import { POST as createBrand } from "@/app/api/marcas/route";
-import { POST as createCertificate } from "@/app/api/certificados/route";
-import { POST as uploadPhoto } from "@/app/api/produtos/[id]/fotos/route";
-import { GET as listUsers } from "@/app/api/usuarios/route";
+} from "@/app/api/products/route";
+import { POST as createBrand } from "@/app/api/brands/route";
+import { POST as createCertificate } from "@/app/api/certificates/route";
+import { POST as uploadPhoto } from "@/app/api/products/[id]/photos/route";
+import { GET as listUsers, POST as createUser } from "@/app/api/users/route";
 import {
   GET as getUser,
   PUT as updateUser,
   DELETE as deleteUser,
-} from "@/app/api/usuarios/[id]/route";
-import { POST as scan } from "@/app/api/ia/scan/route";
-import { POST as chat } from "@/app/api/ia/chat/route";
+} from "@/app/api/users/[id]/route";
+import { POST as scan } from "@/app/api/ai/scan/route";
+import { POST as chat } from "@/app/api/ai/chat/route";
 import fs from "node:fs";
 import path from "node:path";
 
 after(closeConnections);
 
-test("REQ-AUTZ-01: writing to the catalog requires ADMIN (401 without login, 403 for CLIENTE)", async () => {
-  const client = await createUserDirectly(email("authz01"), "CLIENTE");
-  const cookie = await cookieDe(client);
+test("REQ-AUTZ-01: writing to the catalog requires ADMIN (401 without login, 403 for CUSTOMER)", async () => {
+  const client = await createUserDirectly(email("authz01"), "CUSTOMER");
+  const cookie = await cookieFor(client);
   const routes: [
     string,
     (r: ReturnType<typeof req>) => Promise<Response>,
     string,
     unknown,
   ][] = [
-    ["categorias", createCategory, "POST", { nome: "x" }],
-    ["marcas", createBrand, "POST", { nome: "x", usuarioId: 1 }],
+    ["categories", createCategory, "POST", { name: "x" }],
+    ["brands", createBrand, "POST", { name: "x", userId: 1 }],
     [
-      "certificados",
+      "certificates",
       createCertificate,
       "POST",
-      { nome: "x", orgaoEmissor: "y" },
+      { name: "x", issuingBody: "y" },
     ],
     [
-      "produtos",
+      "products",
       createProduct,
       "POST",
-      { nome: "x", preco: 1, categoriaId: 1, marcaId: 1 },
+      { name: "x", price: 1, categoryId: 1, brandId: 1 },
     ],
   ];
   for (const [name, handler, method, body] of routes) {
@@ -67,19 +67,19 @@ test("REQ-AUTZ-01: writing to the catalog requires ADMIN (401 without login, 403
     assert.equal(
       (await handler(req(`/api/${name}`, { method, cookie, body }))).status,
       403,
-      `${name} CLIENTE`,
+      `${name} CUSTOMER`,
     );
   }
   const del = (c?: string) =>
     deleteProduct(
-      req("/api/produtos/1", { method: "DELETE", cookie: c }),
+      req("/api/products/1", { method: "DELETE", cookie: c }),
       ctx(1),
     );
   assert.equal((await del()).status, 401);
   assert.equal((await del(cookie)).status, 403);
   const photo = (c?: string) =>
     uploadPhoto(
-      req("/api/produtos/1/fotos", {
+      req("/api/products/1/photos", {
         method: "POST",
         cookie: c,
         form: new FormData(),
@@ -91,48 +91,75 @@ test("REQ-AUTZ-01: writing to the catalog requires ADMIN (401 without login, 403
 });
 
 test("REQ-AUTZ-02: reading the catalog (products and categories) is public", async () => {
-  assert.equal((await listProducts(req("/api/produtos"))).status, 200);
+  assert.equal((await listProducts(req("/api/products"))).status, 200);
   assert.equal((await listCategories()).status, 200);
 });
 
 test("REQ-AUTZ-03: AI scan and chat require an authenticated user", async () => {
   assert.equal(
-    (await scan(req("/api/ia/scan", { method: "POST", form: new FormData() })))
+    (await scan(req("/api/ai/scan", { method: "POST", form: new FormData() })))
       .status,
     401,
   );
   assert.equal(
     (
       await chat(
-        req("/api/ia/chat", { method: "POST", body: { mensagem: "oi" } }),
+        req("/api/ai/chat", { method: "POST", body: { message: "hi" } }),
       )
     ).status,
     401,
   );
 });
 
-test("REQ-AUTZ-04: listing and creating users is ADMIN-only", async () => {
-  const client = await createUserDirectly(email("authz04"), "CLIENTE");
-  assert.equal((await listUsers(req("/api/usuarios"))).status, 401);
+test("REQ-AUTZ-04: listing users is ADMIN-only; creating an ADMIN-type user needs an ADMIN session", async () => {
+  const client = await createUserDirectly(email("authz04"), "CUSTOMER");
+  const admin = await createUserDirectly(email("authz04admin"), "ADMIN");
+  assert.equal((await listUsers(req("/api/users"))).status, 401);
   assert.equal(
     (
       await listUsers(
-        req("/api/usuarios", { cookie: await cookieDe(client) }),
+        req("/api/users", { cookie: await cookieFor(client) }),
       )
     ).status,
     403,
   );
+
+  const adminBody = () => ({
+    name: "Created Admin",
+    email: email("authz04new"),
+    password: "Password12345",
+    type: "ADMIN",
+  });
+  // Anonymous and CUSTOMER callers get the public registration, which refuses the ADMIN type.
+  assert.equal(
+    (await createUser(req("/api/users", { method: "POST", body: adminBody() }))).status,
+    400,
+  );
+  assert.equal(
+    (
+      await createUser(
+        req("/api/users", { method: "POST", cookie: await cookieFor(client), body: adminBody() }),
+      )
+    ).status,
+    400,
+  );
+  // An ADMIN session takes the administrative path: any type, 201.
+  const created = await createUser(
+    req("/api/users", { method: "POST", cookie: await cookieFor(admin), body: adminBody() }),
+  );
+  assert.equal(created.status, 201);
+  assert.equal((await created.json()).user.type, "ADMIN");
 });
 
-test("REQ-AUTZ-05: /api/usuarios/[id]: the user themselves or ADMIN; deleting is ADMIN-only", async () => {
-  const a = await createUserDirectly(email("authz05a"), "CLIENTE");
-  const b = await createUserDirectly(email("authz05b"), "CLIENTE");
+test("REQ-AUTZ-05: /api/users/[id]: the user themselves or ADMIN; deleting is ADMIN-only", async () => {
+  const a = await createUserDirectly(email("authz05a"), "CUSTOMER");
+  const b = await createUserDirectly(email("authz05b"), "CUSTOMER");
   const admin = await createUserDirectly(email("authz05admin"), "ADMIN");
-  const ca = await cookieDe(a);
+  const ca = await cookieFor(a);
   assert.equal(
     (
       await getUser(
-        req(`/api/usuarios/${a.id}`, { cookie: ca }),
+        req(`/api/users/${a.id}`, { cookie: ca }),
         ctx(a.id),
       )
     ).status,
@@ -141,7 +168,7 @@ test("REQ-AUTZ-05: /api/usuarios/[id]: the user themselves or ADMIN; deleting is
   assert.equal(
     (
       await getUser(
-        req(`/api/usuarios/${b.id}`, { cookie: ca }),
+        req(`/api/users/${b.id}`, { cookie: ca }),
         ctx(b.id),
       )
     ).status,
@@ -150,7 +177,7 @@ test("REQ-AUTZ-05: /api/usuarios/[id]: the user themselves or ADMIN; deleting is
   assert.equal(
     (
       await getUser(
-        req(`/api/usuarios/${a.id}`, { cookie: await cookieDe(admin) }),
+        req(`/api/users/${a.id}`, { cookie: await cookieFor(admin) }),
         ctx(a.id),
       )
     ).status,
@@ -159,10 +186,10 @@ test("REQ-AUTZ-05: /api/usuarios/[id]: the user themselves or ADMIN; deleting is
   assert.equal(
     (
       await updateUser(
-        req(`/api/usuarios/${b.id}`, {
+        req(`/api/users/${b.id}`, {
           method: "PUT",
           cookie: ca,
-          body: { nome: "Invasor Teste" },
+          body: { name: "Test Intruder" },
         }),
         ctx(b.id),
       )
@@ -172,7 +199,7 @@ test("REQ-AUTZ-05: /api/usuarios/[id]: the user themselves or ADMIN; deleting is
   assert.equal(
     (
       await deleteUser(
-        req(`/api/usuarios/${a.id}`, { method: "DELETE", cookie: ca }),
+        req(`/api/users/${a.id}`, { method: "DELETE", cookie: ca }),
         ctx(a.id),
       )
     ).status,
@@ -196,21 +223,23 @@ test("REQ-AUTZ-07: every API route declares its access policy (explicit authenti
   const API_DIR = path.join(process.cwd(), "app", "api");
 
   // Intentionally public routes (catalog reads, login, registration,
-  // logout e health-check). Qualquer outra precisa chamar um guard.
+  // logout, health check and session renewal). Any other route must call a guard.
   const PUBLIC_ROUTES = new Set([
     "health/route.ts:GET",
     "auth/route.ts:POST",
     "auth/route.ts:DELETE",
+    // Redirecting renewal: authenticated by the single-use refresh cookie (ADR-0021), not a session guard.
+    "auth/refresh/route.ts:GET",
     "users/route.ts:POST",
-    "categorias/route.ts:GET",
-    "categorias/[id]/route.ts:GET",
-    "certificados/route.ts:GET",
-    "certificados/[id]/route.ts:GET",
-    "marcas/route.ts:GET",
-    "marcas/[id]/route.ts:GET",
-    "produtos/route.ts:GET",
-    "produtos/[id]/route.ts:GET",
-    "produtos/[id]/fotos/route.ts:GET",
+    "categories/route.ts:GET",
+    "categories/[id]/route.ts:GET",
+    "certificates/route.ts:GET",
+    "certificates/[id]/route.ts:GET",
+    "brands/route.ts:GET",
+    "brands/[id]/route.ts:GET",
+    "products/route.ts:GET",
+    "products/[id]/route.ts:GET",
+    "products/[id]/photos/route.ts:GET",
   ]);
 
   const GUARDS = ["requireAuth(", "requireAdmin(", "getSession("];

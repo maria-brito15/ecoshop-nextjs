@@ -24,7 +24,7 @@ export const TTL = {
    * - A long cache reduces database load
    * - 5 minutes is safe for data consistency
    */
-  SHORT_LIST: 5 * 60, // 300 segundos
+  SHORT_LIST: 5 * 60, // 300 seconds
 
   /**
    * Cache for product listings (paginated + filters).
@@ -35,7 +35,7 @@ export const TTL = {
    * - Users expect to see changes relatively quickly
    * - 2 minutes balances performance and freshness
    */
-  PRODUCT_LIST: 2 * 60, // 120 segundos
+  PRODUCT_LIST: 2 * 60, // 120 seconds
 
   /**
    * Cache for individual items (a specific product, category, brand).
@@ -46,7 +46,7 @@ export const TTL = {
    * - Slightly longer cache than listings
    * - Ensures price updates are visible within 3 minutes
    */
-  ITEM: 3 * 60, // 180 segundos
+  ITEM: 3 * 60, // 180 seconds
 
   /**
    * Cache for user data (profile, session).
@@ -57,7 +57,7 @@ export const TTL = {
    * - Sensitive data must be refreshed quickly
    * - A short cache still reduces database load
    */
-  USER: 60, // 60 segundos
+  USER: 60, // 60 seconds
 
   /**
    * Cache for product photo listings.
@@ -68,5 +68,5 @@ export const TTL = {
    * - Uploading new photos invalidates the cache automatically
    * - Same TTL as product listings
    */
-  PHOTOS: 2 * 60, // 120 segundos
+  PHOTOS: 2 * 60, // 120 seconds
 } as const;

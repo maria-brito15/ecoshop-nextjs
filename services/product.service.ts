@@ -16,7 +16,7 @@
  * Included relationships:
  * - Category (full data)
  * - Brand (full data)
- * - Certificates (via ProdutoCertificado, includes the full certificate)
+ * - Certificates (via ProductCertificate, includes the full certificate)
  *
  * @see lib/cache/keys.ts - Key generation functions
  * @see lib/cache/ttl.ts - TTL constants
@@ -41,11 +41,11 @@ import type {
  * Orderings accepted by `listProducts` (REQ-CAT-06).
  */
 const ORDER_BY_SORT = {
-  relevancia: { id: "asc" as const },
-  preco_asc: { preco: "asc" as const },
-  preco_desc: { preco: "desc" as const },
-  nome_asc: { nome: "asc" as const },
-  nome_desc: { nome: "desc" as const },
+  relevance: { id: "asc" as const },
+  price_asc: { price: "asc" as const },
+  price_desc: { price: "desc" as const },
+  name_asc: { name: "asc" as const },
+  name_desc: { name: "desc" as const },
 };
 
 /**
@@ -53,13 +53,13 @@ const ORDER_BY_SORT = {
  *
  * Receives the ALREADY VALIDATED filters (`listProductsQuerySchema`; the defaults of
  * `page`, `size` and `sort` come from the schema, not from here):
- * - page: page number (default: 1)
+ * - page number (default: 1)
  * - size: items per page (default: 12)
- * - categoriaId: filter by category
- * - marcaId: filter by brand (REQ-CAT-07)
- * - precoMax: maximum price (REQ-CAT-06)
- * - sort: relevancia (default) | preco_asc | preco_desc | nome_asc | nome_desc (REQ-CAT-06)
- * - nome: text search by name (case-insensitive, up to 100 characters)
+ * - categoryId: filter by category
+ * - brandId: filter by brand (REQ-CAT-07)
+ * - maxPrice: maximum price (REQ-CAT-06)
+ * - sort: relevance (default) | price_asc | price_desc | name_asc | name_desc (REQ-CAT-06)
+ * - name: text search by name (case-insensitive, up to 100 characters)
  *
  * `where`/`orderBy` are resolved by Prisma (the database), not in memory —
  * so ordering and the price limit apply to the whole catalog,
@@ -72,35 +72,35 @@ const ORDER_BY_SORT = {
  * @returns Paginated object with products, total, current page and size
  */
 export async function listProducts(query: ListProductsQuery) {
-  const { page, size, categoriaId: categoryId, marcaId: brandId, precoMax: maxPrice, sort, nome: name } = query;
+  const { page, size, categoryId, brandId, maxPrice, sort, name } = query;
 
   // The key comes from the validated filters (REQ-CAT-10), never from the raw URL.
   const key = productListKey(query);
 
   return withCache(key, TTL.PRODUCT_LIST, async () => {
     const where = {
-      ...(categoryId !== undefined && { categoriaId: categoryId }),
-      ...(brandId !== undefined && { marcaId: brandId }),
-      ...(maxPrice !== undefined && { preco: { lte: maxPrice } }),
-      ...(name && { nome: { contains: name, mode: "insensitive" as const } }),
+      ...(categoryId !== undefined && { categoryId }),
+      ...(brandId !== undefined && { brandId }),
+      ...(maxPrice !== undefined && { price: { lte: maxPrice } }),
+      ...(name && { name: { contains: name, mode: "insensitive" as const } }),
     };
 
     const [products, total] = await Promise.all([
-      prisma.produto.findMany({
+      prisma.product.findMany({
         where,
         include: {
-          categoria: { select: { id: true, nome: true } },
-          marca: { select: { id: true, nome: true } },
-          certificados: { include: { certificado: true } },
+          category: { select: { id: true, name: true } },
+          brand: { select: { id: true, name: true } },
+          certificates: { include: { certificate: true } },
         },
         skip: (page - 1) * size,
         take: size,
         orderBy: ORDER_BY_SORT[sort],
       }),
-      prisma.produto.count({ where }),
+      prisma.product.count({ where }),
     ]);
 
-    return { produtos: products, page, size, total };
+    return { products, page, size, total };
   });
 }
 
@@ -108,13 +108,13 @@ export async function listProducts(query: ListProductsQuery) {
  * Creates a new product.
  * Requires ADMIN authentication.
  *
- * @param data - Product data (nome, preco, categoriaId, marcaId, optional descricao)
+ * @param data - Product data (name, price, categoryId, brandId, optional description)
  * @returns Newly created product with categories and brand included
  */
 export async function createProduct(data: ProductInput) {
-  const product = await prisma.produto.create({
+  const product = await prisma.product.create({
     data,
-    include: { categoria: true, marca: true },
+    include: { category: true, brand: true },
   });
 
   await invalidateCache("PRODUCTS");
@@ -134,12 +134,12 @@ export async function createProduct(data: ProductInput) {
  */
 export async function getProduct(id: number) {
   return withCache(productKey(id), TTL.ITEM, () =>
-    prisma.produto.findUnique({
+    prisma.product.findUnique({
       where: { id },
       include: {
-        categoria: true,
-        marca: true,
-        certificados: { include: { certificado: true } },
+        category: true,
+        brand: true,
+        certificates: { include: { certificate: true } },
       },
     }),
   );
@@ -149,7 +149,7 @@ export async function getProduct(id: number) {
  * Updates an existing product.
  * Requires ADMIN authentication.
  *
- * REQ-PROD-05: if `certificadoIds` is in the body, it fully replaces the
+ * REQ-PROD-05: if `certificateIds` is in the body, it fully replaces the
  * product↔certificate link (removes the old ones, creates the new ones, in a
  * transaction). Omitting the field does not change the existing link.
  *
@@ -157,40 +157,40 @@ export async function getProduct(id: number) {
  * @param data - Update data (all optional)
  * @returns Updated product with relationships
  * @throws Error P2025 if the product does not exist
- * @throws Error P2003 if any certificadoId does not exist
+ * @throws Error P2003 if any certificateId does not exist
  */
 export async function updateProduct(
   id: number,
   data: UpdateProductInput,
 ) {
-  const { certificadoIds: certificateIds, ...productData } = data;
+  const { certificateIds, ...productData } = data;
 
   const product = await prisma.$transaction(async (tx) => {
     if (Object.keys(productData).length > 0) {
-      await tx.produto.update({ where: { id }, data: productData });
+      await tx.product.update({ where: { id }, data: productData });
     } else {
-      await tx.produto.findUniqueOrThrow({ where: { id } });
+      await tx.product.findUniqueOrThrow({ where: { id } });
     }
 
     if (certificateIds !== undefined) {
-      await tx.produtoCertificado.deleteMany({ where: { produtoId: id } });
+      await tx.productCertificate.deleteMany({ where: { productId: id } });
       const unique = [...new Set(certificateIds)];
       if (unique.length > 0) {
-        await tx.produtoCertificado.createMany({
+        await tx.productCertificate.createMany({
           data: unique.map((certificateId) => ({
-            produtoId: id,
-            certificadoId: certificateId,
+            productId: id,
+            certificateId,
           })),
         });
       }
     }
 
-    return tx.produto.findUniqueOrThrow({
+    return tx.product.findUniqueOrThrow({
       where: { id },
       include: {
-        categoria: true,
-        marca: true,
-        certificados: { include: { certificado: true } },
+        category: true,
+        brand: true,
+        certificates: { include: { certificate: true } },
       },
     });
   });
@@ -208,15 +208,15 @@ export async function updateProduct(
  *
  * REQ-PROD-07: a product with linked certificates CANNOT be deleted
  * (owner's decision, 2026-11-11: block). The foreign key of
- * `produto_certificado` is `ON DELETE RESTRICT` (there is no cascade); the database refuses
+ * `product_certificates` is `ON DELETE RESTRICT` (there is no cascade); the database refuses
  * (P2003) and the handler responds 409. To delete, unlink the
- * certificates first (`updateProduct` with `certificadoIds: []`).
+ * certificates first (`updateProduct` with `certificateIds: []`).
  *
  * @param id - ID of the product to delete
  * @throws PrismaClientKnownRequestError P2025 if the product does not exist (404) or P2003 if there are links (409)
  */
 export async function deleteProduct(id: number) {
-  await prisma.produto.delete({ where: { id } });
+  await prisma.product.delete({ where: { id } });
   await Promise.all([
     invalidateKey(productKey(id)),
     invalidateCache("PRODUCTS"),

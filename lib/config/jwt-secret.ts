@@ -11,6 +11,8 @@ const MIN_LENGTH = 32;
 
 /**
  * Fragments of sample values that have circulated in the repository or docs.
+ * The Portuguese entries are those sample values themselves, kept verbatim on purpose:
+ * they are data to reject, not text.
  * Length alone is not enough: the old `.env.example` sample had 38 characters.
  */
 const EXAMPLE_SNIPPETS = [

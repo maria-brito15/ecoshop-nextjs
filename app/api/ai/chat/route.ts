@@ -1,11 +1,11 @@
-// app/api/ia/chat/route.ts
+// app/api/ai/chat/route.ts
 
 /**
  * AI CHAT API ROUTE - GEMINI
  *
  * API route for chatting with the AI (Gemini) about sustainability and recycling.
  *
- * POST /api/ia/chat - Sends a message and receives the AI reply
+ * POST /api/ai/chat - Sends a message and receives the AI reply
  *
  * Requires authentication and applies a per-user rate limit.
  * Uses Google's Gemini 2.0 Flash model.
@@ -42,10 +42,10 @@ import { rateLimit } from "@/lib/rate-limit";
 const SYSTEM_PROMPT = `You are an expert assistant in sustainability and recycling for EcoShop. Answer in English. Be objective and informative. Give practical tips on proper disposal, recycling and sustainable alternatives.`;
 
 /**
- * POST /api/ia/chat - Chat with the AI assistant
+ * POST /api/ai/chat - Chat with the AI assistant
  *
- * @body { mensagem: string, historico?: ChatMessage[] }
- * @returns { resposta: string }
+ * @body { message: string, history?: ChatMessage[] }
+ * @returns { answer: string }
  * @status 200 - Reply generated successfully
  * @status 400 - Invalid data
  * @status 401 - Not authenticated
@@ -63,13 +63,13 @@ export async function POST(req: NextRequest) {
   if (authError) return authError;
 
   const session = await getSession(req);
-  const { blocked: blocked } = await rateLimit(`chat:${session!.id}`, {
+  const { blocked } = await rateLimit(`chat:${session!.id}`, {
     limit: MESSAGE_LIMIT,
     windowSeconds: WINDOW_SECONDS,
   });
   if (blocked) {
     return NextResponse.json(
-      { erro: "Too many messages. Wait 1 minute and try again." },
+      { error: "Too many messages. Wait 1 minute and try again." },
       { status: 429 },
     );
   }
@@ -79,11 +79,11 @@ export async function POST(req: NextRequest) {
     const parsed = chatSchema.safeParse(body);
     if (!parsed.success) return ERRORS.invalidData(parsed.error.flatten());
 
-    const { mensagem: message, historico: history } = parsed.data;
+    const { message, history } = parsed.data;
 
     if (!isGeminiConfigured()) {
       return NextResponse.json(
-        { erro: "AI service not configured" },
+        { error: "AI service not configured" },
         { status: 503 },
       );
     }
@@ -110,12 +110,12 @@ export async function POST(req: NextRequest) {
 
     if (!response) {
       return NextResponse.json(
-        { erro: "Error generating the AI response" },
+        { error: "Error generating the AI response" },
         { status: 502 },
       );
     }
 
-    return NextResponse.json({ resposta: response });
+    return NextResponse.json({ answer: response });
   } catch (err) {
     return ERRORS.internal("processar chat", err);
   }

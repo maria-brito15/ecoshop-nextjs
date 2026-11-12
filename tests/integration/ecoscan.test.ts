@@ -2,7 +2,7 @@
 import {
   email,
   createUserDirectly,
-  cookieDe,
+  cookieFor,
   req,
   stubFetch,
   json,
@@ -10,23 +10,23 @@ import {
 } from "./helpers";
 import { test, after, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { POST as scan } from "@/app/api/ia/scan/route";
+import { POST as scan } from "@/app/api/ai/scan/route";
 
 after(closeConnections);
 
 let restore: (() => void) | undefined;
 beforeEach(() => {
-  process.env.GEMINI_KEY = "chave-gemini-de-teste-123";
+  process.env.GEMINI_KEY = "gemini-test-key-123";
 });
 afterEach(() => restore?.());
 
 const FIELDS = [
-  "impacto_ambiental",
-  "tempo_decomposicao",
-  "onde_descartar",
-  "reciclabilidade",
-  "dicas_sustentaveis",
-  "beneficios_reciclagem",
+  "environmental_impact",
+  "decomposition_time",
+  "disposal_instructions",
+  "recyclability",
+  "sustainable_tips",
+  "recycling_benefits",
 ];
 const geminiAnalysis = () =>
   json({
@@ -54,15 +54,15 @@ const azure = (tag: string, p: number) =>
 const isAzure = (url: string) => url.startsWith("https://azure.test");
 
 async function submit(file: File | null) {
-  const u = await createUserDirectly(email("scan"), "CLIENTE");
+  const u = await createUserDirectly(email("scan"), "CUSTOMER");
   const form = new FormData();
   if (file) form.set("image", file);
   return scan(
-    req("/api/ia/scan", { method: "POST", cookie: await cookieDe(u), form }),
+    req("/api/ai/scan", { method: "POST", cookie: await cookieFor(u), form }),
   );
 }
 const png = () =>
-  new File([new Uint8Array([137, 80, 78, 71])], "foto.png", {
+  new File([new Uint8Array([137, 80, 78, 71])], "photo.png", {
     type: "image/png",
   });
 
@@ -73,11 +73,11 @@ test("REQ-SCAN-01: a material identified with enough confidence returns the 6-fi
   const res = await submit(png());
   assert.equal(res.status, 200);
   const c = await res.json();
-  assert.equal(c.sucesso, true);
+  assert.equal(c.success, true);
   assert.equal(c.material, "plastico");
-  assert.equal(c.confianca, 93);
+  assert.equal(c.confidence, 93);
   for (const field of FIELDS)
-    assert.ok(c.analise_sustentabilidade[field], field);
+    assert.ok(c.sustainability_analysis[field], field);
 });
 
 test("REQ-SCAN-02: confidence below the threshold returns 422 without calling Gemini", async () => {
@@ -89,8 +89,8 @@ test("REQ-SCAN-02: confidence below the threshold returns 422 without calling Ge
   const res = await submit(png());
   assert.equal(res.status, 422);
   const c = await res.json();
-  assert.equal(c.sucesso, false);
-  assert.equal(c.confianca, 40);
+  assert.equal(c.success, false);
+  assert.equal(c.confidence, 40);
   assert.equal(calledGemini, false);
 });
 
@@ -110,8 +110,8 @@ test("REQ-SCAN-04: if Gemini returns invalid content, the fallback analysis is u
   const res = await submit(png());
   assert.equal(res.status, 200);
   const c = await res.json();
-  assert.equal(c.sucesso, true);
-  assert.match(c.analise_sustentabilidade.impacto_ambiental, /papel/);
+  assert.equal(c.success, true);
+  assert.match(c.sustainability_analysis.environmental_impact, /papel/);
 });
 
 test("REQ-SCAN-05: if the Gemini network fails, the fallback analysis is used (200)", async () => {
@@ -145,5 +145,5 @@ test("REQ-SCAN-07: if Azure does not respond, the answer is 422 with a suggestio
   restore = stubFetch(() => json({}, 500));
   const res = await submit(png());
   assert.equal(res.status, 422);
-  assert.equal((await res.json()).sucesso, false);
+  assert.equal((await res.json()).success, false);
 });

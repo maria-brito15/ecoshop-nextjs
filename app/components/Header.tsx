@@ -6,22 +6,22 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import type { TipoUsuario } from "@/types/api";
+import type { UserType } from "@/types/api";
 import { fetchSession, endClientSession } from "@/lib/hooks/session";
 
 type SessionUser = {
   id: number;
-  nome: string;
+  name: string;
   email: string;
-  tipo: TipoUsuario;
+  type: UserType;
 };
 
 const NAV_ITEMS = [
   { label: "Home", href: "/", page: "inicio" },
-  { label: "Produtos", href: "/produtos", page: "produtos" },
-  { label: "Education", href: "/educacao", page: "educacao" },
-  { label: "EcoScan IA", href: "/ia-scan", page: "ecoscan" },
-  { label: "Sobre", href: "/about", page: "sobre" },
+  { label: "Products", href: "/products", page: "products" },
+  { label: "Education", href: "/education", page: "education" },
+  { label: "EcoScan IA", href: "/ai-scan", page: "ecoscan" },
+  { label: "About", href: "/about", page: "about" },
 ] as const;
 
 const STORAGE_KEY = "ecoShopTheme";
@@ -87,7 +87,7 @@ function useSession() {
     refresh();
   }, []);
 
-  return { usuario: user, carregando: loading, refresh };
+  return { user, loading, refresh };
 }
 
 export default function Header() {
@@ -98,7 +98,7 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-  const { usuario: user, carregando: loading, refresh } = useSession();
+  const { user, loading, refresh } = useSession();
 
   useEffect(() => {
     refresh();
@@ -135,7 +135,7 @@ export default function Header() {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
-  const initial = user?.nome?.charAt(0).toUpperCase() ?? "?";
+  const initial = user?.name?.charAt(0).toUpperCase() ?? "?";
 
   return (
     <>
@@ -188,7 +188,7 @@ export default function Header() {
                   <button
                     onClick={() => setProfileMenuOpen((prev) => !prev)}
                     aria-label="Profile menu"
-                    title={user.nome}
+                    title={user.name}
                     className="
                       hidden sm:flex items-center gap-2
                       px-3 py-2
@@ -209,7 +209,7 @@ export default function Header() {
                       {initial}
                     </span>
                     <span className="text-sm font-semibold text-[var(--color-text-primary)] max-w-[100px] truncate">
-                      {user.nome.split(" ")[0]}
+                      {user.name.split(" ")[0]}
                     </span>
                     <svg
                       width="12"
@@ -239,14 +239,14 @@ export default function Header() {
                     >
                       <div className="px-4 py-3 border-b border-[var(--color-border)]">
                         <p className="text-xs font-semibold text-[var(--color-text-primary)] truncate">
-                          {user.nome}
+                          {user.name}
                         </p>
                         <p className="text-xs text-[var(--color-text-tertiary)] truncate">
                           {user.email}
                         </p>
                       </div>
                       <Link
-                        href="/perfil"
+                        href="/profile"
                         onClick={() => setProfileMenuOpen(false)}
                         className="
                           flex items-center gap-2.5 px-4 py-3
@@ -271,9 +271,9 @@ export default function Header() {
                         </svg>
                         My Profile
                       </Link>
-                      {user.tipo === "ADMIN" && (
+                      {user.type === "ADMIN" && (
                         <Link
-                          href="/painel"
+                          href="/dashboard"
                           onClick={() => setProfileMenuOpen(false)}
                           className="
                             flex items-center gap-2.5 px-4 py-3
@@ -350,8 +350,8 @@ export default function Header() {
 
             <button
               onClick={toggle}
-              aria-label={isDark ? "Ativar modo claro" : "Ativar modo escuro"}
-              title={isDark ? "Ativar modo claro" : "Ativar modo escuro"}
+              aria-label={isDark ? "Enable light mode" : "Enable dark mode"}
+              title={isDark ? "Enable light mode" : "Enable dark mode"}
               className="
                 w-10 h-10 flex items-center justify-center
                 rounded-full text-base
@@ -369,7 +369,7 @@ export default function Header() {
 
             <button
               onClick={() => setMobileOpen(true)}
-              aria-label="Abrir menu"
+              aria-label="Open menu"
               className="
                 md:hidden
                 w-10 h-10 flex items-center justify-center
@@ -422,7 +422,7 @@ export default function Header() {
           </span>
           <button
             onClick={() => setMobileOpen(false)}
-            aria-label="Fechar menu"
+            aria-label="Close menu"
             className="
               w-9 h-9 flex items-center justify-center
               rounded-full

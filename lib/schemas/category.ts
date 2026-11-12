@@ -18,8 +18,8 @@
  * - Categories with associated products cannot be deleted
  *
  * Endpoints that use these schemas:
- * - POST /api/categorias
- * - PUT /api/categorias/:id
+ * - POST /api/categories
+ * - PUT /api/categories/:id
  */
 
 import { z } from "zod";
@@ -28,18 +28,18 @@ import { z } from "zod";
  * Schema for creating a new category.
  *
  * Rules:
- * - nome: required, not empty (automatic trim)
- * - descricao: optional (trimmed if provided)
+ * - name: required, not empty (automatic trim)
+ * - description: optional (trimmed if provided)
  *
  * @example
  * const data = {
- *   nome: "Sustainable Electronics",
- *   descricao: "Devices with low energy consumption"
+ *   name: "Sustainable Electronics",
+ *   description: "Devices with low energy consumption"
  * };
  */
 export const categorySchema = z.object({
-  nome: z.string().min(1, "Category name is required"),
-  descricao: z.string().optional(),
+  name: z.string().min(1, "Category name is required"),
+  description: z.string().optional(),
 });
 
 /**
@@ -49,19 +49,19 @@ export const categorySchema = z.object({
  * Useful for PATCH operations where only one field needs to change.
  *
  * Rules:
- * - nome: minimum 1 character IF provided
- * - descricao: free string IF provided
+ * - name: minimum 1 character IF provided
+ * - description: free string IF provided
  *
  * @example
  * // Rename a category
- * const data = { nome: "Sustainable Fashion" };
+ * const data = { name: "Sustainable Fashion" };
  *
  * // Update only the description
- * const data = { descricao: "Ethical and eco-friendly clothing" };
+ * const data = { description: "Ethical and eco-friendly clothing" };
  */
 export const updateCategorySchema = z.object({
-  nome: z.string().min(1, "Name cannot be empty").optional(),
-  descricao: z.string().optional(),
+  name: z.string().min(1, "Name cannot be empty").optional(),
+  description: z.string().optional(),
 });
 
 // Inferred types for use in the services
