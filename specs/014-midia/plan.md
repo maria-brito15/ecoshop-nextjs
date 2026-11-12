@@ -1,3 +1,3 @@
-# Plano: 014-midia
+# Plan: 014-midia
 
-- **Status:** Implementado em 2026-11-11. As decisões e alternativas estão em `spec.md` e no ADR citado.
+- **Status:** Implemented on 2026-11-11. The decisions and alternatives are in `spec.md` and in the cited ADR.

@@ -1,30 +1,30 @@
-# Spec de mudança: 015-config-e-log
+# Change spec: 015-config-e-log
 
-- **Trilha:** completa (curta)
-- **Capacidades afetadas:** OPS
-- **Status:** Implementada em 2026-11-11 (autonomia técnica do dono), **sem commits**; consolidada nas specs vivas
-- **Autor / aprovador:** Claude / dono do projeto · **Data:** 2026-11-11
+- **Track:** full (short)
+- **Affected capabilities:** OPS
+- **Status:** Implemented on 2026-11-11 (the owner's technical autonomy), **without commits**; consolidated in the living specs
+- **Author / approver:** Claude / project owner · **Date:** 2026-11-11
 
-## Problema
+## Problem
 
-`DATABASE_URL` só falhava na primeira consulta; `ERROS.interno` e o Redis não deixavam rastro estruturado.
+`DATABASE_URL` only failed on the first query; `ERRORS.internal` and Redis left no structured trace.
 
-## Fora de escopo
+## Out of scope
 
-Schema único para TODAS as variáveis (só as obrigatórias de produção foram cobertas); tracing/APM (Art. XIII).
+A single schema for ALL variables (only the production-required ones were covered); tracing/APM (Art. XIII).
 
-## Requisitos
+## Requirements
 
 REQ-OPS-18, 19.
 
-## Decisão registrada
+## Recorded decision
 
-nenhum (Constitution Art. XII.2 e XIII.1).
+None (Constitution Art. XII.2 and XIII.1).
 
-## Verificação
+## Verification
 
-`tests/integration/log.test.ts` e `operations-delivery.test.ts` (executados, sem banco).
+`tests/integration/log.test.ts` and `operations-delivery.test.ts` (run, without a database).
 
-## Perguntas em aberto
+## Open questions
 
-Nenhuma bloqueante.
+None blocking.

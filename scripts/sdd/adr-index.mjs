@@ -49,7 +49,7 @@ for (const d of docs) {
     for (const id of l.match(/ADR-\d{4}/g)) {
       if (
         statusKey(porId.get(id)?.status) === "superseded" &&
-        !/substitu|supersed|hist[oó]ric|history/i.test(l)
+        !/supersed|histor/i.test(l)
       )
         erros.push(
           `${d.replace(RAIZ + "/", "")}: cites ${id} (Superseded) as current`,

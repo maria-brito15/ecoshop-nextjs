@@ -49,7 +49,7 @@ for (const cap of capacidades()) {
       erros.push(`${id} duplicated (${vistos.get(id)} and ${onde})`);
     vistos.set(id, onde);
     ids.push(id);
-    if (!/\b(deve(m)?|shall)\b/i.test(enunciado ?? ""))
+    if (!/\bshall\b/i.test(enunciado ?? ""))
       erros.push(
         `${id}: the statement is not in EARS form ("... the system shall ...")`,
       );

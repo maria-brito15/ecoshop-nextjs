@@ -1,30 +1,30 @@
-# Spec de mudança: 010-sessao-revogavel
+# Change spec: 010-sessao-revogavel
 
-- **Trilha:** correção com mudança de regra (P02; substitui o ADR-0007)
-- **Capacidades afetadas:** AUTH, AUTZ
-- **Status:** Implementada em 2026-11-11 (autonomia técnica do dono), **sem commits**; consolidada nas specs vivas
-- **Autor / aprovador:** Claude / dono do projeto · **Data:** 2026-11-11
+- **Track:** fix with a rule change (P02; supersedes ADR-0007)
+- **Affected capabilities:** AUTH, AUTZ
+- **Status:** Implemented on 2026-11-11 (the owner's technical autonomy), **without commits**; consolidated in the living specs
+- **Author / approver:** Claude / project owner · **Date:** 2026-11-11
 
-## Problema
+## Problem
 
-Sessão de 7 dias sem revogação: admin rebaixado, usuário excluído e sessão sequestrada continuam valendo; trocar senha não encerra sessões; trocar a própria senha não exige a atual; login revelava, pelo tempo, quais e-mails têm conta.
+A 7-day session without revocation: a demoted admin, a deleted user and a hijacked session stay valid; changing the password ends no sessions; changing one's own password does not require the current one; login revealed, through timing, which emails have an account.
 
-## Fora de escopo
+## Out of scope
 
-Tela de troca de senha no perfil (hoje não há campo), logout de todos os dispositivos por ação do usuário, auditoria de logins.
+A password-change screen in the profile (today there is no field), logout of all devices by user action, login auditing.
 
-## Requisitos
+## Requirements
 
-REQ-AUTH-18 a 23 (`docs/capabilities/autenticacao`).
+REQ-AUTH-18 to 23 (`docs/capabilities/autenticacao`).
 
-## Decisão registrada
+## Recorded decision
 
-ADR-0021 (substitui o ADR-0007).
+ADR-0021 (supersedes ADR-0007).
 
-## Verificação
+## Verification
 
-`tests/integration/session.test.ts` (22 testes; os de HTTP com banco **não foram executados**).
+`tests/integration/session.test.ts` (22 tests; the HTTP ones with a database **were not run**).
 
-## Perguntas em aberto
+## Open questions
 
-Nenhuma bloqueante.
+None blocking.

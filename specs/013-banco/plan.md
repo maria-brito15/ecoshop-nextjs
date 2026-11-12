@@ -1,3 +1,3 @@
-# Plano: 013-banco
+# Plan: 013-banco
 
-- **Status:** Implementado em 2026-11-11. As decisões e alternativas estão em `spec.md` e no ADR citado.
+- **Status:** Implemented on 2026-11-11. The decisions and alternatives are in `spec.md` and in the cited ADR.

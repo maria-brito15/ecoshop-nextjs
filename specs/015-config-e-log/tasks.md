@@ -1,3 +1,3 @@
-# Tarefas: 015-config-e-log
+# Tasks: 015-config-e-log
 
-- **Status:** Concluídas em 2026-11-11, sem commits. Evidência por requisito em `docs/capabilities/*/status.md`.
+- **Status:** Completed on 2026-11-11, without commits. Evidence per requirement in `docs/capabilities/*/status.md`.

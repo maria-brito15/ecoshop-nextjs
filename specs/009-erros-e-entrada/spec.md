@@ -1,85 +1,85 @@
-# Spec de mudança: 009-erros-e-entrada
+# Change spec: 009-erros-e-entrada
 
-- **Trilha:** correção (a Constitution Art. VI, VII e VIII já exigem este comportamento; o código o descumpre) com mudança de regra em REQ-AUTH-15 a 17 e REQ-USR-08
-- **Capacidades afetadas:** AUTH, USR, REF, CAT, PROD, MIDIA, CHAT, SCAN
-- **Status:** Implementada em 2026-11-11 (autonomia técnica concedida pelo dono); verificação parcial — ver `status.md` de cada capacidade
-- **Autor / aprovador:** Claude / dono do projeto · **Data:** 2026-11-11
+- **Track:** fix (the Constitution Art. VI, VII and VIII already require this behavior; the code does not meet it) with a rule change in REQ-AUTH-15 to 17 and REQ-USR-08
+- **Affected capabilities:** AUTH, USR, REF, CAT, PROD, MIDIA, CHAT, SCAN
+- **Status:** Implemented on 2026-11-11 (technical autonomy granted by the owner); partial verification — see the `status.md` of each capability
+- **Author / approver:** Claude / project owner · **Date:** 2026-11-11
 
-## Problema
+## Problem
 
-A auditoria de 2026-11-11 achou, em entrada de dados e tratamento de erro:
+The audit of 2026-11-11 found, in data input and error handling:
 
-- Services lançam `Error("P2025")`, `Error("EMAIL_JA_CADASTRADO")`, `Error("MARCA_NAO_PENDENTE")` etc., e handlers decidem a resposta por `err.message` (Art. VII.1–2).
-- `PUT /api/usuarios/[id]` de usuário inexistente, e-mail repetido na atualização e exclusão de usuário que tem marca caem em **500** (o handler procura `"P2025"` na mensagem, mas o Prisma coloca o código em `err.code`) (Art. VII.4).
-- `id` de rota inválido (`abc`) vira `NaN`, o Prisma lança erro de validação e a resposta é **500** (Art. VI.1).
-- E-mail sem normalização: `A@x.com` e `a@x.com` são contas diferentes.
-- Senha sem limite máximo: o bcrypt só usa os primeiros 72 bytes.
-- `?next=` da tela de login é usado sem validar: redirecionamento aberto.
-- Chat: `historico` sem limite de tamanho; chave do Gemini na URL; chamada ao Gemini duplicada no handler.
-- Chamadas ao Azure e ao Gemini sem timeout; falha de rede do Gemini no scan vira 500 (Art. VIII.2; REQ-SCAN-05 já exigia 200 com contingência).
+- Services throw `Error("P2025")`, `Error("EMAIL_JA_CADASTRADO")`, `Error("MARCA_NAO_PENDENTE")` etc., and handlers decide the response by `err.message` (Art. VII.1–2).
+- `PUT /api/usuarios/[id]` of a nonexistent user, a repeated email on update and deletion of a user who has a brand fall into **500** (the handler looks for `"P2025"` in the message, but Prisma puts the code in `err.code`) (Art. VII.4).
+- An invalid route `id` (`abc`) becomes `NaN`, Prisma throws a validation error and the response is **500** (Art. VI.1).
+- Email without normalization: `A@x.com` and `a@x.com` are different accounts.
+- Password without a maximum limit: bcrypt only uses the first 72 bytes.
+- The login screen's `?next=` is used without validation: open redirect.
+- Chat: `historico` without a size limit; Gemini key in the URL; the Gemini call duplicated in the handler.
+- Calls to Azure and Gemini without a timeout; a Gemini network failure in the scan becomes 500 (Art. VIII.2; REQ-SCAN-05 already required 200 with a fallback).
 
-## Fora de escopo
+## Out of scope
 
-- Exigir a senha atual para trocar a senha → spec de sessão (010), porque muda o contrato da API e a tela de perfil.
-- Campo `codigo` no corpo de erro (Art. VII.3) e o desmembramento de handlers em services → spec de camadas (012).
-- Migration que normaliza e-mails já gravados: a busca passa a ignorar a caixa, então contas antigas continuam entrando sem migration.
-- Mudar mensagens de erro existentes.
+- Requiring the current password to change the password → session spec (010), because it changes the API contract and the profile screen.
+- A `codigo` field in the error body (Art. VII.3) and splitting handlers into services → layers spec (012).
+- A migration that normalizes emails already stored: the lookup now ignores case, so old accounts keep logging in without a migration.
+- Changing existing error messages.
 
-## Comportamento atual (fato, com evidência)
+## Current behavior (fact, with evidence)
 
-- `services/user.service.ts:100,218`, `services/brand.service.ts:115,118,143,146,216`, `services/category.service.ts:147`, `services/certificate.service.ts:126`: `throw new Error("<texto>")`.
-- `app/api/usuarios/[id]/route.ts:103,135`: `err.message.includes("P2025")`; `app/api/marcas/[id]/aprovar/route.ts`, `app/api/marcas/route.ts`, `app/api/users/route.ts`, `app/api/usuarios/route.ts`: comparação de `err.message` com strings.
-- `lib/http/responses.ts`: `mapeiaErroPrisma` também compara `err.message === "P2025"`.
-- Rotas `[id]`: `Number(id)` sem validação (produtos, usuarios, marcas, aprovar, categorias, certificados); só `fotos` checa `isNaN`.
-- `lib/schemas/user.ts`: e-mail só `z.string().email()`; senha `min(8)`.
-- `app/(auth)/sign-in/page.tsx:200`: `get("next") || "/"` sem validação.
-- `lib/schemas/ai-chat.ts`: só `mensagem` tem limite. `app/api/ia/chat/route.ts` monta a URL do Gemini com `?key=` e tem sua própria `gerarTextoWithHistory`.
-- `lib/ai/providers/*.ts`: `fetch` sem `signal`; `gerarTexto` sem `try/catch`.
-- `tests/integration/ecoscan.test.ts:117`: o teste de REQ-SCAN-05 está como `todo: "D4: hoje a exceção vira 500"`.
+- `services/user.service.ts:100,218`, `services/brand.service.ts:115,118,143,146,216`, `services/category.service.ts:147`, `services/certificate.service.ts:126`: `throw new Error("<text>")`.
+- `app/api/usuarios/[id]/route.ts:103,135`: `err.message.includes("P2025")`; `app/api/marcas/[id]/aprovar/route.ts`, `app/api/marcas/route.ts`, `app/api/users/route.ts`, `app/api/usuarios/route.ts`: comparison of `err.message` with strings.
+- `lib/http/responses.ts`: `mapError` also compares `err.message === "P2025"`.
+- `[id]` routes: `Number(id)` without validation (products, users, brands, approve, categories, certificates); only `fotos` checks `isNaN`.
+- `lib/schemas/user.ts`: email only `z.string().email()`; password `min(8)`.
+- `app/(auth)/sign-in/page.tsx:200`: `get("next") || "/"` without validation.
+- `lib/schemas/ai-chat.ts`: only `mensagem` has a limit. `app/api/ia/chat/route.ts` builds the Gemini URL with `?key=` and has its own text-with-history function.
+- `lib/ai/providers/*.ts`: `fetch` without `signal`; `generateText` without `try/catch`.
+- `tests/integration/ecoscan.test.ts:117`: the REQ-SCAN-05 test is marked `todo: "D4: hoje a exceção vira 500"`.
 
-## Requisitos
+## Requirements
 
-| ID | Requisito (EARS) | Critério de aceite | Novo / Altera |
+| ID | Requirement (EARS) | Acceptance criterion | New / Changes |
 |---|---|---|---|
-| REQ-CAT-09 | Se o `id` de `GET /api/produtos/[id]` não é um inteiro positivo, o sistema deve responder 400. | `abc`, `0`, `-1`, `1.5`, `1e3` → 400 (não 500) | Novo |
-| REQ-PROD-06 | Se o `id` de `PUT` ou `DELETE /api/produtos/[id]` não é um inteiro positivo, o sistema deve responder 400. | ADMIN com `id=abc` → 400 | Novo |
-| REQ-MIDIA-05 | Se o `id` das rotas de fotos não é um inteiro positivo, o sistema deve responder 400. | `1.5` e `abc` → 400 | Novo |
-| REQ-REF-05 | Se o `id` das rotas de categorias, marcas ou certificados não é um inteiro positivo, o sistema deve responder 400. | `abc` → 400 em GET, PUT e DELETE | Novo |
-| REQ-USR-06 | Se o `id` de `/api/usuarios/[id]` ou de `POST /api/marcas/[id]/aprovar` não é um inteiro positivo, o sistema deve responder 400 (depois de checar a sessão). | ADMIN com `id=abc` → 400; sem sessão → 401/403 | Novo |
-| REQ-USR-07 | Quando uma atualização ou exclusão de usuário falha por inexistência, e-mail repetido ou vínculo com marca, o sistema deve responder 404, 409 e 409, respectivamente. | `PUT` de id inexistente → 404; `PUT` com e-mail de outro → 409; `DELETE` de usuário com marca → 409 | Novo |
-| REQ-USR-08 | Se um ADMIN tenta excluir a própria conta, o sistema deve responder 409 e manter a conta. | `DELETE /api/usuarios/<meu id>` → 409 | Novo (regra) |
-| REQ-AUTH-15 | O sistema deve normalizar o e-mail (remover espaços das pontas e converter para minúsculas) no cadastro, no login e na atualização, e buscar usuários ignorando a diferença de caixa; ao cadastrar MARCA com nome de marca já existente, deve responder 409. | Cadastrar `Foo@X.com` grava `foo@x.com`; cadastrar `foo@x.com` depois → 409; conta antiga com caixa mista continua entrando | Novo (regra) |
-| REQ-AUTH-16 | Se a senha informada no cadastro ou na atualização passa de 72 bytes, o sistema deve responder 400. | 73 bytes → 400; 72 → aceita | Novo (regra) |
-| REQ-AUTH-17 | Quando o login redireciona por `?next=`, o sistema deve aceitar apenas caminho local (começa com uma única `/`); qualquer outro valor leva a `/`. | `//evil.com`, `https://evil.com`, `/\evil.com`, `javascript:…` → `/` | Novo (regra) |
-| REQ-CHAT-08 | Se o `historico` do chat tem mais de 20 itens, ou algum texto passa de 2000 caracteres, o sistema deve responder 400; a chave do Gemini não deve ir na URL. | 21 itens → 400; a chamada ao Gemini leva a chave no cabeçalho `x-goog-api-key`, sem `key=` na URL | Novo (regra) |
-| REQ-CHAT-09 | Se a chamada ao Gemini lança erro ou excede o tempo limite, o chat deve responder 502. | `fetch` que lança → 502 (não 500) | Novo |
-| REQ-SCAN-09 | O sistema deve aplicar tempo limite às chamadas ao Azure e ao Gemini e tratar o estouro como falha da dependência (REQ-SCAN-05 e REQ-SCAN-07). | Chamada que não responde é abortada no tempo limite; o scan devolve contingência (Gemini) ou 422 (Azure) | Novo |
+| REQ-CAT-09 | If the `id` of `GET /api/produtos/[id]` is not a positive integer, the system shall respond 400. | `abc`, `0`, `-1`, `1.5`, `1e3` → 400 (not 500) | New |
+| REQ-PROD-06 | If the `id` of `PUT` or `DELETE /api/produtos/[id]` is not a positive integer, the system shall respond 400. | ADMIN with `id=abc` → 400 | New |
+| REQ-MIDIA-05 | If the `id` of the photo routes is not a positive integer, the system shall respond 400. | `1.5` and `abc` → 400 | New |
+| REQ-REF-05 | If the `id` of the category, brand or certificate routes is not a positive integer, the system shall respond 400. | `abc` → 400 on GET, PUT and DELETE | New |
+| REQ-USR-06 | If the `id` of `/api/usuarios/[id]` or of `POST /api/marcas/[id]/aprovar` is not a positive integer, the system shall respond 400 (after checking the session). | ADMIN with `id=abc` → 400; without a session → 401/403 | New |
+| REQ-USR-07 | When a user update or deletion fails because the user does not exist, the email is repeated or there is a link to a brand, the system shall respond 404, 409 and 409, respectively. | `PUT` of a nonexistent id → 404; `PUT` with another user's email → 409; `DELETE` of a user with a brand → 409 | New |
+| REQ-USR-08 | If an ADMIN tries to delete their own account, the system shall respond 409 and keep the account. | `DELETE /api/usuarios/<my id>` → 409 | New (rule) |
+| REQ-AUTH-15 | The system shall normalize the email (trim the ends and lowercase it) on sign-up, login and update, and look users up ignoring case; when signing up a MARCA with an already existing brand name, it shall respond 409. | Signing up `Foo@X.com` stores `foo@x.com`; signing up `foo@x.com` afterwards → 409; an old mixed-case account still signs in | New (rule) |
+| REQ-AUTH-16 | If the password given on sign-up or update exceeds 72 bytes, the system shall respond 400. | 73 bytes → 400; 72 → accepted | New (rule) |
+| REQ-AUTH-17 | When login redirects through `?next=`, the system shall accept only a local path (starts with a single `/`); any other value leads to `/`. | `//evil.com`, `https://evil.com`, `/\evil.com`, `javascript:…` → `/` | New (rule) |
+| REQ-CHAT-08 | If the chat `historico` has more than 20 items, or any text exceeds 2000 characters, the system shall respond 400; the Gemini key shall not go in the URL. | 21 items → 400; the call to Gemini carries the key in the `x-goog-api-key` header, without `key=` in the URL | New (rule) |
+| REQ-CHAT-09 | If the call to Gemini throws or exceeds the time limit, the chat shall respond 502. | A `fetch` that throws → 502 (not 500) | New |
+| REQ-SCAN-09 | The system shall apply a timeout to the calls to Azure and to Gemini and treat the overrun as a dependency failure (REQ-SCAN-05 and REQ-SCAN-07). | A call that does not respond is aborted at the timeout; the scan returns the fallback (Gemini) or 422 (Azure) | New |
 
-REQ-SCAN-05 (Gemini falha por rede → 200 com contingência) já existia; esta spec corrige o código e remove o `todo` do teste.
+REQ-SCAN-05 (Gemini fails because of the network → 200 with a fallback) already existed; this spec fixes the code and removes the test's `todo`.
 
-## Cenários e casos-limite
+## Scenarios and edge cases
 
-- **`id`:** só dígitos, sem sinal, sem zeros à esquerda e até 2.147.483.647 (inteiro de 4 bytes do Postgres). `1e3`, `1.5`, ` 7`, `007`, `0`, vazio e números maiores são inválidos.
-- **Ordem em `usuarios/[id]`:** primeiro a sessão e a posse (401/403), depois o `id` (400); um usuário comum que passa um `id` inválido recebe 403, sem revelar nada.
-- **E-mail antigo com caixa mista:** o login e a checagem de duplicidade comparam ignorando a caixa; não há migration. Duas contas antigas que só diferem pela caixa não são tocadas.
-- **Cadastro simultâneo do mesmo e-mail:** a restrição única do banco decide; o erro P2002 vira 409 "Email já cadastrado".
-- **Limites do chat:** 20 itens, 2000 caracteres por texto e 5 partes por item são limites escolhidos por esta spec (espelham o limite de `mensagem`); ajustáveis se o uso real pedir.
-- **Tempos limite:** Azure 10 s e Gemini 20 s são valores iniciais escolhidos por esta spec, sem medição ❔; ficam em constantes nomeadas.
+- **`id`:** only digits, no sign, no leading zeros and up to 2,147,483,647 (Postgres' 4-byte integer). `1e3`, `1.5`, ` 7`, `007`, `0`, empty and larger numbers are invalid.
+- **Order in `usuarios/[id]`:** first the session and ownership (401/403), then the `id` (400); a regular user who passes an invalid `id` receives 403, revealing nothing.
+- **Old mixed-case email:** login and the duplicate check compare ignoring case; there is no migration. Two old accounts that differ only by case are not touched.
+- **Simultaneous sign-up of the same email:** the database's unique constraint decides; the P2002 error becomes 409 "Email already registered".
+- **Chat limits:** 20 items, 2000 characters per text and 5 parts per item are limits chosen by this spec (they mirror the `mensagem` limit); adjustable if real usage asks for it.
+- **Timeouts:** Azure 10 s and Gemini 20 s are initial values chosen by this spec, without measurement ❔; they stay in named constants.
 
-## Regras de negócio e restrições
+## Business rules and constraints
 
-- Constitution Art. VI.1 (validar params), Art. VII.1–2 e 4 (erros de domínio tipados, sem `message.includes`, FK → 409), Art. VIII.2 (timeout em toda chamada de rede).
-- Mensagens e códigos HTTP já existentes não mudam: o que muda é a origem da decisão (tipo do erro) e os casos que hoje viram 500.
-- Não altera nenhum ADR Aceito.
+- Constitution Art. VI.1 (validate params), Art. VII.1–2 and 4 (typed domain errors, no `message.includes`, FK → 409), Art. VIII.2 (a timeout on every network call).
+- Existing messages and HTTP codes do not change: what changes is the origin of the decision (the error's type) and the cases that today become 500.
+- It changes no Accepted ADR.
 
-## Interfaces afetadas
+## Affected interfaces
 
-`lib/errors/dominio.ts` (novo) · `lib/http/responses.ts` · `lib/http/params.ts` e `lib/schemas/id.ts` (novos) · `lib/http/fetch-with-timeout.ts` (novo) · `lib/http/next-url.ts` (novo) · `lib/schemas/user.ts` · `lib/schemas/ai-chat.ts` · `lib/ai/providers/*.ts` · `services/{usuario,marca,categoria,certificado}.service.ts` · handlers de `produtos`, `usuarios`, `marcas`, `categorias`, `certificados`, `auth`, `users`, `ia/chat` · `app/(auth)/sign-in/page.tsx`.
+`lib/errors/dominio.ts` (new) · `lib/http/responses.ts` · `lib/http/params.ts` and `lib/schemas/id.ts` (new) · `lib/http/fetch-with-timeout.ts` (new) · `lib/http/next-url.ts` (new) · `lib/schemas/user.ts` · `lib/schemas/ai-chat.ts` · `lib/ai/providers/*.ts` · `services/{user,brand,category,certificate}.service.ts` · handlers of `produtos`, `usuarios`, `marcas`, `categorias`, `certificados`, `auth`, `users`, `ia/chat` · `app/(auth)/sign-in/page.tsx`.
 
-## Delta na spec viva
+## Delta in the living spec
 
-Novos REQs nas oito capacidades acima, com linhas em cada `status.md`; `ecoscan/status.md`: REQ-SCAN-05 ◐→✅ quando o teste passar.
+New REQs in the eight capabilities above, with rows in each `status.md`; `ecoscan/status.md`: REQ-SCAN-05 ◐→✅ when the test passes.
 
-## Perguntas em aberto
+## Open questions
 
-Nenhuma bloqueante. Os limites do chat e os tempos limite (valores acima) podem ser revistos com dados de uso.
+None blocking. The chat limits and the timeouts (values above) can be revised with usage data.

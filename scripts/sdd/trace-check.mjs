@@ -83,7 +83,7 @@ for (const id of testes.keys())
     erros.push(`test cites ${id}, which does not exist in any spec`);
 
 // 4. tasks in specs/NNN
-for (const f of listar(join(RAIZ, "specs"), (p) => p.endsWith("/tasks.md"))) {
+for (const f of listar(join(RAIZ, "specs"), (p) => /[\/]tasks.md$/.test(p))) {
   const proprios = new Set(
     ler(f.replace("tasks.md", "spec.md")).match(REQ_RE) ?? [],
   );
@@ -92,7 +92,7 @@ for (const f of listar(join(RAIZ, "specs"), (p) => p.endsWith("/tasks.md"))) {
     .filter((x) => /^\|\s*T\d+/.test(x))) {
     const ids = l.match(REQ_RE) ?? [];
     const dono = f.replace(RAIZ + "/", "");
-    if (!ids.length && !/consolidar|consolidate/i.test(l))
+    if (!ids.length && !/consolidate/i.test(l))
       erros.push(`${dono}: task without REQ: ${l.slice(0, 60)}`);
     for (const id of ids)
       if (!todos.has(id) && !proprios.has(id))

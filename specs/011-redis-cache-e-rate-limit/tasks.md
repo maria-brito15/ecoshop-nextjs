@@ -1,12 +1,12 @@
-# Tarefas: 011-redis-cache-e-rate-limit
+# Tasks: 011-redis-cache-e-rate-limit
 
-- **Status:** Concluídas em 2026-11-11, sem commits.
+- **Status:** Completed on 2026-11-11, without commits.
 
-| # | Tarefa | REQ | Feito quando |
+| # | Task | REQ | Done when |
 |---|---|---|---|
-| T1 | `comPrazo`, fila limitada, avisos limitados a 1 a cada 30 s | REQ-OPS-14 | processo filho sem Redis: operações em ms |
-| T2 | Rate limit atômico, reserva em memória, IP por `TRUST_PROXY_HOPS` | REQ-OPS-15, 16 | testes passam |
-| T3 | Chave de cache dos filtros validados; `nome` ≤ 100; service recebe filtros tipados | REQ-CAT-10 | testes passam |
-| T4 | Single-flight em `comCache` | REQ-OPS-17 | 8 chamadas → 1 busca |
-| T5 | Saúde `ok`/`degradado`/`indisponivel` | REQ-OPS-01 | regra testada; teste com banco **não reexecutado** |
-| T6 | ADR-0020, specs vivas, `.env.example`, compose | todos | `sdd:check` verde |
+| T1 | `withTimeout`, bounded queue, warnings limited to 1 every 30 s | REQ-OPS-14 | child process without Redis: operations in ms |
+| T2 | Atomic rate limit, in-memory reservation, IP by `TRUST_PROXY_HOPS` | REQ-OPS-15, 16 | the tests pass |
+| T3 | Cache key from the validated filters; `nome` ≤ 100; the service receives typed filters | REQ-CAT-10 | the tests pass |
+| T4 | Single-flight in `withCache` | REQ-OPS-17 | 8 calls → 1 lookup |
+| T5 | Health `ok`/`degradado`/`indisponivel` | REQ-OPS-01 | rule tested; the test with a database **was not re-run** |
+| T6 | ADR-0020, living specs, `.env.example`, compose | all | `sdd:check` green |

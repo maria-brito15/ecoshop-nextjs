@@ -1,30 +1,30 @@
-# Spec de mudança: 014-midia
+# Change spec: 014-midia
 
-- **Trilha:** correção com mudança de regra
-- **Capacidades afetadas:** MIDIA
-- **Status:** Implementada em 2026-11-11 (autonomia técnica do dono), **sem commits**; consolidada nas specs vivas
-- **Autor / aprovador:** Claude / dono do projeto · **Data:** 2026-11-11
+- **Track:** fix with a rule change
+- **Affected capabilities:** MIDIA
+- **Status:** Implemented on 2026-11-11 (the owner's technical autonomy), **without commits**; consolidated in the living specs
+- **Author / approver:** Claude / project owner · **Date:** 2026-11-11
 
-## Problema
+## Problem
 
-Upload validava só a extensão do nome; checagem de nome por `readdir` + gravação tinha corrida.
+Upload validated only the file name's extension; the name check by `readdir` + write had a race.
 
-## Fora de escopo
+## Out of scope
 
-Armazenamento de objetos (só se houver mais de uma instância) e verificar se o Next serve em produção arquivos gravados depois do início ❔.
+Object storage (only if there is more than one instance) and checking whether Next serves, in production, files written after startup ❔.
 
-## Requisitos
+## Requirements
 
 REQ-MIDIA-06, 07.
 
-## Decisão registrada
+## Recorded decision
 
-ADR-0011 (segue: fotos no filesystem; instância única).
+ADR-0011 (it follows: photos on the filesystem; single instance).
 
-## Verificação
+## Verification
 
-`tests/integration/media-content.test.ts` (6 testes, sem banco, executados).
+`tests/integration/media-content.test.ts` (6 tests, without a database, run).
 
-## Perguntas em aberto
+## Open questions
 
-Nenhuma bloqueante.
+None blocking.

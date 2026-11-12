@@ -1,30 +1,30 @@
-# Spec de mudança: 012-camadas-e-tipos
+# Change spec: 012-camadas-e-tipos
 
-- **Trilha:** sem comportamento (refatoração)
-- **Capacidades afetadas:** AUTH, OPS
-- **Status:** Implementada em 2026-11-11 (autonomia técnica do dono), **sem commits**; consolidada nas specs vivas
-- **Autor / aprovador:** Claude / dono do projeto · **Data:** 2026-11-11
+- **Track:** no behavior (refactoring)
+- **Affected capabilities:** AUTH, OPS
+- **Status:** Implemented on 2026-11-11 (the owner's technical autonomy), **without commits**; consolidated in the living specs
+- **Author / approver:** Claude / project owner · **Date:** 2026-11-11
 
-## Problema
+## Problem
 
-Handlers `auth`, `auth/refresh`, `auth/me`, `users` e `health` importavam `@/lib/db`; `setAuthCookie(res: any)`; casts de `tipo`; `lib/auth/contracts.ts` sem consumidor.
+The `auth`, `auth/refresh`, `auth/me`, `users` and `health` handlers imported `@/lib/db`; `setAuthCookie(res: any)`; casts of `tipo`; `lib/auth/contracts.ts` without a consumer.
 
-## Fora de escopo
+## Out of scope
 
-Quebrar `JwtService`, unificar `types/api.ts` com Zod/Prisma e decompor `criarUsuario` (ficam para uma onda própria com testes de banco).
+Splitting `JwtService`, unifying `types/api.ts` with Zod/Prisma and decomposing `createUser` (they stay for a wave of their own with database tests).
 
-## Requisitos
+## Requirements
 
-nenhum REQ novo; cobre a regra de camadas (Constitution Art. V).
+No new REQ; covers the layer rule (Constitution Art. V).
 
-## Decisão registrada
+## Recorded decision
 
-nenhum.
+None.
 
-## Verificação
+## Verification
 
-`grep "@/lib/db" app/` vazio; `tsc`; testes das ondas 009–011.
+`grep "@/lib/db" app/` empty; `tsc`; tests of waves 009–011.
 
-## Perguntas em aberto
+## Open questions
 
-Nenhuma bloqueante.
+None blocking.

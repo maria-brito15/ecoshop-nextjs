@@ -1,18 +1,18 @@
-# Plano: 009-erros-e-entrada
+# Plan: 009-erros-e-entrada
 
-- **Status:** Implementado em 2026-11-11 (G2 tratado como concedido pela autonomia do dono). Sem ADR: segue a Constitution Art. VI–VIII e o ADR-0017, e não decide arquitetura nova.
+- **Status:** Implemented on 2026-11-11 (G2 treated as granted by the owner's autonomy). No ADR: it follows Constitution Art. VI–VIII and ADR-0017, and decides no new architecture.
 
-## Decisões técnicas
+## Technical decisions
 
-- **Erros de domínio (Art. VII):** duas classes em `lib/errors/dominio.ts`, `RecursoNaoEncontrado(recurso)` (→ 404) e `ConflitoDeNegocio(mensagem)` (→ 409). O Art. VII dá nomes só como exemplo; duas classes cobrem todos os casos atuais (inexistência; e-mail repetido, tipo inválido, marca não pendente, auto-exclusão) sem criar uma hierarquia sem uso (YAGNI).
-- **Mapeador único:** `mapeiaErroPrisma` vira `mapeiaErro`: trata primeiro os erros de domínio, depois os códigos do Prisma (`err.code`), e não olha mais `err.message`. As mensagens HTTP existentes são preservadas.
-- **Constraint única no lugar de checar antes:** `criarUsuario` e `atualizarUsuario` capturam P2002 e lançam `ConflitoDeNegocio("Email já cadastrado")`; a checagem prévia continua só como atalho amigável e passa a ignorar a caixa.
-- **`id` de rota:** `parseId(texto)` em `lib/schemas/id.ts` (expressão `^[1-9]\d{0,9}$` e limite 2147483647) e `idDaRota(params)` em `lib/http/params.ts`. Cada handler responde `ERROS.dadosInvalidos("ID inválido")`.
-- **E-mail e senha:** `emailSchema` (`trim` + `toLowerCase` + `email`) e `senhaSchema` (mínimo 8, máximo 72 bytes medidos com `TextEncoder`, que funciona também no navegador) em `lib/schemas/user.ts`.
-- **`next`:** `caminhoLocalOuRaiz(valor)` em `lib/http/next-url.ts`, função pura usada pela tela de login.
-- **Timeouts:** `fetchComTimeout(url, init, ms)` em `lib/http/fetch-with-timeout.ts` usa `AbortSignal.timeout`. Os provedores recebem o tempo como parâmetro com valor padrão em constante (testável sem esperar 10 s).
-- **Gemini:** o provedor ganha `gerarComHistorico` e `geminiConfigurado`; a chave vai no cabeçalho `x-goog-api-key`; o handler do chat deixa de ter sua própria chamada. `gerarTexto` passa a capturar falhas e devolver `null` (o scan já cai na contingência).
+- **Domain errors (Art. VII):** two classes in `lib/errors/dominio.ts`, `ResourceNotFound(resource)` (→ 404) and `BusinessConflict(message)` (→ 409). Art. VII gives names only as an example; two classes cover all current cases (nonexistence; repeated email, invalid type, brand not pending, self-deletion) without creating an unused hierarchy (YAGNI).
+- **Single mapper:** `mapPrismaError` becomes `mapError`: it handles the domain errors first, then the Prisma codes (`err.code`), and no longer looks at `err.message`. The existing HTTP messages are preserved.
+- **Unique constraint instead of checking first:** `createUser` and `updateUser` catch P2002 and throw `BusinessConflict("Email already registered")`; the prior check stays only as a friendly shortcut and now ignores case.
+- **Route `id`:** `parseId(text)` in `lib/schemas/id.ts` (expression `^[1-9]\d{0,9}$` and limit 2147483647) and `routeId(params)` in `lib/http/params.ts`. Each handler responds `ERRORS.invalidData("Invalid ID")`.
+- **Email and password:** `emailSchema` (`trim` + `toLowerCase` + `email`) and a password schema (minimum 8, maximum 72 bytes measured with `TextEncoder`, which also works in the browser) in `lib/schemas/user.ts`.
+- **`next`:** `localPathOrRoot(value)` in `lib/http/next-url.ts`, a pure function used by the login screen.
+- **Timeouts:** `fetchWithTimeout(url, init, ms)` in `lib/http/fetch-with-timeout.ts` uses `AbortSignal.timeout`. The providers receive the time as a parameter with a default value in a constant (testable without waiting 10 s).
+- **Gemini:** the provider gains `generateWithHistory` and a "Gemini configured" check; the key goes in the `x-goog-api-key` header; the chat handler no longer has its own call. `generateText` now catches failures and returns `null` (the scan already falls back).
 
-## Verificação
+## Verification
 
-Testes em `tests/integration/input-and-errors.test.ts`. Os que não precisam de banco (mapeador, `parseId`, schemas, `next`, timeouts, rotas que respondem 400 antes de tocar o banco, chat, scan) são executados nesta sessão; os que precisam de banco (404/409 de ponta a ponta, busca sem caixa) foram escritos e rodam no CI. Ao final: `tsc`, lint e `sdd:check`.
+Tests in `tests/integration/input-and-errors.test.ts`. The ones that do not need a database (mapper, `parseId`, schemas, `next`, timeouts, routes that respond 400 before touching the database, chat, scan) are run in this session; the ones that need a database (end-to-end 404/409, case-insensitive lookup) were written and run in CI. At the end: `tsc`, lint and `sdd:check`.

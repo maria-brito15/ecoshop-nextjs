@@ -1,3 +1,3 @@
-# Tarefas: 014-midia
+# Tasks: 014-midia
 
-- **Status:** Concluídas em 2026-11-11, sem commits. Evidência por requisito em `docs/capabilities/*/status.md`.
+- **Status:** Completed on 2026-11-11, without commits. Evidence per requirement in `docs/capabilities/*/status.md`.

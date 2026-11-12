@@ -20,9 +20,7 @@ else if (rel.startsWith("docs/discovery/"))
 else if (
   /^docs\/architecture\/adr\/\d{4}-.*\.md$/.test(rel) &&
   existsSync(alvo) &&
-  /^[-*\s]*\**Status:?\**:?\s*(Accepted|Aceito)\b/im.test(
-    readFileSync(alvo, "utf8"),
-  )
+  /^[-*\s]*\**Status:?\**:?\s*Accepted\b/im.test(readFileSync(alvo, "utf8"))
 )
   pedirConfirmacao(
     "An Accepted ADR is not edited; create an ADR that supersedes it. Confirm this is only a formatting fix.",

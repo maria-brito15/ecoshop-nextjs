@@ -8,35 +8,34 @@ export const ADR_DIR = join(RAIZ, "docs/architecture/adr");
 export const STATUS_VALIDOS = ["✅", "◐", "❌", "❔"];
 export const REQ_RE = /REQ-[A-Z]+-\d{2}/g;
 
-// Vocabulary read from the markdown. Each concept accepts its English form and the
-// legacy Portuguese one, so the docs can be migrated in batches without breaking
-// the checkers. Drop the Portuguese entries once the migration is complete.
+// Vocabulary read from the markdown (headings, ADR statuses and metadata keys).
+// Each concept is a list so that aliases can be added without touching the checkers.
 export const VOCAB = {
   sections: {
-    goal: ["Goal", "Objetivo"],
-    actors: ["Actors", "Atores"],
-    rules: ["Business rules", "Regras de negócio"],
-    requirements: ["Requirements", "Requisitos"],
-    edgeCases: ["Edge cases", "Casos-limite"],
+    goal: ["Goal"],
+    actors: ["Actors"],
+    rules: ["Business rules"],
+    requirements: ["Requirements"],
+    edgeCases: ["Edge cases"],
     interfaces: ["Interfaces"],
-    nfrs: ["Applicable NFRs", "NFRs aplicáveis"],
-    outOfScope: ["Out of scope", "Fora de escopo"],
-    openQuestions: ["Open questions", "Perguntas abertas"],
+    nfrs: ["Applicable NFRs"],
+    outOfScope: ["Out of scope"],
+    openQuestions: ["Open questions"],
   },
   status: {
-    proposed: ["Proposed", "Proposto"],
-    accepted: ["Accepted", "Aceito"],
-    inferred: ["Inferred", "Inferido"],
-    superseded: ["Superseded", "Substituído"],
+    proposed: ["Proposed"],
+    accepted: ["Accepted"],
+    inferred: ["Inferred"],
+    superseded: ["Superseded"],
   },
   fields: {
     status: ["Status"],
-    supersedes: ["Supersedes", "Substitui"],
-    supersededBy: ["Superseded by", "Substituído por"],
+    supersedes: ["Supersedes"],
+    supersededBy: ["Superseded by"],
   },
 };
 
-/** Maps a raw ADR status word (either language) to its canonical key, or undefined. */
+/** Maps a raw ADR status word to its canonical key, or undefined. */
 export const statusKey = (word) =>
   Object.entries(VOCAB.status).find(([, v]) => v.includes(word))?.[0];
 

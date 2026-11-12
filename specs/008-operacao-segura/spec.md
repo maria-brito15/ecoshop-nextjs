@@ -1,77 +1,77 @@
-# Spec de mudança: 008-operacao-segura
+# Change spec: 008-operacao-segura
 
-- **Trilha:** correção com mudança de regra (a Constitution Art. XII e XIII já exigem o comportamento; REQ-OPS-01 e REQ-OPS-02 da spec viva precisam de emenda)
-- **Capacidades afetadas:** OPS (`docs/capabilities/operacao`); toca `lib/auth/jwt.ts` (AUTH, caminho sensível ADR-0007) apenas para validar o segredo, sem mudar a decisão do ADR
-- **Status:** Implementada em 2026-11-11 e consolidada em `docs/capabilities/operacao` (G1: dono seguiu as recomendações, destino serve HTTPS, catálogo vazio em produção). Pendente: executar os testes com banco e ensaiar o deploy/reversão (REQ-OPS-02/09/10 ficam ◐); G4 (revisão da PR).
-- **Autor / aprovador:** Claude / dono do projeto · **Data:** 2026-11-11
+- **Track:** fix with a rule change (the Constitution Art. XII and XIII already require the behavior; REQ-OPS-01 and REQ-OPS-02 of the living spec need an amendment)
+- **Affected capabilities:** OPS (`docs/capabilities/operacao`); touches `lib/auth/jwt.ts` (AUTH, sensitive path ADR-0007) only to validate the secret, without changing the ADR's decision
+- **Status:** Implemented on 2026-11-11 and consolidated in `docs/capabilities/operacao` (G1: the owner followed the recommendations, the target serves HTTPS, empty catalog in production). Pending: run the tests with a database and rehearse the deploy/rollback (REQ-OPS-02/09/10 stay ◐); G4 (PR review).
+- **Author / approver:** Claude / project owner · **Date:** 2026-11-11
 
-## Problema
+## Problem
 
-A auditoria de 2026-11-11 encontrou, no que o repositório entrega para rodar e publicar o sistema, comportamentos que a Constitution já proíbe (Art. XII.1, XIII.2, X.2) ou que tornam a entrega não reproduzível. Quem copiar este repositório para um servidor herda esses comportamentos.
+The audit of 2026-11-11 found, in what the repository delivers to run and publish the system, behaviors that the Constitution already forbids (Art. XII.1, XIII.2, X.2) or that make delivery non-reproducible. Whoever copies this repository to a server inherits these behaviors.
 
-## Fora de escopo
+## Out of scope
 
-- Sessão, revogação de token e política de senha → spec 010 (substitui ADR-0007; decisões do dono de 2026-11-11 já registradas).
-- Redis, rate limit, chave de cache e **`/api/health` separando dependência obrigatória de opcional** (Art. XIII.2, emenda de REQ-OPS-01) → spec 011.
-- Schema único de variáveis de ambiente para toda a aplicação (Art. XII.2) e logger (Art. XIII.1) → spec 015. Esta spec só valida `JWT_SECRET` e os segredos do compose.
-- Mídia de produto, front-end, testes unitários e demais achados da auditoria → specs próprias.
-- Qualquer mudança de comportamento de produto (catálogo, perfil, painel).
+- Session, token revocation and password policy → spec 010 (supersedes ADR-0007; the owner's decisions of 2026-11-11 already recorded).
+- Redis, rate limit, cache key and **`/api/health` separating required from optional dependency** (Art. XIII.2, amendment of REQ-OPS-01) → spec 011.
+- A single environment-variable schema for the whole application (Art. XII.2) and the logger (Art. XIII.1) → spec 015. This spec only validates `JWT_SECRET` and the compose secrets.
+- Product media, front end, unit tests and the other audit findings → their own specs.
+- Any product behavior change (catalog, profile, dashboard).
 
-## Comportamento atual (fato, com evidência)
+## Current behavior (fact, with evidence)
 
-- `docker-compose.yml`, serviço `app`: `JWT_SECRET: ${JWT_SECRET:-supersecretkeychangeinproduction}` — sem a variável, a aplicação sobe com um segredo público; quem o conhece forja um token ADMIN. Viola Art. XII.1.
-- `lib/auth/jwt.ts`, `getSecret()` (~linha 46): só falha se a variável estiver vazia, e só no primeiro uso; não exige tamanho mínimo nem recusa valores-exemplo.
-- `docker-compose.yml`: `POSTGRES_PASSWORD: ecoshop` e `DATABASE_URL` com a mesma senha, fixos no arquivo; portas `5432` e `6379` publicadas no host; Redis sem senha.
-- `prisma/seed.ts:56`: `SEED_USER_PASSWORD ?? "EcoshopDemo@2026"`, e o seed cria um usuário `ADMIN` com essa senha. O compose roda esse seed na primeira subida (`seed` é dependência de `app`). `prisma/seed-admin.ts:45`: `ADMIN_PASSWORD || "Admin@123456"`.
-- `.github/workflows/ci.yml`, job `deploy`: roda `docker compose up -d --no-deps app` **antes** de `docker compose run --rm migrate`; não há teste de saúde depois do deploy nem volta à versão anterior. O mesmo script faz `docker compose pull app`, mas o serviço `app` do `docker-compose.yml` só tem `build:` (sem `image:`), então o `pull` não traz a imagem publicada no GHCR. O compose realmente usado no servidor (`/opt/ecoshop`) não está no repositório (resposta do dono: o servidor não usa este compose).
-- `next.config.ts`: não define nenhum cabeçalho de segurança.
-- Imagens base (`node:22-alpine`, `postgres:16-alpine`, `redis:7-alpine`) referenciadas por tag flutuante.
-- `docs/capabilities/operacao/spec.md`: "Projeto ainda não está em produção (resposta do dono)".
+- `docker-compose.yml`, `app` service: `JWT_SECRET: ${JWT_SECRET:-supersecretkeychangeinproduction}` — without the variable, the application starts with a public secret; whoever knows it forges an ADMIN token. Violates Art. XII.1.
+- `lib/auth/jwt.ts`, `getSecret()` (~line 46): only fails if the variable is empty, and only on first use; it does not require a minimum length or refuse example values.
+- `docker-compose.yml`: `POSTGRES_PASSWORD: ecoshop` and `DATABASE_URL` with the same password, fixed in the file; ports `5432` and `6379` published on the host; Redis without a password.
+- `prisma/seed.ts:56`: `SEED_USER_PASSWORD ?? "EcoshopDemo@2026"`, and the seed creates an `ADMIN` user with that password. The compose runs this seed on first start (`seed` is a dependency of `app`). `prisma/seed-admin.ts:45`: `ADMIN_PASSWORD || "Admin@123456"`.
+- `.github/workflows/ci.yml`, `deploy` job: runs `docker compose up -d --no-deps app` **before** `docker compose run --rm migrate`; there is no health check after the deploy nor a return to the previous version. The same script does `docker compose pull app`, but the `app` service in `docker-compose.yml` only has `build:` (no `image:`), so the `pull` does not bring the image published on GHCR. The compose actually used on the server (`/opt/ecoshop`) is not in the repository (owner's answer: the server does not use this compose).
+- `next.config.ts`: defines no security headers.
+- Base images (`node:22-alpine`, `postgres:16-alpine`, `redis:7-alpine`) referenced by a floating tag.
+- `docs/capabilities/operacao/spec.md`: "The project is not in production yet (owner's answer)".
 
-## Requisitos
+## Requirements
 
-| ID | Requisito (EARS) | Critério de aceite | Novo / Altera |
+| ID | Requirement (EARS) | Acceptance criterion | New / Changes |
 |---|---|---|---|
-| REQ-OPS-06 | Quando a aplicação inicia com `NODE_ENV=production`, o sistema deve recusar iniciar se `JWT_SECRET` estiver ausente, tiver menos de 32 caracteres ou for um valor-exemplo conhecido. | Iniciar o servidor em produção com cada valor inválido → encerra com mensagem clara, sem subir. Com valor válido → sobe. | Novo (Art. XII.1) |
-| REQ-OPS-07 | O arquivo `docker-compose.yml` não deve conter valor padrão utilizável para nenhum segredo (`JWT_SECRET`, senha do Postgres, senha do Redis, senha do admin e dos usuários de demonstração); a falta de qualquer um deve impedir a subida com mensagem indicando a variável. | `docker compose config` sem as variáveis → erro nomeando a variável; nenhuma ocorrência de `:-` associada a segredo. | Novo (Art. XII.1) |
-| REQ-OPS-08 | O `docker-compose.yml` não deve publicar as portas do Postgres e do Redis no host por padrão; publicá-las é uma escolha explícita para desenvolvimento. | `docker compose config` base não lista `5432` nem `6379` em `ports`; o override de desenvolvimento as lista. | Novo |
-| REQ-OPS-09 | Quando o seed roda, o sistema não deve usar senha embutida no código: `SEED_USER_PASSWORD` e `ADMIN_PASSWORD` passam a ser obrigatórios e o seed falha, sem gravar nada, se faltarem ou tiverem menos de 12 caracteres. Em produção só o ADMIN é criado (`seed-admin`); o seed de demonstração (usuários, marcas, produtos) roda apenas em desenvolvimento, e o catálogo de produção começa vazio. | Rodar `seed.ts` e `seed-admin.ts` sem a variável → falha antes de qualquer escrita; com ela → comportamento atual, sem apagar dados. O compose de publicação não referencia `seed.ts`. | Altera REQ-OPS-02 |
-| REQ-OPS-10 | Quando o pipeline publica uma nova versão, o deploy deve aplicar as migrations **antes** de iniciar a aplicação nova, verificar a saúde da aplicação depois e, se a verificação falhar, voltar à imagem anterior e marcar o job como falho. | Script de deploy versionado, com a ordem migrate → up → verificar → (reverter); teste estático da ordem; ensaio manual de falha registrado no `status.md`. | Altera REQ-OPS-05 |
-| REQ-OPS-11 | O repositório deve conter o compose usado para publicar (referenciando a imagem do GHCR por tag de commit), de forma que o deploy seja reproduzível a partir do repositório. | O job de deploy usa o arquivo versionado; `docker compose -f … config` válido. | Novo |
-| REQ-OPS-12 | Quando a aplicação responde a uma requisição, o sistema deve incluir `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin` e `Permissions-Policy` restritiva; em produção deve incluir também `Strict-Transport-Security` (sem `includeSubDomains` nem `preload` nesta mudança). | Teste lê a configuração de cabeçalhos; `Strict-Transport-Security` presente com `NODE_ENV=production` e ausente fora dela. | Novo |
-| REQ-OPS-13 | As imagens base do Dockerfile e do compose devem ser fixadas por digest, com atualização automática proposta por ferramenta de dependências. | Nenhuma referência de imagem sem digest; configuração do atualizador no repositório. | Novo |
+| REQ-OPS-06 | When the application starts with `NODE_ENV=production`, the system shall refuse to start if `JWT_SECRET` is missing, has fewer than 32 characters or is a known example value. | Starting the server in production with each invalid value → exits with a clear message, without coming up. With a valid value → comes up. | New (Art. XII.1) |
+| REQ-OPS-07 | The `docker-compose.yml` file shall not contain a usable default value for any secret (`JWT_SECRET`, Postgres password, Redis password, admin and demo users' password); the lack of any of them shall prevent startup with a message naming the variable. | `docker compose config` without the variables → error naming the variable; no occurrence of `:-` associated with a secret. | New (Art. XII.1) |
+| REQ-OPS-08 | The `docker-compose.yml` shall not publish the Postgres and Redis ports on the host by default; publishing them is an explicit choice for development. | The base `docker compose config` lists neither `5432` nor `6379` in `ports`; the development override lists them. | New |
+| REQ-OPS-09 | When the seed runs, the system shall not use a password embedded in the code: `SEED_USER_PASSWORD` and `ADMIN_PASSWORD` become required and the seed fails, writing nothing, if they are missing or have fewer than 12 characters. In production only the ADMIN is created (`seed-admin`); the demo seed (users, brands, products) runs only in development, and the production catalog starts empty. | Running `seed.ts` and `seed-admin.ts` without the variable → fails before any write; with it → current behavior, without deleting data. The publishing compose does not reference `seed.ts`. | Changes REQ-OPS-02 |
+| REQ-OPS-10 | When the pipeline publishes a new version, the deploy shall apply the migrations **before** starting the new application, check the application's health afterwards and, if the check fails, go back to the previous image and mark the job as failed. | Versioned deploy script, with the order migrate → up → check → (roll back); a static test of the order; a manual failure rehearsal recorded in `status.md`. | Changes REQ-OPS-05 |
+| REQ-OPS-11 | The repository shall contain the compose used to publish (referencing the GHCR image by commit tag), so that the deploy is reproducible from the repository. | The deploy job uses the versioned file; `docker compose -f … config` is valid. | New |
+| REQ-OPS-12 | When the application responds to a request, the system shall include `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin` and a restrictive `Permissions-Policy`; in production it shall also include `Strict-Transport-Security` (without `includeSubDomains` or `preload` in this change). | A test reads the header configuration; `Strict-Transport-Security` present with `NODE_ENV=production` and absent outside it. | New |
+| REQ-OPS-13 | The base images of the Dockerfile and the compose shall be pinned by digest, with an automatic update proposed by a dependency tool. | No image reference without a digest; updater configuration in the repository. | New |
 
-## Cenários e casos-limite
+## Scenarios and edge cases
 
-- `next build` roda com `NODE_ENV=production` e, no estágio de build do Docker, sem `JWT_SECRET`: a verificação de REQ-OPS-06 **não pode** executar na importação do módulo nem no build; só quando o servidor inicia.
-- Desenvolvimento local e testes (`NODE_ENV` diferente de `production`): continuam funcionando com os valores do `.env`/helpers de teste; o `.env.example` traz valores de exemplo marcados como "somente desenvolvimento".
-- Migration com mudança incompatível com a versão anterior da aplicação: a volta à imagem anterior (REQ-OPS-10) **não desfaz a migration**. Regra: migrations devem ser compatíveis com a versão anterior da aplicação (adicionar antes de remover). Migration incompatível exige aviso na PR.
-- Falha da própria etapa de migration no deploy: a aplicação antiga não é tocada.
-- HSTS: o dono confirmou que o destino serve HTTPS. Como é difícil de desfazer, entra com validade curta, sem `includeSubDomains` e sem `preload`; aumentar a validade é uma mudança futura, depois de confirmado que todos os caminhos funcionam em HTTPS. Em HTTP o navegador ignora o cabeçalho.
-- A criação do ADMIN em produção é um passo único e explícito (não roda a cada deploy), e o catálogo de produção começa vazio.
+- `next build` runs with `NODE_ENV=production` and, in the Docker build stage, without `JWT_SECRET`: the check of REQ-OPS-06 **cannot** run on module import or at build; only when the server starts.
+- Local development and tests (`NODE_ENV` different from `production`): keep working with the `.env`/test-helper values; `.env.example` carries example values marked "development only".
+- A migration with a change incompatible with the previous version of the application: the return to the previous image (REQ-OPS-10) **does not undo the migration**. Rule: migrations must be compatible with the previous version of the application (add before removing). An incompatible migration requires a notice in the PR.
+- Failure of the migration step itself in the deploy: the old application is not touched.
+- HSTS: the owner confirmed that the target serves HTTPS. As it is hard to undo, it enters with a short validity, without `includeSubDomains` and without `preload`; increasing the validity is a future change, after confirming that all paths work over HTTPS. Over HTTP the browser ignores the header.
+- Creating the ADMIN in production is a single, explicit step (it does not run on every deploy), and the production catalog starts empty.
 
-## Regras de negócio e restrições
+## Business rules and constraints
 
-- Constitution Art. XII.1 (sem segredo padrão; recusa iniciar em produção), X.2 (seed não destrói dados; idempotente), XIII.2 (health — fora de escopo aqui, vai na 011).
-- Nenhuma credencial real entra no repositório; `.env.example` só traz espaços e valores de exemplo.
-- ADR-0013 (entrega por imagem no GHCR e VPS via SSH) está com status **Inferido**, não Aceito: o plano (G2) propõe um ADR novo que o ratifica e substitui com os detalhes de REQ-OPS-10/11.
+- Constitution Art. XII.1 (no default secret; refuse to start in production), X.2 (the seed does not destroy data; idempotent), XIII.2 (health — out of scope here, goes in 011).
+- No real credential enters the repository; `.env.example` only carries blanks and example values.
+- ADR-0013 (delivery by image on GHCR and VPS via SSH) has status **Inferred**, not Accepted: the plan (G2) proposes a new ADR that ratifies and supersedes it with the details of REQ-OPS-10/11.
 
-## Interfaces afetadas
+## Affected interfaces
 
-`docker-compose.yml` (+ arquivo de desenvolvimento e arquivo de publicação) · `Dockerfile` · `docker-entrypoint.sh` · `.github/workflows/ci.yml` · `prisma/seed.ts` · `prisma/seed-admin.ts` · `.env.example` · `next.config.ts` · ponto de inicialização do servidor (`instrumentation.ts`, definido no plano) · `.github/dependabot.yml` · script de deploy. `lib/auth/**` (caminho sensível do ADR-0007) **não** é alterado.
+`docker-compose.yml` (+ a development file and a publishing file) · `Dockerfile` · `docker-entrypoint.sh` · `.github/workflows/ci.yml` · `prisma/seed.ts` · `prisma/seed-admin.ts` · `.env.example` · `next.config.ts` · server start-up point (`instrumentation.ts`, defined in the plan) · `.github/dependabot.yml` · deploy script. `lib/auth/**` (a sensitive path of ADR-0007) is **not** changed.
 
-## Delta na spec viva
+## Delta in the living spec
 
-`operacao/spec.md`: emenda de REQ-OPS-02 (senhas obrigatórias) e de REQ-OPS-05 (ordem, saúde, reversão); novos REQ-OPS-06 a 13; resolve as perguntas abertas 1 e 2 da spec viva. `operacao/status.md`: linhas novas com evidência. `README.md`: instruções de variáveis obrigatórias.
+`operacao/spec.md`: amendment of REQ-OPS-02 (required passwords) and REQ-OPS-05 (order, health, rollback); new REQ-OPS-06 to 13; resolves open questions 1 and 2 of the living spec. `operacao/status.md`: new rows with evidence. `README.md`: instructions for required variables.
 
-## Decisões do dono no G1 (2026-11-11)
+## Owner's decisions at G1 (2026-11-11)
 
-1. Compose de publicação versionado no repositório (`docker-compose.prod.yml`, imagem do GHCR) → REQ-OPS-11.
-2. O destino serve HTTPS → HSTS entra em REQ-OPS-12.
-3. Content-Security-Policy fica **fora** desta spec; vira spec própria, começando em modo só-relatório (o Next injeta scripts inline e uma CSP útil exige nonce por requisição).
-4. Dependabot atualiza os digests → REQ-OPS-13.
-5. Produção começa com catálogo vazio e só o ADMIN → REQ-OPS-09.
+1. A versioned publishing compose in the repository (`docker-compose.prod.yml`, GHCR image) → REQ-OPS-11.
+2. The target serves HTTPS → HSTS enters REQ-OPS-12.
+3. Content-Security-Policy stays **out** of this spec; it becomes its own spec, starting in report-only mode (Next injects inline scripts and a useful CSP requires a per-request nonce).
+4. Dependabot updates the digests → REQ-OPS-13.
+5. Production starts with an empty catalog and only the ADMIN → REQ-OPS-09.
 
-## Perguntas em aberto
+## Open questions
 
-Nenhuma bloqueia o G1. As de implementação (quem termina o TLS, valores de tempo do deploy) estão no `plan.md` para o G2.
+None blocks G1. The implementation ones (who terminates TLS, deploy timing values) are in `plan.md` for G2.

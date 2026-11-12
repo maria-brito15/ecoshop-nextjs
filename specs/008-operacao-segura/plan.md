@@ -1,80 +1,80 @@
-# Plano: 008-operacao-segura
+# Plan: 008-operacao-segura
 
-- **Status:** Implementado em 2026-11-11 (dono concedeu autonomia técnica; G2 tratado como concedido). Desvios em relação ao plano original:
-  - **D1:** lançar erro em `register()` **não** impede o início (o Next só loga e o processo segue vivo; descoberto com o servidor real). Passou a ser `lib/config/verify-environment.ts`, carregado só no runtime `nodejs`, que registra o erro e chama `process.exit(1)`.
-  - **D4:** o ensaio do deploy e da reversão **não foi feito** (o daemon do Docker não estava ativo e não há servidor).
-  - Os testes que precisam de banco (seeds, REQ-OPS-02/03) foram escritos mas **não executados**: não havia banco de teste disponível.
-- **Spec:** `spec.md` (G1 aprovado em 2026-11-11)
-- **ADR:** proposto o **ADR-0019**, que ratifica e substitui o ADR-0013 (Inferido) com os detalhes de REQ-OPS-10/11. Só é criado depois do G2.
+- **Status:** Implemented on 2026-11-11 (the owner granted technical autonomy; G2 treated as granted). Deviations from the original plan:
+  - **D1:** throwing an error in `register()` does **not** prevent the start (Next only logs and the process stays alive; discovered with the real server). It became `lib/config/verify-environment.ts`, loaded only in the `nodejs` runtime, which logs the error and calls `process.exit(1)`.
+  - **D4:** the rehearsal of the deploy and of the rollback **was not done** (the Docker daemon was not active and there is no server).
+  - The tests that need a database (seeds, REQ-OPS-02/03) were written but **not run**: no test database was available.
+- **Spec:** `spec.md` (G1 approved on 2026-11-11)
+- **ADR:** **ADR-0019** proposed, which ratifies and supersedes ADR-0013 (Inferred) with the details of REQ-OPS-10/11. It is only created after G2.
 
-## Decisões técnicas
+## Technical decisions
 
-### D1. Recusar subir sem segredo forte (REQ-OPS-06)
+### D1. Refuse to start without a strong secret (REQ-OPS-06)
 
-- Função pura `validarJwtSecret(valor)` em `lib/config/jwt-secret.ts`: devolve a mensagem de erro, ou `null` se válido. Regras: presente, com no mínimo 32 caracteres, e sem conter (sem diferenciar maiúsculas) nenhum destes trechos de valor-exemplo: `supersecretkey`, `seu-segredo`, `mude-em`, `changeme`, `sua-chave`.
-- `instrumentation.ts` na raiz: `register()` chama a função quando `NEXT_RUNTIME === "nodejs"` e `NODE_ENV === "production"`. ~~lança erro se inválido~~ **Corrigido na implementação:** registra o erro e encerra o processo com `process.exit(1)` (ver o status acima). `next build` sem `JWT_SECRET` foi verificado e passa; a guarda `NEXT_PHASE` fica como proteção extra.
-- `lib/auth/jwt.ts` **não muda** (sem tocar o caminho sensível do ADR-0007). `lib/config/` é o lugar onde a spec 015 vai colocar o schema único de ambiente; esta mudança só cria o primeiro arquivo.
-- `.env.example`: `JWT_SECRET=` vazio, com o comando para gerar o valor. O exemplo atual (`seu-segredo-jwt-aqui-mude-em-producao`) tem 38 caracteres e **passaria** só pela regra de tamanho; por isso a lista de trechos proibidos.
-- ❔ **A confirmar na tarefa T1:** que o Next realmente aborta o servidor quando `register()` lança. A verificação é um passo no CI que inicia o servidor construído com cada segredo inválido e espera saída com erro.
-- Alternativa descartada: validar dentro de `getSecret()`. Só rodaria na primeira requisição (tarde demais) e misturaria a regra com o caminho sensível.
+- A pure function `validateJwtSecret(value)` in `lib/config/jwt-secret.ts`: returns the error message, or `null` if valid. Rules: present, with at least 32 characters, and not containing (case-insensitively) any of these example-value fragments: `supersecretkey`, `seu-segredo`, `mude-em`, `changeme`, `sua-chave`.
+- `instrumentation.ts` at the root: `register()` calls the function when `NEXT_RUNTIME === "nodejs"` and `NODE_ENV === "production"`. ~~throws an error if invalid~~ **Fixed in the implementation:** it logs the error and ends the process with `process.exit(1)` (see the status above). `next build` without `JWT_SECRET` was verified and passes; the `NEXT_PHASE` guard stays as extra protection.
+- `lib/auth/jwt.ts` **does not change** (without touching the sensitive path of ADR-0007). `lib/config/` is where spec 015 will put the single environment schema; this change only creates the first file.
+- `.env.example`: `JWT_SECRET=` empty, with the command to generate the value. The current example (`seu-segredo-jwt-aqui-mude-em-producao`) has 38 characters and **would pass** the length rule alone; hence the list of forbidden fragments.
+- ❔ **To confirm in task T1:** that Next really aborts the server when `register()` throws. The verification is a CI step that starts the built server with each invalid secret and expects an exit with an error.
+- Discarded alternative: validating inside `getSecret()`. It would only run on the first request (too late) and would mix the rule with the sensitive path.
 
-### D2. Três arquivos de compose (REQ-OPS-07, 08, 11)
+### D2. Three compose files (REQ-OPS-07, 08, 11)
 
-| Arquivo | Uso | Conteúdo |
+| File | Use | Content |
 |---|---|---|
-| `docker-compose.yml` | base e desenvolvimento | `app` (build), `postgres`, `redis`, `migrate`, `seed` (só `seed-admin.ts`). **Sem `ports` de banco/Redis.** Segredos com `${VAR:?mensagem}`, nenhum `:-` em segredo. Redis com `--requirepass`. |
-| `docker-compose.override.yml` | só desenvolvimento (o Compose o carrega sozinho) | publica `5432` e `6379` em `127.0.0.1` e adiciona `seed-demo` (`prisma/seed.ts`, com `SEED_USER_PASSWORD`). |
-| `docker-compose.prod.yml` | publicação (`-f`; ignora o override) | `app` e `migrate` por **imagem do GHCR** (sem `build`), `postgres`, `redis` com senha, porta da app publicada só em `127.0.0.1:3000`, `seed-admin` em perfil `bootstrap` (não roda sozinho). |
+| `docker-compose.yml` | base and development | `app` (build), `postgres`, `redis`, `migrate`, `seed` (only `seed-admin.ts`). **No database/Redis `ports`.** Secrets with `${VAR:?message}`, no `:-` on a secret. Redis with `--requirepass`. |
+| `docker-compose.override.yml` | development only (Compose loads it by itself) | publishes `5432` and `6379` on `127.0.0.1` and adds `seed-demo` (`prisma/seed.ts`, with `SEED_USER_PASSWORD`). |
+| `docker-compose.prod.yml` | publishing (`-f`; ignores the override) | `app` and `migrate` by **GHCR image** (no `build`), `postgres`, `redis` with a password, the app port published only on `127.0.0.1:3000`, `seed-admin` in the `bootstrap` profile (does not run on its own). |
 
-- Variáveis obrigatórias: `JWT_SECRET`, `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, `ADMIN_PASSWORD`, `SEED_USER_PASSWORD` (esta só no override). `DATABASE_URL` e `REDIS_URL` são montadas no compose a partir delas.
-- Senhas na URL precisam ser seguras para URL: documentar a geração com `openssl rand -hex 24` ou, no Windows, `node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"`.
-- O Dockerfile só gera imagem de aplicação no alvo `runner`, que **não tem o CLI do Prisma**. Por isso o CI passa a publicar também o alvo `migrator` como segunda imagem (`…-migrator`), usada pelo `migrate` do compose de produção. Hoje o `migrate` depende de ter o código-fonte no servidor.
-- ❔ **Pergunta para o G2 (Q-A):** quem termina o TLS no servidor (nginx, Caddy, outro)? O plano assume um proxy **fora** do compose, apontando para `127.0.0.1:3000`. Se for outro desenho, só muda a porta publicada.
+- Required variables: `JWT_SECRET`, `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, `ADMIN_PASSWORD`, `SEED_USER_PASSWORD` (the latter only in the override). `DATABASE_URL` and `REDIS_URL` are assembled in the compose from them.
+- Passwords in the URL must be URL-safe: document the generation with `openssl rand -hex 24` or, on Windows, `node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"`.
+- The Dockerfile only produces an application image at the `runner` target, which **does not have the Prisma CLI**. So CI now also publishes the `migrator` target as a second image (`…-migrator`), used by the production compose's `migrate`. Today `migrate` depends on having the source code on the server.
+- ❔ **Question for G2 (Q-A):** who terminates TLS on the server (nginx, Caddy, other)? The plan assumes a proxy **outside** the compose, pointing to `127.0.0.1:3000`. If the design is different, only the published port changes.
 
-### D3. Seeds sem senha embutida (REQ-OPS-09, emenda de REQ-OPS-02)
+### D3. Seeds without an embedded password (REQ-OPS-09, amendment of REQ-OPS-02)
 
-- `prisma/seed.ts`: remove o `?? "EcoshopDemo@2026"`. Sem `SEED_USER_PASSWORD` com 12+ caracteres, sai com erro **antes** de qualquer escrita.
-- `prisma/seed-admin.ts`: remove o `|| "Admin@123456"` e eleva o mínimo de 8 para 12; falha antes de abrir conexão de escrita.
-- A validação é a mesma nos dois (uma função pequena compartilhada em `prisma/`), reaproveitando a de `seed-admin.ts`.
-- Em produção o ADMIN é criado uma vez, a pedido: `docker compose -f docker-compose.prod.yml --profile bootstrap run --rm seed-admin`. Catálogo vazio.
-- O `seed-admin.ts` hoje cria **ou atualiza** o admin. Fica como está (redefine a senha do admin pelo `.env`), mas, como no compose base ele roda a cada `up`, a nota no README avisa que ele sobrescreve a senha de `ADMIN_EMAIL` a cada subida em desenvolvimento.
-- Os testes REQ-OPS-02/03 em `operations.test.ts` rodam o seed real; passam a definir `SEED_USER_PASSWORD` e ganham casos de falha sem a variável.
+- `prisma/seed.ts`: removes the `?? "EcoshopDemo@2026"`. Without `SEED_USER_PASSWORD` of 12+ characters, it exits with an error **before** any write.
+- `prisma/seed-admin.ts`: removes the `|| "Admin@123456"` and raises the minimum from 8 to 12; fails before opening a write connection.
+- The validation is the same in both (a small function shared in `prisma/`), reusing the one from `seed-admin.ts`.
+- In production the ADMIN is created once, on request: `docker compose -f docker-compose.prod.yml --profile bootstrap run --rm seed-admin`. Empty catalog.
+- `seed-admin.ts` today creates **or updates** the admin. It stays as is (it resets the admin's password from `.env`), but, since in the base compose it runs on every `up`, the note in the README warns that it overwrites the password of `ADMIN_EMAIL` on every start in development.
+- The REQ-OPS-02/03 tests in `operations.test.ts` run the real seed; they now define `SEED_USER_PASSWORD` and gain failure cases without the variable.
 
-### D4. Deploy com ordem, saúde e reversão (REQ-OPS-10)
+### D4. Deploy with order, health and rollback (REQ-OPS-10)
 
-- `scripts/deploy/deploy.sh` (POSIX, `set -eu`), executado no servidor com `APP_TAG`:
-  1. guarda a tag em uso (arquivo `.deploy/current-tag` do servidor);
-  2. `pull` das imagens da app e do migrator;
-  3. `run --rm migrate`; se falhar, **sai com erro sem tocar a app antiga**;
-  4. `up -d --no-deps app` com a tag nova;
-  5. consulta `GET http://127.0.0.1:3000/api/health` até responder 200;
-  6. se não responder no prazo: sobe a tag anterior, sai com erro (o job falha);
-  7. se responder: grava a tag nova e limpa imagens antigas.
-- Prazo proposto: 12 tentativas a cada 5 s (60 s), alinhado ao `start_period` de 40 s do healthcheck atual. Valores sujeitos ao G2.
-- Até a spec 011, `/api/health` ainda devolve 503 quando só o Redis cai. Nesse caso o deploy reverte, o que é seguro (falha para o lado conservador); a spec 011 corrige o health.
-- A reversão **não desfaz migrations**. Regra documentada em `docs/guides/` e uma caixa de verificação no `.github/pull_request_template.md`: "migration compatível com a versão anterior da aplicação".
-- No CI, o job `deploy` troca a action de terceiros `appleboy/ssh-action` por `scp` e `ssh` nativos do runner, com `SSH_PRIVATE_KEY` e um **segredo novo `SSH_KNOWN_HOSTS`** (verificação estrita da chave do servidor). Menos código de terceiros na cadeia de entrega. Copia `docker-compose.prod.yml` e `deploy.sh` e executa o script. O arquivo com os segredos fica só no servidor (`/opt/ecoshop/.env`), fora do repositório.
-- O job `docker` passa a calcular a tag uma vez (`sha-` + 7 primeiros caracteres do commit) e a repassar ao `deploy` por `outputs`.
+- `scripts/deploy/deploy.sh` (POSIX, `set -eu`), run on the server with `APP_TAG`:
+  1. saves the tag in use (the server's `.deploy/current-tag` file);
+  2. `pull` of the app and migrator images;
+  3. `run --rm migrate`; if it fails, **exits with an error without touching the old app**;
+  4. `up -d --no-deps app` with the new tag;
+  5. queries `GET http://127.0.0.1:3000/api/health` until it responds 200;
+  6. if it does not respond in time: brings up the previous tag, exits with an error (the job fails);
+  7. if it responds: records the new tag and cleans old images.
+- Proposed deadline: 12 attempts every 5 s (60 s), aligned with the 40 s `start_period` of the current healthcheck. Values subject to G2.
+- Until spec 011, `/api/health` still returns 503 when only Redis goes down. In that case the deploy rolls back, which is safe (it fails to the conservative side); spec 011 fixes the health.
+- The rollback **does not undo migrations**. Rule documented in `docs/guides/` and a check box in `.github/pull_request_template.md`: "migration compatible with the previous version of the application".
+- In CI, the `deploy` job swaps the third-party action `appleboy/ssh-action` for the runner's native `scp` and `ssh`, with `SSH_PRIVATE_KEY` and a **new secret `SSH_KNOWN_HOSTS`** (strict verification of the server's key). Less third-party code in the delivery chain. It copies `docker-compose.prod.yml` and `deploy.sh` and runs the script. The file with the secrets stays only on the server (`/opt/ecoshop/.env`), outside the repository.
+- The `docker` job now computes the tag once (`sha-` + the first 7 characters of the commit) and passes it to `deploy` via `outputs`.
 
-### D5. Cabeçalhos de segurança (REQ-OPS-12)
+### D5. Security headers (REQ-OPS-12)
 
-- `headers()` em `next.config.ts`, para todas as rotas: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), microphone=(), geolocation=()`. Verifiquei que o código não usa `getUserMedia`, `capture` nem geolocalização, então a política restritiva não quebra o EcoScan (que envia arquivo por `<input>`).
-- `Strict-Transport-Security: max-age=300` **só quando `NODE_ENV=production`**, sem `includeSubDomains` nem `preload`. O valor de 5 minutos é o início conservador usual; aumentá-lo é uma mudança futura.
-- Sem CSP (decisão do dono: spec própria).
+- `headers()` in `next.config.ts`, for all routes: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), microphone=(), geolocation=()`. I checked that the code uses no `getUserMedia`, `capture` or geolocation, so the restrictive policy does not break EcoScan (which sends a file through an `<input>`).
+- `Strict-Transport-Security: max-age=300` **only when `NODE_ENV=production`**, without `includeSubDomains` or `preload`. The 5-minute value is the usual conservative start; increasing it is a future change.
+- No CSP (the owner's decision: its own spec).
 
-### D6. Digests e Dependabot (REQ-OPS-13)
+### D6. Digests and Dependabot (REQ-OPS-13)
 
-- `FROM node:22-alpine@sha256:…` no Dockerfile (4 estágios) e `postgres`/`redis` por digest nos compose.
-- **Os digests não serão inventados**: são obtidos na hora com `docker buildx imagetools inspect <tag>`. Se o ambiente não tiver Docker ou rede, a tarefa T7 para e pergunta.
-- `.github/dependabot.yml` com os ecossistemas `docker`, `docker-compose` e `github-actions`. Atualizações de npm ficam para a spec 018 (evitar ruído agora).
+- `FROM node:22-alpine@sha256:…` in the Dockerfile (4 stages) and `postgres`/`redis` by digest in the composes.
+- **The digests will not be invented**: they are obtained on the spot with `docker buildx imagetools inspect <tag>`. If the environment has no Docker or network, task T7 stops and asks.
+- `.github/dependabot.yml` with the `docker`, `docker-compose` and `github-actions` ecosystems. npm updates are left for spec 018 (avoid noise now).
 
-## Impacto e riscos
+## Impact and risks
 
-- **Experiência de desenvolvimento:** o `docker compose up` passa a exigir variáveis no `.env`. Mitigação: `.env.example` completo, README com os comandos de geração, e a mensagem de erro do `${VAR:?…}` nomeia a variável que falta.
-- **Caminhos sensíveis:** `lib/redis.ts`, `lib/cache/**` e `lib/auth/**` **não** são alterados; o `impact-map` deve listar só OPS. A PR cita o ADR-0019.
-- **Primeiro deploy real:** os scripts de deploy e reversão só são totalmente verificáveis num servidor. Até haver ensaio, REQ-OPS-10 fica ◐ no `status.md`, com a evidência do que foi testado localmente.
-- **Rollback de imagem:** protege contra falha de **aplicação**, não de dados; a regra de migrations compatíveis é a contrapartida.
+- **Development experience:** `docker compose up` now requires variables in `.env`. Mitigation: a complete `.env.example`, a README with the generation commands, and the `${VAR:?…}` error message names the missing variable.
+- **Sensitive paths:** `lib/redis.ts`, `lib/cache/**` and `lib/auth/**` are **not** changed; `impact-map` should list only OPS. The PR cites ADR-0019.
+- **First real deploy:** the deploy and rollback scripts are only fully verifiable on a server. Until there is a rehearsal, REQ-OPS-10 stays ◐ in `status.md`, with the evidence of what was tested locally.
+- **Image rollback:** it protects against an **application** failure, not a data one; the rule of compatible migrations is the counterpart.
 
-## Verificação
+## Verification
 
-Testes estáticos e de unidade rodam em `npm test`; as checagens que precisam de Docker ou de build rodam no CI. Cada requisito tem seu teste/passo em `tasks.md`. Ao final: `npm run lint`, `npx tsc --noEmit`, `npm test`, `npm run sdd:check`, `node scripts/sdd/impact-map.mjs --worktree`.
+Static and unit tests run in `npm test`; the checks that need Docker or a build run in CI. Each requirement has its test/step in `tasks.md`. At the end: `npm run lint`, `npx tsc --noEmit`, `npm test`, `npm run sdd:check`, `node scripts/sdd/impact-map.mjs --worktree`.

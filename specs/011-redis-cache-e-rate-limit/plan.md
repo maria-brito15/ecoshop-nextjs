@@ -1,5 +1,5 @@
-# Plano: 011-redis-cache-e-rate-limit
+# Plan: 011-redis-cache-e-rate-limit
 
-- **Status:** Implementado em 2026-11-11. ADR-0020 (Aceito) substitui o ADR-0010.
-- **Decisões:** ver o ADR-0020 (alternativas e consequências). Detalhes de implementação: `comPrazo` + fila offline limitada no cliente; `SET NX EX` + `INCR` numa transação; `ContadorDeJanela` como interface de duas implementações (Redis e memória), com injeção só em `rateLimit` para teste; single-flight com um `Map` de promessas em andamento; saúde composta por função pura (`comporRelatorio`).
-- **Verificação:** `tests/integration/redis-and-cache.test.ts` (16 testes, sem banco; um deles inicia um processo filho com Redis inexistente).
+- **Status:** Implemented on 2026-11-11. ADR-0020 (Accepted) supersedes ADR-0010.
+- **Decisions:** see ADR-0020 (alternatives and consequences). Implementation details: `withTimeout` + a bounded offline queue on the client; `SET NX EX` + `INCR` in a transaction; `WindowCounter` as an interface with two implementations (Redis and memory), with injection only in `rateLimit` for testing; single-flight with a `Map` of in-flight promises; health composed by a pure function (`buildHealthReport`).
+- **Verification:** `tests/integration/redis-and-cache.test.ts` (16 tests, without a database; one of them starts a child process with a nonexistent Redis).
