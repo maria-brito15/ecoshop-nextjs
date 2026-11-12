@@ -180,8 +180,8 @@ async function main() {
   // STEP 4: USERS
   // ---------------------------------------------------------------------------
   // Creates users with different profiles to test authentication and permissions.
-  // Todos compartilham SEED_USER_PASSWORD (ver topo do arquivo) com hash bcrypt
-  // real hash — previously the password was the "hash-seguro-aqui" placeholder and nobody
+  // All of them share SEED_USER_PASSWORD (see the top of the file) with a real bcrypt
+  // hash — previously the password was the "hash-seguro-aqui" placeholder and nobody
   // could log in as any of these users (REQ-OPS-02).
   console.log("Creating users...");
   const passwordHash = await bcrypt.hash(SEED_USER_PASSWORD, SALT_ROUNDS);
