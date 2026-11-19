@@ -20,7 +20,7 @@
 # -----------------------------------------------------------------------------
 # Installs all dependencies (including devDependencies)
 # Used by the builder stage to build the application
-FROM node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS deps
+FROM node:26-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS deps
 
 # Sets the working directory inside the container
 WORKDIR /app
@@ -37,7 +37,7 @@ RUN npm ci --frozen-lockfile
 # STAGE 2: BUILDER (COMPILATION)
 # -----------------------------------------------------------------------------
 # Builds the Next.js application for production
-FROM node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS builder
+FROM node:26-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS builder
 
 WORKDIR /app
 
@@ -63,7 +63,7 @@ RUN npm run build
 # STAGE 3: RUNNER (PRODUCTION)
 # -----------------------------------------------------------------------------
 # Final production image - minimal and optimized
-FROM node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS runner
+FROM node:26-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS runner
 
 WORKDIR /app
 
@@ -116,7 +116,7 @@ CMD ["node", "server.js"]
 # -----------------------------------------------------------------------------
 # Separate stage to run Prisma migrations
 # Useful in CI/CD pipelines and docker-compose to guarantee an up-to-date schema
-FROM node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS migrator
+FROM node:26-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS migrator
 
 WORKDIR /app
 
